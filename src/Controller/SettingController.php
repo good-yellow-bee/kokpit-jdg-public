@@ -27,7 +27,7 @@ final class SettingController extends AbstractController
         }
         return $this->render('panel/settings.html.twig', ['current' => $current,'today' => $date->today(),'error' => null]);
     }
-    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate'])]
+    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|white_list\.pre_payment_threshold_pln'])]
     public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus): Response
     {
         if (!$this->isCsrfTokenValid('setting', $request->request->getString('_token'))) {
@@ -42,9 +42,11 @@ final class SettingController extends AbstractController
         try {
             if ($key === SettingKeys::COMPANY_IDENTITY) {
                 $fields = [];
-                foreach (['nip','tax_office_code','first_name','last_name','email','phone'] as $field) {
+                foreach (['nip','tax_office_code','first_name','last_name','email','phone','vat_eu_number'] as $field) {
                     $fields[$field] = trim($request->request->getString($field));
                 }
+                // Rachunki firmowe do samosprawdzenia w białej liście: jeden numer w wierszu.
+                $fields['bank_accounts'] = array_values(array_filter(array_map('trim', preg_split('/\R/', $request->request->getString('bank_accounts')) ?: []), static fn(string $line): bool => $line !== ''));
                 // Formularz zmienia część JPK; część FA(3) przechodzi bez zmian z wiersza obowiązującego.
                 $previous = $settings->value($key, $validFrom !== '' ? $validFrom : null);
                 $value = array_merge(is_array($previous) ? $previous : [], $fields);

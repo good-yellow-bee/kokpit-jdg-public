@@ -21,6 +21,8 @@
             <label>Nazwisko <input name="last_name" required value="{{ identity.value.last_name ?? '' }}"></label>
             <label>E-mail <input name="email" type="email" value="{{ identity.value.email ?? '' }}"></label>
             <label>Telefon <input name="phone" value="{{ identity.value.phone ?? '' }}"></label>
+            <label>Numer VAT UE <input name="vat_eu_number" pattern="PL[0-9]{10}" value="{{ identity.value.vat_eu_number ?? '' }}"></label>
+            <label>Rachunki firmowe do samosprawdzenia (jeden w wierszu) <textarea name="bank_accounts">{{ (identity.value.bank_accounts ?? [])|join("\n") }}</textarea></label>
             <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
             <label>Uwaga <input name="note"></label>
             <button type="submit">Zapisz nowy wiersz</button>
@@ -72,6 +74,21 @@
             </form>
         </section>
     {% endfor %}
+
+    {% set row = current['white_list.pre_payment_threshold_pln'] %}
+    <section id="white_list-pre_payment_threshold_pln">
+        <h2>Próg sprawdzenia przed przelewem (white_list.pre_payment_threshold_pln)</h2>
+        <p>Powyżej tej wartości transakcji wynik NIE z białej listy daje zadanie z trzema wyjściami (art. 117ba § 3 Ordynacji podatkowej).</p>
+        <p>Teraz: {{ row ? row.value ~ ' zł od ' ~ row.valid_from : 'brak ustawienia' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'white_list.pre_payment_threshold_pln'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>Kwota (zł) <input name="value" required pattern="[0-9]{1,12}\.[0-9]{2}"></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Źródło prawne <input name="legal_source"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
 
     {% set row = current['vat.standard_rate'] %}
     <section id="vat-standard_rate">

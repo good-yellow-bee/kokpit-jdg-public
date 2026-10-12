@@ -814,4 +814,5 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Wejścia „stop” F1 zatrzymują odbiór i go-live F1, nie kod.
   - Rejestr `tests/Acceptance/f1.yaml` rośnie z każdą częścią.
   - Wiersze `live` F1 czekają na sesję z dostępem do hostów testowych.
+  - Stan 12.10.2026, część 3: konektory `vies` i `white_list` (nowe hosty wykazu, dawne zostają na liście dozwolonych do wyłączenia przez MF), polityka świeżości w zadaniu `counterparty.refresh_due`, dowód ręczny, sprawdzenie przed przelewem z `wl_notice` i samosprawdzenie z alertami w panelu, sprawdzone na odpowiedziach w kształcie z dokumentacji API. Przerwa wykazu 22:00–0:00 działa jak próg licznika: zadanie czeka do północy. Ponowienia VIES mają odstępy z `registry.vies_retry_delays`; po 24 h od pierwszej próby jest alert `connector_failure`. Nagrania VIES i białej listy oraz wiersze `f1.yaml` z nagraniami (`pre-payment-*`, `refresh-due-eu-supplier`, `self-check`) czekają na sesję z dostępem do usług testowych.
 - **Pytania:** Q-19, Q-39.
