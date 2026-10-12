@@ -814,4 +814,5 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Wejścia „stop” F1 zatrzymują odbiór i go-live F1, nie kod.
   - Rejestr `tests/Acceptance/f1.yaml` rośnie z każdą częścią.
   - Wiersze `live` F1 czekają na sesję z dostępem do hostów testowych.
+  - Stan 12.10.2026: część 2 ma konektor NBP, `KsefSync` (kursor, okna backfillu, odstęp 15 minut, 21165, 429 z pushem) i raport przejścia za interfejsem `KsefGateway`, sprawdzone na bramce w pamięci. Implementacja bramki nad biblioteką, nagrania, wiersze `f1.yaml` tej części oraz wpisy `ksef.sync` i `ksef.backfill` w harmonogramie czekają na sesję z dostępem do api-test.
 - **Pytania:** Q-19, Q-39.

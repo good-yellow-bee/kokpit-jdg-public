@@ -54,6 +54,8 @@ services:
   App\Connector\DeadMan\DeadManNotifier: ~
   App\Connector\Nbp\NbpConnector: ~
   App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
+  App\Connector\Ksef\UnavailableKsefGateway: ~
+  App\Connector\Ksef\KsefGateway: '@App\Connector\Ksef\UnavailableKsefGateway'
 when@dev:
   services:
     dummy.mock_response:
