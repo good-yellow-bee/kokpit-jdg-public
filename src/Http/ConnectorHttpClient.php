@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use App\Rate\RateCounter;
+use App\Rate\RateLimitAlerts;
 use Symfony\Component\Clock\ClockInterface;
 use App\Time\BusinessDate;
 use App\Security\Redactor;
@@ -28,6 +29,7 @@ final readonly class ConnectorHttpClient implements HttpClientInterface
         private bool $enabled,
         private BusinessDate $dates,
         private Redactor $redactor,
+        private ?RateLimitAlerts $alerts = null,
         /** @var array<string, mixed> */
         private array $defaultOptions = [],
     ) {}
@@ -66,7 +68,9 @@ final readonly class ConnectorHttpClient implements HttpClientInterface
                 $errorCode = $status === 429 ? 'rate_limited' : 'http_error';
             }
             if ($status === 429 && $retryAfter !== null) {
-                $this->rates->blockUntil($context->environment, $context->connector, $bucket, $this->windowStart($startedAt), $startedAt->modify(sprintf('+%d seconds', $retryAfter)));
+                $until = $startedAt->modify(sprintf('+%d seconds', $retryAfter));
+                $this->rates->blockUntil($context->environment, $context->connector, $bucket, $this->windowStart($startedAt), $until);
+                $this->alerts?->rateLimited($context->environment, $context->connector, $bucket, $until);
             }
 
             return $response;
@@ -109,7 +113,7 @@ final readonly class ConnectorHttpClient implements HttpClientInterface
     /** @param array<string, mixed> $options */
     public function withOptions(array $options): static
     {
-        return new self($this->httpClient->withOptions($options), $this->allowlist, $this->recorder, $this->rates, $this->clock, $this->enabled, $this->dates, $this->redactor, array_replace($this->defaultOptions, $options, ['max_redirects' => 0]));
+        return new self($this->httpClient->withOptions($options), $this->allowlist, $this->recorder, $this->rates, $this->clock, $this->enabled, $this->dates, $this->redactor, $this->alerts, array_replace($this->defaultOptions, $options, ['max_redirects' => 0]));
     }
 
     private function windowStart(\DateTimeImmutable $now): \DateTimeImmutable

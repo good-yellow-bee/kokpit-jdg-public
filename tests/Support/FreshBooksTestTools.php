@@ -120,7 +120,11 @@ final class FreshBooksTestTools
         }
     }
 
-    /** Trasy pełnego backfillu: dwie strony faktur, płatności i faktura 1001 po id. @return array<string,string|MockResponse> */
+    /**
+     * Trasy pełnego backfillu: dwie strony faktur, płatności i faktura 1001 po id.
+     *
+     * @return array<string,string|MockResponse>
+     */
     public static function backfillRoutes(): array
     {
         return [

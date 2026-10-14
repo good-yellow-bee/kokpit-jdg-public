@@ -29,4 +29,5 @@ framework:
       'App\Messenger\Message\ApprovalDispatchMessage': official_writes
       'App\Messenger\Message\ApprovalDispatchWaitingMessage': official_writes
       'App\Messenger\Message\ApprovalTaskMessage': reads
+      'App\Messenger\Message\KsefSyncMessage': reads
       'App\Messenger\Message\FreshBooksPollMessage': reads

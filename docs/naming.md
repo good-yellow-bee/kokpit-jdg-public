@@ -278,7 +278,7 @@ Sposób uruchamiania komend: [../.claude/rules/zasady-twarde.md](../.claude/rule
 | testsuite PHPUnit | jeden na katalog: `unit` (`tests/Unit`), `property` (`tests/Property`), `contract` (`tests/Contract`), `xsd` (`tests/Xsd`), `integration` (`tests/Integration`), `security` (`tests/Security`), `live` (`tests/Live`); domyślny przebieg bez `live` |
 | `.github/workflows/ci.yml` | id jobów: `lint`, `unit_property` (`name: unit+property`), `contract`, `xsd`, `integration`, `security`, `mutation`, `evidence`; `live` tylko ręcznie (`workflow_dispatch`), nigdy PROD |
 | `mutation` | Infection doradczo, bez blokowania merge, do powstania `src/Tax` w F2 (D-28) |
-| faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` pomija `evidence` |
+| faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` i gałąź bez prefiksu `f` pomijają `evidence` (D-43) |
 | `infection.json5` | zakres mutacji i progi `minMsi`, `minCoveredMsi`; wartości w [testing.md](testing.md) |
 
 Repo CI: prywatne `good-yellow-bee/kokpit-jdg`. Zakres jobów i próg MSI: [testing.md](testing.md).
@@ -386,6 +386,16 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | `setting` od F1 | `vat.standard_rate` (`"23.00"` od 2026-01-01 z migracji) |
 | `stored_file` od F1 | typy `image/jpeg` i `image/png` dla `cost_document` |
 | Fixtures | `FictionalIdentifiers::NIPS` z `5555555555` i `7777777777`; `tests/Support/F1TestTools.php` (`fa3`, `plParty`, `euParty`, `foreignParty`, `rates`) |
+
+### Implementacja F1 (część 2, D-42): nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| KSeF (`src/Connector/Ksef`) | interfejs `KsefGateway` (`startExport`, `exportPackage`), `KsefExportPackage`, `KsefExportedInvoice`, `KsefError` (`InvoiceNotYetAvailable` = `21165`, `DuplicateInvoice` = `440`, `ExportTimeout`, `ExportFailed`, `GatewayUnavailable`), `KsefException`, `UnavailableKsefGateway` (do implementacji nad biblioteką z nagraniami) |
+| Synchronizacja (`src/Invoice`) | `KsefSync` (`run`, `STREAMS`, `MAX_WINDOW_DAYS`, `MIN_EXPORT_SPACING`, `RETRY_DELAYS_21165`), `TransitionReport` (`build`, `split`); wiadomość `KsefSyncMessage` (`ksef.sync`, `ksef.backfill`) i `KsefSyncHandler` (`NIGHT_ENDS_AT`) |
+| Komendy | `app:ksef:sync <subject1\|subject2> [--backfill]`, `app:ksef:transition-report <rok>` |
+| Limity (`src/Rate`) | `RateLimitAlerts` (`rateLimited`): push `connector_failure` przy 429, klucz `{environment}:{connector}:{bucket}:{blocked_until}:rate_limited:push` |
+| Fixtures | `tests/Support/FakeKsefGateway.php` (mechanika, nie kontrakt) |
 
 ## Nazwy wycofane
 

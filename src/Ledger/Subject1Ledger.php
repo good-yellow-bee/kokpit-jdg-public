@@ -11,7 +11,6 @@ use App\Invoice\Fa3Document;
 use App\Invoice\Fa3Line;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
-use App\Time\BusinessDate;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -27,7 +26,6 @@ final readonly class Subject1Ledger
         private Connection $db,
         private FxRateProvider $rates,
         private SettingStore $settings,
-        private BusinessDate $businessDate,
         private ClockInterface $clock,
         private RevenueEntryWriter $writer,
     ) {}

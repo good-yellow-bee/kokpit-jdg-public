@@ -33,8 +33,8 @@ final class FxDifferenceTest extends DatabaseTestCase
         $source = $this->db()->fetchOne("SELECT amount_pln FROM revenue_entry WHERE kind='regular'");
         $expected = "przychód 4250.00\nwpływ 4280.00\nróżnica 30.00\n";
         $actual = sprintf("przychód %s\nwpływ %s\nróżnica %s\n", is_string($source) ? $source : '', '4280.00', is_string($row['amount_pln']) ? $row['amount_pln'] : '');
-        self::assertSame($expected, $actual);
         EvidenceArtefacts::write('golden/fx-difference.diff', $expected === $actual ? '' : "--- oczekiwane\n+++ wynik\n-" . $expected . '+' . $actual);
+        self::assertSame($expected, $actual);
     }
 
     public function testFxDifferenceSplitsPartialPaymentAcrossSourceRows(): void
