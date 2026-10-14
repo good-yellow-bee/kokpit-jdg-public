@@ -7,6 +7,7 @@ namespace App\Invoice;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Counterparty\CounterpartyDirectory;
+use App\Ledger\Subject1Ledger;
 use App\Storage\FileStore;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -31,6 +32,7 @@ final readonly class Subject1Importer
         private AuditLog $audit,
         private ClockInterface $clock,
         private ConnectorConfiguration $configuration,
+        private Subject1Ledger $ledger,
     ) {}
 
     public function import(string $xml, string $ksefNumber, \DateTimeImmutable $assignedAt): string
@@ -54,7 +56,7 @@ final readonly class Subject1Importer
                 'id' => $id,'environment' => $environment,'direction' => 'sale','kind' => $document->kind,'invoice_number' => $document->number,'counterparty_id' => $buyer,
                 'currency' => $document->currency,'ksef_number' => $ksefNumber,'schema_version' => $document->schemaVersion,'issue_date' => $document->issueDate,'service_date' => $document->serviceDate,
                 'service_period_start' => $document->periodStart,'service_period_end' => $document->periodEnd,'ksef_number_assigned_at' => $assignedAt->format('Y-m-d\TH:i:s.uP'),
-                'tax_point_date' => $taxPoint,'vat_period_start' => $taxPoint === null ? null : substr($taxPoint, 0, 7) . '-01',
+                'tax_point_date' => $taxPoint,'revenue_date' => $document->kind === 'VAT' ? Subject1Ledger::revenueDate($document) : null,'vat_period_start' => $taxPoint === null ? null : substr($taxPoint, 0, 7) . '-01',
                 'net_total' => $document->netTotal,'vat_total' => $document->vatTotal,'gross_total' => $document->grossTotal,
                 'fx_vat_rate_id' => $fx['fx_vat_rate_id'],'net_pln' => $fx['net_pln'],'vat_pln' => $fx['vat_pln'],
                 'status' => 'accepted','tax_scenario' => self::scenario($document->buyer),'buyer_snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
@@ -71,6 +73,8 @@ final readonly class Subject1Importer
             }
             $this->files->put($xml, $environment, 'xml_sent', 'application/xml', 'invoice', $id, (int) substr($document->issueDate, 0, 4));
             $this->audit->append('sale.imported_subject1', ['ksef_number' => $ksefNumber], $environment, 'invoice', $id);
+            // Kurs PIT, stawki pozycji i, po przełączeniu, wiersze ewidencji (F2.2).
+            $this->ledger->onImported($id);
             return $id;
         });
     }

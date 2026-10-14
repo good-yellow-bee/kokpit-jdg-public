@@ -19,7 +19,7 @@ use Symfony\Component\Uid\UuidV7;
  */
 final readonly class LedgerImporter
 {
-    private const LOCK_NAMESPACE = 7071402;
+    private const LOCK_NAMESPACE = RevenueEntryWriter::LOCK_NAMESPACE;
     public function __construct(private Connection $db, private ClockInterface $clock, private BusinessDate $businessDate, private LedgerFileParser $parser, private FileStore $files, private AuditLog $audit, private ConnectorConfiguration $configuration) {}
     public function import(string $bytes, int $year, ?string $originalName = null): LedgerImportResult
     {

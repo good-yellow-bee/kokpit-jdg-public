@@ -14,6 +14,10 @@ use App\Fx\NbpRateSource;
 use App\Invoice\Fa3Reader;
 use App\Invoice\Subject1Importer;
 use App\Invoice\VatFx;
+use App\Ledger\JpkEwpSchema;
+use App\Ledger\RevenueEntryWriter;
+use App\Ledger\Subject1Ledger;
+use App\Xml\XsdDictionary;
 use App\Security\Redactor;
 use App\Storage\FileStore;
 use App\Time\BusinessDate;
@@ -63,7 +67,7 @@ final class F1TestTools
     /** @param array<string,array<string,string>> $rates */
     public static function vatFx(Connection $db, MockClock $clock, array $rates = []): VatFx
     {
-        return new VatFx(new FxRateProvider($db, new PolishCalendar(), new BusinessDate($clock), $clock, self::rates($rates)), ObligationTestTools::settings($db, $clock));
+        return new VatFx(self::fxRates($db, $clock, $rates), ObligationTestTools::settings($db, $clock));
     }
 
     public static function directory(Connection $db, MockClock $clock): CounterpartyDirectory
@@ -91,7 +95,29 @@ final class F1TestTools
     /** @param array<string,array<string,string>> $rates */
     public static function subject1(Connection $db, MockClock $clock, array $rates = []): Subject1Importer
     {
-        return new Subject1Importer($db, self::reader(), self::directory($db, $clock), self::vatFx($db, $clock, $rates), self::files($db, $clock), self::audit($db, $clock), $clock, ConnectorTestTools::configuration(false));
+        return new Subject1Importer($db, self::reader(), self::directory($db, $clock), self::vatFx($db, $clock, $rates), self::files($db, $clock), self::audit($db, $clock), $clock, ConnectorTestTools::configuration(false), self::ledger($db, $clock, $rates));
+    }
+
+    /** @param array<string,array<string,string>> $rates */
+    public static function fxRates(Connection $db, MockClock $clock, array $rates = []): FxRateProvider
+    {
+        return new FxRateProvider($db, new PolishCalendar(), new BusinessDate($clock), $clock, self::rates($rates));
+    }
+
+    public static function writer(Connection $db, MockClock $clock): RevenueEntryWriter
+    {
+        return new RevenueEntryWriter($db, $clock, new BusinessDate($clock), self::schema(), ConnectorTestTools::configuration(false));
+    }
+
+    /** @param array<string,array<string,string>> $rates */
+    public static function ledger(Connection $db, MockClock $clock, array $rates = []): Subject1Ledger
+    {
+        return new Subject1Ledger($db, self::fxRates($db, $clock, $rates), ObligationTestTools::settings($db, $clock), $clock, self::writer($db, $clock));
+    }
+
+    public static function schema(): JpkEwpSchema
+    {
+        return new JpkEwpSchema(new XsdDictionary(XsdCatalog::default()));
     }
 
     public static function owner(Connection $db, MockClock $clock): string

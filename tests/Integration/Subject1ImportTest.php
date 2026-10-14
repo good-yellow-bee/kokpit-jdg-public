@@ -53,7 +53,9 @@ final class Subject1ImportTest extends DatabaseTestCase
         $id = F1TestTools::subject1($this->db(), $clock, ['EUR' => ['2026-10-29' => '4.2500','2026-10-30' => '4.2700']])->import($xml, 'FIKCYJNY-KSEF-0210', new \DateTimeImmutable('2026-11-02T10:05:00Z'));
         $row = $this->db()->fetchAssociative('SELECT i.invoice_number, i.tax_point_date, f.effective_date, f.table_no, i.net_pln, i.vat_pln, i.fx_pit_rate_id FROM invoice i JOIN fx_rate f ON f.id=i.fx_vat_rate_id WHERE i.id=?', [$id]);
         self::assertIsArray($row);
-        self::assertSame([$serviceDate, $table, $netPln, '0.00', null], [$row['tax_point_date'], $row['effective_date'], $row['net_pln'], $row['vat_pln'], $row['fx_pit_rate_id']]);
+        self::assertSame([$serviceDate, $table, $netPln, '0.00'], [$row['tax_point_date'], $row['effective_date'], $row['net_pln'], $row['vat_pln']]);
+        // Kurs PIT ustawia ewidencja F2.2 niezależnie od kursu VAT (LedgerSubject1Test).
+        self::assertIsString($row['fx_pit_rate_id']);
         EvidenceArtefacts::write('cmd/subject1-fx-vat-' . substr($serviceDate, 5, 2) . '.txt', EvidenceArtefacts::csv([$row]));
     }
 

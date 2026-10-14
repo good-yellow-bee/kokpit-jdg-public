@@ -131,6 +131,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-41 | szkielet bramki F0b: rejestr przedmiotów, `DispatchGuard`, wiek `unknown`, okna odpytywania, ochrona przed `messenger:failed:retry` | przyjęta 2026-10-11 | Q-35 |
 | D-42 | kod F1 przed odbiorem F0a, F0b, F2.1 i F2.4, częściami; nagrania HTTP z laptopa albo ze środowiska z dozwolonymi hostami testowymi | przyjęta 2026-10-11 | Q-19, Q-39 |
 | D-43 | oszczędne minuty GitHub Actions: push tylko na `main`, gałąź PR przez `pull_request`, anulowanie starszych przebiegów PR, `mutation` bez PR, póki doradczy, `evidence` tylko na gałęziach faz | przyjęta 2026-10-14 | Q-43 |
+| D-44 | kod F2.2 przed odbiorem F0b i F1, częściami: najpierw bez sieci (stawki, kurs PIT, wpisy z Subject1, wpis ręczny, błąd wpisu), potem FreshBooks i płatności, potem korekty KOR i uzgodnienia | przyjęta 2026-10-14 | Q-22 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -835,3 +836,23 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Push do PR kosztuje ok. 21 minut zamiast ok. 50.
   - Przywrócenie minut (limit wydatków albo nowy okres rozliczeniowy) robi właściciel w ustawieniach rozliczeń GitHub; sesja Claude nie może też ponowić jobów (403).
 - **Pytania:** Q-43.
+
+### D-44 Kod F2.2 częściami, przed odbiorem F0b i F1
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt; właściciel prosi o rozwój w czasie blokady CI).
+- **Kontekst:**
+  - F2.2 startuje po odbiorze F0b i F1. Kod F0b i F1 (części 1–2) jest na `main` albo w PR, a odbiory czekają na VPS i CI (D-36, D-38, D-42, D-43).
+  - Sesja w chmurze nie łączy się z FreshBooks ani z hostami testowymi. FreshBooks nie ma firmy testowej, więc jego testy i tak stoją na ręcznie pisanych fixtures (D-35).
+- **Decyzja:**
+  - Kod F2.2 powstaje teraz na gałęziach `f2-…`, w trzech częściach z osobnym PR:
+    1. bez sieci: klucze `ryczalt.service_map` i `ledger.auto_entries_enabled`, `ServiceMap`, data przychodu i kurs PIT przy imporcie Subject1, stawki pozycji, `RevenueEntryWriter` (DTO niezależne od źródła, D-25), odtworzenie `app:ledger:import ksef_subject1`, wpis ręczny w panelu i błąd wpisu;
+    2. FreshBooks: OAuth w `credential_state`, polling `invoices` i `payments`, tabela `payment`, różnice kursowe, odtworzenie `freshbooks`;
+    3. korekty z KOR (zadanie w panelu) i widok „Uzgodnienia” z eksportem CSV.
+  - Data przychodu Subject1 powstaje przy imporcie z pól FA(3) i trafia do `invoice.revenue_date`; różne P_6A zostawiają ją pustą, a fakturę bez wpisu na liście braków w panelu.
+  - Brak kursu PIT (`FxRateUnavailable`), stawki albo daty nie blokuje importu Subject1. Faktura czeka na liście braków; ponowne przejście (`Subject1Ledger::apply`, odtworzenie) dopisuje wiersze.
+  - Wcześniejszy dzień zapłaty z art. 14 ust. 1c wchodzi z płatnościami FreshBooks w części 2.
+  - Błąd wpisu zapisuje akcję audytu `ledger.entry_corrected`; wpis ręczny `ledger.manual_entry`.
+- **Skutki:**
+  - Wiersze F2.2 w `tests/Acceptance/f2.yaml` rosną z każdą częścią. Odbiór F2.2 dalej czeka na odbiory F0b i F1.
+  - Zrzuty `screens/…` z kryteriów F2.2 to kroki `[manual]` przy odbiorze.
+- **Pytania:** Q-22.
