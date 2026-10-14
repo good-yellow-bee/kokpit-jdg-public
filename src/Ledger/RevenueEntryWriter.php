@@ -72,6 +72,29 @@ final readonly class RevenueEntryWriter
         });
     }
 
+    /**
+     * Wiersze spoza dokumentu (np. `fx_difference`): `lp` pod tą samą blokadą roku, K_2 = dzień zapisu.
+     *
+     * @param list<array<string,string|null>> $rows kolumny poza `id`, `environment`, `year`, `lp`, `entry_date`, `recorded_at`
+     * @return list<string>
+     */
+    public function append(int $year, array $rows): array
+    {
+        $environment = $this->configuration->environment();
+        return $this->db->transactional(function () use ($year, $rows, $environment): array {
+            $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [self::LOCK_NAMESPACE, $year]);
+            $lp = $this->db->fetchOne('SELECT coalesce(max(lp),0) FROM revenue_entry WHERE environment=? AND year=?', [$environment, $year]);
+            $lp = is_numeric($lp) ? (int) $lp : 0;
+            $written = [];
+            foreach ($rows as $row) {
+                $id = (string) UuidV7::generate($this->clock->now());
+                $this->db->insert('revenue_entry', ['id' => $id,'environment' => $environment,'year' => $year,'lp' => ++$lp,'entry_date' => $this->businessDate->today(),'recorded_at' => $this->clock->now()->format('Y-m-d\TH:i:s.uP')] + $row);
+                $written[] = $id;
+            }
+            return $written;
+        });
+    }
+
     /** @return list<array<string,mixed>> */
     private function existing(RevenueDocument $document, string $environment, int $year): array
     {

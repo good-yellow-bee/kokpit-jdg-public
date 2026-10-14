@@ -17,7 +17,7 @@ final class SchedulerTest extends TestCase
     {
         $schedule = (new DefaultScheduleProvider(new ArrayAdapter(), new LockFactory(new InMemoryStore())))->getSchedule();
         $messages = $schedule->getRecurringMessages();
-        self::assertCount(12, $messages);
+        self::assertCount(14, $messages);
         $ids = [];
         $transports = [];
         foreach ($messages as $recurring) {
@@ -31,7 +31,7 @@ final class SchedulerTest extends TestCase
             self::assertSame(['id'], array_keys($values));
             $ids[] = $values['id'];
         }
-        self::assertSame(['heartbeat','files.verify_hashes','audit.verify_chain','retention.purge','obligations.recompute','notifications.dispatch','credentials.check_expiry','counterparty.refresh_due','approval.expire','approval.poll_status','approval.reconcile','approval.dispatch_waiting'], $ids);
-        self::assertSame(['reads','reads','reads','reads','reads','notifications','reads','reads','reads','reads','reads','official_writes'], $transports);
+        self::assertSame(['heartbeat','files.verify_hashes','audit.verify_chain','retention.purge','obligations.recompute','notifications.dispatch','credentials.check_expiry','counterparty.refresh_due','approval.expire','approval.poll_status','approval.reconcile','approval.dispatch_waiting','freshbooks.poll_invoices','freshbooks.poll_payments'], $ids);
+        self::assertSame(['reads','reads','reads','reads','reads','notifications','reads','reads','reads','reads','reads','official_writes','reads','reads'], $transports);
     }
 }

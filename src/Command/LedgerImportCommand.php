@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Connector\FreshBooks\FreshBooksException;
+use App\Connector\FreshBooks\FreshBooksSync;
 use App\Ledger\LedgerImporter;
 use App\Ledger\LedgerImportRefused;
 use App\Config\ConnectorConfiguration;
@@ -19,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:ledger:import', description: 'Idempotentny import ewidencji przychodów roku ze źródła.')]
 final class LedgerImportCommand extends Command
 {
-    public function __construct(private readonly LedgerImporter $importer, private readonly Subject1Ledger $subject1, private readonly ConnectorConfiguration $configuration)
+    public function __construct(private readonly LedgerImporter $importer, private readonly Subject1Ledger $subject1, private readonly ConnectorConfiguration $configuration, private readonly FreshBooksSync $freshbooks)
     {
         parent::__construct();
     }
@@ -45,8 +47,17 @@ final class LedgerImportCommand extends Command
             return Command::SUCCESS;
         }
         if ($source === 'freshbooks') {
-            $output->writeln('<error>Źródło freshbooks powstaje w F2.2 razem z konektorem FreshBooks.</error>');
-            return Command::INVALID;
+            // Odtworzenie z FreshBooks: wiersze tylko dla faktur sprzed przejścia bez wpisu; K_2 to dzień odtworzenia (D-23).
+            try {
+                $counts = $this->freshbooks->reconstruct((int) $year);
+            } catch (FreshBooksException $exception) {
+                $output->writeln(sprintf('<error>FreshBooks: %s. Połącz FreshBooks w panelu (/freshbooks).</error>', $exception->error->value));
+                return Command::FAILURE;
+            }
+            foreach ($counts as $outcome => $count) {
+                $output->writeln(sprintf('%s;%d', $outcome, $count));
+            }
+            return Command::SUCCESS;
         }
         if ($source !== 'import') {
             $output->writeln('<error>Nieznane źródło.</error>');

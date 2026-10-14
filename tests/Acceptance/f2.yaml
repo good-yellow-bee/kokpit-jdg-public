@@ -20,6 +20,13 @@ criteria:
   - { key: ledger-reconstruct-late-k2, runner: ci, command: 'vendor/bin/phpunit --filter LedgerReconstruct', junit: true }
   - { key: ledger-manual-entry, runner: ci, command: 'vendor/bin/phpunit --filter LedgerManualEntry', junit: true }
   - { key: ledger-entry-error, runner: ci, command: 'vendor/bin/phpunit --filter LedgerEntryError', junit: true }
+  - { key: freshbooks-oauth, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksOAuth', junit: true }
+  - { key: freshbooks-rate-limit-429, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksRateLimit429', junit: true }
+  - { key: freshbooks-ksef-dedup, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksKsefDedup', junit: true }
+  - { key: freshbooks-draft-before-subject1, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksDraftBeforeSubject1', junit: true }
+  - { key: freshbooks-poll-payments, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksPollPayments', junit: true }
+  - { key: fx-difference, runner: ci, command: 'vendor/bin/phpunit --filter FxDifference', junit: true }
+  - { key: fx-difference-year-boundary, runner: ci, command: 'vendor/bin/phpunit --filter FxDifferenceYearBoundary', junit: true }
   - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
   - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
   - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }

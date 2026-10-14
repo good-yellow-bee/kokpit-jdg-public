@@ -371,6 +371,8 @@ Płatności klientów z FreshBooks (Q-24). Opłaty bramki płatniczej to osobne 
 
 - `UNIQUE (environment, freshbooks_payment_id)`.
 - `CHECK (invoice_id IS NULL OR revenue_entry_id IS NULL)`: płatność wskazuje fakturę albo wiersz ewidencji, nigdy oba.
+- `CHECK`: `matched_at` jest ustawione dokładnie przy `invoice_id` albo `revenue_entry_id`; `fx_posted_at` tylko po przypisaniu; opłata i wypłata mają kwotę razem z walutą.
+- Indeks unikalny `revenue_entry (payment_id, remarks, rate_pct)` dla `fx_difference`: jeden wiersz na płatność i wiersz źródłowy (D-45).
 - Przy `revenue_entry_id` różnica kursowa bierze kurs PIT z `fx_rate_id` tego wiersza.
 
 ### Ewidencja i podatki

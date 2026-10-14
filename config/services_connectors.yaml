@@ -61,6 +61,10 @@ services:
   App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
   App\Connector\Ksef\UnavailableKsefGateway: ~
   App\Connector\Ksef\KsefGateway: '@App\Connector\Ksef\UnavailableKsefGateway'
+  App\Connector\FreshBooks\FreshBooksOAuth: ~
+  App\Connector\FreshBooks\FreshBooksConnector: ~
+  App\Connector\FreshBooks\FreshBooksSync: ~
+  App\Connector\FreshBooks\FreshBooksPollHandler: ~
   App\Connector\Vies\ViesConnector:
     arguments: { $endpoints: '%registry.vies_endpoints%' }
   App\Connector\WhiteList\WhiteListConnector:

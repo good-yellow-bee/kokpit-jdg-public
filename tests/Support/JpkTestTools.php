@@ -52,7 +52,14 @@ final class JpkTestTools
             $id = (string) UuidV7::generate($clock->now());
             $kind = $entry['kind'];
             $correctsLp = $entry['corrects_lp'] ?? null;
-            $db->insert('revenue_entry', ['id' => $id,'environment' => 'test','year' => 2026,'lp' => $entry['lp'],'entry_date' => $entry['entry_date'],'revenue_date' => $entry['revenue_date'],'document_number' => $entry['document_number'],'ksef_number' => null,'counterparty_country' => $entry['counterparty_country'],'counterparty_tax_id' => $entry['counterparty_tax_id'],'amount_pln' => $entry['amount_pln'],'rate_pct' => $entry['rate_pct'],'remarks' => $entry['remarks'],'source' => $entry['source'],'kind' => $kind,'corrects_entry_id' => is_int($correctsLp) ? $ids[$correctsLp] : null,'payment_id' => $kind === 'fx_difference' ? (string) UuidV7::generate($clock->now()) : null,'recorded_at' => $clock->now()->format('Y-m-d\TH:i:s.uP')]);
+            $payment = null;
+            if ($kind === 'fx_difference') {
+                // Fikcyjna płatność dla klucza obcego `revenue_entry.payment_id` (F2.2).
+                $payment = (string) UuidV7::generate($clock->now());
+                $stamp = $clock->now()->format('Y-m-d\TH:i:s.uP');
+                $db->insert('payment', ['id' => $payment,'environment' => 'test','freshbooks_payment_id' => 'fikcyjna-' . (is_scalar($entry['lp']) ? (string) $entry['lp'] : '0'),'paid_on' => $entry['revenue_date'],'amount' => '1.00','currency' => 'EUR','created_at' => $stamp,'updated_at' => $stamp]);
+            }
+            $db->insert('revenue_entry', ['id' => $id,'environment' => 'test','year' => 2026,'lp' => $entry['lp'],'entry_date' => $entry['entry_date'],'revenue_date' => $entry['revenue_date'],'document_number' => $entry['document_number'],'ksef_number' => null,'counterparty_country' => $entry['counterparty_country'],'counterparty_tax_id' => $entry['counterparty_tax_id'],'amount_pln' => $entry['amount_pln'],'rate_pct' => $entry['rate_pct'],'remarks' => $entry['remarks'],'source' => $entry['source'],'kind' => $kind,'corrects_entry_id' => is_int($correctsLp) ? $ids[$correctsLp] : null,'payment_id' => $payment,'recorded_at' => $clock->now()->format('Y-m-d\TH:i:s.uP')]);
             $ids[is_int($entry['lp']) ? $entry['lp'] : 0] = $id;
         }
         $settings = self::settings($db, $clock);

@@ -1,0 +1,1 @@
+{"access_token":"fictional-access-token-two","token_type":"Bearer","expires_in":43200,"refresh_token":"fictional-refresh-token-two","scope":"user:invoices:read user:payments:read","created_at":1792043200}

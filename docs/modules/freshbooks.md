@@ -214,7 +214,7 @@ Ewidencja 2026 powstaje najpierw w F2.1 z importu CSV albo JPK_EWP(4) z narzędz
 - Deduplikacja działa we wszystkich `source` ([ewidencja.md](ewidencja.md)). Faktura FreshBooks z wierszem `import` nie dostaje drugiego wiersza.
 - FreshBooks i Subject1 to źródła uzgodnienia, nie warunek dry runu (D-30).
 
-**Dzień przejścia.** `setting` `ksef.sales_transition_on` to dzień pierwszej Twojej faktury w KSeF. Domyślnie to P_1 najstarszej faktury z backfillu Subject1 (F1); potwierdzasz go w Q-10 ([ksef.md](ksef.md)). Data FreshBooks to `create_date`.
+**Dzień przejścia.** `setting` `ksef.sales_transition_on` to dzień pierwszej Twojej faktury w KSeF. Domyślnie to P_1 najstarszej faktury z backfillu Subject1 (F1); potwierdzasz go w Q-10 ([ksef.md](ksef.md)). Data FreshBooks to `create_date`. Data przychodu faktury sprzed przejścia to `create_date`, a przy wcześniejszej zapłacie dzień zapłaty (art. 14 ust. 1c, D-45).
 
 **Klasyfikacja faktury FreshBooks** (backfill i każdy przebieg strumienia `invoices`)
 
@@ -223,10 +223,11 @@ Ewidencja 2026 powstaje najpierw w F2.1 z importu CSV albo JPK_EWP(4) z narzędz
 | `invoice_number` równy P_2 faktury sprzedaży z Subject1 o `kind` `VAT`, bez `freshbooks_id` | wpis `invoice.freshbooks_id`; bez drugiego wiersza | to samo |
 | bez dopasowania, status inny niż draft, data przed dniem przejścia | wiersz `revenue_entry` ze źródłem `freshbooks` przez DTO, chyba że deduplikacja znajdzie wiersz `import` | to samo |
 | bez dopasowania, szkic z datą przed dniem przejścia | pominięta | wiersz `invoice` w stanie `draft` |
-| bez dopasowania, data od dnia przejścia | oczekuje, bez wiersza | wiersz `invoice` w stanie `draft`; wykrywanie obejścia z sekcji „Blokady obejścia” |
+| bez dopasowania, data od dnia przejścia | wiersz `invoice` w stanie `draft`, bez `ready`; bez ustalonego kraju klienta oczekuje bez wiersza (D-45) | wiersz `invoice` w stanie `draft`; wykrywanie obejścia z sekcji „Blokady obejścia” |
 
 **Faktura oczekująca (do go-live F3)**
 
+- Oczekująca to szkic `draft` bez odpowiednika z KSeF albo faktura od dnia przejścia bez ustalonego kraju klienta (D-45).
 - Kursor `invoices` nie wyprzedza najwcześniejszego dnia ostatniej zmiany wśród faktur oczekujących. Każdy przebieg czyta je więc ponownie, niezależnie od `source_hash`.
 - Pierwszy przebieg po imporcie odpowiednika z Subject1 dopasowuje oczekującą fakturę według pierwszego wiersza tabeli.
 - Oczekująca faktura ze statusem innym niż draft trafia na listę „faktura bez KSeF” w panelu, gdy nie dopasuje jej udany przebieg Subject1. Liczy się przebieg rozpoczęty po jej ostatniej zmianie we FreshBooks.
@@ -244,7 +245,7 @@ Faktura z Subject1 i faktura FreshBooks o tym samym numerze to jeden wiersz `inv
 | Kolejność | F2.2/F2.3, do go-live F3 | Od go-live F3 |
 | --- | --- | --- |
 | Subject1 przed FreshBooks | polling FreshBooks wpisuje `freshbooks_id` do faktury z KSeF | to samo; szkic nie powstaje |
-| FreshBooks przed Subject1 | faktura oczekuje; pierwszy przebieg po imporcie z Subject1 wpisuje `freshbooks_id` | w jednej transakcji szkic oddaje `freshbooks_id` i przechodzi do `cancelled_before_send`, potem powstaje faktura z KSeF z tym `freshbooks_id` |
+| FreshBooks przed Subject1 | jak od go-live F3: import Subject1 w jednej transakcji przenosi szkic do `cancelled_before_send` i daje fakturze z KSeF jego `freshbooks_id` (D-45) | w jednej transakcji szkic oddaje `freshbooks_id` i przechodzi do `cancelled_before_send`, potem powstaje faktura z KSeF z tym `freshbooks_id` |
 
 - Od go-live F3 taki szkic nie daje alertu o luce w numeracji, bo numer ma faktura z KSeF.
 
