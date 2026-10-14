@@ -10,6 +10,7 @@ use App\Http\ConnectorHttpClient;
 use App\Http\HostAllowlist;
 use App\Http\ConnectorCallRecorder;
 use App\Rate\RateCounter;
+use App\Rate\RateLimitAlerts;
 use App\Security\Redactor;
 use App\Time\BusinessDate;
 use Doctrine\DBAL\Connection;
@@ -28,6 +29,6 @@ final class ConnectorTestTools
         $configuration = self::configuration($enabled);
         $dates = new BusinessDate($clock);
         $allowlist = new HostAllowlist(ConnectorHosts::HOSTS, $configuration, $mock);
-        return new ConnectorHttpClient($allowlist, $allowlist, new ConnectorCallRecorder($db, $clock), new RateCounter($db, $clock, $dates, []), $clock, $enabled, $dates, $redactor ?? new Redactor());
+        return new ConnectorHttpClient($allowlist, $allowlist, new ConnectorCallRecorder($db, $clock), new RateCounter($db, $clock, $dates, []), $clock, $enabled, $dates, $redactor ?? new Redactor(), new RateLimitAlerts($db, $clock));
     }
 }
