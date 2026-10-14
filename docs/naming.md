@@ -312,6 +312,16 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Dowód działania | `scripts/ledger-acceptance.php <idempotent\|xml\|sums>`; zmienna `EVIDENCE_DIR` dla artefaktów `db/`, `golden/`, `jpk/` |
 | Fixtures | `tests/Fixtures/Jpk/ledger-2026-jan-oct.csv`, `ledger-2026-jan-nov.csv`, `ledger-2026-jpk-ewp.xml`, `golden/ledger-import-sums.txt` |
 
+### Implementacja F2.2: nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Ewidencja ze źródeł | `ServiceMap`, `RevenueDocument`, `RevenueEntryWriter`, `RevenueWriteResult`, `Subject1Ledger`, `Subject1LedgerResult` (wyniki `written`, `duplicate`, `fields_only`, `not_vat`, `revenue_date_manual`, `rate_missing`, `fx_rate_pending`), `ManualRevenueEntry`, `EntryErrorCorrection` (`src/Ledger`) |
+| Ustawienia | `ryczalt.service_map`, `ledger.auto_entries_enabled` w `SettingKeys` i w panelu `/settings` |
+| Panel | `LedgerController`; `/ledger` (braki wpisów, wiersze roku, wpis ręczny), `POST /ledger/manual` |
+| Akcje audytu | `ledger.manual_entry`, `ledger.entry_corrected` |
+| Komendy | `app:ledger:import ksef_subject1 <rok>` (odtworzenie) |
+
 ### Implementacja F2.4: nazwy techniczne
 
 | Rodzaj | Nazwy |

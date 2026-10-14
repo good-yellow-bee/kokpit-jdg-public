@@ -16,7 +16,9 @@ final class SettingKeys
     public const ZUS_VARIANT = 'zus.variant';
     public const ADVANCE_FREQUENCY = 'ryczalt.advance_frequency';
     public const VAT_STANDARD_RATE = 'vat.standard_rate';
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE];
+    public const RYCZALT_SERVICE_MAP = 'ryczalt.service_map';
+    public const LEDGER_AUTO_ENTRIES = 'ledger.auto_entries_enabled';
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -31,12 +33,13 @@ final class SettingKeys
     public static function normalize(string $key, mixed $value): mixed
     {
         return match ($key) {
-            self::JPK_ST_ENABLED, self::PIT_KASOWY => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
+            self::JPK_ST_ENABLED, self::PIT_KASOWY, self::LEDGER_AUTO_ENTRIES => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
             self::COMPANY_IDENTITY => self::identity($value),
             self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT => self::account($key, $value),
             self::ZUS_PARAMETERS => self::zusParameters($value),
             self::ZUS_VARIANT => self::oneOf($key, $value, self::ZUS_VARIANTS),
             self::ADVANCE_FREQUENCY => self::oneOf($key, $value, self::ADVANCE_FREQUENCIES),
+            self::RYCZALT_SERVICE_MAP => \App\Ledger\ServiceMap::normalize($value),
             self::VAT_STANDARD_RATE => is_string($value) && preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', $value) ? $value : throw new \InvalidArgumentException('vat.standard_rate to procent z dwoma miejscami, np. 23.00.'),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };

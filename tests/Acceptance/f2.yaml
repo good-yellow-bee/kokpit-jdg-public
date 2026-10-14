@@ -1,5 +1,5 @@
 phase: f2
-# Przed dry runem rejestr ma tylko F2.1 i F2.4 (docs/phases/f2-ewidencja.md). Wiersze jpk-st-* dochodzą ze schematem JPK_ST(1) (D-37).
+# F2.1 i F2.4, a od D-44 także wiersze F2.2 części 1 (bez sieci). Wiersze jpk-st-* dochodzą ze schematem JPK_ST(1) (D-37).
 criteria:
   - { key: ledger-import-idempotent, runner: ci, command: 'php scripts/ledger-acceptance.php idempotent' }
   - { key: ledger-import-xml, runner: ci, command: 'php scripts/ledger-acceptance.php xml' }
@@ -13,6 +13,13 @@ criteria:
   - { key: jpk-ewp-build, runner: ci, command: 'php scripts/jpk-acceptance.php ewp-build && vendor/bin/phpunit --filter JpkEwpBuild', junit: true }
   - { key: jpk-ewp-podmiot1, runner: ci, command: 'vendor/bin/phpunit --filter JpkEwpPodmiot1', junit: true }
   - { key: jpk-ewp-dry-run, runner: ci, command: 'php scripts/jpk-acceptance.php ewp-dry-run' }
+  - { key: ryczalt-rate-missing, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltServiceMapMissing', junit: true }
+  - { key: ledger-two-rates, runner: ci, command: 'vendor/bin/phpunit --filter LedgerTwoRates', junit: true }
+  - { key: ledger-subject1-fx, runner: ci, command: 'vendor/bin/phpunit --filter LedgerSubject1Fx', junit: true }
+  - { key: ledger-auto-entries-off, runner: ci, command: 'vendor/bin/phpunit --filter LedgerAutoEntriesOff', junit: true }
+  - { key: ledger-reconstruct-late-k2, runner: ci, command: 'vendor/bin/phpunit --filter LedgerReconstruct', junit: true }
+  - { key: ledger-manual-entry, runner: ci, command: 'vendor/bin/phpunit --filter LedgerManualEntry', junit: true }
+  - { key: ledger-entry-error, runner: ci, command: 'vendor/bin/phpunit --filter LedgerEntryError', junit: true }
   - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
   - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
   - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }

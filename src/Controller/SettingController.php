@@ -27,7 +27,7 @@ final class SettingController extends AbstractController
         }
         return $this->render('panel/settings.html.twig', ['current' => $current,'today' => $date->today(),'error' => null]);
     }
-    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate'])]
+    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|ryczalt\.service_map|ledger\.auto_entries_enabled'])]
     public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus): Response
     {
         if (!$this->isCsrfTokenValid('setting', $request->request->getString('_token'))) {
@@ -48,8 +48,14 @@ final class SettingController extends AbstractController
                 // Formularz zmienia część JPK; część FA(3) przechodzi bez zmian z wiersza obowiązującego.
                 $previous = $settings->value($key, $validFrom !== '' ? $validFrom : null);
                 $value = array_merge(is_array($previous) ? $previous : [], $fields);
-            } elseif (in_array($key, [SettingKeys::JPK_ST_ENABLED, SettingKeys::PIT_KASOWY], true)) {
+            } elseif (in_array($key, [SettingKeys::JPK_ST_ENABLED, SettingKeys::PIT_KASOWY, SettingKeys::LEDGER_AUTO_ENTRIES], true)) {
                 $value = $request->request->getString('value') === '1';
+            } elseif ($key === SettingKeys::RYCZALT_SERVICE_MAP) {
+                try {
+                    $value = json_decode($request->request->getString('value'), true, 8, JSON_THROW_ON_ERROR);
+                } catch (\JsonException) {
+                    throw new \InvalidArgumentException('ryczalt.service_map to lista JSON.');
+                }
             } elseif ($key === SettingKeys::ZUS_PARAMETERS) {
                 $brackets = [];
                 for ($i = 1; $i <= 3; $i++) {

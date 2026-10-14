@@ -6,6 +6,8 @@ namespace App\Command;
 
 use App\Ledger\LedgerImporter;
 use App\Ledger\LedgerImportRefused;
+use App\Config\ConnectorConfiguration;
+use App\Ledger\Subject1Ledger;
 use App\Xml\XsdMissingException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -17,7 +19,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:ledger:import', description: 'Idempotentny import ewidencji przychodów roku ze źródła.')]
 final class LedgerImportCommand extends Command
 {
-    public function __construct(private readonly LedgerImporter $importer)
+    public function __construct(private readonly LedgerImporter $importer, private readonly Subject1Ledger $subject1, private readonly ConnectorConfiguration $configuration)
     {
         parent::__construct();
     }
@@ -35,8 +37,15 @@ final class LedgerImportCommand extends Command
             $output->writeln('<error>Rok ma cztery cyfry.</error>');
             return Command::INVALID;
         }
-        if (in_array($source, ['freshbooks','ksef_subject1'], true)) {
-            $output->writeln(sprintf('<error>Źródło %s powstaje w F2.2.</error>', $source));
+        if ($source === 'ksef_subject1') {
+            // Odtworzenie: wiersze tylko dla faktur bez wpisu; K_2 to dzień odtworzenia (D-23).
+            foreach ($this->subject1->reconstruct((int) $year, $this->configuration->environment()) as $outcome => $count) {
+                $output->writeln(sprintf('%s;%d', $outcome, $count));
+            }
+            return Command::SUCCESS;
+        }
+        if ($source === 'freshbooks') {
+            $output->writeln('<error>Źródło freshbooks powstaje w F2.2 razem z konektorem FreshBooks.</error>');
             return Command::INVALID;
         }
         if ($source !== 'import') {
