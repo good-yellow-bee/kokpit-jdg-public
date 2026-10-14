@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Czat · Kokpit JDG{% endblock %}
+
+{% block body %}
+    <style>
+        .chat-working { display: none; }
+        turbo-frame[busy] .chat-working, turbo-frame[aria-busy="true"] .chat-working { display: block; }
+        turbo-frame[busy] #chat-form button { pointer-events: none; opacity: .5; }
+    </style>
+    <h1>Czat</h1>
+    <p><a href="{{ path('panel_dashboard') }}">Kokpit</a></p>
+    {% for message in app.flashes('error') %}<p role="alert" class="flash-error">{{ message }}</p>{% endfor %}
+    <section id="chat-sessions">
+        <h2>Rozmowy</h2>
+        <form method="post" action="{{ path('panel_chat_new') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('chat') }}">
+            <button type="submit">Nowa rozmowa</button>
+        </form>
+        {% if sessions %}
+            <ul>
+                {% for session in sessions %}
+                    <li>
+                        <a href="{{ path('panel_chat', {session: session.id}) }}">{{ session.title ?? 'Rozmowa bez pytań' }}</a>
+                        · {{ session.started_at|slice(0, 16) }}{% if session.closed_at %} · zamknięta{% endif %} · koszt {{ session.cost_usd }} USD
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Brak rozmów.</p>
+        {% endif %}
+    </section>
+    {% if frame %}
+        <section id="chat-session">
+            <h2>Rozmowa</h2>
+            {% if not frame.closed %}
+                <form method="post" action="{{ path('panel_chat_close', {id: frame.sessionId}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('chat') }}">
+                    <button type="submit">Zamknij rozmowę</button>
+                </form>
+            {% endif %}
+            {{ include('panel/_chat_frame.html.twig') }}
+        </section>
+    {% else %}
+        <p>Brak otwartej rozmowy. Zacznij nową, żeby zadać pytanie asystentowi AI.</p>
+    {% endif %}
+{% endblock %}

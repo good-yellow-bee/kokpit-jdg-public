@@ -47,6 +47,7 @@ Messages API i PHP tool runner z SDK `anthropic-ai/sdk` (`BetaRunnableTool`, `to
 - `composer.json` przypina dokładną wersję `anthropic-ai/sdk` 0.x.
 - Jeden użytkownik nie potrzebuje strumienia. Żądanie bez strumieniowania jest bezpieczne przy krótkich odpowiedziach; `max_tokens` z konfiguracji trzyma odpowiedź poniżej limitu czasu HTTP.
 - Żaden worker Messenger nie bierze udziału. Workery `reads` i `notifications` działają bez zmian.
+- Panel F6.3 (D-61): `seq` w formularzu to numer następnej wiadomości; pytanie zapisane od tej `seq` daje ramkę z historii bez wywołania API, a blokada `chat.turn.<id>` szereguje równoległe wysłania. Wykres bierze `ChartSpec` tylko z `tool_result` executora i liczby z ponownego nazwanego zapytania. Limit czasu żądania panelu: 780 s w PHP-FPM i proxy.
 
 ## Narzędzia
 

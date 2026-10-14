@@ -21,6 +21,8 @@ parameters:
   chat.row_limit: 200
   chat.currencies: [PLN, EUR, USD, GBP, CHF]
   chat.retention_months: 12
+  # Panel czatu F6.3 (D-61): liczba rozmów na liście `/chat`.
+  chat.session_list_limit: 50
   # Czat F6.2 (D-60, docs/modules/czat.md, „Żądanie do API”): tylko Haiku 5.5, effort jawnie, bez eskalacji.
   chat.model: claude-haiku-5-5
   chat.effort: low
@@ -51,7 +53,7 @@ services:
   _defaults: { autowire: true, autoconfigure: true }
   App\:
     resource: '../src/'
-    exclude: '../src/{Kernel.php,Chat/ChatConfigurationCheck.php,Chat/ChatTurnResult.php,Chat/PseudonymMap.php,Chat/ChartSpec.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php,Ledger/FilingSubject.php}'
+    exclude: '../src/{Kernel.php,Chat/ChatConfigurationCheck.php,Chat/ChatTurnResult.php,Chat/PseudonymMap.php,Chat/ChartSpec.php,Chat/ChatChartData.php,Chat/ChatFrame.php,Chat/ChatNotice.php,Chat/ChatPanelResult.php,Chat/ChatPanelTurn.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php,Ledger/FilingSubject.php}'
   App\Security\Vault:
     arguments: { $vault: '@secrets.vault', $appEnvironment: '%kernel.environment%' }
   App\Security\SecretStore:
@@ -111,6 +113,10 @@ services:
     arguments: { $warnTokens: '%chat.context_warn_tokens%', $maxTokens: '%chat.context_max_tokens%' }
   App\Chat\ChatTurn:
     arguments: { $maxIterations: '%chat.max_iterations%' }
+  App\Chat\ChatPanel:
+    arguments: { $db: '@doctrine.dbal.default_connection', $sessionListLimit: '%chat.session_list_limit%' }
+  App\Chat\ChatChart:
+    arguments: { $db: '@doctrine.dbal.default_connection' }
   App\Chat\ChatRetention:
     arguments: { $db: '@doctrine.dbal.default_connection', $retentionMonths: '%chat.retention_months%' }
   App\Invoice\KodI:

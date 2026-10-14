@@ -1,5 +1,5 @@
 phase: f6
-# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części (F6.1, F6.2: D-60).
+# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części (F6.1, F6.2: D-60; F6.3: D-61).
 criteria:
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
@@ -28,3 +28,8 @@ criteria:
   - { key: chat-redaction, runner: ci, command: 'vendor/bin/phpunit --filter ChatRedaction', junit: true }
   - { key: chat-law-snapshot, runner: ci, command: 'vendor/bin/phpunit --filter ChatLawSnapshot', junit: true }
   - { key: claude-live-guard, runner: ci, command: 'vendor/bin/phpunit --filter ClaudeLiveGuard', junit: true }
+  # F6.3 (bez sieci, WebTestCase z sesją passkeya na MockHttpClient i fikcyjnych odpowiedziach z tests/Fixtures/Claude; D-61). Testy zapisują screens/chat-turbo-frame.html, screens/chat-render-chart.html i cmd/chat-render-chart.txt.
+  - { key: chat-turbo-frame, runner: ci, command: 'vendor/bin/phpunit --filter ChatTurboFrame', junit: true }
+  - { key: chat-seq-idempotent, runner: ci, command: 'vendor/bin/phpunit --filter ChatSeqIdempotent', junit: true }
+  - { key: chat-render-chart, runner: ci, command: 'vendor/bin/phpunit --filter ChatRenderChart', junit: true }
+  - { key: chat-panel-messages, runner: ci, command: 'vendor/bin/phpunit --filter ChatPanelMessages', junit: true }

@@ -1,0 +1,52 @@
+{# Ramka Turbo `chat-turn` (F6.3, D-61): cała odpowiedź w jednym żądaniu, etykieta „asystent AI” od pierwszej wiadomości. #}
+<turbo-frame id="chat-turn" data-session="{{ frame.sessionId }}">
+    <p id="chat-ai-label" role="note"><strong>asystent AI</strong>: odpowiedzi pisze model Claude Haiku 5.5. Liczby pochodzą z nazwanych zapytań kokpitu; wykresy rysuje panel z bazy.</p>
+    <ol id="chat-transcript">
+        {% for turn in frame.turns %}
+            <li id="chat-turn-{{ turn.seq }}" class="chat-turn" data-seq="{{ turn.seq }}">
+                <p class="chat-question"><strong>Ty{% if turn.draftRequested %} (prośba o szkic){% endif %}:</strong> {{ turn.question|nl2br }}</p>
+                {% if turn.answer != '' %}
+                    <div class="chat-answer"><strong>asystent AI:</strong> {{ turn.answer|nl2br }}</div>
+                {% endif %}
+                {% for chart in turn.charts %}
+                    <figure class="chat-chart" data-chart-query="{{ chart.query }}" data-chart-type="{{ chart.chartType }}" data-chart-labels="{{ chart.labels|json_encode }}" data-chart-values="{{ chart.values|json_encode }}">
+                        <canvas data-controller="symfony--ux-chartjs--chart" data-symfony--ux-chartjs--chart-view-value="{{ chart.view|json_encode }}"></canvas>
+                        <figcaption>Wykres z bazy: {{ chart.query }} ({{ chart.parameters|map((value, key) => key ~ ' ' ~ value)|join(', ') }}){% if chart.truncated %}; wynik obcięty do limitu wierszy{% endif %}</figcaption>
+                        <table>
+                            <thead><tr><th>Etykieta</th><th>{{ chart.datasetLabel }}</th></tr></thead>
+                            <tbody>
+                            {% for label in chart.labels %}
+                                <tr><td>{{ label }}</td><td>{{ chart.values[loop.index0] ?? '—' }}</td></tr>
+                            {% else %}
+                                <tr><td colspan="2">Brak danych w tym zakresie.</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </figure>
+                {% endfor %}
+                {% if turn.status %}<p class="chat-turn-status" role="alert">{{ turn.status }}</p>{% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+    {% if frame.notice %}<p id="chat-notice" role="alert">{{ frame.notice }}</p>{% endif %}
+    {% if frame.suggestNewSession %}
+        <form id="chat-suggest-new" method="post" action="{{ path('panel_chat_new') }}" data-turbo-frame="_top">
+            <input type="hidden" name="_token" value="{{ csrf_token('chat') }}">
+            <p>Ta rozmowa jest długa albo nieaktualna. Zacznij nową rozmowę.</p>
+            <button type="submit">Nowa rozmowa</button>
+        </form>
+    {% endif %}
+    {% if not frame.closed %}
+        <form id="chat-form" method="post" action="{{ path('panel_chat_ask', {id: frame.sessionId}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('chat') }}">
+            <input type="hidden" name="seq" value="{{ frame.nextSeq }}">
+            <label for="chat-question">Pytanie do asystenta AI</label>
+            <textarea id="chat-question" name="question" rows="3" required></textarea>
+            <label><input type="checkbox" name="draft" value="1"> Szkic</label>
+            <button type="submit">Zapytaj</button>
+            <p class="chat-working" role="status">asystent AI pracuje: odpowiedź pojawi się po końcu pętli narzędzi.</p>
+        </form>
+    {% else %}
+        <p>Rozmowa zamknięta.</p>
+    {% endif %}
+</turbo-frame>

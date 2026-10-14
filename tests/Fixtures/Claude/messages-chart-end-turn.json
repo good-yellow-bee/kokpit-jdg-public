@@ -1,0 +1,13 @@
+{
+  "id": "msg_fictional_21",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "ZmljdGlvbmFsLXNpZ25hdHVyZS0yMQ=="},
+    {"type": "text", "text": "Przychód w III kwartale: lipiec 5555.55 zł, sierpień 6666.66 zł, wrzesień 7777.77 zł (fictional, celowo inne niż w bazie)."}
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 400, "output_tokens": 90, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000}
+}

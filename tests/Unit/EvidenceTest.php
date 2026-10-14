@@ -81,6 +81,17 @@ final class EvidenceTest extends TestCase
             self::assertSame($artifact['sha256'], hash_file('sha256', $result['directory'] . '/' . $artifact['path']));
         }
     }
+    public function testScreensArtefactOfPanelTestIsRedactedAndListed(): void
+    {
+        // Ramka panelu z testu WebTestCase (`screens/<klucz>.html`, D-61) trafia do paczki po Redactor.
+        $result = $this->pack->build('f0a', [['key' => 'frame','runner' => 'ci','command' => "mkdir -p \"\$EVIDENCE_DIR/screens\"; printf '%s' '<turbo-frame id=\"chat-turn\">fikcyjna ramka eyJmaWN0aW9uYWwiOnRydWV9.eyJmaWN0aW9uYWwiOnRydWV9.ZmljdGlvbmFs</turbo-frame>' > \"\$EVIDENCE_DIR/screens/frame.html\""]], 'ci');
+        self::assertSame('pass', $result['manifest']['criteria'][0]['result']);
+        $bytes = file_get_contents($result['directory'] . '/screens/frame.html');
+        self::assertIsString($bytes);
+        self::assertStringContainsString('fikcyjna ramka', $bytes);
+        self::assertStringNotContainsString('eyJmaWN0aW9uYWwiOnRydWV9.eyJmaWN0aW9uYWwiOnRydWV9', $bytes);
+        self::assertContains('screens/frame.html', array_column($result['manifest']['criteria'][0]['artefacts'], 'path'));
+    }
     public function testScannerRejectsUnmaskedPersonalIdentifierAndRemovesPack(): void
     {
         $this->expectException(\RuntimeException::class);
