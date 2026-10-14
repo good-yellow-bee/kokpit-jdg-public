@@ -1,0 +1,50 @@
+phase: f0b
+# F0b powstaje częściami (D-38); wiersze bramki, obowiązków i powiadomień dochodzą z ich kodem.
+criteria:
+  - { key: previous-working-day, runner: ci, command: 'vendor/bin/phpunit --filter PolishCalendar', junit: true }
+  - { key: calendar-golden, runner: ci, command: 'php scripts/calendar-acceptance.php golden && vendor/bin/phpunit --filter PolishCalendarGolden', junit: true }
+  - { key: calendar-property, runner: ci, command: 'php scripts/calendar-acceptance.php property && vendor/bin/phpunit --testsuite property --filter PolishCalendar', junit: true }
+  - { key: obligation-engine, runner: ci, command: 'vendor/bin/phpunit --filter ObligationEngine', junit: true }
+  - { key: zus-amount, runner: ci, command: 'vendor/bin/phpunit --filter "ObligationEngineTest::testZus"', junit: true }
+  - { key: advance-title, runner: ci, command: 'vendor/bin/phpunit --filter "ObligationEngineTest::testAdvanceTitle"', junit: true }
+  - { key: channel-check, runner: ci, command: 'vendor/bin/phpunit --filter ManualChannelCheck', junit: true }
+  - { key: reminder-dedupe, runner: ci, command: 'vendor/bin/phpunit --filter NotificationDispatch', junit: true }
+  - { key: obligation-confirm, runner: ci, command: 'vendor/bin/phpunit --filter ObligationConfirm', junit: true }
+  - { key: credential-expiry, runner: ci, command: 'vendor/bin/phpunit --filter CredentialExpiryTest', junit: true }
+  - { key: letter-deadline, runner: ci, command: 'vendor/bin/phpunit --filter LetterDeadline', junit: true }
+  - { key: setting-change, runner: manual }
+  - { key: zus-payment, runner: manual }
+  - { key: passkey-step-up, runner: ci, command: 'vendor/bin/phpunit --filter PasskeyStepUp', junit: true }
+  - { key: gate-happy-path, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testHappyPath"', junit: true }
+  - { key: gate-transitions, runner: ci, command: 'vendor/bin/phpunit --filter ApprovalGateTransitions', junit: true }
+  - { key: gate-supersede, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testSecondRequest"', junit: true }
+  - { key: gate-timeout, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::test(Timeout|StaleDispatching)"', junit: true }
+  - { key: gate-bypass, runner: ci, command: 'vendor/bin/phpunit --testsuite security --filter ApprovalGate', junit: true }
+  - { key: failed-retry, runner: ci, command: 'vendor/bin/phpunit --filter FailedRetry', junit: true }
+  - { key: payload-immutable, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testPayloadFields"', junit: true }
+  - { key: gate-panel, runner: manual }
+  - { key: mutation-report, runner: manual }
+  - { key: ci-green, runner: manual }
+  - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
+  - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
+  - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }
+  - { key: cc-07, runner: ci, command: 'vendor/bin/phpunit --filter Redactor', junit: true }
+  - { key: cc-08, runner: ci, command: 'bin/console app:audit:verify && vendor/bin/phpunit --filter Audit', junit: true }
+  - { key: cc-09, runner: ci, command: 'vendor/bin/phpunit --filter OfficialWrites', junit: true }
+  - { key: cc-10, runner: ci, command: 'vendor/bin/phpunit --filter BusinessDate', junit: true }
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-12, runner: ci, command: 'composer check-licenses' }
+  - { key: cc-13, runner: ci, command: 'sh scripts/check-ci.sh', junit: true }
+  - { key: cc-15, runner: ci, command: 'vendor/bin/phpunit --filter Evidence', junit: true }
+  - { key: cc-16, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testApprovalRequiresFreshStepUp|PasskeyStepUp"', junit: true }
+  - { key: cc-17, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testChangedPayload"', junit: true }
+  - { key: cc-18, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testDoubleClick"', junit: true }
+  - { key: cc-19, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testExpiry"', junit: true }
+  - { key: cc-20, runner: ci, command: 'vendor/bin/phpunit --filter Architecture', junit: true }
+  - { key: cc-21, runner: ci, command: 'vendor/bin/phpunit --filter "ApprovalGateTest::testTimeout|FailedRetry"', junit: true }
+  - { key: cc-22, runner: ci, command: 'vendor/bin/phpunit --filter PolishCalendar', junit: true }
+  - { key: cc-31, runner: ci, command: 'vendor/bin/phpunit --filter Architecture', junit: true }
+  - { key: cc-03, runner: manual }
+  - { key: cc-04, runner: manual }
+  - { key: cc-05, runner: manual }
+  - { key: cc-14, runner: manual }

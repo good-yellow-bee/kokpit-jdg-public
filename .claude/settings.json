@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(config/secrets/*/*.decrypt.private.php)",
+      "Read(.env.local)",
+      "Read(.env.local.php)",
+      "Read(.env.*.local)",
+      "Bash(*decrypt.private*)",
+      "Bash(*secrets:reveal*)",
+      "Bash(*secrets:list*--reveal*)",
+      "Bash(*secrets:decrypt-to-local*)",
+      "Bash(*api.ksef.mf.gov.pl*)",
+      "Bash(*//e-dokumenty.mf.gov.pl*)",
+      "Bash(*bramka.e-deklaracje.mf.gov.pl*)",
+      "Bash(*uaapi-ow.poczta-polska.pl*)",
+      "Bash(*_TARGET=prod*)",
+      "WebFetch(domain:api.ksef.mf.gov.pl)",
+      "WebFetch(domain:e-dokumenty.mf.gov.pl)",
+      "WebFetch(domain:bramka.e-deklaracje.mf.gov.pl)",
+      "WebFetch(domain:uaapi-ow.poczta-polska.pl)"
+    ]
+  }
+}

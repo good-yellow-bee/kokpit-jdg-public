@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheDirectory="var/phpunit-cache" defaultTestSuite="unit,property,contract,xsd,integration,security">
+  <php>
+    <env name="ERIS_SEED" value="20261009" force="true"/>
+    <env name="APP_ENV" value="test" force="true"/>
+    <env name="APP_DEBUG" value="0" force="true"/>
+    <env name="DB_NAME" value="kokpit_test" force="true"/>
+    <env name="DB_HOST" value="db" force="true"/>
+    <env name="DB_ROLE" value="kokpit_app" force="true"/>
+    <env name="VAULT_DIRECTORY" value="/run/kokpit/vault" force="true"/>
+    <env name="KERNEL_CLASS" value="App\Kernel" force="true"/>
+    <env name="CONNECTORS_ENABLED" value="0"/>
+  </php>
+  <testsuites>
+    <testsuite name="unit"><directory>tests/Unit</directory></testsuite>
+    <testsuite name="property"><directory>tests/Property</directory></testsuite>
+    <testsuite name="contract"><directory>tests/Contract</directory></testsuite>
+    <testsuite name="xsd"><directory>tests/Xsd</directory></testsuite>
+    <testsuite name="integration"><directory>tests/Integration</directory></testsuite>
+    <testsuite name="security"><directory>tests/Security</directory></testsuite>
+    <testsuite name="live"><directory>tests/Live</directory></testsuite>
+  </testsuites>
+</phpunit>

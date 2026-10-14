@@ -1,0 +1,37 @@
+# Claude Code: CLAUDE.md stays local (personal rule); project rules/settings are committed
+CLAUDE.md
+CLAUDE.local.md
+!.claude/
+.claude/*
+!.claude/rules/
+!.claude/settings.json
+
+# Secrets and local env
+/.env.local
+/.env.*.local
+config/secrets/*/*.decrypt.private.php
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime data (invoices, UPO, PDFs, delivery proofs) and backups
+/data/
+/backups/
+
+# Build and tooling
+/var/
+/vendor/
+/node_modules/
+compose.override.yaml
+.phpunit.cache/
+.php-cs-fixer.cache
+
+# Editors and OS
+.idea/
+.DS_Store
+
+/.env.local.php
+/.phpstan.cache/
+*.crt
+*.cer

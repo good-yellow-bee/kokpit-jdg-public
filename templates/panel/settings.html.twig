@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ustawienia – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Ustawienia</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a></nav>
+    <p>Każda zmiana to nowy wiersz z datą obowiązywania. Obowiązuje wiersz z najpóźniejszą datą nie późniejszą niż dziś ({{ today }}).</p>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+
+    {% set identity = current['company.identity'] %}
+    <section id="company-identity">
+        <h2>Dane podatnika do JPK (company.identity)</h2>
+        <p>Obowiązuje od: {{ identity ? identity.valid_from : 'brak' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'company.identity'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>NIP <input name="nip" required pattern="[0-9]{10}" value="{{ identity.value.nip ?? '' }}"></label>
+            <label>Kod urzędu skarbowego <input name="tax_office_code" required pattern="[0-9]{4}" value="{{ identity.value.tax_office_code ?? '' }}"></label>
+            <label>Pierwsze imię <input name="first_name" required value="{{ identity.value.first_name ?? '' }}"></label>
+            <label>Nazwisko <input name="last_name" required value="{{ identity.value.last_name ?? '' }}"></label>
+            <label>E-mail <input name="email" type="email" value="{{ identity.value.email ?? '' }}"></label>
+            <label>Telefon <input name="phone" value="{{ identity.value.phone ?? '' }}"></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
+    {% for key, label in {'jpk_st.enabled': 'JPK_ST włączony (Q-25)', 'pit.kasowy': 'Metoda kasowa PIT (Q-24)'} %}
+        {% set row = current[key] %}
+        <section id="{{ key|replace({'.': '-'}) }}">
+            <h2>{{ label }} ({{ key }})</h2>
+            <p>Teraz: {{ row ? (row.value ? 'tak' : 'nie') ~ ' od ' ~ row.valid_from : 'brak wiersza (nie)' }}</p>
+            <form method="post" action="{{ path('panel_setting_change', {key: key}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+                <label><input type="radio" name="value" value="1" {{ row and row.value ? 'checked' }}> tak</label>
+                <label><input type="radio" name="value" value="0" {{ not row or not row.value ? 'checked' }}> nie</label>
+                <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+                <label>Uwaga <input name="note"></label>
+                <button type="submit">Zapisz nowy wiersz</button>
+            </form>
+        </section>
+    {% endfor %}
+
+    {% for key, label in {'company.tax_micro_account': 'Mikrorachunek podatkowy', 'company.zus_account': 'Rachunek składkowy ZUS'} %}
+        {% set row = current[key] %}
+        <section id="{{ key|replace({'.': '-'}) }}">
+            <h2>{{ label }} ({{ key }})</h2>
+            <p>Teraz: {{ row ? row.value ~ ' od ' ~ row.valid_from : 'brak ustawienia' }}</p>
+            <form method="post" action="{{ path('panel_setting_change', {key: key}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+                <label>Numer rachunku (26 cyfr) <input name="value" required pattern="(PL)?[0-9 ]{26,32}"></label>
+                <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+                <label>Uwaga <input name="note"></label>
+                <button type="submit">Zapisz nowy wiersz</button>
+            </form>
+        </section>
+    {% endfor %}
+
+    {% for key, options in {'zus.variant': {'full': 'pełne składki', 'preferential': 'preferencyjne', 'start_relief': 'ulga na start'}, 'ryczalt.advance_frequency': {'monthly': 'co miesiąc', 'quarterly': 'co kwartał'}} %}
+        {% set row = current[key] %}
+        <section id="{{ key|replace({'.': '-'}) }}">
+            <h2>{{ key }}</h2>
+            <p>Teraz: {{ row ? row.value ~ ' od ' ~ row.valid_from : 'brak ustawienia' }}</p>
+            <form method="post" action="{{ path('panel_setting_change', {key: key}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+                <label>Wartość <select name="value">{% for value, name in options %}<option value="{{ value }}" {{ row and row.value == value ? 'selected' }}>{{ name }}</option>{% endfor %}</select></label>
+                <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+                <label>Uwaga <input name="note"></label>
+                <button type="submit">Zapisz nowy wiersz</button>
+            </form>
+        </section>
+    {% endfor %}
+
+    {% set row = current['vat.standard_rate'] %}
+    <section id="vat-standard_rate">
+        <h2>Podstawowa stawka VAT (vat.standard_rate)</h2>
+        <p>Stawka w procentach, np. 23.00; liczy VAT należny z importu usług.</p>
+        <p>Teraz: {{ row ? row.value ~ '% od ' ~ row.valid_from : 'brak ustawienia' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'vat.standard_rate'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>Stawka (%) <input name="value" required pattern="[0-9]{1,2}\.[0-9]{2}"></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Źródło prawne <input name="legal_source"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
+    {% set zus = current['zus.parameters'] %}
+    <section id="zus-parameters">
+        <h2>Parametry ZUS na rok (zus.parameters)</h2>
+        <p>Kwoty w złotych z groszami, np. 1926.76. Nowy rok to nowy wiersz od 1 stycznia; silnik nie przenosi kwot z poprzedniego roku.</p>
+        <p>Obowiązuje od: {{ zus ? zus.valid_from : 'brak parametrów ZUS' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'zus.parameters'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>Podstawa składek społecznych <input name="social_base_pln" required value="{{ zus.value.social_base_pln ?? '' }}"></label>
+            <label>Składki społeczne miesięcznie <input name="social_pln" required value="{{ zus.value.social_pln ?? '' }}"></label>
+            <label>Części bez odliczenia (np. FP) <input name="other_pln" required value="{{ zus.value.other_pln ?? '' }}"></label>
+            {% for i in 1..3 %}
+                {% set bracket = zus.value.health_brackets[i - 1] ?? null %}
+                <fieldset>
+                    <legend>Próg zdrowotnej {{ i }}</legend>
+                    <label>Przychód do (pusty w ostatnim) <input name="bracket{{ i }}_up_to" value="{{ bracket.revenue_up_to_pln ?? '' }}"></label>
+                    <label>Podstawa <input name="bracket{{ i }}_base" required value="{{ bracket.base_pln ?? '' }}"></label>
+                    <label>Składka <input name="bracket{{ i }}_amount" required value="{{ bracket.amount_pln ?? '' }}"></label>
+                </fieldset>
+            {% endfor %}
+            <label>Próg wybrany ręcznie <input name="health_bracket_manual" type="number" min="1" max="3" required value="{{ zus.value.health_bracket_manual ?? 1 }}"></label>
+            <label>Źródło kwot <input name="legal_source" type="url"></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+{% endblock %}

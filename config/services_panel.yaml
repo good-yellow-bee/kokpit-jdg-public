@@ -1,0 +1,39 @@
+parameters:
+  health.queue_max_age: { reads: 30, official_writes: 5, notifications: 30 }
+  health.heartbeat_max_age: 600
+  health.backup_max_age: 93600
+  health.disk_min_free_percent: 20
+  health.tls_min_valid_days: 14
+services:
+  _defaults: { autowire: true, autoconfigure: true }
+  App\Command\PasskeyEnrolLinkCommand:
+    arguments: { $panelOrigin: '%env(default:app.panel.default_origin:PANEL_ORIGIN)%' }
+  App\Command\PasskeyResetCommand:
+    arguments: { $panelOrigin: '%env(default:app.panel.default_origin:PANEL_ORIGIN)%' }
+  App\Panel\:
+    resource: '../src/Panel/'
+  App\Passkey\:
+    resource: '../src/Passkey/'
+  App\Passkey\WebauthnRepository:
+    arguments: { $serializer: '@app.webauthn.serializer' }
+  App\Passkey\StepUpVerifier:
+    arguments: { $serializer: '@app.webauthn.serializer' }
+  App\Health\:
+    resource: '../src/Health/'
+  App\Health\NativeHealthResources:
+    arguments: { $projectDir: '%kernel.project_dir%', $certificatePath: '%env(default:app.panel.default_certificate:PANEL_CERTIFICATE_PATH)%' }
+  App\Health\HealthResources: '@App\Health\NativeHealthResources'
+  App\Health\HealthChecker:
+    arguments:
+      $appEnvironment: '%kernel.environment%'
+      $queueMaxAge: '%health.queue_max_age%'
+      $heartbeatMaxAge: '%health.heartbeat_max_age%'
+      $backupMaxAge: '%health.backup_max_age%'
+      $diskMinFreePercent: '%health.disk_min_free_percent%'
+      $tlsMinValidDays: '%health.tls_min_valid_days%' 
+  Webauthn\Bundle\Repository\CredentialRecordRepositoryInterface: '@App\Passkey\WebauthnRepository'
+  Webauthn\Bundle\Repository\PublicKeyCredentialUserEntityRepositoryInterface: '@App\Passkey\WebauthnRepository'
+
+  app.webauthn.serializer:
+    class: Symfony\Component\Serializer\Serializer
+    factory: ['@Webauthn\Denormalizer\WebauthnSerializerFactory', create]

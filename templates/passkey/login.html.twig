@@ -1,0 +1,8 @@
+{% extends 'base.html.twig' %}
+{% block title %}Logowanie{% endblock %}
+{% block body %}
+<h1>Zaloguj się passkeyem</h1>
+<button id="passkey-login" type="button" data-csrf="{{ csrf_token('passkey') }}">Zaloguj się</button>
+<p id="passkey-result" role="status"></p>
+<script src="{{ asset('passkey.js') }}" defer></script>
+{% endblock %}

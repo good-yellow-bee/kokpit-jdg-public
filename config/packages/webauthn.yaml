@@ -1,0 +1,24 @@
+webauthn:
+  credential_repository: App\Passkey\WebauthnRepository
+  user_repository: App\Passkey\WebauthnRepository
+  allowed_origins:
+    panel: '%env(default:app.panel.default_origin:PANEL_ORIGIN)%'
+  creation_profiles:
+    panel:
+      rp: { name: 'Kokpit JDG' }
+      authenticator_selection_criteria:
+        user_verification: required
+        resident_key: preferred
+  request_profiles:
+    panel:
+      user_verification: required
+  controllers:
+    creation:
+      enrolment:
+        options_path: /passkey/enrol/options
+        result_path: /passkey/enrol/result
+        profile: panel
+        user_entity_guesser: App\Passkey\EnrollmentUserEntityGuesser
+  passkey_endpoints:
+    enabled: true
+    enroll: '/passkey/enrol'

@@ -1,0 +1,22 @@
+framework:
+  secret: '%env(APP_SECRET)%'
+  secrets:
+    vault_directory: '%env(VAULT_DIRECTORY)%/%kernel.environment%'
+  http_client: ~
+  asset_mapper:
+    paths: { '%kernel.project_dir%/assets/': '' }
+  property_info: { with_constructor_extractor: true }
+  serializer: { enabled: true }
+  csrf_protection: true
+  session:
+    handler_id: null
+    cookie_secure: true
+    cookie_httponly: true
+    cookie_samesite: strict
+    gc_maxlifetime: 1800
+  router: { utf8: true }
+  php_errors: { log: true }
+when@test:
+  framework:
+    test: true
+    session: { storage_factory_id: session.storage.factory.mock_file }

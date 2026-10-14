@@ -1,0 +1,22 @@
+security:
+  providers:
+    panel_users:
+      id: App\Passkey\AppUserProvider
+  firewalls:
+    main:
+      lazy: true
+      provider: panel_users
+      entry_point: App\Controller\PasskeyController
+      webauthn:
+        authentication:
+          profile: panel
+          routes:
+            options_path: /passkey/login/options
+            result_path: /passkey/login
+        registration: false
+  access_control:
+    - { path: ^/login$, roles: PUBLIC_ACCESS }
+    - { path: ^/health$, roles: PUBLIC_ACCESS }
+    - { path: ^/passkey/login, roles: PUBLIC_ACCESS }
+    - { path: ^/passkey/enrol, roles: PUBLIC_ACCESS }
+    - { path: ^/, roles: ROLE_USER }

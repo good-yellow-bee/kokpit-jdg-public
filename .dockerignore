@@ -1,0 +1,16 @@
+.git
+vendor
+var
+backups
+.env.local
+.env.*.local
+config/secrets/*/*.decrypt.private.php
+CLAUDE.md
+CLAUDE.local.md
+*.pem
+*.key
+*.p12
+*.pfx
+.env.local.php
+*.crt
+*.cer

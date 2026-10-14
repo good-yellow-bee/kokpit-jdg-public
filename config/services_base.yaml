@@ -1,0 +1,45 @@
+parameters:
+  # Wygaśnięcie zatwierdzeń (docs/approval-gate.md, „Wygaśnięcie”); faktury od F3 według P_1 (D-16).
+  approval.expiry:
+    sales_invoice: { pending: end_of_p1_day, approved: end_of_p1_day }
+    correction_invoice: { pending: end_of_p1_day, approved: end_of_p1_day }
+    filing: { pending: P7D, approved: PT24H }
+    draft: { pending: P30D, approved: PT24H }
+  # Okno odpytywania `submitted` → `unknown` per konektor.
+  approval.poll_window: { dummy: PT1H, ksef: PT12H, jpk: P3D, edeklaracje: P3D }
+services:
+  _defaults: { autowire: true, autoconfigure: true }
+  App\:
+    resource: '../src/'
+    exclude: '../src/{Kernel.php,Entity,Connector,Architecture}'
+  App\Security\Vault:
+    arguments: { $vault: '@secrets.vault', $appEnvironment: '%kernel.environment%' }
+  App\Security\SecretStore:
+    arguments: { $appEnvironment: '%kernel.environment%' }
+  App\Storage\FileStore:
+    arguments: { $root: '%kernel.project_dir%/var/data' }
+  App\Security\Redactor:
+    tags: [monolog.processor]
+  App\Evidence\EvidencePack:
+    arguments: { $projectDir: '%kernel.project_dir%' }
+  App\Command\EvidenceCommand:
+    arguments: { $projectDir: '%kernel.project_dir%' }
+  App\Command\FixturesRecordCommand:
+    arguments: { $projectDir: '%kernel.project_dir%' }
+  App\Command\CredentialRegisterCommand:
+    arguments: { $appEnvironment: '%kernel.environment%' }
+  Symfony\Component\Clock\NativeClock: ~
+  clock: '@Symfony\Component\Clock\NativeClock'
+  Symfony\Component\Clock\ClockInterface: '@clock'
+  Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore:
+    arguments: ['@doctrine.dbal.default_connection']
+  Symfony\Component\Lock\LockFactory:
+    arguments: ['@Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore']
+  App\Xml\XsdCatalog:
+    arguments: { $directory: '%kernel.project_dir%/resources/xsd' }
+  App\Approval\ApprovalExpiry:
+    arguments: { $expiry: '%approval.expiry%' }
+  App\Approval\SubmissionReconciler:
+    arguments: { $pollWindow: '%approval.poll_window%' }
+  App\Approval\DispatchGuard: { shared: true }
+  App\Passkey\StepUp: '@App\Passkey\StepUpVerifier'

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JPK xmlns="http://jpk.mf.gov.pl/wzor/2024/10/30/10301/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="JPK_EWP (4)" wersjaSchemy="1-0">JPK_EWP</KodFormularza>
+    <WariantFormularza>4</WariantFormularza>
+    <CelZlozenia>1</CelZlozenia>
+    <DataWytworzeniaJPK>2026-11-05T10:00:00Z</DataWytworzeniaJPK>
+    <DataOd>2026-01-01</DataOd>
+    <DataDo>2026-12-31</DataDo>
+    <KodUrzedu>1471</KodUrzedu>
+  </Naglowek>
+  <Podmiot1 rola="Podatnik">
+    <OsobaFizyczna>
+      <etd:NIP>1111111111</etd:NIP>
+      <etd:ImiePierwsze>Fictional</etd:ImiePierwsze>
+      <etd:Nazwisko>Podatnik</etd:Nazwisko>
+      <etd:DataUrodzenia>1980-01-01</etd:DataUrodzenia>
+    </OsobaFizyczna>
+  </Podmiot1>
+  <EWPWiersz>
+    <K_1>1</K_1>
+    <K_2>2026-02-10</K_2>
+    <K_3>2026-01-31</K_3>
+    <K_4>FICTIONAL/2026/01/1</K_4>
+    <K_6>DE</K_6>
+    <K_7>DE999999999</K_7>
+    <K_8>4100.00</K_8>
+    <K_9>12</K_9>
+  </EWPWiersz>
+  <EWPWiersz>
+    <K_1>2</K_1>
+    <K_2>2026-03-12</K_2>
+    <K_3>2026-02-28</K_3>
+    <K_4>FICTIONAL/2026/02/1</K_4>
+    <K_6>DE</K_6>
+    <K_7>DE999999999</K_7>
+    <K_8>640.25</K_8>
+    <K_9>8.5</K_9>
+  </EWPWiersz>
+  <EWPWiersz>
+    <K_1>3</K_1>
+    <K_2>2026-04-14</K_2>
+    <K_3>2026-03-31</K_3>
+    <K_4>FICTIONAL/2026/03/1</K_4>
+    <K_7>1111111111</K_7>
+    <K_8>1230.00</K_8>
+    <K_9>12</K_9>
+    <K_10>dane fictional</K_10>
+  </EWPWiersz>
+  <EWPWiersz>
+    <K_1>4</K_1>
+    <K_2>2026-05-11</K_2>
+    <K_3>2026-04-30</K_3>
+    <K_4>FICTIONAL/2026/04/2</K_4>
+    <K_6>DE</K_6>
+    <K_7>DE999999999</K_7>
+    <K_8>-120.00</K_8>
+    <K_9>12</K_9>
+    <K_10>korekta FICTIONAL/2026/01/1</K_10>
+  </EWPWiersz>
+  <EWPCtrl>
+    <LiczbaWierszy>4</LiczbaWierszy>
+    <SumaPrzychodow>5850.25</SumaPrzychodow>
+  </EWPCtrl>
+</JPK>

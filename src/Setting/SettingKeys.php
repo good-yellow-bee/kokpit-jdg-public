@@ -1,0 +1,157 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Setting;
+
+/** Klucze `setting` F2.1 i F0b oraz ich kształt (docs/data-model.md, docs/tax-rules.md „Parametry”). */
+final class SettingKeys
+{
+    public const COMPANY_IDENTITY = 'company.identity';
+    public const JPK_ST_ENABLED = 'jpk_st.enabled';
+    public const PIT_KASOWY = 'pit.kasowy';
+    public const TAX_MICRO_ACCOUNT = 'company.tax_micro_account';
+    public const ZUS_ACCOUNT = 'company.zus_account';
+    public const ZUS_PARAMETERS = 'zus.parameters';
+    public const ZUS_VARIANT = 'zus.variant';
+    public const ADVANCE_FREQUENCY = 'ryczalt.advance_frequency';
+    public const VAT_STANDARD_RATE = 'vat.standard_rate';
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE];
+    public const ZUS_VARIANTS = ['full','preferential','start_relief'];
+    public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
+    private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
+    /** Część JPK `company.identity`; część FA(3) (`vat_eu_number`, `name`, `address`, `country`) dochodzi w F3. */
+    public const IDENTITY_FIELDS = ['nip','tax_office_code','first_name','last_name','email','phone','vat_eu_number','name','address','country'];
+    public static function assertKnown(string $key): void
+    {
+        if (!in_array($key, self::KEYS, true)) {
+            throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key));
+        }
+    }
+    public static function normalize(string $key, mixed $value): mixed
+    {
+        return match ($key) {
+            self::JPK_ST_ENABLED, self::PIT_KASOWY => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
+            self::COMPANY_IDENTITY => self::identity($value),
+            self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT => self::account($key, $value),
+            self::ZUS_PARAMETERS => self::zusParameters($value),
+            self::ZUS_VARIANT => self::oneOf($key, $value, self::ZUS_VARIANTS),
+            self::ADVANCE_FREQUENCY => self::oneOf($key, $value, self::ADVANCE_FREQUENCIES),
+            self::VAT_STANDARD_RATE => is_string($value) && preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', $value) ? $value : throw new \InvalidArgumentException('vat.standard_rate to procent z dwoma miejscami, np. 23.00.'),
+            default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
+        };
+    }
+    /** @return array<string,string> */
+    private static function identity(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), self::IDENTITY_FIELDS) !== []) {
+            throw new \InvalidArgumentException('company.identity ma niedozwolone pola.');
+        }
+        $result = [];
+        foreach ($value as $field => $item) {
+            if ($item === null || $item === '') {
+                continue;
+            }
+            if (!is_string($item) || mb_strlen($item) > 240) {
+                throw new \InvalidArgumentException(sprintf('Pole %s musi być tekstem.', $field));
+            }
+            $result[(string) $field] = trim($item);
+        }
+        foreach (['nip','tax_office_code','first_name','last_name'] as $required) {
+            if (!isset($result[$required])) {
+                throw new \InvalidArgumentException(sprintf('Pole %s jest wymagane w części JPK.', $required));
+            }
+        }
+        if (!self::validNip($result['nip'])) {
+            throw new \InvalidArgumentException('NIP ma niepoprawną sumę kontrolną.');
+        }
+        if (!preg_match('/^[0-9]{4}$/D', $result['tax_office_code'])) {
+            throw new \InvalidArgumentException('Kod urzędu skarbowego ma cztery cyfry.');
+        }
+        if (isset($result['email']) && filter_var($result['email'], FILTER_VALIDATE_EMAIL) === false) {
+            throw new \InvalidArgumentException('Niepoprawny e-mail.');
+        }
+        ksort($result);
+        return $result;
+    }
+    /** @param list<string> $allowed */
+    private static function oneOf(string $key, mixed $value, array $allowed): string
+    {
+        if (!is_string($value) || !in_array($value, $allowed, true)) {
+            throw new \InvalidArgumentException(sprintf('%s przyjmuje: %s.', $key, implode(', ', $allowed)));
+        }
+        return $value;
+    }
+    /** Numer rachunku NRB: 26 cyfr z sumą kontrolną IBAN (PL); spacje i prefiks PL są pomijane. */
+    private static function account(string $key, mixed $value): string
+    {
+        $digits = is_string($value) ? (string) preg_replace('/\s+/', '', $value) : '';
+        if (str_starts_with(strtoupper($digits), 'PL')) {
+            $digits = substr($digits, 2);
+        }
+        if (!preg_match('/^[0-9]{26}$/D', $digits)) {
+            throw new \InvalidArgumentException(sprintf('%s ma 26 cyfr.', $key));
+        }
+        // IBAN: cyfry kontrolne na koniec, PL = 25 21, reszta z dzielenia przez 97 równa 1.
+        $number = substr($digits, 2) . '2521' . substr($digits, 0, 2);
+        $rest = 0;
+        foreach (str_split($number, 7) as $chunk) {
+            $rest = (int) ($rest . $chunk) % 97;
+        }
+        if ($rest !== 1) {
+            throw new \InvalidArgumentException(sprintf('%s ma niepoprawną sumę kontrolną.', $key));
+        }
+        return $digits;
+    }
+    /** @return array{social_base_pln:string,social_pln:string,other_pln:string,health_brackets:list<array{revenue_up_to_pln:?string,base_pln:string,amount_pln:string}>,health_bracket_manual:int} */
+    private static function zusParameters(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), ['social_base_pln','social_pln','other_pln','health_brackets','health_bracket_manual']) !== []) {
+            throw new \InvalidArgumentException('zus.parameters ma niedozwolone pola.');
+        }
+        $result = [];
+        foreach (['social_base_pln','social_pln','other_pln'] as $field) {
+            $result[$field] = self::amount($field, $value[$field] ?? null);
+        }
+        $brackets = $value['health_brackets'] ?? null;
+        if (!is_array($brackets) || $brackets === [] || !array_is_list($brackets)) {
+            throw new \InvalidArgumentException('zus.parameters wymaga listy health_brackets.');
+        }
+        $list = [];
+        foreach ($brackets as $index => $bracket) {
+            if (!is_array($bracket)) {
+                throw new \InvalidArgumentException('Próg zdrowotnej musi być obiektem.');
+            }
+            $last = $index === count($brackets) - 1;
+            $upTo = $bracket['revenue_up_to_pln'] ?? null;
+            if ($last !== ($upTo === null)) {
+                throw new \InvalidArgumentException('Tylko ostatni próg zdrowotnej ma revenue_up_to_pln = null.');
+            }
+            $list[] = ['revenue_up_to_pln' => $upTo === null ? null : self::amount('revenue_up_to_pln', $upTo),'base_pln' => self::amount('base_pln', $bracket['base_pln'] ?? null),'amount_pln' => self::amount('amount_pln', $bracket['amount_pln'] ?? null)];
+        }
+        $manual = $value['health_bracket_manual'] ?? null;
+        if (!is_int($manual) || $manual < 1 || $manual > count($list)) {
+            throw new \InvalidArgumentException('health_bracket_manual to numer progu od 1.');
+        }
+        return $result + ['health_brackets' => $list,'health_bracket_manual' => $manual];
+    }
+    /** Kwoty w JSON są napisami dziesiętnymi z dwoma miejscami, nigdy liczbą (docs/data-model.md). */
+    private static function amount(string $field, mixed $value): string
+    {
+        if (!is_string($value) || !preg_match(self::AMOUNT, $value)) {
+            throw new \InvalidArgumentException(sprintf('%s to kwota jako napis, np. "1926.76".', $field));
+        }
+        return $value;
+    }
+    private static function validNip(string $value): bool
+    {
+        if (!preg_match('/^[0-9]{10}$/D', $value)) {
+            return false;
+        }
+        $sum = 0;
+        foreach ([6,5,7,2,3,4,5,6,7] as $index => $weight) {
+            $sum += (int) $value[$index] * $weight;
+        }
+        return $sum % 11 === (int) $value[9];
+    }
+}

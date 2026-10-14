@@ -1,0 +1,31 @@
+framework:
+  messenger:
+    serializer:
+      default_serializer: App\Messenger\RedactingTransportSerializer
+    failure_transport: failed
+    buses:
+      messenger.bus.default:
+        middleware: [App\Messenger\OfficialWritesRetryGuard, App\Messenger\RateLimitDeferralMiddleware]
+    transports:
+      reads:
+        dsn: 'doctrine://default?queue_name=reads&auto_setup=false'
+        retry_strategy: { max_retries: 3, delay: 60000, multiplier: 5 }
+      official_writes:
+        dsn: 'doctrine://default?queue_name=official_writes&auto_setup=false'
+        retry_strategy: { max_retries: 0 }
+      notifications:
+        dsn: 'doctrine://default?queue_name=notifications&auto_setup=false'
+        retry_strategy: { max_retries: 5, delay: 60000, multiplier: 3 }
+      failed: 'doctrine://default?queue_name=failed&auto_setup=false'
+    routing:
+      'App\Messenger\Message\FailureNotificationMessage': notifications
+      'App\Messenger\Message\ConnectorCallMessage': reads
+      'App\Messenger\Message\FileVerifyMessage': reads
+      'App\Messenger\Message\AuditVerifyMessage': reads
+      'App\Messenger\Message\RetentionPurgeMessage': reads
+      'App\Messenger\Message\ObligationRecomputeMessage': reads
+      'App\Messenger\Message\NotificationDispatchMessage': notifications
+      'App\Messenger\Message\CredentialExpiryMessage': reads
+      'App\Messenger\Message\ApprovalDispatchMessage': official_writes
+      'App\Messenger\Message\ApprovalDispatchWaitingMessage': official_writes
+      'App\Messenger\Message\ApprovalTaskMessage': reads

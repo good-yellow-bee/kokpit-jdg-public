@@ -1,0 +1,10 @@
+{
+  "_comment": "Dane fikcyjne. Fikcyjny zbiór dry runu F2.4: wiersze dopisane po imporcie ledger-2026-jan-nov.csv (korekta, różnica kursowa, wiersz grudnia poza --until) i ustawienia firmy.",
+  "company_identity": { "nip": "1111111111", "tax_office_code": "1471", "first_name": "Fictional", "last_name": "Podatnik", "email": "fictional@example.invalid" },
+  "auth_data_birth_date": "1980-01-01",
+  "entries": [
+    { "lp": 17, "entry_date": "2026-12-02", "revenue_date": "2026-11-30", "document_number": "FICTIONAL/2026/11/1/KOR", "counterparty_country": "DE", "counterparty_tax_id": "DE999999999", "amount_pln": "-400.00", "rate_pct": "12", "remarks": "korekta FICTIONAL/2026/11/1", "source": "import", "kind": "correction", "corrects_lp": 15 },
+    { "lp": 18, "entry_date": "2026-12-03", "revenue_date": "2026-11-27", "document_number": "FICTIONAL-PAYMENT-0001", "counterparty_country": null, "counterparty_tax_id": null, "amount_pln": "30.00", "rate_pct": "12", "remarks": "FICTIONAL/2026/10/1", "source": "freshbooks", "kind": "fx_difference", "corrects_lp": null },
+    { "lp": 19, "entry_date": "2026-12-16", "revenue_date": "2026-12-15", "document_number": "FICTIONAL/2026/12/1", "counterparty_country": "DE", "counterparty_tax_id": "DE999999999", "amount_pln": "4500.00", "rate_pct": "8.5", "remarks": null, "source": "freshbooks", "kind": "regular", "corrects_lp": null }
+  ]
+}

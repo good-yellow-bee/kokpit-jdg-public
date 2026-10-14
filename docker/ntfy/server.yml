@@ -1,0 +1,6 @@
+# Bez danych rzeczywistych. Konfiguracja prod jest plikiem hosta.
+listen-http: ':80'
+cache-file: /var/lib/ntfy/cache.db
+auth-file: /var/lib/ntfy/auth.db
+auth-default-access: deny-all
+behind-proxy: true

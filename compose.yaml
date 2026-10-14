@@ -1,0 +1,131 @@
+name: kokpit-${KOKPIT_DEPLOYMENT:?Ustaw KOKPIT_DEPLOYMENT}
+x-app: &app
+  build:
+    context: .
+    target: production
+  image: ${APP_IMAGE:-kokpit-app:local}
+  restart: unless-stopped
+  working_dir: /app
+  user: "33:33"
+  environment: &app-env
+    APP_ENV: ${APP_ENV:-dev}
+    APP_DEBUG: ${APP_DEBUG:-0}
+    KOKPIT_DEPLOYMENT: ${KOKPIT_DEPLOYMENT}
+    KSEF_TARGET: ${KSEF_TARGET:-test}
+    JPK_TARGET: ${JPK_TARGET:-test}
+    EDEKLARACJE_TARGET: ${EDEKLARACJE_TARGET:-test}
+    CONNECTORS_ENABLED: ${CONNECTORS_ENABLED:-0}
+    KOKPIT_COMMIT: ${KOKPIT_COMMIT:-}
+    KOKPIT_IMAGE_DIGEST: ${KOKPIT_IMAGE_DIGEST:-}
+    VAULT_DIRECTORY: /run/kokpit/vault
+    COMPOSER_CACHE_DIR: /app/var/composer
+    DB_HOST: db
+    DB_NAME: kokpit
+    DB_ROLE: kokpit_app
+  volumes:
+    - runtime:/app/var
+    - vault:/run/kokpit/vault
+    - app_credentials:/run/kokpit/db:ro
+    - backup_state:/app/var/run/backup:ro
+    - certificates:/run/kokpit/certificates:ro
+  depends_on:
+    db:
+      condition: service_healthy
+services:
+  app:
+    <<: *app
+  worker_reads:
+    <<: *app
+    command: [bin/console, messenger:consume, reads, --time-limit=3600, --memory-limit=256M]
+    stop_grace_period: 120s
+  worker_official_writes:
+    <<: *app
+    command: [bin/console, messenger:consume, official_writes, --time-limit=3600, --memory-limit=256M]
+    stop_grace_period: 120s
+    deploy:
+      replicas: 1
+  worker_notifications:
+    <<: *app
+    command: [bin/console, messenger:consume, notifications, --time-limit=3600, --memory-limit=256M]
+    stop_grace_period: 120s
+  scheduler:
+    <<: *app
+    command: [bin/console, messenger:consume, scheduler_default, --time-limit=3600, --memory-limit=256M]
+    stop_grace_period: 120s
+  db:
+    image: postgres:17.9-bookworm
+    restart: unless-stopped
+    entrypoint: [/bin/bash, /kokpit/start-db.sh]
+    environment:
+      KOKPIT_DEPLOYMENT: ${KOKPIT_DEPLOYMENT}
+      POSTGRES_DB: kokpit
+      POSTGRES_PASSWORD_FILE: /run/owner/postgres-password
+    volumes:
+      - database:/var/lib/postgresql/data
+      - app_credentials:/run/app
+      - owner_credentials:/run/owner
+      - ./docker/db/start-db.sh:/kokpit/start-db.sh:ro
+      - ./docker/db/init-db.sh:/docker-entrypoint-initdb.d/10-kokpit.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres -d kokpit]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  proxy:
+    build:
+      context: .
+      target: proxy
+    image: ${PROXY_IMAGE:-kokpit-proxy:local}
+    restart: unless-stopped
+    network_mode: service:app
+    environment:
+      KOKPIT_DEPLOYMENT: ${KOKPIT_DEPLOYMENT}
+    volumes:
+      - certificates:/run/kokpit/certificates:ro
+    depends_on: [app]
+  ntfy:
+    image: binwiederhier/ntfy:v2.17.0
+    restart: unless-stopped
+    command: [serve, --config, /etc/ntfy/server.yml]
+    volumes:
+      - ntfy_data:/var/lib/ntfy
+      - ${NTFY_CONFIG_FILE:-./docker/ntfy/server.yml}:/etc/ntfy/server.yml:ro
+  vpn:
+    image: tailscale/tailscale:v1.94.2
+    network_mode: service:app
+    restart: unless-stopped
+    profiles: [prod]
+    environment:
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_USERSPACE: 'false'
+      TS_AUTHKEY: file:/run/tailscale-auth
+    cap_add: [NET_ADMIN, NET_RAW]
+    devices: [/dev/net/tun:/dev/net/tun]
+    volumes:
+      - tailscale:/var/lib/tailscale
+      - certificates:/run/kokpit/certificates
+      - ${HOST_SECRETS_DIR:-/tmp/kokpit-host-secrets}/tailscale-auth:/run/tailscale-auth:ro
+  backup:
+    build: docker/backup
+    restart: unless-stopped
+    profiles: [prod]
+    environment:
+      KOKPIT_DEPLOYMENT: ${KOKPIT_DEPLOYMENT}
+      PGPASSFILE: /run/host/pgpass
+      RESTIC_PASSWORD_FILE: /run/host/restic-password
+      TZ: Europe/Warsaw
+    volumes:
+      - runtime:/app/var:ro
+      - backup_state:/state
+      - ${HOST_SECRETS_DIR:-/tmp/kokpit-host-secrets}:/run/host:ro
+    depends_on: [db]
+volumes:
+  database:
+  runtime:
+  vault:
+  app_credentials:
+  owner_credentials:
+  backup_state:
+  tailscale:
+  certificates:
+  ntfy_data:
