@@ -278,7 +278,7 @@ Sposób uruchamiania komend: [../.claude/rules/zasady-twarde.md](../.claude/rule
 | testsuite PHPUnit | jeden na katalog: `unit` (`tests/Unit`), `property` (`tests/Property`), `contract` (`tests/Contract`), `xsd` (`tests/Xsd`), `integration` (`tests/Integration`), `security` (`tests/Security`), `live` (`tests/Live`); domyślny przebieg bez `live` |
 | `.github/workflows/ci.yml` | id jobów: `lint`, `unit_property` (`name: unit+property`), `contract`, `xsd`, `integration`, `security`, `mutation`, `evidence`; `live` tylko ręcznie (`workflow_dispatch`), nigdy PROD |
 | `mutation` | Infection doradczo, bez blokowania merge, do powstania `src/Tax` w F2 (D-28) |
-| faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` pomija `evidence` |
+| faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` i gałąź bez prefiksu `f` pomijają `evidence` (D-43) |
 | `infection.json5` | zakres mutacji i progi `minMsi`, `minCoveredMsi`; wartości w [testing.md](testing.md) |
 
 Repo CI: prywatne `good-yellow-bee/kokpit-jdg`. Zakres jobów i próg MSI: [testing.md](testing.md).
