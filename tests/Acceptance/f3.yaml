@@ -1,5 +1,5 @@
 phase: f3
-# F3 powstaje częściami (D-50). Na start tylko wiersze przekrojowe; wiersze F3.1–F3.4 dochodzą z kodem swoich części.
+# F3 powstaje częściami (D-50). Wiersze F3.1 bez sieci; F3.2–F3.4 dochodzą z kodem swoich części.
 criteria:
   - { key: fa3-golden-eu-b2b, runner: ci, command: 'php scripts/fa3-acceptance.php fa3-eu-b2b && vendor/bin/phpunit --filter Fa3GoldenEuB2b', junit: true }
   - { key: fa3-golden-non-eu-b2b, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenNonEuB2b', junit: true }
