@@ -1,0 +1,15 @@
+phase: f3
+# F3 powstaje częściami (D-50). Na start tylko wiersze przekrojowe; wiersze F3.1–F3.4 dochodzą z kodem swoich części.
+criteria:
+  - { key: fa3-golden-eu-b2b, runner: ci, command: 'php scripts/fa3-acceptance.php fa3-eu-b2b && vendor/bin/phpunit --filter Fa3GoldenEuB2b', junit: true }
+  - { key: fa3-golden-non-eu-b2b, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenNonEuB2b', junit: true }
+  - { key: fa3-golden-pl-b2b, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenPlB2bTest', junit: true }
+  - { key: fa3-golden-pl-b2b-eur, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenPlB2bEur', junit: true }
+  - { key: fa3-golden-kor, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenKorTest', junit: true }
+  - { key: fa3-golden-kor-zero, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenKorZero', junit: true }
+  - { key: fa3-presend-checks, runner: ci, command: 'vendor/bin/phpunit --filter Fa3PresendChecks', junit: true }
+  - { key: fa3-p1-today, runner: ci, command: 'vendor/bin/phpunit --filter Fa3P1Today', junit: true }
+  - { key: fa3-unidentified-blocked, runner: ci, command: 'vendor/bin/phpunit --filter Fa3UnidentifiedBlocked', junit: true }
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
+  - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

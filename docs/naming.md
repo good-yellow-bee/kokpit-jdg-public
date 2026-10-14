@@ -441,6 +441,16 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Fixtures | `tests/Fixtures/Ksef/golden/fa3-*.xml`, `tests/Fixtures/Latarnia`; scenariusze `app:fixtures:record ksef <scenariusz>`, `app:fixtures:record latarnia status` |
 | Kod | klasy wysyłki, rekoncyliacji, PDF i zapisu zwrotnego dopisuje sesja części przed kodowaniem |
 
+### Implementacja F3.1: nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Generator i DTO (`src/Xml`) | `Fa3Builder` (FA(3) 1-0E z DTO, P_1 z Symfony Clock), `Fa3Invoice`, `Fa3InvoiceLine`, `Fa3Correction` (DTO faktury niezależny od źródła), `Fa3Scenario` (wyliczenie `tax_scenario` z mapowaniem P_12 i P_18), `Fa3Payload` (bajty, sha256, kwoty, kurs VAT), `Fa3PresendCheck` (kontrole przed wysyłką), `Fa3BuildRefused` (odmowa z listą problemów) |
+| Odczyt | `Fa3Party::fromSnapshot` (nabywca z `buyer_snapshot`) |
+| Konfiguracja | `ksef.form_code` (`system_code`, `schema_version`, `value`; `formCode` sesji KSeF), `ksef.invoice_max_bytes` (limit faktury bez załączników) |
+| Złote pliki | `tests/Fixtures/Ksef/golden/fa3-eu-b2b.xml`, `fa3-non-eu-b2b.xml`, `fa3-pl-b2b.xml`, `fa3-pl-b2b-eur.xml`, `fa3-kor.xml`, `fa3-kor-reason.xml`, `fa3-kor-zero.xml`, `fa3-kor-nrksefn.xml` |
+| Testy i odbiór | `Fa3TestTools`, `Fa3BuilderTestCase`, `scripts/fa3-acceptance.php`; klucze kryteriów `fa3-golden-eu-b2b`, `fa3-golden-non-eu-b2b`, `fa3-golden-pl-b2b`, `fa3-golden-pl-b2b-eur`, `fa3-golden-kor`, `fa3-golden-kor-zero`, `fa3-presend-checks`, `fa3-p1-today`, `fa3-unidentified-blocked` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |
