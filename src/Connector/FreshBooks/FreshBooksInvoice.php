@@ -15,7 +15,8 @@ final readonly class FreshBooksInvoice
 {
     /**
      * @param array{line1:?string,line2:?string,country:?string} $address
-     * @param list<array{name:string,description:?string,net:string,vat:string}> $lines
+     * @param list<array{name:string,description:?string,net:string,vat:string,qty?:string,unit_cost?:string}> $lines
+     * @param ?string $poNumber pole `po_number`: znacznik gotowości `freshbooks.ready_marker` (F3.2), poza `source_hash`
      */
     public function __construct(
         public string $id,
@@ -33,6 +34,7 @@ final readonly class FreshBooksInvoice
         public bool $deleted,
         public string $updatedOn,
         public array $lines,
+        public ?string $poNumber = null,
     ) {}
 
     /** @param array<mixed> $row */
@@ -58,7 +60,15 @@ final readonly class FreshBooksInvoice
             $lineAmount = is_array($line['amount'] ?? null) ? $line['amount'] : [];
             $lineNet = self::money($lineAmount['amount'] ?? null);
             $lineVat = BigDecimal::of(self::money($line['taxAmount1'] ?? '0'))->plus(self::money($line['taxAmount2'] ?? '0'));
-            $lines[] = ['name' => self::text($line['name'] ?? null) ?? '','description' => self::text($line['description'] ?? null),'net' => $lineNet,'vat' => (string) $lineVat->toScale(2)];
+            $entry = ['name' => self::text($line['name'] ?? null) ?? '','description' => self::text($line['description'] ?? null),'net' => $lineNet,'vat' => (string) $lineVat->toScale(2)];
+            // Ilość i cena jednostkowa netto (P_8B, P_9A) od F3.2; napisy dziesiętne jak kwoty.
+            $quantity = $line['qty'] ?? null;
+            $unitCost = is_array($line['unit_cost'] ?? null) ? ($line['unit_cost']['amount'] ?? null) : null;
+            if (is_string($quantity) && is_string($unitCost)) {
+                $entry['qty'] = self::decimal($quantity);
+                $entry['unit_cost'] = self::decimal($unitCost);
+            }
+            $lines[] = $entry;
             $net = $net->plus($lineNet);
             $vat = $vat->plus($lineVat);
         }
@@ -80,6 +90,7 @@ final readonly class FreshBooksInvoice
             ($row['vis_state'] ?? 0) === 1,
             substr($updated, 0, 10),
             $lines,
+            self::text($row['po_number'] ?? null),
         );
     }
 
@@ -115,6 +126,14 @@ final readonly class FreshBooksInvoice
             throw new FreshBooksException(FreshBooksError::InvalidResponse);
         }
         return (string) BigDecimal::of($value)->toScale(2, RoundingMode::HALF_UP);
+    }
+
+    private static function decimal(string $value): string
+    {
+        if (!preg_match('/^-?[0-9]{1,15}(\.[0-9]{1,8})?$/D', $value)) {
+            throw new FreshBooksException(FreshBooksError::InvalidResponse);
+        }
+        return (string) BigDecimal::of($value)->strippedOfTrailingZeros();
     }
 
     private static function date(string $value): bool

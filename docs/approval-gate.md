@@ -68,6 +68,8 @@ Warunek sprawdza się w chwili wskazanej w kolumnie „Kiedy”. Niespełniony w
 | klucz publiczny MF celu ważny | JPK | wysyłka | [operations.md](operations.md) |
 | dokładnie jeden odbiorca z bazy; każda wartość z `flagged_values` potwierdzona osobno | szkice | decyzja | [modules/czat.md](modules/czat.md) |
 
+Faktury sprzedaży (F3.2 część a, D-52): warunki z kolumną „prośba” sprawdza `SalesInvoiceSubject::payload`, a z kolumną „decyzja” `ApprovalSubject::checkDecision` przed `pending` → `approved`. Identyfikator nabywcy pochodzi z zapisanych wierszy `verification`; prośba nie wywołuje rejestrów. Zdjęcie znacznika przed decyzją daje `superseded` bez następcy.
+
 ## Podgląd w panelu
 
 Panel pokazuje `summary` zapisane przy prośbie, więc widzisz dokładnie to, co wiąże hash. Obok jest początek `payload_sha256` i czas do wygaśnięcia.

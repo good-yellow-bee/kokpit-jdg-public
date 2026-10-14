@@ -11,3 +11,4 @@ Wszystkie dane są fikcyjne (fictional): klienci, numery VAT, kwoty, identyfikat
 | `invoices-page1.json`, `invoices-page2.json` | lista faktur 2026 w dwóch stronach |
 | `invoice-1001.json` | jedna faktura po id |
 | `payments.json` | lista płatności |
+| `invoices-f3-ready.json` | dwa szkice F3.2 ze znacznikiem `KSEF-GOTOWA` w `po_number`: klient z Polski (PLN) i z Niemiec (EUR) |

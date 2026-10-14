@@ -48,7 +48,7 @@ final readonly class ObligationEngine
      * Kandydaci z reguł w horyzoncie `due_date` od dziś do dziś + 13 miesięcy. Reguły z datą encji
      * (`credential_expiry`) tworzą obowiązek także z terminem w przeszłości.
      *
-     * @return list<array{environment:string,dedupe_key:string,type:string,rule_key:string,period_start:?string,nominal_due_date:string,due_date:string,amount_due:?string,payment_title:?string,status:string,credential_state_id:?string,counterparty_id:?string}>
+     * @return list<array{environment:string,dedupe_key:string,type:string,rule_key:string,period_start:?string,nominal_due_date:string,due_date:string,amount_due:?string,payment_title:?string,status:string,credential_state_id:?string,counterparty_id:?string,invoice_id?:?string}>
      */
     public function candidates(string $today, string $until): array
     {
@@ -73,7 +73,7 @@ final readonly class ObligationEngine
                 $result[] = $this->complete($environment, $ruleKey, $item);
             }
         }
-        foreach ([...$this->credentials($today, $until), ...$this->whtPayments($environment, $today, $until), ...$this->whtCertificates($environment, $until)] as $item) {
+        foreach ([...$this->credentials($today, $until), ...$this->whtPayments($environment, $today, $until), ...$this->whtCertificates($environment, $until), ...$this->invoiceIssues($environment, $until)] as $item) {
             $result[] = $item;
         }
         return $result;
@@ -82,13 +82,16 @@ final readonly class ObligationEngine
     /**
      * Wynik upsertu jednego kandydata.
      *
-     * @param array{environment:string,dedupe_key:string,type:string,rule_key:string,period_start:?string,nominal_due_date:string,due_date:string,amount_due:?string,payment_title:?string,status:string,credential_state_id:?string,counterparty_id:?string} $candidate
+     * @param array{environment:string,dedupe_key:string,type:string,rule_key:string,period_start:?string,nominal_due_date:string,due_date:string,amount_due:?string,payment_title:?string,status:string,credential_state_id:?string,counterparty_id:?string,invoice_id?:?string} $candidate
      * @return 'inserted'|'updated'|'unchanged'|'kept'
      */
     private function upsert(array $candidate, string $now): string
     {
-        $row = $this->db->fetchAssociative('SELECT id,status,done_by,rule_key,period_start,nominal_due_date,due_date,amount_due,payment_title,credential_state_id,counterparty_id FROM obligation WHERE environment=? AND dedupe_key=? FOR UPDATE', [$candidate['environment'], $candidate['dedupe_key']]);
+        $row = $this->db->fetchAssociative('SELECT id,status,done_by,rule_key,period_start,nominal_due_date,due_date,amount_due,payment_title,credential_state_id,counterparty_id,invoice_id FROM obligation WHERE environment=? AND dedupe_key=? FOR UPDATE', [$candidate['environment'], $candidate['dedupe_key']]);
         $fields = ['rule_key' => $candidate['rule_key'],'period_start' => $candidate['period_start'],'nominal_due_date' => $candidate['nominal_due_date'],'due_date' => $candidate['due_date'],'amount_due' => $candidate['amount_due'],'payment_title' => $candidate['payment_title'],'credential_state_id' => $candidate['credential_state_id'],'counterparty_id' => $candidate['counterparty_id']];
+        if (array_key_exists('invoice_id', $candidate)) {
+            $fields['invoice_id'] = $candidate['invoice_id'];
+        }
         if ($row === false) {
             $this->db->insert('obligation', $fields + ['id' => (string) UuidV7::generate($this->clock->now()),'environment' => $candidate['environment'],'type' => $candidate['type'],'dedupe_key' => $candidate['dedupe_key'],'status' => $candidate['status'],'done_at' => $candidate['status'] === 'open' ? null : $now,'created_at' => $now,'updated_at' => $now]);
             return 'inserted';
@@ -117,7 +120,7 @@ final readonly class ObligationEngine
      */
     private function retire(array $seen, string $today, string $now): int
     {
-        $rows = $this->db->fetchAllAssociative('SELECT id,environment,dedupe_key,rule_key,credential_state_id FROM obligation WHERE status=? AND done_by IS NULL AND rule_key IN (?) AND (due_date>=? OR rule_key IN (?)) FOR UPDATE', ['open', array_keys(ObligationRules::RULES), $today, ['credential_expiry.valid_until','wht_certificate.supplier']], [\Doctrine\DBAL\ParameterType::STRING, \Doctrine\DBAL\ArrayParameterType::STRING, \Doctrine\DBAL\ParameterType::STRING, \Doctrine\DBAL\ArrayParameterType::STRING]);
+        $rows = $this->db->fetchAllAssociative('SELECT id,environment,dedupe_key,rule_key,credential_state_id FROM obligation WHERE status=? AND done_by IS NULL AND rule_key IN (?) AND (due_date>=? OR rule_key IN (?)) FOR UPDATE', ['open', array_keys(ObligationRules::RULES), $today, ['credential_expiry.valid_until','wht_certificate.supplier','invoice_issue.draft']], [\Doctrine\DBAL\ParameterType::STRING, \Doctrine\DBAL\ArrayParameterType::STRING, \Doctrine\DBAL\ParameterType::STRING, \Doctrine\DBAL\ArrayParameterType::STRING]);
         $count = 0;
         foreach ($rows as $row) {
             if (!is_string($row['environment']) || !is_string($row['dedupe_key'])) {
@@ -307,6 +310,42 @@ final readonly class ObligationEngine
             }
             $result[] = ['environment' => $environment,'dedupe_key' => 'wht_certificate:' . $date . ':' . $row['id'],'type' => 'wht_certificate','rule_key' => 'wht_certificate.supplier',
                 'period_start' => null,'nominal_due_date' => $date,'due_date' => $date,'amount_due' => null,'payment_title' => null,'status' => 'open','credential_state_id' => null,'counterparty_id' => $row['id']];
+        }
+        return $result;
+    }
+
+    /**
+     * `invoice_issue` per szkic sprzedaży (F3.2, docs/compliance-calendar.md): miesiąc usługi z P_6 albo końca OkresFa,
+     * termin 15. dnia następnego miesiąca bez przesunięcia (art. 106i ust. 1). Szkic przed przyjęciem daje `open`;
+     * faktura przyjęta zamyka istniejący wiersz jako `done`. Szkic anulowany wypada z kandydatów i dostaje `not_applicable`.
+     *
+     * @return list<array{environment:string,dedupe_key:string,type:string,rule_key:string,period_start:?string,nominal_due_date:string,due_date:string,amount_due:?string,payment_title:?string,status:string,credential_state_id:?string,counterparty_id:?string,invoice_id:?string}>
+     */
+    private function invoiceIssues(string $environment, string $until): array
+    {
+        $rule = ObligationRules::RULES['invoice_issue.draft'];
+        $rows = $this->db->fetchAllAssociative(
+            "SELECT i.id, i.status, date_trunc('month', coalesce(i.service_date, i.service_period_end))::date AS period_start, o.id AS obligation_id
+             FROM invoice i LEFT JOIN obligation o ON o.environment=i.environment AND o.invoice_id=i.id AND o.rule_key='invoice_issue.draft'
+             WHERE i.environment=? AND i.direction='sale' AND coalesce(i.service_date, i.service_period_end) IS NOT NULL
+               AND (i.status IN ('draft','ready','approved','submitted','unknown','rejected') OR (i.status IN ('accepted','corrected','superseded') AND o.id IS NOT NULL))
+             ORDER BY i.id",
+            [$environment],
+        );
+        $result = [];
+        foreach ($rows as $row) {
+            if (!is_string($row['id']) || !is_string($row['status']) || !is_string($row['period_start'])) {
+                throw new \LogicException('Niepoprawny wiersz szkicu sprzedaży.');
+            }
+            $next = self::day($row['period_start'])->modify('+1 month');
+            $nominal = $next->setDate((int) $next->format('Y'), (int) $next->format('n'), $rule['day'] ?? throw new \LogicException('invoice_issue.draft'))->format('Y-m-d');
+            $due = $this->calendar->shift($nominal, $rule['policy']);
+            if ($due > $until) {
+                continue;
+            }
+            $result[] = ['environment' => $environment,'dedupe_key' => 'invoice_issue:' . $row['period_start'] . ':' . $row['id'],'type' => 'invoice_issue','rule_key' => 'invoice_issue.draft',
+                'period_start' => $row['period_start'],'nominal_due_date' => $nominal,'due_date' => $due,'amount_due' => null,'payment_title' => null,
+                'status' => in_array($row['status'], ['accepted','corrected','superseded'], true) ? 'done' : 'open','credential_state_id' => null,'counterparty_id' => null,'invoice_id' => $row['id']];
         }
         return $result;
     }

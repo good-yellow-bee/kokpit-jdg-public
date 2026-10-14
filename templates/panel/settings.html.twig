@@ -29,7 +29,7 @@
         </form>
     </section>
 
-    {% for key, label in {'jpk_st.enabled': 'JPK_ST włączony (Q-25)', 'pit.kasowy': 'Metoda kasowa PIT (Q-24)', 'ledger.auto_entries_enabled': 'Wpisy ewidencji robi kokpit (przełączenie)'} %}
+    {% for key, label in {'jpk_st.enabled': 'JPK_ST włączony (Q-25)', 'pit.kasowy': 'Metoda kasowa PIT (Q-24)', 'ledger.auto_entries_enabled': 'Wpisy ewidencji robi kokpit (przełączenie)', 'freshbooks.sales_enabled': 'Sprzedaż przez kokpit: znacznik gotowości FreshBooks (go-live F3)'} %}
         {% set row = current[key] %}
         <section id="{{ key|replace({'.': '-'}) }}">
             <h2>{{ label }} ({{ key }})</h2>
@@ -44,6 +44,19 @@
             </form>
         </section>
     {% endfor %}
+
+    {% set review = current['ksef.fa3_review'] %}
+    <section id="ksef-fa3_review">
+        <h2>Przegląd doradcy FA(3) (ksef.fa3_review)</h2>
+        <p>Obowiązuje od: {{ review ? review.valid_from : 'brak; przy KSEF_TARGET=prod decyzja o fakturze jest zablokowana (D-04)' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'ksef.fa3_review'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>JSON: reviewed_on, scenarios, kor, golden_sha256 <textarea name="value" rows="6" cols="80" required>{{ review ? review.value|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) : '' }}</textarea></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
 
     {% set map = current['ryczalt.service_map'] %}
     <section id="ryczalt-service_map">

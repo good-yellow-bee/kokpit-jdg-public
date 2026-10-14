@@ -8,7 +8,8 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 
 /**
  * Przedmiot zatwierdzenia jednego `subject_type`: generator payloadu, wersja źródła i skutki po stronie encji
- * („Powiązanie z bramką zatwierdzeń” w docs/data-model.md). Do F3 jedynymi przedmiotami są adaptery `dummy`.
+ * („Powiązanie z bramką zatwierdzeń” w docs/data-model.md). Od F3.2 faktury sprzedaży i KOR (`SalesInvoiceSubject`),
+ * w dev i test także adaptery `dummy`.
  */
 #[AutoconfigureTag('app.approval_subject')]
 interface ApprovalSubject
@@ -20,6 +21,9 @@ interface ApprovalSubject
 
     /** Buduje payload i sprawdza warunki z kolumną „prośba”; niespełniony warunek rzuca wyjątek. */
     public function payload(string $subjectId): ApprovalPayload;
+
+    /** Sprawdza warunki z kolumną „decyzja” (docs/approval-gate.md); niespełniony warunek rzuca wyjątek bez zmiany stanu. */
+    public function checkDecision(string $subjectId): void;
 
     /** Bieżąca `version` encji; różna od `approval.source_version` oznacza zmianę źródła. */
     public function currentVersion(string $subjectId): int;

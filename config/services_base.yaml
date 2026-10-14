@@ -10,11 +10,14 @@ parameters:
   # formCode sesji KSeF dla faktur (docs/modules/ksef.md) i limit rozmiaru faktury bez załączników (1 MB), F3.1.
   ksef.form_code: { system_code: 'FA (3)', schema_version: '1-0E', value: FA }
   ksef.invoice_max_bytes: 1000000
+  # Znacznik gotowości szkicu FreshBooks w `po_number` (Q-26) i wiek wyniku białej listy przy `pl_b2b` (F3.2, D-52).
+  freshbooks.ready_marker: KSEF-GOTOWA
+  registry.pl_client_max_age: P30D
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\:
     resource: '../src/'
-    exclude: '../src/{Kernel.php,Entity,Connector,Architecture}'
+    exclude: '../src/{Kernel.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php}'
   App\Security\Vault:
     arguments: { $vault: '@secrets.vault', $appEnvironment: '%kernel.environment%' }
   App\Security\SecretStore:
@@ -47,4 +50,13 @@ services:
   App\Approval\SubmissionReconciler:
     arguments: { $pollWindow: '%approval.poll_window%' }
   App\Approval\DispatchGuard: { shared: true }
+  # Przedmioty bramki faktur sprzedaży (F3.2); tag `app.approval_subject` z interfejsu.
+  invoice.subject.sales:
+    class: App\Invoice\SalesInvoiceSubject
+    arguments: { $subjectType: sales_invoice, $plClientMaxAge: '%registry.pl_client_max_age%' }
+  invoice.subject.correction:
+    class: App\Invoice\SalesInvoiceSubject
+    arguments: { $subjectType: correction_invoice, $plClientMaxAge: '%registry.pl_client_max_age%' }
+  App\Invoice\SalesReadiness:
+    arguments: { $readyMarker: '%freshbooks.ready_marker%' }
   App\Passkey\StepUp: '@App\Passkey\StepUpVerifier'

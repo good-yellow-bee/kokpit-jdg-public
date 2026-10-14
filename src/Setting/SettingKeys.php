@@ -22,7 +22,12 @@ final class SettingKeys
     /** Dzień pierwszej Twojej faktury w KSeF (Q-10); dzień przejścia importu FreshBooks (docs/modules/freshbooks.md). */
     public const KSEF_SALES_TRANSITION_ON = 'ksef.sales_transition_on';
     public const RYCZALT_ELIGIBILITY = 'ryczalt.eligibility';
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY];
+    /** Brama F3: znacznik gotowości i wykrywanie obejścia działają od `valid_from` (docs/modules/freshbooks.md). */
+    public const FRESHBOOKS_SALES_ENABLED = 'freshbooks.sales_enabled';
+    /** Przegląd doradcy FA(3) (D-04): zatwierdzone `tax_scenario` i KOR; warunek decyzji przy `KSEF_TARGET=prod`. */
+    public const KSEF_FA3_REVIEW = 'ksef.fa3_review';
+    public const FA3_SCENARIOS = ['eu_b2b','eu_b2b_unidentified','non_eu_b2b','pl_b2b'];
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -40,7 +45,7 @@ final class SettingKeys
     public static function normalize(string $key, mixed $value): mixed
     {
         return match ($key) {
-            self::JPK_ST_ENABLED, self::PIT_KASOWY, self::LEDGER_AUTO_ENTRIES => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
+            self::JPK_ST_ENABLED, self::PIT_KASOWY, self::LEDGER_AUTO_ENTRIES, self::FRESHBOOKS_SALES_ENABLED => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
             self::COMPANY_IDENTITY => self::identity($value),
             self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT => self::account($key, $value),
             self::ZUS_PARAMETERS => self::zusParameters($value),
@@ -51,6 +56,7 @@ final class SettingKeys
             self::VAT_STANDARD_RATE => is_string($value) && preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', $value) ? $value : throw new \InvalidArgumentException('vat.standard_rate to procent z dwoma miejscami, np. 23.00.'),
             self::KSEF_SALES_TRANSITION_ON => is_string($value) && self::isDate($value) ? $value : throw new \InvalidArgumentException('ksef.sales_transition_on to data RRRR-MM-DD.'),
             self::RYCZALT_ELIGIBILITY => self::eligibility($value),
+            self::KSEF_FA3_REVIEW => self::fa3Review($value),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };
     }
@@ -66,6 +72,42 @@ final class SettingKeys
         }
         $watch = $value['watch_limit_eur'] ?? null;
         return ['limit_eur' => self::amount('limit_eur', $value['limit_eur'] ?? null),'watch_limit_eur' => $watch === null ? null : self::amount('watch_limit_eur', $watch)];
+    }
+    /**
+     * Wynik przeglądu doradcy: dzień przeglądu, zatwierdzone `tax_scenario`, zgoda na KOR i sha256 złotych plików.
+     *
+     * @return array{reviewed_on:string,scenarios:list<string>,kor:bool,golden_sha256:array<string,string>}
+     */
+    private static function fa3Review(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), ['reviewed_on','scenarios','kor','golden_sha256']) !== []) {
+            throw new \InvalidArgumentException('ksef.fa3_review ma pola reviewed_on, scenarios, kor i golden_sha256.');
+        }
+        $reviewed = $value['reviewed_on'] ?? null;
+        $scenarios = $value['scenarios'] ?? null;
+        $kor = $value['kor'] ?? null;
+        $golden = $value['golden_sha256'] ?? [];
+        if (!is_string($reviewed) || !self::isDate($reviewed)) {
+            throw new \InvalidArgumentException('ksef.fa3_review.reviewed_on to data RRRR-MM-DD.');
+        }
+        if (!is_array($scenarios) || !array_is_list($scenarios) || array_diff($scenarios, self::FA3_SCENARIOS) !== []) {
+            throw new \InvalidArgumentException('ksef.fa3_review.scenarios to lista tax_scenario.');
+        }
+        if (!is_bool($kor)) {
+            throw new \InvalidArgumentException('ksef.fa3_review.kor przyjmuje tak albo nie.');
+        }
+        if (!is_array($golden)) {
+            throw new \InvalidArgumentException('ksef.fa3_review.golden_sha256 to obiekt plik → sha256.');
+        }
+        $hashes = [];
+        foreach ($golden as $file => $sha) {
+            if (!is_string($file) || !is_string($sha) || !preg_match('/^[0-9a-f]{64}$/D', $sha)) {
+                throw new \InvalidArgumentException('ksef.fa3_review.golden_sha256 to obiekt plik → sha256.');
+            }
+            $hashes[$file] = $sha;
+        }
+        $list = array_values(array_unique(array_map(static fn(mixed $item): string => is_string($item) ? $item : '', $scenarios)));
+        return ['reviewed_on' => $reviewed,'scenarios' => $list,'kor' => $kor,'golden_sha256' => $hashes];
     }
     private static function isDate(string $value): bool
     {
