@@ -1,0 +1,26 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie Latarni KSeF według README i scenariuszy (https://raw.githubusercontent.com/CIRFMF/ksef-latarnia/main/README.md, pobrane 2026-10-14); kształt odpowiedzi do potwierdzenia nagraniem `app:fixtures:record latarnia status` (F3.5).",
+  "scenario": "GET /status: FAILURE",
+  "interactions": [
+    {
+      "method": "GET",
+      "path": "/status",
+      "status": 200,
+      "body": {
+        "status": "FAILURE",
+        "messages": [
+          {
+            "id": "FIKCYJNY-0002",
+            "eventId": "FIKCYJNY-ZDARZENIE-0002",
+            "category": "FAILURE",
+            "type": "FAILURE_START",
+            "title": "Fikcyjna awaria KSeF",
+            "start": "2026-11-16T09:30:00+01:00",
+            "end": null
+          }
+        ]
+      }
+    }
+  ]
+}

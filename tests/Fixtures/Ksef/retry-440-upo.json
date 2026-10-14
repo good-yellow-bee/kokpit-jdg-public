@@ -1,0 +1,16 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json, pobrane 2026-10-14); prawdziwe nagrania z api-test zastąpią je w F3.5 (ksef-te-fixtures).",
+  "scenario": "UPO oryginału po 440 ze zgodnym invoiceHash.",
+  "interactions": [
+    {
+      "method": "GET",
+      "path": "/v2/sessions/20261116-SO-5E6F7A8B9C-0D1E2F3A4B-55/invoices/20261116-EE-6F7A8B9C0D-1E2F3A4B5C-66/upo",
+      "status": 200,
+      "headers": {
+        "Content-Type": "application/xml"
+      },
+      "body_text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- Fikcyjne UPO (fictional), nie pochodzi z KSeF. -->\n<Potwierdzenie><NazwaPodmiotuPrzyjmujacego>Fikcyjny KSeF TE</NazwaPodmiotuPrzyjmujacego><NumerReferencyjnySesji>20261116-SO-5E6F7A8B9C-0D1E2F3A4B-55</NumerReferencyjnySesji><Dokument><NumerKSeFDokumentu>1111111111-20261116-1A2B3C-4D5E6F-C3</NumerKSeFDokumentu><NumerFaktury>FB-2026-0201</NumerFaktury></Dokument></Potwierdzenie>\n"
+    }
+  ]
+}

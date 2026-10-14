@@ -313,6 +313,8 @@ Rekoncyliacja używa tylko zapytań odczytu i nigdy nie wysyła ponownie ([../ap
 5. Jest numer KSeF i `invoiceHash` zgodny z wysłanym `xml_sent` → `accepted`. Faktura na liście błędnych → `rejected`.
 6. Brak wyniku → stan zostaje `unknown`; panel proponuje ręczne ponowienie.
 
+Szczegóły implementacji F3.3 (okno dnia wysyłki, kolejność list, dopasowanie Subject1 w imporcie, kody statusu, UPO): D-54 w [../decisions.md](../decisions.md).
+
 **Ręczne ponowienie po `unknown`** (nowe zatwierdzenie, [../approval-gate.md](../approval-gate.md))
 
 1. Ponowienie w innym dniu daje nowy XML z nową P_1, więc i nowy hash (reguła P_1 wyżej).
@@ -367,6 +369,7 @@ Latarnia jest osobnym konektorem `latarnia`, niezależnie od wyboru polityki awa
 - Statusy: `AVAILABLE`, `MAINTENANCE`, `FAILURE`, `TOTAL_FAILURE`.
 - Kokpit pyta `/status` co 5 minut i przed każdą wysyłką; zadanie jest w katalogu w [../operations.md](../operations.md).
 - Status inny niż `AVAILABLE` wstrzymuje wysyłki KSeF. Panel pokazuje status i komunikat.
+- Latarnia nieosiągalna też wstrzymuje wysyłkę (`latarnia_unreachable`); cel `demo` pomija warunek, bo Latarnia nie ma DEMO. Ostatni status trzyma pula `cache.scheduler` (D-54).
 
 **Polityka domyślna (D-15, Q-28): czekasz.** Kolejka stoi, zatwierdzenia wygasają z końcem dnia P_1, a po awarii zatwierdzasz faktury z nową P_1. Bez trybu offline i bez certyfikatu typ 2. Obowiązek `invoice_issue` pilnuje terminu z art. 106i.
 
@@ -438,7 +441,7 @@ MF liczy limity na parę kontekst (NIP) i adres IP, w oknach przesuwnych sekundy
 - Od API 2.5.0 (TEST od 06.05.2026) domyślne limity TE są równe PROD ([changelog API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/api-changelog.md); uwaga o nieaktualnej linii w [../facts.md](../facts.md)). DEMO ma limity PROD ([limity API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/limity/limity-api.md)).
 - Limity domyślne liczą się osobno dla każdego endpointu ([limity API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/limity/limity-api.md)). `ksef.default` zbiera pozostałe chronione zasoby.
 - Harmonogram trzyma wywołania daleko poniżej limitów: przyrost to 2 eksporty na godzinę wobec 20, wysyłka to jedna faktura na sesję.
-- 429 niesie `Retry-After` w sekundach. Kokpit zapisuje `blocked_until` w wierszu grupy i odkłada zadanie. Push według reguły „Push” w „Licznikach limitów” ([../architecture.md](../architecture.md)).
+- 429 niesie `Retry-After` w sekundach. Kokpit zapisuje `blocked_until` w wierszu grupy i odkłada zadanie. 429 przy otwarciu sesji wysyłki wraca zatwierdzenie do `approved` (`dispatch.deferred`, D-54). Push według reguły „Push” w „Licznikach limitów” ([../architecture.md](../architecture.md)).
 - Blokady rosną przy powtórnych przekroczeniach. Równoległe użycie kilku IP w jednym kontekście MF traktuje jak obchodzenie limitów ([limity API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/limity/limity-api.md)).
 - Wszystkie wywołania KSeF wychodzą z jednego IP serwera. `rate_counter` w PostgreSQL jest wspólny dla `worker_reads` i `worker_official_writes` ([../architecture.md](../architecture.md)).
 - Okna przesuwne wracają dopiero po pierwszych odpowiedziach 429 na PROD; wtedy bieżące limity daje `GET /rate-limits` (D-29, [../roadmap.md](../roadmap.md)).

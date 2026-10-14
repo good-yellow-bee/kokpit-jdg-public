@@ -11,12 +11,12 @@ use Symfony\Component\Uid\UuidV7;
 
 /**
  * Zadania sprzedaży w panelu (F3.2 część b, D-53): `invoice.panel_task` z chwilą `panel_task_at`, opcjonalnie push
- * kategorii `freshbooks_bypass` albo `freshbooks_number_changed`. Treść push ma tylko kategorię i odnośnik, bez numerów
+ * kategorii `freshbooks_bypass`, `freshbooks_number_changed` albo `p2_collision` (kolizja P_2 przy 440, F3.3, D-54). Treść push ma tylko kategorię i odnośnik, bez numerów
  * i nazw (jak przypomnienia z `NotificationDispatcher`). Zadanie zamykasz w panelu.
  */
 final readonly class SalesTasks
 {
-    public const TASKS = ['freshbooks_bypass','outside_cockpit','freshbooks_number_changed'];
+    public const TASKS = ['freshbooks_bypass','outside_cockpit','freshbooks_number_changed','p2_collision'];
     public const LINK = '/freshbooks#sales-tasks';
     private const TIMESTAMP = 'Y-m-d\TH:i:s.uP';
 

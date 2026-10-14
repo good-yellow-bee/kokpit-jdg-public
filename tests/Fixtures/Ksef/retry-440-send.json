@@ -1,0 +1,76 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json, pobrane 2026-10-14); prawdziwe nagrania z api-test zastąpią je w F3.5 (ksef-te-fixtures).",
+  "scenario": "Ręczne ponowienie: sesja, wysyłka, status 440 z originalKsefNumber i originalSessionReferenceNumber, zamknięcie, faktury sesji oryginału.",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online",
+      "status": 201,
+      "body": {
+        "referenceNumber": "20261117-SO-7A8B9C0D1E-2F3A4B5C6D-77",
+        "validUntil": "2026-11-16T21:00:00+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online/20261117-SO-7A8B9C0D1E-2F3A4B5C6D-77/invoices",
+      "status": 202,
+      "body": {
+        "referenceNumber": "20261117-EE-8B9C0D1E2F-3A4B5C6D7E-88"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/v2/sessions/20261117-SO-7A8B9C0D1E-2F3A4B5C6D-77/invoices/20261117-EE-8B9C0D1E2F-3A4B5C6D7E-88",
+      "status": 200,
+      "body": {
+        "ordinalNumber": 1,
+        "invoiceNumber": "FB-2026-0201",
+        "referenceNumber": "20261117-EE-8B9C0D1E2F-3A4B5C6D7E-88",
+        "invoiceHash": "{{sent_hash}}",
+        "invoicingDate": "2026-11-17T09:00:02+00:00",
+        "status": {
+          "code": 440,
+          "description": "Duplikat faktury",
+          "details": [
+            "Fikcyjnie: faktura o tym numerze już przyjęta."
+          ],
+          "extensions": {
+            "originalKsefNumber": "1111111111-20261116-1A2B3C-4D5E6F-C3",
+            "originalSessionReferenceNumber": "20261116-SO-5E6F7A8B9C-0D1E2F3A4B-55"
+          }
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online/20261117-SO-7A8B9C0D1E-2F3A4B5C6D-77/close",
+      "status": 204
+    },
+    {
+      "method": "GET",
+      "path": "/v2/sessions/20261116-SO-5E6F7A8B9C-0D1E2F3A4B-55/invoices",
+      "status": 200,
+      "body": {
+        "invoices": [
+          {
+            "ordinalNumber": 1,
+            "invoiceNumber": "FB-2026-0201",
+            "referenceNumber": "20261116-EE-6F7A8B9C0D-1E2F3A4B5C-66",
+            "invoiceHash": "{{original_hash}}",
+            "invoicingDate": "2026-11-16T09:00:02+00:00",
+            "status": {
+              "code": 200,
+              "description": "Sukces"
+            },
+            "ksefNumber": "1111111111-20261116-1A2B3C-4D5E6F-C3",
+            "acquisitionDate": "2026-11-16T09:00:07+00:00",
+            "permanentStorageDate": "2026-11-16T09:00:09+00:00",
+            "invoicingMode": "Online"
+          }
+        ]
+      }
+    }
+  ]
+}

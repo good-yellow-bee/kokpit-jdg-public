@@ -24,6 +24,18 @@ criteria:
   - { key: subject1-cancels-approval, runner: ci, command: 'vendor/bin/phpunit --filter Subject1CancelsApprovalTest', junit: true }
   - { key: subject1-outside-cockpit-task, runner: ci, command: 'vendor/bin/phpunit --filter Subject1OutsideCockpitTaskTest', junit: true }
   - { key: kor-draft-from-freshbooks, runner: ci, command: 'vendor/bin/phpunit --filter KorDraftFromFreshBooksTest', junit: true }
+  - { key: ksef-send-accepted, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendAcceptedTest', junit: true }
+  - { key: ksef-send-hash-mismatch, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendHashMismatchTest', junit: true }
+  - { key: ksef-send-once, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendOnceTest', junit: true }
+  - { key: ksef-send-p1-day-change, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendP1DayChangeTest', junit: true }
+  - { key: ksef-send-form-code, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendFormCodeTest', junit: true }
+  - { key: ksef-send-rejected, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendRejectedTest', junit: true }
+  - { key: ksef-send-21184, runner: ci, command: 'vendor/bin/phpunit --filter KsefSend21184Test', junit: true }
+  - { key: ksef-send-timeout-reconcile, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendTimeoutReconcileTest', junit: true }
+  - { key: ksef-reconcile-paths, runner: ci, command: 'vendor/bin/phpunit --filter KsefReconcilePathsTest', junit: true }
+  - { key: ksef-retry-440, runner: ci, command: 'vendor/bin/phpunit --filter KsefRetry440Test', junit: true }
+  - { key: ksef-send-latarnia, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendLatarniaTest', junit: true }
+  - { key: ksef-send-429, runner: ci, command: 'vendor/bin/phpunit --filter KsefSend429Test', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

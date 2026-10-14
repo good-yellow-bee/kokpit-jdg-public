@@ -42,6 +42,7 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
         private ClockInterface $clock,
         private string $subjectType,
         private string $plClientMaxAge,
+        private ?SalesTasks $tasks = null,
     ) {
         if (!in_array($subjectType, ['sales_invoice','correction_invoice'], true)) {
             throw new \InvalidArgumentException('SalesInvoiceSubject obsługuje sales_invoice i correction_invoice.');
@@ -185,11 +186,57 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
         } elseif (in_array($state, ['ready','cancelled_before_send'], true)) {
             $fields['invoice_number_locked_at'] = null;
         }
+        if (in_array($status, ['submitted','accepted'], true)) {
+            $fields += $this->ksefFields($subjectId, $status);
+        }
         $this->db->update('invoice', $fields, ['id' => $subjectId]);
+        if ($status === 'rejected' && $this->resultCode($subjectId) === 'p2_collision') {
+            // 440 z innym `invoiceHash`: numer zajęty przez inną fakturę w KSeF (docs/modules/ksef.md, „Ręczne ponowienie”).
+            $this->tasks?->open($subjectId, 'p2_collision', true);
+        }
         if ($state === 'accepted') {
             // Obowiązek `invoice_issue` szkicu zamyka przyjęcie w KSeF (docs/compliance-calendar.md).
             $this->db->executeStatement("UPDATE obligation SET status='done', done_at=?, updated_at=? WHERE invoice_id=? AND rule_key='invoice_issue.draft' AND status='open'", [$now, $now, $subjectId]);
         }
+    }
+
+    /**
+     * Kolumny faktury z `external_refs` zatwierdzenia (F3.3): `sent_at` i sesja przy `submitted`, numer KSeF, tryb
+     * i data nadania numeru przy `accepted`; zapis w tym samym `UPDATE` co stan, więc przed blokadą przyjętej faktury.
+     *
+     * @return array<string,string>
+     */
+    private function ksefFields(string $subjectId, string $status): array
+    {
+        $raw = $this->db->fetchOne('SELECT external_refs FROM approval WHERE subject_type=? AND subject_id=? AND status=? ORDER BY requested_at DESC, id DESC LIMIT 1', [$this->subjectType, $subjectId, $status]);
+        $refs = is_string($raw) ? json_decode($raw, true, 8, JSON_THROW_ON_ERROR) : [];
+        $refs = is_array($refs) ? $refs : [];
+        $text = static fn(string $key): ?string => is_string($refs[$key] ?? null) && $refs[$key] !== '' ? $refs[$key] : null;
+        $current = $this->db->fetchAssociative('SELECT sent_at, ksef_session_id FROM invoice WHERE id=?', [$subjectId]);
+        $fields = [];
+        if ($text('sent_at') !== null && ($current === false || $current['sent_at'] === null)) {
+            $fields['sent_at'] = $text('sent_at');
+        }
+        $session = $text('ksef_session_id');
+        if ($session !== null && ($current === false || $current['ksef_session_id'] !== $session)) {
+            $fields['ksef_session_id'] = $session;
+        }
+        $number = $text('ksef_number');
+        if ($status === 'accepted' && $number !== null) {
+            // Kokpit wysyła tylko w trybie online (D-15); faktura z dopasowania Subject1 też wyszła z kokpitu.
+            $fields += ['ksef_number' => $number,'ksef_issue_mode' => 'online'];
+            $acquired = $text('acquisition_date');
+            if ($acquired !== null) {
+                $fields['ksef_number_assigned_at'] = $acquired;
+            }
+        }
+        return $fields;
+    }
+
+    private function resultCode(string $subjectId): ?string
+    {
+        $code = $this->db->fetchOne("SELECT result_code FROM approval WHERE subject_type=? AND subject_id=? AND status='rejected' ORDER BY requested_at DESC, id DESC LIMIT 1", [$this->subjectType, $subjectId]);
+        return is_string($code) ? $code : null;
     }
 
     /**

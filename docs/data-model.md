@@ -185,7 +185,7 @@ Kwota przychodu po kursie PIT jest w `revenue_entry.amount_pln`, nie w `invoice`
 | `freshbooks_status` | text null | ostatni widziany status FreshBooks; wykrywanie obejścia ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `ready_at` | timestamptz null | odczytany znacznik gotowości albo wybór w panelu ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `invoice_number_locked_at` | timestamptz null | blokada P_2 przy zatwierdzeniu |
-| `panel_task` | text null | zadanie sprzedaży w panelu: `freshbooks_bypass`, `outside_cockpit`, `freshbooks_number_changed` (D-53); `panel_task_at` to chwila otwarcia; zapisywalne też po przyjęciu |
+| `panel_task` | text null | zadanie sprzedaży w panelu: `freshbooks_bypass`, `outside_cockpit`, `freshbooks_number_changed` (D-53), `p2_collision` (kolizja P_2 przy 440, D-54); `panel_task_at` to chwila otwarcia; zapisywalne też po przyjęciu |
 | `freshbooks_credit_id` | text null | credit note FreshBooks szkicu KOR (D-53); unikalny w `environment` |
 | `ready_blockers` | jsonb null | lista powodów, dla których szkic ze znacznikiem gotowości zostaje w `draft` (panel); pusta poza tym stanem (D-52) |
 | `source_hash` | char(64) null | sha256 zmapowanych pól źródła; zmiana po przyjęciu prowadzi do korekty, nigdy do ponownej wysyłki |
@@ -718,7 +718,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | Pole | Typ | Opis |
 | --- | --- | --- |
 | `channel` | text | `push` albo `mail` |
-| `category` | text | `obligation.type` przy przypomnieniu; zdarzenia: `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `freshbooks_number_changed` (D-53) |
+| `category` | text | `obligation.type` przy przypomnieniu; zdarzenia: `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `freshbooks_number_changed` (D-53), `p2_collision` (D-54) |
 | `obligation_id`, `approval_id` | uuid FK null | przyczyna |
 | `dedupe_key` | text | przyczyna, przesunięcie przypomnienia i kanał |
 | `body` | text | kategoria, liczba i link; bez nadawcy, kwot i danych osobowych ([security.md](security.md)) |

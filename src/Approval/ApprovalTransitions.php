@@ -36,6 +36,7 @@ final readonly class ApprovalTransitions
         ['dispatching', 'rejected', 'rejected', 'dispatch.rejected'],
         ['dispatching', 'accepted', 'accepted', 'dispatch.accepted'],
         ['dispatching', 'unknown', 'unknown', 'dispatch.unknown'],
+        ['dispatching', 'approved', 'deferred', 'dispatch.deferred'],
         ['submitted', 'accepted', 'accepted', 'dispatch.accepted'],
         ['submitted', 'rejected', 'rejected', 'dispatch.rejected'],
         ['submitted', 'unknown', 'unknown', 'dispatch.unknown'],

@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Approval\ApprovalConnectors;
 use App\Approval\ApprovalGate;
 use App\Approval\ApprovalTransitions;
+use App\Connector\Latarnia\LatarniaStatusStore;
 use App\Passkey\AppUser;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,11 +19,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Kolejka zatwierdzeń w panelu (docs/approval-gate.md, „Podgląd w panelu”): `summary` zapisane przy prośbie,
- * początek `payload_sha256` i czas do wygaśnięcia. „Zatwierdź” i ponowienie wymagają świeżego step-upu.
+ * początek `payload_sha256` i czas do wygaśnięcia. „Zatwierdź” i ponowienie wymagają świeżego step-upu. Ostatni status
+ * Latarni KSeF pokazuje, czy wysyłki KSeF czekają (F3.3).
  */
 final class ApprovalController extends AbstractController
 {
-    public function __construct(private readonly Connection $db, private readonly ApprovalGate $gate, private readonly ClockInterface $clock) {}
+    public function __construct(private readonly Connection $db, private readonly ApprovalGate $gate, private readonly ClockInterface $clock, private readonly LatarniaStatusStore $latarnia) {}
 
     #[Route('/approvals', name: 'panel_approvals', methods: ['GET'])]
     public function index(): Response
@@ -79,6 +81,6 @@ final class ApprovalController extends AbstractController
                 'expires_in' => in_array($row['status'], ['pending', 'approved'], true) ? ($seconds <= 0 ? 'wygasa teraz' : sprintf('%d h %02d min', intdiv($seconds, 3600), intdiv($seconds % 3600, 60))) : null,
             ];
         }
-        return $this->render('panel/approvals.html.twig', ['items' => $items, 'error' => $error], new Response(status: $error === null ? 200 : Response::HTTP_UNPROCESSABLE_ENTITY));
+        return $this->render('panel/approvals.html.twig', ['items' => $items, 'error' => $error, 'latarnia' => $this->latarnia->last()], new Response(status: $error === null ? 200 : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

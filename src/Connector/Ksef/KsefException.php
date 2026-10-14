@@ -6,7 +6,8 @@ namespace App\Connector\Ksef;
 
 final class KsefException extends \RuntimeException
 {
-    public function __construct(public readonly KsefError $error)
+    /** @param ?string $detail kod błędu z odpowiedzi KSeF, np. `exceptionCode`, bez danych osobowych */
+    public function __construct(public readonly KsefError $error, public readonly ?string $detail = null)
     {
         parent::__construct('ksef_' . $error->value);
     }

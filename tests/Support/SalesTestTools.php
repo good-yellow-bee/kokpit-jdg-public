@@ -16,6 +16,7 @@ use App\Audit\AuditLog;
 use App\Invoice\CorrectionDrafts;
 use App\Invoice\SalesInvoiceSubject;
 use App\Invoice\SalesReadiness;
+use App\Invoice\SalesTasks;
 use App\Security\Redactor;
 use App\Security\Vault;
 use App\Setting\SettingKeys;
@@ -48,24 +49,30 @@ final class SalesTestTools
     public readonly FileStore $files;
     public readonly CollectingBus $bus;
     public readonly string $userId;
+    /** Rejestr przedmiotów, powiadomienia bramki i zadania sprzedaży (F3.3: handler `official_writes` i alert kolizji P_2). */
+    public readonly ApprovalSubjects $subjects;
+    public readonly ApprovalNotifications $notifications;
+    public readonly SalesTasks $salesTasks;
+    public readonly AuditLog $audit;
     /** Szkice KOR z FreshBooks (F3.2 część b); ustawia `CorrectionTestTools`. */
     public ?CorrectionDrafts $corrections = null;
     private int $sequence = 0;
 
     public function __construct(private readonly Connection $db, public readonly MockClock $clock, private readonly Vault $vault, ?MockClock $builderClock = null)
     {
-        $audit = new AuditLog($db, $clock, new Redactor());
+        $audit = $this->audit = new AuditLog($db, $clock, new Redactor());
+        $this->salesTasks = new SalesTasks($db, $audit, $clock);
         $this->settings = ObligationTestTools::settings($db, $clock);
         $configuration = ConnectorTestTools::configuration();
         $dates = new BusinessDate($clock);
         $builder = Fa3TestTools::builder($db, $builderClock ?? $clock);
-        $registry = new ApprovalSubjects([
-            new SalesInvoiceSubject($db, $builder, $this->settings, $configuration, $dates, $clock, 'sales_invoice', 'P30D'),
-            new SalesInvoiceSubject($db, $builder, $this->settings, $configuration, $dates, $clock, 'correction_invoice', 'P30D'),
+        $registry = $this->subjects = new ApprovalSubjects([
+            new SalesInvoiceSubject($db, $builder, $this->settings, $configuration, $dates, $clock, 'sales_invoice', 'P30D', $this->salesTasks),
+            new SalesInvoiceSubject($db, $builder, $this->settings, $configuration, $dates, $clock, 'correction_invoice', 'P30D', $this->salesTasks),
         ]);
         $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, '/app/var/test-files/sales');
         $this->transitions = new ApprovalTransitions($db, $audit, $clock, $registry);
-        $notifications = new ApprovalNotifications($db, $clock);
+        $notifications = $this->notifications = new ApprovalNotifications($db, $clock);
         $owner = new ApprovalTestTools($db, $clock);
         $this->userId = $owner->userId;
         $this->bus = new CollectingBus();

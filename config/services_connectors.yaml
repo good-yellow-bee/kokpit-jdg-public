@@ -16,6 +16,8 @@ parameters:
   registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
   # Odstępy ponowień VIES po przeciążeniu, w sekundach; po 24 h od pierwszej próby alert connector_failure.
   registry.vies_retry_delays: [900, 1800, 3600, 7200, 14400, 28800]
+  # Latarnia KSeF per cel (docs/modules/ksef.md, „Awarie KSeF i Latarnia”); DEMO nie ma Latarni.
+  latarnia.endpoints: { test: 'https://api-latarnia-test.ksef.mf.gov.pl', prod: 'https://api-latarnia.ksef.mf.gov.pl' }
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\Config\ConnectorConfiguration:
@@ -61,6 +63,14 @@ services:
   App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
   App\Connector\Ksef\UnavailableKsefGateway: ~
   App\Connector\Ksef\KsefGateway: '@App\Connector\Ksef\UnavailableKsefGateway'
+  # Konektor zapisu KSeF (F3.3): `OfficialWriter` i `StatusReader`; wysyła tylko `OfficialWritesHandler`.
+  App\Connector\Ksef\KsefWriter:
+    arguments: { $formCode: '%ksef.form_code%' }
+  App\Connector\Latarnia\LatarniaConnector:
+    arguments: { $endpoints: '%latarnia.endpoints%' }
+  App\Connector\Latarnia\LatarniaStatusStore:
+    arguments: { $schedulerState: '@cache.scheduler' }
+  App\Connector\Latarnia\LatarniaStatusHandler: ~
   App\Connector\FreshBooks\FreshBooksOAuth: ~
   App\Connector\FreshBooks\FreshBooksConnector: ~
   App\Connector\FreshBooks\FreshBooksSync: ~

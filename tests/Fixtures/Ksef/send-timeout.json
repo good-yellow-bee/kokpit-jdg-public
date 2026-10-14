@@ -1,0 +1,21 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json, pobrane 2026-10-14); prawdziwe nagrania z api-test zastąpią je w F3.5 (ksef-te-fixtures).",
+  "scenario": "Sesja otwarta, wysyłka bez odpowiedzi (timeout).",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online",
+      "status": 201,
+      "body": {
+        "referenceNumber": "20261116-SO-1A2B3C4D5E-6F7A8B9C0D-11",
+        "validUntil": "2026-11-16T21:00:00+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online/20261116-SO-1A2B3C4D5E-6F7A8B9C0D-11/invoices",
+      "error": "Fikcyjny timeout po wysłaniu faktury."
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json, pobrane 2026-10-14); prawdziwe nagrania z api-test zastąpią je w F3.5 (ksef-te-fixtures).",
+  "scenario": "Status faktury 450: błąd weryfikacji semantyki; zamknięcie sesji.",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online",
+      "status": 201,
+      "body": {
+        "referenceNumber": "20261116-SO-1A2B3C4D5E-6F7A8B9C0D-11",
+        "validUntil": "2026-11-16T21:00:00+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online/20261116-SO-1A2B3C4D5E-6F7A8B9C0D-11/invoices",
+      "status": 202,
+      "body": {
+        "referenceNumber": "20261116-EE-2B3C4D5E6F-7A8B9C0D1E-22"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/v2/sessions/20261116-SO-1A2B3C4D5E-6F7A8B9C0D-11/invoices/20261116-EE-2B3C4D5E6F-7A8B9C0D1E-22",
+      "status": 200,
+      "body": {
+        "ordinalNumber": 1,
+        "invoiceNumber": "FB-2026-0201",
+        "referenceNumber": "20261116-EE-2B3C4D5E6F-7A8B9C0D1E-22",
+        "invoiceHash": "{{sent_hash}}",
+        "invoicingDate": "2026-11-16T09:00:02+00:00",
+        "status": {
+          "code": 450,
+          "description": "Błąd weryfikacji semantyki dokumentu faktury",
+          "details": [
+            "Fikcyjny błąd walidacji: P_13_1 niezgodne z sumą pozycji."
+          ]
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online/20261116-SO-1A2B3C4D5E-6F7A8B9C0D-11/close",
+      "status": 204
+    }
+  ]
+}

@@ -52,6 +52,14 @@ final readonly class Subject1Importer
             if (is_string($known)) {
                 return $known;
             }
+            // Własna wysyłka w `submitted` albo `unknown` o tym `kind` i P_2: rozstrzyga sha256 `xml_sent` (F3.3, D-54).
+            $sent = $this->db->fetchOne(
+                "SELECT id FROM invoice WHERE environment=? AND direction='sale' AND kind=? AND invoice_number=? AND status IN ('submitted','unknown') FOR UPDATE",
+                [$environment, $document->kind, $document->number],
+            );
+            if (is_string($sent) && $this->matchSent($sent, $xml, $ksefNumber, $assignedAt)) {
+                return $sent;
+            }
             $buyer = $this->counterparties->client($document->buyer);
             $taxPoint = $document->taxPointDate();
             $fx = $this->fx->amounts($document->currency, $taxPoint, $document->issueDate, false, $document->netTotal, $document->vatTotal);
@@ -104,6 +112,34 @@ final readonly class Subject1Importer
             $this->ledger->onImported($id);
             return $id;
         });
+    }
+
+    /**
+     * Zapasowa rekoncyliacja z syncu Subject1 (token `ksef_token_read`, docs/modules/ksef.md, „Skutki zapisu”): bajty
+     * z KSeF zgodne z którymkolwiek `xml_sent` faktury → `accepted` z tym numerem; różne → kolizja P_2: `rejected`
+     * z `p2_collision` i alert, a faktura z KSeF wchodzi jak przy braku lokalnego wiersza.
+     *
+     * @return bool czy faktura z KSeF to własna wysyłka
+     */
+    private function matchSent(string $invoiceId, string $xml, string $ksefNumber, \DateTimeImmutable $assignedAt): bool
+    {
+        $live = $this->db->fetchAssociative("SELECT * FROM approval WHERE subject_type IN ('sales_invoice','correction_invoice') AND subject_id=? AND status IN ('dispatching','submitted','unknown') FOR UPDATE", [$invoiceId]);
+        if ($live === false || $live['status'] === 'dispatching') {
+            throw new \DomainException('Faktura o tym numerze ma wysyłkę w toku; rozstrzyga SubmissionReconciler.');
+        }
+        if ($this->transitions === null) {
+            throw new \LogicException('Brak ApprovalTransitions dla rekoncyliacji z Subject1.');
+        }
+        $sent = $this->db->fetchFirstColumn("SELECT sha256 FROM stored_file WHERE owner_table='invoice' AND owner_id=? AND kind='xml_sent'", [$invoiceId]);
+        $event = $live['status'] === 'unknown' ? 'resolve' : 'accepted';
+        $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
+        if (in_array(hash('sha256', $xml), $sent, true)) {
+            $refs = ApprovalTransitions::refs($live) + ['ksef_number' => $ksefNumber,'acquisition_date' => $assignedAt->format('Y-m-d\TH:i:s.uP'),'reconciled_by' => 'subject1'];
+            $this->transitions->apply($live, 'accepted', $event, ['result_code' => 'subject1_match','finished_at' => $now,'external_refs' => json_encode($refs, JSON_THROW_ON_ERROR)], ['result_code' => 'subject1_match','reconciled_by' => 'subject1']);
+            return true;
+        }
+        $this->transitions->apply($live, 'rejected', $event, ['result_code' => 'p2_collision','finished_at' => $now], ['result_code' => 'p2_collision','reconciled_by' => 'subject1']);
+        return false;
     }
 
     /** Szkic przed wysyłką ustępuje fakturze spoza kokpitu; przy `dispatching` i dalej rozstrzyga `SubmissionReconciler` (F3.3). */

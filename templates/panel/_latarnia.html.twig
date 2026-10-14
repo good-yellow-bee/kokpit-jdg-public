@@ -1,0 +1,10 @@
+{# Ostatni status Latarni KSeF (zadanie `latarnia.status` i sprawdzenie przed wysyłką, F3.3). #}
+<p id="latarnia-status" role="status">
+    {% if latarnia is null %}
+        Latarnia KSeF: brak odczytu.
+    {% elseif latarnia.status == 'AVAILABLE' %}
+        Latarnia KSeF: AVAILABLE (sprawdzono {{ latarnia.checked_at }}).
+    {% else %}
+        Latarnia KSeF: {{ latarnia.status }} (sprawdzono {{ latarnia.checked_at }}){% if latarnia.message %}: {{ latarnia.message }}{% endif %}. Wysyłki KSeF czekają w stanie „approved”; <code>approval.dispatch_waiting</code> spróbuje ponownie.
+    {% endif %}
+</p>

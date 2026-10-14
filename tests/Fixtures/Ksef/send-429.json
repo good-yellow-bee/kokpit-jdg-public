@@ -1,0 +1,25 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json, pobrane 2026-10-14); prawdziwe nagrania z api-test zastąpią je w F3.5 (ksef-te-fixtures).",
+  "scenario": "429 z Retry-After przy otwarciu sesji.",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/v2/sessions/online",
+      "status": 429,
+      "headers": {
+        "Retry-After": "120",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "status": {
+          "code": 429,
+          "description": "Too Many Requests",
+          "details": [
+            "Fikcyjnie: przekroczono limit 30 żądań na minutę. Spróbuj ponownie po 120 sekundach."
+          ]
+        }
+      }
+    }
+  ]
+}
