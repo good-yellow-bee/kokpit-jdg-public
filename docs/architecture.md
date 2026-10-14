@@ -137,7 +137,7 @@ Nazwy zmiennych i wartości domyślne są w [naming.md](naming.md). Decyzje: D-1
 | `jpk` | `test-e-dokumenty.mf.gov.pl`; magazyn `taxdocumentstorageNNtst.blob.core.windows.net` | – | `e-dokumenty.mf.gov.pl`; magazyn `taxdocumentstorageNN.blob.core.windows.net` | [specyfikacja JPK 5.6.0](https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf) |
 | klucz publiczny MF w `jpk` (`mf_keys.refresh`, tylko `GET`) | `www.podatki.gov.pl` | – | `www.podatki.gov.pl` | [pliki do pobrania MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_vat-z-deklaracja/pliki-do-pobrania) |
 | `edeklaracje` | `test-bramka.edeklaracje.gov.pl`, działanie do sprawdzenia | – | `bramka.e-deklaracje.mf.gov.pl` | [specyfikacja e-Deklaracji](https://podatki-arch.mf.gov.pl/media/3616/edek_specyfikacja_we-wy_2-4_test_www.pdf) |
-| `white_list` | `wl-test.mf.gov.pl` | – | `wl-api.mf.gov.pl` | [API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) |
+| `white_list` | `wykazpodatnikowvat-test.mf.gov.pl` (dawny `wl-test.mf.gov.pl`) | – | `wykazpodatnikowvat.mf.gov.pl` (dawny `wl-api.mf.gov.pl`) | [API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) |
 | `vies` | `ec.europa.eu`, ścieżka `…/rest-api/check-vat-test-service` | – | `ec.europa.eu`, ścieżka `…/rest-api/check-vat-number` | [VIES test](https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service) |
 | `nbp` | – | – | `api.nbp.pl` | [API NBP](https://api.nbp.pl/en.html) |
 
@@ -167,7 +167,7 @@ Allowlista w kodzie jest prawdziwą ochroną przed przypadkowym wywołaniem PROD
 - Wpis może być wzorcem zakotwiczonym. Jedyny taki wpis to magazyn JPK: `^taxdocumentstorage[0-9]{2}tst\.blob\.core\.windows\.net$` przy `JPK_TARGET=test`, bez `tst` przy `prod` ([modules/jpk.md](modules/jpk.md)).
 - Konektory bez celu mają listę hostów z konfiguracji wdrożenia. Konfiguracja wdrożenia to `APP_ENV`; projekty compose są w [operations.md](operations.md).
 - Hosty PROD rejestrów są tylko przy `APP_ENV=prod`. `kokpit-restore` ma `APP_ENV=prod`, ale `CONNECTORS_ENABLED=0`, więc nie woła nikogo.
-- `kokpit-dev` i testy dopuszczają z rejestrów tylko `wl-test.mf.gov.pl` i ścieżkę `check-vat-test-service` VIES.
+- `kokpit-dev` i testy dopuszczają z rejestrów tylko hosty testowe białej listy (`wykazpodatnikowvat-test.mf.gov.pl`, dawny `wl-test.mf.gov.pl`) i ścieżkę `check-vat-test-service` VIES. PROD dopuszcza z VIES tylko ścieżkę `check-vat-number`.
 - Usługa testowa VIES leży na hoście PROD, więc dla `vies` sprawdzana jest też ścieżka.
 - NBP ma tylko host PROD `api.nbp.pl`. `kokpit-dev` dopuszcza go tylko dla konektora `nbp`, tylko `GET` i przez licznik `nbp.rates`.
 - Testy automatyczne NBP zostają na nagraniach przy `CONNECTORS_ENABLED=0` ([testing.md](testing.md)).

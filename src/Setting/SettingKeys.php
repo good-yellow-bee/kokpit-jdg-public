@@ -16,12 +16,16 @@ final class SettingKeys
     public const ZUS_VARIANT = 'zus.variant';
     public const ADVANCE_FREQUENCY = 'ryczalt.advance_frequency';
     public const VAT_STANDARD_RATE = 'vat.standard_rate';
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE];
+    public const PRE_PAYMENT_THRESHOLD = 'white_list.pre_payment_threshold_pln';
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
-    /** Część JPK `company.identity`; część FA(3) (`vat_eu_number`, `name`, `address`, `country`) dochodzi w F3. */
-    public const IDENTITY_FIELDS = ['nip','tax_office_code','first_name','last_name','email','phone','vat_eu_number','name','address','country'];
+    /**
+     * Część JPK `company.identity`; część FA(3) (`vat_eu_number`, `name`, `address`, `country`) dochodzi w F3.
+     * `bank_accounts` (lista NRB) i `vat_eu_number` czyta samosprawdzenie w białej liście i VIES (F1).
+     */
+    public const IDENTITY_FIELDS = ['nip','tax_office_code','first_name','last_name','email','phone','vat_eu_number','name','address','country','bank_accounts'];
     public static function assertKnown(string $key): void
     {
         if (!in_array($key, self::KEYS, true)) {
@@ -37,17 +41,23 @@ final class SettingKeys
             self::ZUS_PARAMETERS => self::zusParameters($value),
             self::ZUS_VARIANT => self::oneOf($key, $value, self::ZUS_VARIANTS),
             self::ADVANCE_FREQUENCY => self::oneOf($key, $value, self::ADVANCE_FREQUENCIES),
+            self::PRE_PAYMENT_THRESHOLD => self::amount('white_list.pre_payment_threshold_pln', $value),
             self::VAT_STANDARD_RATE => is_string($value) && preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', $value) ? $value : throw new \InvalidArgumentException('vat.standard_rate to procent z dwoma miejscami, np. 23.00.'),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };
     }
-    /** @return array<string,string> */
+    /** @return array<string,string|list<string>> */
     private static function identity(mixed $value): array
     {
         if (!is_array($value) || array_diff(array_keys($value), self::IDENTITY_FIELDS) !== []) {
             throw new \InvalidArgumentException('company.identity ma niedozwolone pola.');
         }
         $result = [];
+        $accounts = $value['bank_accounts'] ?? [];
+        unset($value['bank_accounts']);
+        if (!is_array($accounts)) {
+            throw new \InvalidArgumentException('bank_accounts to lista numerów rachunków.');
+        }
         foreach ($value as $field => $item) {
             if ($item === null || $item === '') {
                 continue;
@@ -70,6 +80,19 @@ final class SettingKeys
         }
         if (isset($result['email']) && filter_var($result['email'], FILTER_VALIDATE_EMAIL) === false) {
             throw new \InvalidArgumentException('Niepoprawny e-mail.');
+        }
+        if (isset($result['vat_eu_number'])) {
+            $result['vat_eu_number'] = strtoupper(str_replace(' ', '', $result['vat_eu_number']));
+            if (!preg_match('/^PL[0-9]{10}$/D', $result['vat_eu_number'])) {
+                throw new \InvalidArgumentException('Numer VAT UE to PL i NIP, np. PL1111111111.');
+            }
+        }
+        $list = [];
+        foreach ($accounts as $account) {
+            $list[] = self::account('bank_accounts', $account);
+        }
+        if ($list !== []) {
+            $result['bank_accounts'] = array_values(array_unique($list));
         }
         ksort($result);
         return $result;

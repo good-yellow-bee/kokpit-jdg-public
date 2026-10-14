@@ -46,6 +46,7 @@ final class ObligationRules
     /** Formularze wpisu ręcznego: wiersz tworzy akcja w panelu, przeliczenie go nie zmienia. */
     public const MANUAL = [
         'edelivery_reply_due.manual' => ['type' => 'edelivery_reply_due','policy' => PolishCalendar::NONE,'source' => 'docs/modules/e-doreczenia.md'],
+        'wl_notice.manual' => ['type' => 'wl_notice','policy' => PolishCalendar::OP12,'source' => 'https://api.sejm.gov.pl/eli/acts/DU/2026/622/text.pdf'],
     ];
     /** Kanały cotygodniowego przeglądu (Q-13). */
     public const CHANNELS = ['ade_private','e_us','ezus'];

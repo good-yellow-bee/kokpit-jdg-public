@@ -9,7 +9,7 @@ Dawny jeden konektor „kontrahent” to teraz osobne konektory z [../naming.md]
 | Źródło (`connector`) | Endpoint | Klucz | Uwagi | Użycie | Faza |
 | --- | --- | --- | --- | --- | --- |
 | [VIES](https://ec.europa.eu/assets/taxud/vow-information/swagger_publicVAT.yaml) (`vies`) | `POST ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number` | brak | bywa niedostępny po stronie kraju | klienci i dostawcy z UE, własny numer VAT UE | F1 |
-| [Biała lista VAT](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) (`white_list`) | `wl-api.mf.gov.pl` | brak | dwa limity; blokada do północy po wyczerpaniu | polscy kontrahenci, rachunki przed przelewem | F1 |
+| [Biała lista VAT](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) (`white_list`) | `wykazpodatnikowvat.mf.gov.pl/api` | brak | dwa limity; blokada do północy po wyczerpaniu | polscy kontrahenci, rachunki przed przelewem | F1 |
 | [NBP](https://api.nbp.pl/en.html) (`nbp`) | `api.nbp.pl/api/exchangerates/rates/a/{waluta}/…` | brak | tabela A, kursy średnie | przeliczenia PIT i VAT | F1 |
 
 - KRS, CEIDG i GUS są odłożone (D-20, D-29): warunek powrotu w [../roadmap.md](../roadmap.md), fakty o API w [../facts.md](../facts.md).
@@ -21,7 +21,7 @@ Dawny jeden konektor „kontrahent” to teraz osobne konektory z [../naming.md]
 - Rejestry i NBP nie mają zmiennej `*_TARGET` (D-13). Adresy i wersje API są w konfiguracji, nie w kodzie.
 - Hosty rejestrów pochodzą z konfiguracji wdrożenia, którą sprawdza `HostAllowlist` ([../architecture.md](../architecture.md)).
 - Hosty PROD białej listy i VIES są tylko w `kokpit-prod` na VPS. Jednorazowy lokalny projekt `kokpit-restore` do testu odtworzenia nie woła nikogo, bo ma `CONNECTORS_ENABLED=0` (D-28).
-- `kokpit-dev` na laptopie i testy mają tylko `wl-test.mf.gov.pl`, ścieżkę VIES `check-vat-test-service` albo nagrane odpowiedzi ([../testing.md](../testing.md)).
+- `kokpit-dev` na laptopie i testy mają tylko test białej listy (`wykazpodatnikowvat-test.mf.gov.pl`), ścieżkę VIES `check-vat-test-service` albo nagrane odpowiedzi ([../testing.md](../testing.md)).
 - VIES test i PROD mają wspólny host `ec.europa.eu`, więc dla `vies` allowlista sprawdza też ścieżkę.
 - NBP ma tylko host PROD `api.nbp.pl`. `kokpit-dev` dopuszcza go tylko dla `nbp`, tylko `GET` i przez licznik `nbp.rates`.
 - Produkcyjne rejestry i NBP tylko do odczytu, przez licznik, nigdy z testów automatycznych.
@@ -67,7 +67,7 @@ Dawny jeden konektor „kontrahent” to teraz osobne konektory z [../naming.md]
 
 ## Biała lista
 
-**Hosty:** produkcja `wl-api.mf.gov.pl`, test `wl-test.mf.gov.pl` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat)).
+**Hosty:** od 12.10.2026 produkcja `wykazpodatnikowvat.mf.gov.pl/api`, test `wykazpodatnikowvat-test.mf.gov.pl/api` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat), D-42). Adresy są w `registry.white_list_endpoints`. Dawne hosty `wl-api.mf.gov.pl` i `wl-test.mf.gov.pl` zostają na liście `HostAllowlist`, dopóki MF ich nie wyłączy.
 
 **Metody** ([specyfikacja API 1.6.0](https://www.gov.pl/attachment/64f1f32b-b979-4b4d-8ace-57e54c6f1082))
 
@@ -111,6 +111,7 @@ Zapytanie może dotyczyć dnia bieżącego albo przeszłego, do 5 lat wstecz.
 **Nowy wykaz od 12.10.2026.** MF planuje zmodernizowany wykaz pod `wykazpodatnikowvat.mf.gov.pl`, z możliwymi przerwami codziennie 22:00–0:00 ([MF](https://www.gov.pl/web/kas/wykaz-podatnikow-vat)). Strona API nie zapowiada zmian hosta ani limitów.
 
 - Host i limity są w konfiguracji. Po 12.10.2026 sprawdzasz je ponownie; wpis w [../facts.md](../facts.md).
+- Konektor odmawia zapytania między 22:00 a 0:00 tak jak przy progu licznika: zadanie czeka do północy (`WhiteListConnector::QUIET_FROM_HOUR`).
 - Zadania kokpitu nie pytają wykazu między 22:00 a 0:00.
 
 ## Polityka weryfikacji
