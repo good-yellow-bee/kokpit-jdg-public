@@ -14,15 +14,21 @@ final class CiWorkflowTest extends TestCase
         $root = dirname(__DIR__, 2);
         $content = file_get_contents($root . '/.github/workflows/ci.yml');
         self::assertIsString($content);
-        /** @var array{on:array<string,mixed>,jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,steps:list<array{run?:string,uses?:string,with?:array<string,string>}>}>} $workflow */
+        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,steps:list<array{run?:string,uses?:string,with?:array<string,string>}>}>} $workflow */
         $workflow = Yaml::parse($content);
         self::assertSame(['push','pull_request','workflow_dispatch'], array_keys($workflow['on']));
+        // D-43: gałąź PR liczy minuty raz (pull_request), push tylko na main, starsze przebiegi PR anulowane.
+        self::assertSame(['branches' => ['main']], $workflow['on']['push']);
+        self::assertStringContainsString('github.head_ref || github.ref_name', $workflow['concurrency']['group']);
+        self::assertSame("\${{ github.event_name == 'pull_request' }}", $workflow['concurrency']['cancel-in-progress']);
         $jobs = $workflow['jobs'];
         self::assertSame(['lint','unit_property','contract','xsd','integration','security','mutation','evidence','live'], array_keys($jobs));
         self::assertSame('unit+property', $jobs['unit_property']['name'] ?? null);
         self::assertTrue($jobs['mutation']['continue-on-error'] ?? null);
+        self::assertSame("github.event_name != 'pull_request'", $jobs['mutation']['if'] ?? null);
         self::assertSame("github.event_name == 'workflow_dispatch'", $jobs['live']['if'] ?? null);
         self::assertStringContainsString("github.ref_name != 'main'", $jobs['evidence']['if'] ?? '');
+        self::assertStringContainsString("startsWith(github.head_ref || github.ref_name, 'f')", $jobs['evidence']['if'] ?? '');
         foreach (['unit_property' => ['unit','property'],'contract' => ['contract'],'xsd' => ['xsd'],'integration' => ['integration'],'security' => ['security'],'live' => ['live']] as $job => $suites) {
             foreach ($suites as $suite) {
                 self::assertStringContainsString('--testsuite ' . $suite, implode("\n", array_column($jobs[$job]['steps'], 'run')));

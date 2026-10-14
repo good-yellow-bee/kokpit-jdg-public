@@ -1,6 +1,8 @@
 name: CI
 on:
+  # Gałąź PR uruchamia CI raz, przez pull_request; push tylko na main (D-43).
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -10,6 +12,9 @@ on:
         type: string
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   KOKPIT_DEPLOYMENT: dev
   APP_ENV: test
@@ -57,6 +62,7 @@ jobs:
       - run: sh scripts/ci-bootstrap.sh
       - run: docker compose exec -T app vendor/bin/phpunit --testsuite security --fail-on-empty-test-suite
   mutation:
+    if: github.event_name != 'pull_request'
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
@@ -65,7 +71,7 @@ jobs:
       - run: docker compose exec -T app sh scripts/run-mutation.sh | tee mutation.txt
       - run: cat mutation.txt >> "$GITHUB_STEP_SUMMARY"
   evidence:
-    if: github.event_name != 'push' || github.ref_name != 'main'
+    if: (github.event_name != 'push' || github.ref_name != 'main') && (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref || github.ref_name, 'f'))
     needs: [lint, unit_property, contract, xsd, integration, security]
     env:
       SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
