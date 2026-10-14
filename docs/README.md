@@ -12,8 +12,8 @@ Pracuje jedna osoba po godzinach, ok. 10 h tygodniowo. Plan opiera się na bramk
 | 2, 3, 6 | F2 ewidencja 2026 | F2.1: `revenue_entry` i import 2026 z CSV albo eksportu JPK_EWP(4), K_8 i K_9 policzone w narzędziu. F2.4: generator JPK_EWP(4) i JPK_ST(1) z walidacją XSD, dry run. F2.2/F2.3: źródła KSeF Subject1 i FreshBooks, uzgodnienia, reszta zakresu według pliku fazy | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) | kod F2.1, F2.2, F2.3 i F2.4 (JPK_EWP) na `main`; JPK_ST(1) czeka na XSD (D-37), klucze `opening.*` w F5 (D-49); odbiór czeka na F0a (D-36, D-37) | — |
 | 4 | F0b bramka i kalendarz | szkielet bramki zatwierdzeń, step-up i drugi passkey, `PolishCalendar`, silnik obowiązków, przypomnienia, ustawienia z datą obowiązywania | [phases/f0b-bramka-kalendarz.md](phases/f0b-bramka-kalendarz.md) | kod na `main`; odbiór czeka na F0a i wiersze `[manual]` (D-38) | — |
 | 5 | F1 KSeF odczyt | sync Subject1 i Subject2 od 1.02.2026, przegląd kosztów, koszty spoza KSeF, kursy NBP, VIES, biała lista | [phases/f1-ksef-odczyt.md](phases/f1-ksef-odczyt.md) | kod bez sieci na `main` (D-42); wiersze na nagraniach KSeF, NBP i rejestrów czekają na sesję z dostępem do hostów testowych | — |
-| 7 | F3 KSeF sprzedaż | FreshBooks → FA(3) → bramka → KSeF, QR i PDF, korekty | [phases/f3-ksef-sprzedaz.md](phases/f3-ksef-sprzedaz.md) | plik fazy gotowy; kod F3.1–F3.4 bez sieci, częściami (D-50) | — |
-| 8 | F5 JPK | JPK_EWP(4) i JPK_ST(1) w PROD, potem JPK_V7M(3) i VAT-UE | zaślepka w tym pliku | nie rozpoczęta | — |
+| 7 | F3 KSeF sprzedaż | FreshBooks → FA(3) → bramka → KSeF, QR i PDF, korekty | [phases/f3-ksef-sprzedaz.md](phases/f3-ksef-sprzedaz.md) | kod F3.1–F3.4 na `main` (PR #12–#16, D-50); F3.5 (live, api-test) czeka na sesję z dostępem do hostów testowych; go-live czeka na przegląd doradcy (D-04) | — |
+| 8 | F5 JPK | JPK_EWP(4) i JPK_ST(1) w PROD, potem JPK_V7M(3) i VAT-UE | [phases/f5-jpk.md](phases/f5-jpk.md) | plik fazy gotowy; kod F5.1, F5.2, F5.4 i F5.5 bez sieci, częściami (D-56); F5.3 i F5.6 (live) czekają na hosty testowe | — |
 | 9 | F6 czat | czat z Claude Haiku 5.5 na narzędziach tylko do odczytu i `draft_document` | zaślepka w tym pliku | nie rozpoczęta | — |
 | – | F4 e-Doręczenia API | lista i odbiór pism przez API | sekcja „Odłożone” | odłożona (D-29) | — |
 | – | F7 basal | lokalny klasyfikator w trybie cienia | sekcja „Odłożone” | odłożona (D-29) | — |
@@ -230,26 +230,7 @@ Zaślepka przeniesiona do pliku fazy: [phases/f3-ksef-sprzedaz.md](phases/f3-kse
 
 ### F5 JPK
 
-- Zakres:
-  - API JPK 5.6.0 na środowisku testowym z fikcyjnym zbiorem danych; dane autoryzujące (SIG-2008);
-  - JPK_EWP(4) i JPK_ST(1) w PROD do 31.03.2027;
-  - potem JPK_V7M(3): NrKSeF, OFF, BFK, DI, K_11, K_12, K_27–K_30, nadwyżka VAT;
-  - VAT-UE z VAT-UEK przez e-Deklaracje; uzgodnienia; blokada okresu; wiersze WHT w kalendarzu.
-- Otwarte decyzje: Q-12, Q-21, Q-25, Q-31.
-- Decyzje: D-02, D-27 (Q-32 rozstrzygnięte).
-- Zapas: XML z kokpitu przez Klient JPK WEB albo Formularz uproszczony.
-- Szkic kryteriów:
-  - JPK_EWP(4) na test-e-dokumenty → UPO zapisane przy okresie;
-  - ponowna wysyłka tego samego pliku → kod duplikatu, pobrane UPO oryginału, brak drugiego złożenia;
-  - fixture JPK_V7M(3) z rekordami KSeF, BFK i DI oraz sprzedażą np I i np II → plik zgodny z XSD;
-  - JPK_V7M(3) z fikcyjnego zbioru na test-e-dokumenty → UPO zapisane przy okresie;
-  - suma niezaokrąglonych `net_pln` VAT-UE = K_12 JPK_V7M do grosza (reguła w [modules/jpk.md](modules/jpk.md)); K_8 JPK_EWP = suma ewidencji;
-  - VAT-UE na bramce testowej e-Deklaracji → UPO albo udokumentowany brak bramki testowej (R-31);
-  - `[manual]` pierwsze złożenie PROD przez bramkę z danymi autoryzującymi N−2.
-- Dowody:
-  - JPK_V7M(3) i JPK_EWP(4) na test-e-dokumenty → przy każdym UPO XML (`stored_file` rodzaju `upo` przy `filing`) i sha256 wysłanego pliku;
-  - wynik walidacji XSD offline obu plików przed zatwierdzeniem (plik wyjścia komendy);
-  - VAT-UE: UPO z bramki testowej e-Deklaracji albo udokumentowana ścieżka ręczna (lista kontrolna odhaczona przez Ciebie, zrzut).
+Zaślepka przeniesiona do pliku fazy: [phases/f5-jpk.md](phases/f5-jpk.md).
 
 ### F6 czat
 

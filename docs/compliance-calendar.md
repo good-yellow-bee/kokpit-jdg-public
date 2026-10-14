@@ -14,7 +14,7 @@ Silnik terminów, pełna tabela obowiązków, przypomnienia, zamknięcie miesią
 | F5 | „Zamknięcie miesiąca” (krok JPK, bramki JPK_V7M i JPK_EWP(4)), „Blokada okresu” (korekty), „Bilans otwarcia” (P_39, potwierdzenie w PROD) |
 
 - Kolumny `obligation`, `period`, `notification` i `setting` (klucze `opening.*`) są w [data-model.md](data-model.md). Tu są reguły i przejścia stanów.
-- Kryteria odbioru są w plikach faz: [phases/f0b-bramka-kalendarz.md](phases/f0b-bramka-kalendarz.md), [phases/f1-ksef-odczyt.md](phases/f1-ksef-odczyt.md), [phases/f2-ewidencja.md](phases/f2-ewidencja.md). Szkic F5 jest w [README.md](README.md).
+- Kryteria odbioru są w plikach faz: [phases/f0b-bramka-kalendarz.md](phases/f0b-bramka-kalendarz.md), [phases/f1-ksef-odczyt.md](phases/f1-ksef-odczyt.md), [phases/f2-ewidencja.md](phases/f2-ewidencja.md). F5: [phases/f5-jpk.md](phases/f5-jpk.md).
 - Kwoty (zaliczka, ZUS, WHT) liczy [tax-rules.md](tax-rules.md).
 - API e-Doręczeń jest odłożone (D-29). `edelivery_deemed` nie powstaje, a termin odpowiedzi na pismo wpisujesz ręcznie ([modules/e-doreczenia.md](modules/e-doreczenia.md), [roadmap.md](roadmap.md)).
 - Obowiązki już biegną. Do go-live faz obowiązuje „Teraz – zgodność” z [README.md](README.md), z datami działań właściciela.

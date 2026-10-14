@@ -175,8 +175,8 @@ Wartości `opening.*` w PROD wpisujesz przy go-live JPK_V7M(3) w F5, bo data prz
 
 ## Poza zakresem
 
-- Wysyłka JPK_EWP(4) i JPK_ST(1) na bramkę testową i PROD, dane autoryzujące, UPO z bramki: zaślepka F5 w [../README.md](../README.md).
-- JPK_V7M(3) i VAT-UE z kokpitu: zaślepka F5. Do tego czasu składasz w narzędziach MF i rejestrujesz UPO.
+- Wysyłka JPK_EWP(4) i JPK_ST(1) na bramkę testową i PROD, dane autoryzujące, UPO z bramki: [f5-jpk.md](f5-jpk.md).
+- JPK_V7M(3) i VAT-UE z kokpitu: [f5-jpk.md](f5-jpk.md). Do tego czasu składasz w narzędziach MF i rejestrujesz UPO.
 - Wartości `opening.*` w PROD: go-live JPK_V7M(3) w F5.
 - Znacznik gotowości FreshBooks, blokady obejścia, zapis zwrotny (pierwszy raz na PROD, D-35), FA(3) i KOR wystawiane z kokpitu: zaślepka F3.
 - Kwoty WHT, IFT-2R i CIT-10Z: przypomnienia z F0b; żadna faza nie planuje wysyłki.
