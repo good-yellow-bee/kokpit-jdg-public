@@ -220,7 +220,7 @@ Dwa logi o różnych celach. Kolumny są w [data-model.md](data-model.md).
 | `kokpit_owner` | właściciel tabel, DDL | tylko krok 5 `make deploy`, przez osobny DSN migracji ([operations.md](operations.md)) |
 | `kokpit_app` | tylko DML; nie jest właścicielem; na `audit_log` bez `UPDATE`, `DELETE` i `TRUNCATE` | `app`, workery, `scheduler` |
 | `kokpit_backup` | rola `pg_read_all_data`, tylko odczyt ([PostgreSQL](https://www.postgresql.org/docs/current/predefined-roles.html)) | `pg_dump` w usłudze `backup` |
-| `chat_ro` (F6) | `SELECT` tylko na widokach `chat_*` | połączenie Doctrine `chat` ([modules/czat.md](modules/czat.md)) |
+| `chat_ro` (F6) | `SELECT` tylko na widokach `chat_*`; na roli `default_transaction_read_only = on` i `statement_timeout` 2 s; powstaje w `docker/db/init-db.sh` przy pliku hosta `chat-ro-password` (D-59) | połączenie Doctrine `chat` ([modules/czat.md](modules/czat.md)) |
 
 - `kokpit_app` nie jest właścicielem tabel. Nie nada sobie uprawnień ani nie wyłączy triggera (`ALTER TABLE … DISABLE TRIGGER`).
 - Test `cc-08` ([testing.md](testing.md)) próbuje też wyłączyć trigger rolą `kokpit_app`. Oczekiwany wynik: błąd bazy.

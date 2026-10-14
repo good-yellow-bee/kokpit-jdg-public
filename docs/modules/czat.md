@@ -80,8 +80,8 @@ Narzędzie to nazwane zapytanie: wyliczenie plus parametry w JSON Schema, z `str
 | Rola | `chat_ro`: `SELECT` tylko na widokach `chat_*`; bez dostępu do tabel |
 | Połączenie | osobne połączenie Doctrine `chat`, nigdy domyślny EntityManager |
 | Transakcje | `default_transaction_read_only = on` dla roli |
-| Limity | `statement_timeout` 2 s; limit wierszy wyniku w konfiguracji (domyślnie 200) |
-| Widoki | filtrują po `environment`; pomijają PESEL, rachunki, adresy osób fizycznych i dane autoryzujące |
+| Limity | `statement_timeout` 2 s; limit wierszy wyniku `chat.row_limit` (domyślnie 200), nadmiar oznaczony `truncated` |
+| Widoki | właściciel `kokpit_owner`, bez `security_invoker`; filtrują po `environment` z ustawienia sesji `kokpit.environment`, które `ChatQueryRunner` ustawia w transakcji zapytania (brak ustawienia → zero wierszy, D-59); pomijają PESEL, rachunki, adresy osób fizycznych i dane autoryzujące |
 | Poza widokami | `chat_session.pseudonym_map`, `audit_log`, `connector_call`, `credential_state`, `setting` |
 
 - Zapis robi tylko `draft_document`, przez usługę aplikacji na zwykłym połączeniu. Nie przez `chat_ro`.

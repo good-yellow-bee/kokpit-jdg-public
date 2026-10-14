@@ -4,3 +4,11 @@ criteria:
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }
+  # F6.1 (bez sieci, PostgreSQL w jobie integration, fikcyjny zbiór; D-58, D-59). cc-28 pokrywa chat-ro-denied; stoi przed nim, bo ten sam test zapisuje cmd/chat-ro-denied.txt.
+  - { key: cc-28, runner: ci, command: 'vendor/bin/phpunit --filter ChatRoDenied', junit: true }
+  - { key: chat-ro-denied, runner: ci, command: 'vendor/bin/phpunit --filter ChatRoDenied', junit: true }
+  - { key: chat-views-environment, runner: ci, command: 'vendor/bin/phpunit --filter ChatViewsEnvironment', junit: true }
+  - { key: chat-views-minimal, runner: ci, command: 'vendor/bin/phpunit --filter ChatViewsMinimal', junit: true }
+  - { key: chat-named-queries, runner: ci, command: 'vendor/bin/phpunit --filter ChatNamedQueries', junit: true }
+  - { key: chat-history-append-only, runner: ci, command: 'vendor/bin/phpunit --filter ChatHistoryAppendOnly', junit: true }
+  - { key: chat-retention, runner: ci, command: 'vendor/bin/phpunit --filter ChatRetention', junit: true }
