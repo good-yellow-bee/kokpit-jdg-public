@@ -20,7 +20,8 @@ final class SettingKeys
     public const LEDGER_AUTO_ENTRIES = 'ledger.auto_entries_enabled';
     /** Dzień pierwszej Twojej faktury w KSeF (Q-10); dzień przejścia importu FreshBooks (docs/modules/freshbooks.md). */
     public const KSEF_SALES_TRANSITION_ON = 'ksef.sales_transition_on';
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON];
+    public const RYCZALT_ELIGIBILITY = 'ryczalt.eligibility';
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -44,8 +45,22 @@ final class SettingKeys
             self::RYCZALT_SERVICE_MAP => \App\Ledger\ServiceMap::normalize($value),
             self::VAT_STANDARD_RATE => is_string($value) && preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', $value) ? $value : throw new \InvalidArgumentException('vat.standard_rate to procent z dwoma miejscami, np. 23.00.'),
             self::KSEF_SALES_TRANSITION_ON => is_string($value) && self::isDate($value) ? $value : throw new \InvalidArgumentException('ksef.sales_transition_on to data RRRR-MM-DD.'),
+            self::RYCZALT_ELIGIBILITY => self::eligibility($value),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };
+    }
+    /**
+     * Limit prawa do ryczałtu w euro i limit obserwowany z projektu ustawy (Q-38); oba jako napisy dziesiętne.
+     *
+     * @return array{limit_eur:string,watch_limit_eur:?string}
+     */
+    private static function eligibility(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), ['limit_eur','watch_limit_eur']) !== []) {
+            throw new \InvalidArgumentException('ryczalt.eligibility ma pola limit_eur i watch_limit_eur.');
+        }
+        $watch = $value['watch_limit_eur'] ?? null;
+        return ['limit_eur' => self::amount('limit_eur', $value['limit_eur'] ?? null),'watch_limit_eur' => $watch === null ? null : self::amount('watch_limit_eur', $watch)];
     }
     private static function isDate(string $value): bool
     {

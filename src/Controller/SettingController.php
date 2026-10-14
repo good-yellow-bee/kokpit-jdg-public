@@ -27,7 +27,7 @@ final class SettingController extends AbstractController
         }
         return $this->render('panel/settings.html.twig', ['current' => $current,'today' => $date->today(),'error' => null]);
     }
-    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on'])]
+    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on|ryczalt\.eligibility'])]
     public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus): Response
     {
         if (!$this->isCsrfTokenValid('setting', $request->request->getString('_token'))) {
@@ -56,6 +56,9 @@ final class SettingController extends AbstractController
                 } catch (\JsonException) {
                     throw new \InvalidArgumentException('ryczalt.service_map to lista JSON.');
                 }
+            } elseif ($key === SettingKeys::RYCZALT_ELIGIBILITY) {
+                $watch = trim($request->request->getString('watch_limit_eur'));
+                $value = ['limit_eur' => trim($request->request->getString('limit_eur')),'watch_limit_eur' => $watch === '' ? null : $watch];
             } elseif ($key === SettingKeys::ZUS_PARAMETERS) {
                 $brackets = [];
                 for ($i = 1; $i <= 3; $i++) {

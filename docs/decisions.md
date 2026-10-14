@@ -134,6 +134,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-44 | kod F2.2 przed odbiorem F0b i F1, częściami: najpierw bez sieci (stawki, kurs PIT, wpisy z Subject1, wpis ręczny, błąd wpisu), potem FreshBooks i płatności, potem korekty KOR i uzgodnienia | przyjęta 2026-10-14 | Q-22 |
 | D-45 | FreshBooks w F2.2: szkic `draft` od dnia przejścia, data przychodu z `create_date` albo wcześniejszej zapłaty, stan OAuth jako jeden zaszyfrowany JSON, przypisanie płatności i wiersze `fx_difference` | przyjęta 2026-10-14 | Q-24, Q-26 |
 | D-46 | korekty KOR i uzgodnienia w F2.2: różnica netto per stawka z `StanPrzed`, zamknięcie zadania bez step-upu, raport uzgodnień liczony na żądanie bez tabeli, FreshBooks czytany przy otwarciu widoku | przyjęta 2026-10-14 | Q-22 |
+| D-47 | kwoty F2.3: zaliczka dopiero po końcu okresu, próg zdrowotnej z przychodu narastająco do końca miesiąca minus zapłacone społeczne, `health_bracket_manual` jako dolna granica, miesiące rozliczenia zdrowotnej od pierwszych parametrów roku, `ryczalt.eligibility` z dwoma limitami w euro | przyjęta 2026-10-14 | Q-16, Q-17, Q-38 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -895,3 +896,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Kontrola JPK_V7M i zaliczek z tabeli „Uzgodnienia” zostaje na F2.3 i F2.4; „kontrola pliku” na F2.4.
   - Wybór wiersza korygowanego i kursu z listy w panelu to poprawka przy pierwszym takim przypadku.
 - **Pytania:** Q-22.
+
+### D-47 Kwoty zaliczki, ZUS i limitu ryczałtu w F2.3
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - [tax-rules.md](tax-rules.md) podaje wzór zaliczki, progi składki zdrowotnej i kurs „progi w euro”, ale nie mówi, kiedy obowiązek ma kwotę, jak liczyć próg w trakcie roku ani jak zapisać limity ryczałtu.
+  - Kod F2.3 powstaje przed odbiorem F2.2, częściami jak F2.2 (D-44): najpierw kwoty i panel „Podatki”, potem okres, wpis do 20. dnia, złożenie poza kokpitem i blokada okresu.
+- **Decyzja:**
+  - Kwota `ryczalt_advance` powstaje dopiero po końcu okresu (miesiąca albo kwartału); wcześniej `amount_due` jest puste. Odliczenia to składki zapłacone w okresie według `paid_on` (społeczne i 50% zdrowotnej), plus nadwyżka z wcześniejszych okresów tego samego roku.
+  - Próg składki zdrowotnej za miesiąc M: przychód od 1 stycznia do końca M minus składki społeczne zapłacone w tym czasie. `health_bracket_manual` z `zus.parameters` jest dolną granicą progu, np. przy wyborze przychodu z poprzedniego roku (art. 81 ust. 2h); próg nie spada w trakcie roku poniżej tej wartości.
+  - Roczne rozliczenie zdrowotnej: próg z przychodu rocznego po społecznych, składka progu razy miesiące podlegania liczone od miesiąca pierwszych `zus.parameters` roku. Różnica ujemna daje `amount_due` = 0 i zadanie wniosku RZS-R w panelu.
+  - `ryczalt.eligibility` ma pola `limit_eur` (limit obowiązujący) i `watch_limit_eur` (obserwowany próg z projektu, Q-38, może być pusty). Kurs to tabela A z pierwszego dnia roboczego października roku poprzedniego; tabela z innego dnia to błąd, nie zamiennik.
+  - Składki zapłacone wpisujesz w panelu `/taxes`; jeden wiersz `zus_payment` na miesiąc składkowy, ponowny zapis go zmienia i dopisuje `zus.payment_recorded`.
+- **Skutki:**
+  - Zestawienie PIT-28 liczy się z ewidencji i `zus_payment` na żądanie; wysyłka zostaje ręczna.
+  - Blokada zmian `zus_payment` w zamkniętym miesiącu przychodzi z tabelą `period` w drugiej części F2.3.
+  - Pierwszy kod w `src/Tax` miał przełączyć job `mutation` na blokujący (D-28, D-43). `src/Tax` ma covered MSI 98% przy progu 95%, ale próg dotyczy całego zakresu z `infection.json5` (`src/Tax`, `src/Ledger`, `src/Calendar`, `src/Approval`). Job zostaje doradczy, dopóki przebieg na `main` nie pokaże progów na całym zakresie; przełączenie to osobna zmiana.
+- **Pytania:** Q-16, Q-17, Q-38.

@@ -29,6 +29,13 @@ criteria:
   - { key: fx-difference-year-boundary, runner: ci, command: 'vendor/bin/phpunit --filter FxDifferenceYearBoundary', junit: true }
   - { key: ledger-correction, runner: ci, command: 'vendor/bin/phpunit --filter LedgerCorrection', junit: true }
   - { key: ledger-reconciliation-report, runner: ci, command: 'vendor/bin/phpunit --filter LedgerReconciliationReport', junit: true }
+  - { key: ryczalt-advance, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltAdvance', junit: true }
+  - { key: ryczalt-advance-carryover, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltAdvanceCarryover', junit: true }
+  - { key: health-threshold, runner: ci, command: 'vendor/bin/phpunit --filter HealthThreshold', junit: true }
+  - { key: ryczalt-advance-obligation, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltAdvanceObligation', junit: true }
+  - { key: health-reconciliation, runner: ci, command: 'vendor/bin/phpunit --filter HealthReconciliation', junit: true }
+  - { key: pit28-summary, runner: ci, command: 'vendor/bin/phpunit --filter Pit28Summary', junit: true }
+  - { key: ryczalt-eligibility-metric, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltEligibilityMetric', junit: true }
   - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
   - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
   - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }
