@@ -24,7 +24,7 @@ final class ArchitectureRules implements Rule
         if (str_contains($file, '/src/Connector/') && (($node instanceof Node\Expr\FuncCall && $node->name instanceof Node\Name && in_array(strtolower($node->name->toString()), ['getenv','putenv'], true)) || ($node instanceof Node\Expr\Variable && in_array($node->name, ['_ENV','_SERVER'], true)))) {
             $errors[] = RuleErrorBuilder::message('Konektor czyta konfigurację i sekrety przez usługi.')->identifier('architecture.connectorEnvironment')->build();
         }
-        if ((str_contains($file, '/src/Tax/') || str_contains($file, '/src/Ledger/')) && ($node instanceof Node\Scalar\Float_ || $node instanceof Node\Expr\Cast\Double || $node instanceof Node\Expr\BinaryOp\Div || ($node instanceof Node\Identifier && $node->toString() === 'float') || ($node instanceof Node\Expr\FuncCall && $node->name instanceof Node\Name && strtolower($node->name->toString()) === 'floatval'))) {
+        if ((str_contains($file, '/src/Tax/') || str_contains($file, '/src/Ledger/') || str_contains($file, '/src/Chat/')) && ($node instanceof Node\Scalar\Float_ || $node instanceof Node\Expr\Cast\Double || $node instanceof Node\Expr\BinaryOp\Div || ($node instanceof Node\Identifier && $node->toString() === 'float') || ($node instanceof Node\Expr\FuncCall && $node->name instanceof Node\Name && strtolower($node->name->toString()) === 'floatval'))) {
             $errors[] = RuleErrorBuilder::message('Kwoty wymagają brick/math, bez float.')->identifier('architecture.moneyFloat')->build();
         }
         if ($node instanceof Node\Expr\MethodCall && $node->name instanceof Node\Identifier) {

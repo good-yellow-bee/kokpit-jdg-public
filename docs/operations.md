@@ -272,7 +272,7 @@ Właścicielem każdej checklisty jesteś Ty. Do go-live obowiązek składasz we
 | JPK_EWP(4), JPK_ST(1) | F5 | do 31.03.2027 | dry run zgodny z XSD; dane autoryzujące N−2; klucz MF PROD | JPK_EWP za 2026 przez bramkę, UPO zapisane | XML z kokpitu przez Klient JPK WEB albo Formularz uproszczony do 30.04.2027 ([narzędzia MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_pd/bezplatne-narzedzia)) |
 | JPK_V7M(3) | F5 | po JPK_EWP | bilans otwarcia (`setting` `opening.*`) potwierdzony; dwa miesiące zgodne z Twoim obecnym narzędziem | pierwszy miesiąc przez bramkę | e-mikrofirma albo Klient JPK WEB |
 | VAT-UE | F5 | razem z JPK_V7M | rejestracja VAT-UE sprawdzona; kanał D-27 potwierdzony | pierwszy VAT-UE przez bramkę; suma równa K_12 | e-Deklaracje ręcznie |
-| czat | F6 | po kryteriach F6 | klucz z limitem wydatków; budżety w kodzie; `[manual]` DPA z SCC z Anthropic zawarte (D-22, [modules/czat.md](modules/czat.md)) | pierwsza rozmowa | konektor `claude` wyłączony w konfiguracji |
+| czat | F6 | po kryteriach F6 | klucz z limitem wydatków; budżety w kodzie; `[manual]` DPA z SCC z Anthropic zawarte (D-22, [modules/czat.md](modules/czat.md)); rola `chat_ro`: plik hosta `chat-ro-password` w `app_credentials`, rola jak w `docker/db/init-db.sh` (jako `postgres`), sekret `DB_CHAT_RO_PASSWORD` w sejfie PROD, `GRANT SELECT` na widokach `chat_*` rolą `kokpit_owner` (D-59) | pierwsza rozmowa | konektor `claude` wyłączony w konfiguracji |
 
 Kolejność wierszy idzie za D-30. e-Doręczenia API (F4) i basal (F7) są odłożone (D-29); e-Doręczenia obsługujesz według „Teraz – zgodność” w [README.md](README.md).
 

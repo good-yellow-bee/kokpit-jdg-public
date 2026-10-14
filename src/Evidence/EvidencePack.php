@@ -75,7 +75,12 @@ final readonly class EvidencePack
                 $status = $process->run();
                 $text = $this->redactor->text($process->getOutput() . $process->getErrorOutput()) . "\nexit_code=" . $status . "\n";
                 $artifact = $base . '/cmd/' . $criterion['key'] . '.txt';
-                file_put_contents($artifact, $text);
+                // Treść zapisaną przez test kryterium (EvidenceArtefacts, `cmd/<klucz>.txt`) zachowujemy przed wyjściem komendy.
+                $written = is_file($artifact) ? file_get_contents($artifact) : '';
+                if ($written === false) {
+                    throw new \RuntimeException('Nie można odczytać artefaktu.');
+                }
+                file_put_contents($artifact, ($written !== '' ? $this->redactor->text($written) . "\n--- wyjście komendy ---\n" : '') . $text);
                 $artefacts[] = $this->metadata($artifact, $base);
                 $result = $status === ($criterion['expected_exit'] ?? 0) ? 'pass' : 'fail';
                 // Artefakty zapisane przez test albo skrypt kryterium: db/, golden/, jpk/ z nazwą od klucza.

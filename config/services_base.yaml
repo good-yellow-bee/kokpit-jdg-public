@@ -17,6 +17,10 @@ parameters:
   ksef.kod_i_hosts: { test: 'https://qr-test.ksef.mf.gov.pl', demo: 'https://qr-demo.ksef.mf.gov.pl', prod: 'https://qr.ksef.mf.gov.pl' }
   # Cache fontów i pliki tymczasowe dompdf poza vendor (F3.4, D-55).
   invoice_pdf.cache_dir: '%kernel.cache_dir%/dompdf'
+  # Czat F6.1 (D-58, D-59): limit wierszy wyniku nazwanego zapytania, waluty parametru `currency` i retencja rozmów.
+  chat.row_limit: 200
+  chat.currencies: [PLN, EUR, USD, GBP, CHF]
+  chat.retention_months: 12
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\:
@@ -68,6 +72,11 @@ services:
   App\Invoice\SalesReadiness:
     arguments: { $readyMarker: '%freshbooks.ready_marker%' }
   App\Passkey\StepUp: '@App\Passkey\StepUpVerifier'
+  # Nazwane zapytania czatu tylko przez połączenie `chat` (rola chat_ro), nigdy przez domyślne połączenie (F6.1).
+  App\Chat\ChatQueryRunner:
+    arguments: { $chat: '@doctrine.dbal.chat_connection', $rowLimit: '%chat.row_limit%', $currencies: '%chat.currencies%' }
+  App\Chat\ChatRetention:
+    arguments: { $db: '@doctrine.dbal.default_connection', $retentionMonths: '%chat.retention_months%' }
   App\Invoice\KodI:
     arguments: { $hosts: '%ksef.kod_i_hosts%' }
   App\Invoice\InvoicePdf:

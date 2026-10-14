@@ -558,6 +558,20 @@ Część b: sekcja niżej.
 | Klucze kryteriów | F6.1: `chat-ro-denied`, `chat-views-environment`, `chat-views-minimal`, `chat-named-queries`, `chat-history-append-only`, `chat-retention`; F6.2: `claude-request-profile`, `chat-model-fixed`, `claude-transport`, `chat-tool-loop`, `chat-tool-schema`, `chat-tool-set`, `chat-stop-reasons`, `chat-interrupted-turn`, `chat-rate-limit`, `chat-budget`, `chat-context-limit`, `chat-redaction`, `chat-law-snapshot`, `claude-live-guard`; F6.3: `chat-turbo-frame`, `chat-seq-idempotent`, `chat-render-chart`, `chat-panel-messages`; F6.4: `draft-requested-only`, `draft-recipient-db`, `draft-flagged-values`, `draft-approval-copy`; F6.5: `claude-live-smoke`, `claude-fixtures-record`; go-live: `chat-dpa`, `chat-spend-limit` |
 | Kod | pozostałe klasy dopisuje sesja części przed kodowaniem; nazwy z tej tabeli są propozycją planu i mogą się zawęzić w „Implementacji F6.x” |
 
+### Implementacja F6.1 (D-59): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Czat (`src/Chat`) | `ChatQuery` (wartości `revenue_by_month`, `sales_by_currency`, `costs_by_month`, `invoice_list`, `top_counterparties`, `get_obligations`, `get_fx_rate`, `verify_counterparty`; `isInvoiceQuery`, `requiredParameters`, `optionalParameters`), `ChatQueryRunner` (`run`), `ChatQueryResult` (`rows`, `truncated`, `rowLimit`, `notice`, `toArray`; komunikaty `NO_FX_RATE` „brak zapisanego kursu”, `NO_VERIFICATION` „brak zapisanej weryfikacji”), `ChatQueryRejected` (`reason`), `ChatRetention` (`purge`, część `retention.purge`) |
+| `ChatQueryRejected.reason` | `unknown_parameter`, `invalid_type`, `missing_parameter`, `invalid_date`, `date_range`, `invalid_currency`, `invalid_status`, `invalid_counterparty`, `date_in_future` |
+| Parametry nazwanych zapytań | `date_from`, `date_to`, `currency` (wartości `query`, opcjonalny), `status` (`get_obligations`), `date` (`get_fx_rate`), `counterparty` (`verify_counterparty`, UUID po tłumaczeniu pseudonimu) |
+| Kolumny wyników | `month`, `amount_pln`, `entries`, `currency`, `net_total`, `vat_total`, `gross_total`, `net_pln`, `invoices`, `counterparty_id`, `age_days` i kolumny widoków `chat_*` |
+| Schemat | `chat_session`, `chat_message`, `draft` (CHECK `kind` = `email`, `status`); indeksy `chat_session_closed`, `draft_chat_session`; funkcja `prevent_chat_message_update` i trigger `chat_message_append_only` |
+| Środowisko widoków | ustawienie sesji PostgreSQL `kokpit.environment` (`set_config` w transakcji zapytania); brak ustawienia → widoki bez wierszy |
+| Konfiguracja aplikacji | `chat.currencies` (wyliczenie parametru `currency`), `chat.retention_months` (12); obok `chat.row_limit` (200) |
+| Połączenie i sekrety | połączenie Doctrine `chat` (usługa `doctrine.dbal.chat_connection`); sekret `DB_CHAT_RO_PASSWORD`; plik hosta `chat-ro-password` w wolumenie `app_credentials` (`/run/app/chat-ro-password` w `db`, `/run/kokpit/db/chat-ro-password` w `app`) |
+| Testy | `ChatTestTools`; `ChatRoDeniedTest`, `ChatViewsEnvironmentTest`, `ChatViewsMinimalTest`, `ChatNamedQueriesTest`, `ChatHistoryAppendOnlyTest`, `ChatRetentionTest` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

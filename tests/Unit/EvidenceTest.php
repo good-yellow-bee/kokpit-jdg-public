@@ -68,6 +68,19 @@ final class EvidenceTest extends TestCase
         self::assertSame('dirty_worktree', $result['manifest']['invalid_reason']);
         self::assertSame('pass', $result['manifest']['criteria'][0]['result']);
     }
+    public function testCommandOutputKeepsArtefactWrittenByCriterionTest(): void
+    {
+        // Test kryterium zapisuje cmd/<klucz>.txt (EvidenceArtefacts); wyjście komendy dochodzi po nim, bez nadpisania (D-59).
+        $result = $this->pack->build('f0a', [['key' => 'keep','runner' => 'ci','command' => "printf '%s' 'fikcyjny artefakt testu' > \"\$EVIDENCE_DIR/cmd/keep.txt\"; printf '%s' 'fikcyjne wyjście'"]], 'ci');
+        self::assertSame('pass', $result['manifest']['criteria'][0]['result']);
+        $bytes = file_get_contents($result['directory'] . '/cmd/keep.txt');
+        self::assertIsString($bytes);
+        self::assertStringStartsWith('fikcyjny artefakt testu', $bytes);
+        self::assertStringContainsString('fikcyjne wyjście', $bytes);
+        foreach ($result['manifest']['criteria'][0]['artefacts'] as $artifact) {
+            self::assertSame($artifact['sha256'], hash_file('sha256', $result['directory'] . '/' . $artifact['path']));
+        }
+    }
     public function testScannerRejectsUnmaskedPersonalIdentifierAndRemovesPack(): void
     {
         $this->expectException(\RuntimeException::class);

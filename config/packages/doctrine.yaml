@@ -1,14 +1,29 @@
 doctrine:
   dbal:
-    driver: pdo_pgsql
-    host: '%env(DB_HOST)%'
-    port: 5432
-    dbname: '%env(DB_NAME)%'
-    user: '%env(DB_ROLE)%'
-    password: '%env(default:app.database_password:trim:file:DB_OWNER_PASSWORD_FILE)%'
-    server_version: '17'
-    logging: false
-    profiling: false
+    default_connection: default
+    connections:
+      default:
+        driver: pdo_pgsql
+        host: '%env(DB_HOST)%'
+        port: 5432
+        dbname: '%env(DB_NAME)%'
+        user: '%env(DB_ROLE)%'
+        password: '%env(default:app.database_password:trim:file:DB_OWNER_PASSWORD_FILE)%'
+        server_version: '17'
+        logging: false
+        profiling: false
+      # Czat (F6.1, D-58): rola chat_ro, tylko SELECT na widokach chat_*; bez EntityManagera.
+      # Hasło z sejfu (`DB_CHAT_RO_PASSWORD`); na PROD dochodzi przy go-live czatu, do tego czasu połączenie nie działa.
+      chat:
+        driver: pdo_pgsql
+        host: '%env(DB_HOST)%'
+        port: 5432
+        dbname: '%env(DB_NAME)%'
+        user: chat_ro
+        password: '%env(default::DB_CHAT_RO_PASSWORD)%'
+        server_version: '17'
+        logging: false
+        profiling: false
   orm:
     controller_resolver: { auto_mapping: false }
     auto_mapping: false

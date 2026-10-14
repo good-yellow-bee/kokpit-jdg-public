@@ -15,6 +15,7 @@ use App\Messenger\Message\NotificationDispatchMessage;
 use App\Messenger\Message\CredentialExpiryMessage;
 use App\Security\CredentialExpiryChecker;
 use App\Messenger\Message\RetentionPurgeMessage;
+use App\Chat\ChatRetention;
 use App\Scheduler\HeartbeatStore;
 use App\Storage\FileStore;
 use Symfony\Component\Clock\ClockInterface;
@@ -22,7 +23,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 final readonly class ScheduledTaskHandler
 {
-    public function __construct(private FileStore $files, private AuditLog $audit, private HeartbeatStore $heartbeat, private ClockInterface $clock, private \App\Connector\DeadMan\DeadManNotifier $deadman, private ObligationEngine $obligations, private NotificationDispatcher $notifications, private CredentialExpiryChecker $credentials) {}
+    public function __construct(private FileStore $files, private AuditLog $audit, private HeartbeatStore $heartbeat, private ClockInterface $clock, private \App\Connector\DeadMan\DeadManNotifier $deadman, private ObligationEngine $obligations, private NotificationDispatcher $notifications, private CredentialExpiryChecker $credentials, private ChatRetention $chatRetention) {}
 
     #[AsMessageHandler]
     public function heartbeat(ConnectorCallMessage $message): void
@@ -58,6 +59,7 @@ final readonly class ScheduledTaskHandler
     {
         if ($message->id === 'retention.purge') {
             $this->files->purge();
+            $this->chatRetention->purge();
         }
     }
 
