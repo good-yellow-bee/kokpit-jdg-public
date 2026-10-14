@@ -137,6 +137,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-47 | kwoty F2.3: zaliczka dopiero po końcu okresu, próg zdrowotnej z przychodu narastająco do końca miesiąca minus zapłacone społeczne, `health_bracket_manual` jako dolna granica, miesiące rozliczenia zdrowotnej od pierwszych parametrów roku, `ryczalt.eligibility` z dwoma limitami w euro | przyjęta 2026-10-14 | Q-16, Q-17, Q-38 |
 | D-48 | okres F2.3: `period` powstaje przy pierwszym zapisie z datą w M; zamknięty M to też JPK_V7M w drodze albo przyjęty bez wiersza `period`; `ledger.entry_check` działa tylko po przełączeniu wpisów; komplet szukany kluczem deduplikacji; wpis do minionego M sprawdza komplet od razu | przyjęta 2026-10-14 | Q-11 |
 | D-49 | złożenie poza kokpitem F2.3: JPK_V7M i VAT-UE z UPO jako `filing` `accepted`/`manual` bez `approval`; P_62 z pliku albo wpisany; bramki `period.checklist` liczone przy zapisie i tylko alarmują; korekta po ponownym otwarciu jako `purpose` 2; `vat_ue` po bramkach od pierwszego zamkniętego miesiąca | przyjęta 2026-10-14 | – |
+| D-50 | kod F3 przed odbiorem F0b, F1 i F2, częściami: F3.1–F3.4 bez sieci na `FakeKsefGateway`, ręcznie pisanych nagraniach KSeF i fixtures FreshBooks; F3.5 na api-test po `KsefGateway` z sesji 1 F1 | przyjęta 2026-10-14 | Q-29 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -952,4 +953,19 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 - **Skutki:**
   - Złożenia z bramki (F5) użyją tych samych bramek i zamknięcia; `checklist` przy prośbie o zatwierdzenie.
   - Bilans otwarcia (`opening.*`) i lista DI zostają na F5.
+- **Pytania:** brak.
+
+### D-50 Kod F3 częściami, przed odbiorem F0b, F1 i F2
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - F3 startuje po odbiorze F0b, F1 i F2 (D-30). Ich kod jest na `main`, a odbiory czekają na VPS (D-18) i nagrania z hostów testowych.
+  - Sesja w chmurze nie łączy się z hostami testowymi KSeF ani z FreshBooks. XSD FA(3) jest w `resources/xsd`.
+- **Decyzja:**
+  - Plik fazy [phases/f3-ksef-sprzedaz.md](phases/f3-ksef-sprzedaz.md) dzieli F3 na F3.1–F3.5. Kod F3.1–F3.4 powstaje teraz na gałęziach `f3-…`, każda część z osobnym PR.
+  - F3.1–F3.4 działają bez sieci: `FakeKsefGateway`, ręcznie pisane nagrania KSeF z danymi fikcyjnymi i fixtures FreshBooks (D-35).
+  - F3.5 (api-test) czeka na `KsefGateway` nad biblioteką i dane TE z sesji 1 F1; nagrania ręczne zastępuje wtedy `app:fixtures:record`.
+  - `eu_b2b_unidentified` zostaje zablokowany do przeglądu doradcy (Q-29).
+- **Skutki:**
+  - Odbiór F3 i go-live nadal czekają na odbiory F0b, F1 i F2 oraz przegląd doradcy (D-04).
 - **Pytania:** brak.
