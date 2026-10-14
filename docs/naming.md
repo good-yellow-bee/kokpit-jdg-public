@@ -335,6 +335,16 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Panel korekt i uzgodnień | `/ledger` sekcja „Korekty z KOR”, `POST /ledger/correction/{id}` (token CSRF `ledger`); `/ledger/reconciliation?year=<rok>`, eksport `?format=csv` (`uzgodnienia-<rok>.csv`, średnik) |
 | Akcje audytu korekt | `ledger.correction_closed`; `ledger.imported` z `total_in_file` |
 
+### Implementacja F2.3: nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Tabela | `zus_payment` (migracja F2.3 część 1) |
+| Podatki (`src/Tax`) | `RyczaltAdvance` (`compute`; pola `shares`, `deductions`, `bases`, `taxes`, `advance`, `carryover`), `HealthContribution` (`bracket`, `amount`), `TaxCalculator` (`advance`, `zusAmount`, `healthReconciliation`, `pit28`, `eligibility`, `revenueAfterSocial`, `revenueByRate`), `ZusPayments` (`record`) |
+| Ustawienia | `ryczalt.eligibility`: `{limit_eur, watch_limit_eur}` (D-47), w `SettingKeys` i w panelu `/settings` |
+| Panel | `TaxController`: `/taxes?year=<rok>` (sekcje `ryczalt-eligibility-metric`, `ryczalt-advances`, `zus-payments`, `health-reconciliation`, `pit28-summary`), `POST /taxes/zus-payment` (token CSRF `taxes`) |
+| Akcje audytu | `zus.payment_recorded` |
+
 ### Implementacja F2.4: nazwy techniczne
 
 | Rodzaj | Nazwy |

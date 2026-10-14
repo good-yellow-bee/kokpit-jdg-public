@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Podatki – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Podatki {{ year }}</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+
+    <section id="ryczalt-eligibility-metric">
+        <h2>Limit ryczałtu</h2>
+        {% if eligibility is null %}<p>Czeka na kurs EUR z pierwszego dnia roboczego października {{ year - 1 }}.</p>{% else %}
+        <p>Przychód {{ year }}: <strong>{{ eligibility.revenue_pln }} zł</strong> = <strong>{{ eligibility.revenue_eur }} EUR</strong> (kurs {{ eligibility.rate }}, tabela {{ eligibility.rate_table }} z {{ eligibility.rate_date }}).</p>
+        {% if eligibility.watch_limit_eur %}<p>Wobec {{ eligibility.watch_limit_eur }} EUR z projektu ustawy (Q-38): {{ eligibility.watch_used_pct }}%.</p>{% endif %}
+        {% if eligibility.limit_eur %}<p>Limit obowiązujący: {{ eligibility.limit_eur }} EUR.</p>{% else %}<p>Brak ustawienia ryczalt.eligibility.</p>{% endif %}
+        {% endif %}
+    </section>
+
+    <section id="ryczalt-advances">
+        <h2>Zaliczki na ryczałt ({{ cadence == 'quarterly' ? 'co kwartał' : 'co miesiąc' }})</h2>
+        {% if advances is empty %}<p>Brak zakończonych okresów.</p>{% else %}
+        <table>
+            <thead><tr><th>Okres</th><th>Przychód per stawka</th><th>Odliczenia (zapłacone + przeniesione)</th><th>Podstawa per stawka</th><th>Zaliczka</th><th>Nadwyżka dalej</th></tr></thead>
+            <tbody>
+            {% for item in advances %}
+                <tr><td>{{ item.period_start|slice(0, 7) }}</td>
+                    <td>{% for rate, amount in item.revenue %}{{ rate }}%: {{ amount }}{% if not loop.last %}; {% endif %}{% endfor %}</td>
+                    <td>{{ item.paid_deductions }} + {{ item.carried_in }}</td>
+                    <td>{% for rate, base in item.result.bases %}{{ rate }}%: {{ base }}{% if not loop.last %}; {% endif %}{% endfor %}</td>
+                    <td>{{ item.result.advance }} zł</td><td>{{ item.result.carryover }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="zus-payments">
+        <h2>Zapłacone składki ZUS</h2>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Społeczne</th><th>Zdrowotna</th><th>Bez odliczenia</th><th>Zapłacono</th></tr></thead>
+            <tbody>
+            {% for payment in payments %}<tr><td>{{ payment.month }}</td><td>{{ payment.social_pln }}</td><td>{{ payment.health_pln }}</td><td>{{ payment.other_pln }}</td><td>{{ payment.paid_on }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        <form method="post" action="{{ path('panel_taxes_zus_payment') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('taxes') }}">
+            <label>Miesiąc składkowy <input name="month" type="month" required></label>
+            <label>Społeczne <input name="social_pln" required pattern="[0-9]+\.[0-9]{2}"></label>
+            <label>Zdrowotna <input name="health_pln" required pattern="[0-9]+\.[0-9]{2}"></label>
+            <label>Bez odliczenia (np. FP) <input name="other_pln" required pattern="[0-9]+\.[0-9]{2}" value="0.00"></label>
+            <label>Dzień zapłaty <input name="paid_on" type="date" required value="{{ today }}"></label>
+            <button type="submit">Zapisz składki</button>
+        </form>
+    </section>
+
+    {% if health %}
+    <section id="health-reconciliation">
+        <h2>Roczne rozliczenie zdrowotnej {{ year }}</h2>
+        <p>Przychód po składkach społecznych {{ health.revenue_after_social }} zł, próg {{ health.bracket }}, {{ health.months }} mies.: należna {{ health.due }} zł, zapłacona {{ health.paid }} zł.</p>
+        <p>{% if health.refund_task %}Nadpłata {{ health.difference|slice(1) }} zł: złóż RZS-R o zwrot.{% else %}Do dopłaty {{ health.amount_due }} zł do 20 maja.{% endif %}</p>
+    </section>
+    {% endif %}
+
+    <section id="pit28-summary">
+        <h2>Zestawienie PIT-28 {{ year }}</h2>
+        <table>
+            <thead><tr><th>Stawka</th><th>Przychód</th></tr></thead>
+            <tbody>
+            {% for rate, amount in pit28.revenue %}<tr><td>{{ rate }}%</td><td>{{ amount }}</td></tr>{% endfor %}
+            <tr><th>Razem</th><td>{{ pit28.revenue_total }}</td></tr>
+            </tbody>
+        </table>
+        <p>Składki społeczne zapłacone w roku: {{ pit28.social_paid }} zł; 50% zdrowotnej: {{ pit28.health_deductible }} zł. Zeznanie składasz sam od 15 lutego do 30 kwietnia.</p>
+    </section>
+{% endblock %}

@@ -7,6 +7,7 @@ namespace App\Calendar;
 use App\Config\ConnectorConfiguration;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
+use App\Tax\TaxCalculator;
 use App\Time\BusinessDate;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
@@ -21,7 +22,7 @@ final readonly class ObligationEngine
 {
     public const HORIZON_MONTHS = 13;
 
-    public function __construct(private Connection $db, private PolishCalendar $calendar, private SettingStore $settings, private BusinessDate $businessDate, private ClockInterface $clock, private ConnectorConfiguration $configuration) {}
+    public function __construct(private Connection $db, private PolishCalendar $calendar, private SettingStore $settings, private BusinessDate $businessDate, private ClockInterface $clock, private ConnectorConfiguration $configuration, private TaxCalculator $tax) {}
 
     /** @return array{inserted:int,updated:int,unchanged:int,kept:int,retired:int} */
     public function recompute(): array
@@ -209,7 +210,7 @@ final readonly class ObligationEngine
     {
         $type = ObligationRules::RULES[$ruleKey]['type'];
         $key = $type . ':' . $item['period_start'] . (isset($item['subject']) ? ':' . $item['subject'] : '');
-        return ['environment' => $environment,'dedupe_key' => $key,'type' => $type,'rule_key' => $ruleKey,'period_start' => $item['period_start'],'nominal_due_date' => $item['nominal_due_date'],'due_date' => $item['due_date'],'amount_due' => $type === 'zus' ? $this->zusAmount($item['period_start']) : null,'payment_title' => $this->title($ruleKey, $item['period_start']),'status' => $this->applies($type, $item['period_start']) ? 'open' : 'not_applicable','credential_state_id' => null,'counterparty_id' => null];
+        return ['environment' => $environment,'dedupe_key' => $key,'type' => $type,'rule_key' => $ruleKey,'period_start' => $item['period_start'],'nominal_due_date' => $item['nominal_due_date'],'due_date' => $item['due_date'],'amount_due' => $this->amount($ruleKey, $item['period_start']),'payment_title' => $this->title($ruleKey, $item['period_start']),'status' => $this->applies($type, $item['period_start']) ? 'open' : 'not_applicable','credential_state_id' => null,'counterparty_id' => null];
     }
 
     /** Warunek reguły; `jpk_st` według `jpk_st.enabled` na ostatni dzień roku, którego dotyczy. */
@@ -303,30 +304,25 @@ final readonly class ObligationEngine
     }
 
     /**
-     * Kwota `zus` za miesiąc składkowy według `setting` obowiązującego 1. dnia miesiąca. Wiersz z innego roku
-     * nie liczy się: silnik nie przenosi kwot (docs/phases/f0b-bramka-kalendarz.md, „Kwota `zus`”).
+     * Kwota obowiązku (F2.3, D-47): `zus` z parametrów i progu zdrowotnej z przychodu, `ryczalt_advance` z ewidencji
+     * i `zus_payment` po końcu okresu, `health_reconciliation` po końcu roku. Inne typy nie mają kwoty.
      */
-    public function zusAmount(string $periodStart): ?string
+    private function amount(string $ruleKey, string $periodStart): ?string
     {
-        $row = $this->settings->current(SettingKeys::ZUS_PARAMETERS, $periodStart);
-        if ($row === null || substr($row['valid_from'], 0, 4) !== substr($periodStart, 0, 4) || !is_array($row['value'])) {
-            return null;
+        $rule = ObligationRules::RULES[$ruleKey];
+        $today = $this->businessDate->today();
+        if ($rule['type'] === 'zus') {
+            return $this->tax->zusAmount($periodStart);
         }
-        $value = $row['value'];
-        $brackets = $value['health_brackets'] ?? null;
-        $manual = $value['health_bracket_manual'] ?? null;
-        if (!is_array($brackets) || !is_int($manual) || !isset($brackets[$manual - 1]) || !is_array($brackets[$manual - 1])) {
-            return null;
+        if ($rule['type'] === 'ryczalt_advance') {
+            $quarterly = $rule['cadence'] === 'quarterly';
+            $next = self::day($periodStart)->modify($quarterly ? '+3 months' : '+1 month')->format('Y-m-d');
+            return $next <= $today ? $this->tax->advance($periodStart, $quarterly ? 'quarterly' : 'monthly')['result']->advance . '.00' : null;
         }
-        $parts = [$value['social_pln'] ?? null, $value['other_pln'] ?? null, $brackets[$manual - 1]['amount_pln'] ?? null];
-        $sum = BigDecimal::zero();
-        foreach ($parts as $part) {
-            if (!is_string($part)) {
-                return null;
-            }
-            $sum = $sum->plus(BigDecimal::of($part));
+        if ($rule['type'] === 'health_reconciliation' && substr($periodStart, 0, 4) < substr($today, 0, 4)) {
+            return $this->tax->healthReconciliation((int) substr($periodStart, 0, 4))['amount_due'] ?? null;
         }
-        return (string) $sum->toScale(2);
+        return null;
     }
 
     /**

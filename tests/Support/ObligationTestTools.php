@@ -36,7 +36,12 @@ final class ObligationTestTools
     }
     public static function engine(Connection $db, ClockInterface $clock): ObligationEngine
     {
-        return new ObligationEngine($db, new PolishCalendar(), self::settings($db, $clock), new BusinessDate($clock), $clock, ConnectorTestTools::configuration(false));
+        return new ObligationEngine($db, new PolishCalendar(), self::settings($db, $clock), new BusinessDate($clock), $clock, ConnectorTestTools::configuration(false), self::tax($db, $clock));
+    }
+    /** @param array<string,array<string,string>> $rates */
+    public static function tax(Connection $db, ClockInterface $clock, array $rates = []): \App\Tax\TaxCalculator
+    {
+        return new \App\Tax\TaxCalculator($db, self::settings($db, $clock), new \App\Fx\FxRateProvider($db, new PolishCalendar(), new BusinessDate($clock), $clock, F1TestTools::rates($rates)), new PolishCalendar(), ConnectorTestTools::configuration(false));
     }
     public static function actions(Connection $db, ClockInterface $clock): ObligationActions
     {
