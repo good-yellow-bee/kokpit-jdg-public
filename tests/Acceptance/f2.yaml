@@ -27,6 +27,8 @@ criteria:
   - { key: freshbooks-poll-payments, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksPollPayments', junit: true }
   - { key: fx-difference, runner: ci, command: 'vendor/bin/phpunit --filter FxDifference', junit: true }
   - { key: fx-difference-year-boundary, runner: ci, command: 'vendor/bin/phpunit --filter FxDifferenceYearBoundary', junit: true }
+  - { key: ledger-correction, runner: ci, command: 'vendor/bin/phpunit --filter LedgerCorrection', junit: true }
+  - { key: ledger-reconciliation-report, runner: ci, command: 'vendor/bin/phpunit --filter LedgerReconciliationReport', junit: true }
   - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
   - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
   - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }

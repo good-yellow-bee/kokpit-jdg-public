@@ -85,7 +85,7 @@ final readonly class LedgerImporter
                 // Dowód pochodzenia K_2: plik źródłowy w `FileStore`; retencja od terminu JPK_EWP za rok (rok + 1).
                 $this->files->put($bytes, $environment, 'evidence', $xml ? 'application/xml' : 'text/csv', 'revenue_entry', $added[0], $year + 1);
                 $evidence = hash('sha256', $bytes);
-                $this->audit->append('ledger.imported', ['year' => $year,'source' => 'import','format' => $xml ? 'jpk_ewp_xml' : 'csv','file_sha256' => $evidence,'rows_in_file' => count($rows),'rows_added' => count($added),'original_name' => $originalName], $environment, 'revenue_entry', $added[0]);
+                $this->audit->append('ledger.imported', ['year' => $year,'source' => 'import','format' => $xml ? 'jpk_ewp_xml' : 'csv','file_sha256' => $evidence,'rows_in_file' => count($rows),'total_in_file' => (string) array_reduce($rows, static fn(BigDecimal $sum, LedgerRow $row): BigDecimal => $sum->plus($row->amountPln), BigDecimal::zero())->toScale(2),'rows_added' => count($added),'original_name' => $originalName], $environment, 'revenue_entry', $added[0]);
             }
             return new LedgerImportResult($year, count($rows), count($added), $evidence, ...$this->summary($environment, $year));
         });

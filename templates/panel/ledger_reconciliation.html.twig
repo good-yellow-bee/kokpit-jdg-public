@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Uzgodnienia – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Uzgodnienia ewidencji {{ year }}</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a id="ledger-reconciliation-csv" href="{{ path('panel_ledger_reconciliation', {year: year, format: 'csv'}) }}">Eksport CSV</a></nav>
+    <section id="ledger-reconciliation">
+        <table>
+            <thead><tr><th>Kontrola</th><th>Dokument</th><th>Numer KSeF</th><th>Źródła</th><th>Wynik</th><th>Szczegół</th></tr></thead>
+            <tbody>
+            {% for row in rows %}
+                <tr class="status-{{ row.status }}"><td>{{ row.check }}</td><td>{{ row.document_number }}</td><td>{{ row.ksef_number }}</td><td>{{ row.sources }}</td><td>{{ row.status }}</td><td>{{ row.detail }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endblock %}

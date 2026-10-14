@@ -132,6 +132,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-42 | kod F1 przed odbiorem F0a, F0b, F2.1 i F2.4, częściami; nagrania HTTP z laptopa albo ze środowiska z dozwolonymi hostami testowymi | przyjęta 2026-10-11 | Q-19, Q-39 |
 | D-44 | kod F2.2 przed odbiorem F0b i F1, częściami: najpierw bez sieci (stawki, kurs PIT, wpisy z Subject1, wpis ręczny, błąd wpisu), potem FreshBooks i płatności, potem korekty KOR i uzgodnienia | przyjęta 2026-10-14 | Q-22 |
 | D-45 | FreshBooks w F2.2: szkic `draft` od dnia przejścia, data przychodu z `create_date` albo wcześniejszej zapłaty, stan OAuth jako jeden zaszyfrowany JSON, przypisanie płatności i wiersze `fx_difference` | przyjęta 2026-10-14 | Q-24, Q-26 |
+| D-46 | korekty KOR i uzgodnienia w F2.2: różnica netto per stawka z `StanPrzed`, zamknięcie zadania bez step-upu, raport uzgodnień liczony na żądanie bez tabeli, FreshBooks czytany przy otwarciu widoku | przyjęta 2026-10-14 | Q-22 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -858,3 +859,20 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Tabela „Klasyfikacja faktury FreshBooks” w [modules/freshbooks.md](modules/freshbooks.md) ma szkic `draft` już w F2.2.
   - Powiadomienie push „połącz ponownie FreshBooks” czeka na kategorię `notification`; do tego czasu stan `expired` pokazuje panel `/freshbooks`.
 - **Pytania:** Q-24, Q-26.
+
+### D-46 Korekty KOR i uzgodnienia w F2.2
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - [modules/ewidencja.md](modules/ewidencja.md) opisuje pola wiersza `correction` z KOR i tabelę „Uzgodnienia”, ale nie mówi, jak liczyć różnicę netto KOR ani gdzie trzymać wynik uzgodnień.
+  - FA(3) zapisuje korektę metodą „przed i po” (`StanPrzed` = 1 dla pozycji sprzed korekty) albo samą różnicą.
+- **Decyzja:**
+  - Różnica netto KOR w stawce to suma pozycji po korekcie minus suma pozycji `StanPrzed`. Pozycja bez `ryczalt_rate_pct` dostaje stawkę z `ryczalt.service_map` po P_7. Zerowa różnica w każdej stawce zamknięcia odmawia.
+  - Import KOR z Subject1 nie pisze wierszy; zadanie to przyjęta KOR sprzedaży bez wiersza `correction` z jej `invoice_id`. Zamknięcie wymaga tokenu CSRF, bez step-upu, jak wpis ręczny. Audyt `ledger.correction_closed`.
+  - Wiersz korygowany w stawce: jedno trafienie wybiera się samo; kilka trafień odmawia z prośbą o wskazanie (`close(..., $entries)`). Panel F2.2 nie ma jeszcze pola wyboru wiersza ani kursu z listy; kurs PIT przyjmuje jako id `fx_rate`.
+  - Raport uzgodnień liczy się na żądanie z bazy, bez tabeli. Kontrola FreshBooks czyta faktury roku z API przy otwarciu widoku; bez połączenia raport ma wiersz `not_connected`. Data przychodu i kurs PIT jak w `FreshBooksLedger`.
+  - Uzgodnienie importu porównuje liczbę wierszy i sumę K_8 z ostatnim `ledger.imported` roku; audyt importu dostaje `total_in_file`.
+- **Skutki:**
+  - Kontrola JPK_V7M i zaliczek z tabeli „Uzgodnienia” zostaje na F2.3 i F2.4; „kontrola pliku” na F2.4.
+  - Wybór wiersza korygowanego i kursu z listy w panelu to poprawka przy pierwszym takim przypadku.
+- **Pytania:** Q-22.
