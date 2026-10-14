@@ -343,7 +343,7 @@ Przyczynę i `TypKorekty` (albo ich brak) ustawiasz w szkicu KOR przed prośbą 
 
 1. Credit note we FreshBooks, edycja po przyjęciu albo akcja w panelu tworzy szkic KOR: dane oryginału i różnica ([freshbooks.md](freshbooks.md), Q-27).
 2. KOR to osobny wiersz `invoice` z `kind` = `KOR`, zatwierdzany jako `correction_invoice`.
-3. P_2 korekty to numer credit note z FreshBooks, więc FreshBooks zostaje jedyną numeracją. Szkic KOR z edycji po przyjęciu albo z panelu przechodzi do `ready` dopiero z numerem credit note. Klucz duplikatu obejmuje `RodzajFaktury`, więc seria KOR nie koliduje z seriami VAT (Q-27).
+3. P_2 korekty to numer credit note z FreshBooks, więc FreshBooks zostaje jedyną numeracją. Do numeru credit note szkic KOR ma pusty `invoice_number` (D-53). Szkic KOR z edycji po przyjęciu albo z panelu przechodzi do `ready` dopiero z numerem credit note. Klucz duplikatu obejmuje `RodzajFaktury`, więc seria KOR nie koliduje z seriami VAT (Q-27).
 4. KOR wysyłasz dopiero, gdy oryginał ma numer KSeF. Oryginał offline24 bez numeru najpierw trafia do KSeF ([MF, offline24](https://ksef.podatki.gov.pl/informacje-ogolne-ksef-20/tryb-offline24/)).
 5. Przyjęta KOR tworzy zadania w panelu: korekta JPK_V7M przy zamkniętym okresie, VAT-UEK przy nabywcy z UE, wiersz `correction` w ewidencji.
 

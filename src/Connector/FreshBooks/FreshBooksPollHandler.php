@@ -24,6 +24,7 @@ final readonly class FreshBooksPollHandler
         }
         if ($message->id === 'freshbooks.poll_invoices') {
             $this->sync->pollInvoices();
+            $this->sync->pollCreditNotes();
             return;
         }
         $this->sync->pollPayments();

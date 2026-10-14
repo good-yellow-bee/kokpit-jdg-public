@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Connector\FreshBooks;
 
 use App\Config\ConnectorConfiguration;
+use App\Invoice\CorrectionDrafts;
 use App\Invoice\SalesReadiness;
 use App\Ledger\FreshBooksLedger;
 use App\Ledger\FxDifference;
@@ -37,6 +38,7 @@ final readonly class FreshBooksSync
         private ClockInterface $clock,
         private ConnectorConfiguration $configuration,
         private ?SalesReadiness $readiness = null,
+        private ?CorrectionDrafts $corrections = null,
     ) {}
 
     /** @return array<string,int> liczba faktur per wynik klasyfikacji */
@@ -55,11 +57,39 @@ final readonly class FreshBooksSync
                 $counts[$outcome] = ($counts[$outcome] ?? 0) + 1;
                 // Znacznik gotowości (F3.2): `draft` → `ready` i prośba o zatwierdzenie; nic nie wysyła do KSeF.
                 $this->readiness?->observe($invoice, $outcome);
+                // Faktura przyjęta (F3.2 część b): edycja daje szkic KOR, zmiana samego numeru alert.
+                $this->corrections?->observe($invoice, $outcome);
                 if (in_array($outcome, FreshBooksLedger::WAITING, true) && $invoice->updatedOn < $holdback) {
                     $holdback = $invoice->updatedOn;
                 }
             }
             $this->advance($cursor, $holdback);
+            ksort($counts);
+            return $counts;
+        });
+    }
+
+    /**
+     * Credit notes FreshBooks (F3.2 część b): szkic KOR do faktury korygowanej. Bez `CorrectionDrafts` nic nie czyta.
+     *
+     * @return array<string,int> liczba credit notes per wynik
+     */
+    public function pollCreditNotes(): array
+    {
+        if ($this->corrections === null) {
+            return [];
+        }
+        $corrections = $this->corrections;
+        $cursor = $this->cursor('credit_notes');
+        $start = $this->businessDate->today();
+        $notes = $this->api->creditNotes(['updated_min' => $this->updatedMin($cursor)]);
+        return $this->db->transactional(function () use ($cursor, $start, $notes, $corrections): array {
+            $counts = [];
+            foreach ($notes as $note) {
+                $outcome = $corrections->fromCreditNote($note);
+                $counts[$outcome] = ($counts[$outcome] ?? 0) + 1;
+            }
+            $this->advance($cursor, $start);
             ksort($counts);
             return $counts;
         });

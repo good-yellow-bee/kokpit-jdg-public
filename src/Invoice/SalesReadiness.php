@@ -16,6 +16,7 @@ use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
 use App\Time\BusinessDate;
 use App\Xml\Fa3BuildRefused;
+use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -127,7 +128,7 @@ final readonly class SalesReadiness
      */
     public function problems(string $invoiceId): array
     {
-        $invoice = $this->db->fetchAssociative('SELECT environment, kind, counterparty_id, service_date, service_period_end FROM invoice WHERE id=?', [$invoiceId]);
+        $invoice = $this->db->fetchAssociative('SELECT environment, kind, invoice_number, counterparty_id, service_date, service_period_end, freshbooks_credit_id, net_total, corrects_invoice_id, corrected_ksef_number, corrected_issue_date FROM invoice WHERE id=?', [$invoiceId]);
         if ($invoice === false) {
             throw new \DomainException('Brak faktury.');
         }
@@ -153,6 +154,39 @@ final readonly class SalesReadiness
         foreach ($lines as $line) {
             if ($line['ryczalt_rate_pct'] === null) {
                 $problems[] = sprintf('Pozycja %s bez stawki w ryczalt.service_map.', is_int($line['line_no']) ? (string) $line['line_no'] : '?');
+            }
+        }
+        if ($invoice['kind'] === 'KOR') {
+            $problems = [...$problems, ...$this->correctionProblems($invoiceId, $invoice)];
+        }
+        return $problems;
+    }
+
+    /**
+     * Szkic KOR (F3.2 część b, D-53): P_2 to numer credit note; oryginał przyjęty z numerem KSeF albo oznaczony NrKSeFN;
+     * przy credit note suma różnic pozycji równa uznaniu (`net_total`).
+     *
+     * @param array<string,mixed> $invoice
+     * @return list<string>
+     */
+    private function correctionProblems(string $invoiceId, array $invoice): array
+    {
+        $problems = [];
+        if (!is_string($invoice['invoice_number'])) {
+            $problems[] = 'KOR bez numeru credit note (P_2); wystaw credit note we FreshBooks z linią „Faktura: <numer>” w notatce.';
+        }
+        if (is_string($invoice['corrects_invoice_id'])) {
+            $original = $this->db->fetchAssociative('SELECT status, ksef_number FROM invoice WHERE id=?', [$invoice['corrects_invoice_id']]);
+            if ($original === false || !in_array($original['status'], ['accepted','corrected'], true) || !is_string($original['ksef_number'])) {
+                $problems[] = 'Faktura korygowana nie jest przyjęta z numerem KSeF.';
+            }
+        } elseif (!is_string($invoice['corrected_ksef_number']) && !is_string($invoice['corrected_issue_date'])) {
+            $problems[] = 'KOR bez faktury korygowanej z numerem KSeF i bez oznaczenia NrKSeFN.';
+        }
+        if (is_string($invoice['freshbooks_credit_id']) && is_string($invoice['net_total'])) {
+            $difference = $this->db->fetchOne('SELECT coalesce(sum(CASE WHEN state_before THEN -net_amount ELSE net_amount END), 0) FROM invoice_line WHERE invoice_id=?', [$invoiceId]);
+            if (!is_string($difference) || !BigDecimal::of($difference)->isEqualTo($invoice['net_total'])) {
+                $problems[] = 'Pozycje credit note nie pasują do pozycji faktury korygowanej (nazwa pozycji); popraw credit note we FreshBooks.';
             }
         }
         return $problems;

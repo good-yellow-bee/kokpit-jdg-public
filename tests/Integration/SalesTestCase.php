@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Security\Vault;
+use App\Tests\Support\CorrectionTestTools;
 use App\Tests\Support\SalesTestTools;
 use Symfony\Component\Clock\MockClock;
 
@@ -16,5 +17,13 @@ abstract class SalesTestCase extends DatabaseTestCase
         $vault = self::getContainer()->get(Vault::class);
         self::assertInstanceOf(Vault::class, $vault);
         return new SalesTestTools($this->db(), new MockClock($now), $vault, $builderClock);
+    }
+
+    /** Narzędzia F3.2 części b nad `SalesTestTools`. */
+    protected function corrections(SalesTestTools $sales): CorrectionTestTools
+    {
+        $vault = self::getContainer()->get(Vault::class);
+        self::assertInstanceOf(Vault::class, $vault);
+        return new CorrectionTestTools($this->db(), $sales, $vault);
     }
 }

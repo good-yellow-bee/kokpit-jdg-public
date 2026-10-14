@@ -44,6 +44,7 @@ final readonly class KsefSync
         private LockFactory $locks,
         private LoggerInterface $logger,
         private string $backfillFrom = '2026-02-01',
+        private ?FreshBooksBypass $bypass = null,
     ) {}
 
     /**
@@ -123,6 +124,10 @@ final readonly class KsefSync
             $this->db->update('sync_cursor', $values, ['id' => $cursor['id']]);
             return $count;
         });
+        if ($stream === 'subject1' && $this->bypass !== null) {
+            // Obejście FreshBooks sprawdza się po udanym przebiegu Subject1 (F3.2 część b).
+            $this->bypass->check($now);
+        }
         $this->logger->info('ksef.export done', ['stream' => $stream, 'imported' => $imported, 'truncated' => $package->isTruncated]);
 
         return ['status' => 'exported', 'from' => $from->format(DATE_ATOM), 'to' => $to?->format(DATE_ATOM), 'imported' => $imported, 'truncated' => $package->isTruncated];

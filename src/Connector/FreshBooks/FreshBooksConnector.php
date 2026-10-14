@@ -42,6 +42,17 @@ final readonly class FreshBooksConnector
         return array_map(static fn(array $row): FreshBooksPayment => FreshBooksPayment::fromApi($row), $this->all('payments/payments', 'payments', $search, []));
     }
 
+    /**
+     * Credit notes zmienione od `updated_min`, z pozycjami (F3.2 część b, szkic KOR).
+     *
+     * @param array<string,string> $search
+     * @return list<FreshBooksCreditNote>
+     */
+    public function creditNotes(array $search): array
+    {
+        return array_map(static fn(array $row): FreshBooksCreditNote => FreshBooksCreditNote::fromApi($row), $this->all('credit_notes/credit_notes', 'credit_notes', $search, ['include[]' => 'lines']));
+    }
+
     /** Jedna faktura po id; null, gdy FreshBooks jej nie zna (404). */
     public function invoice(string $id): ?FreshBooksInvoice
     {

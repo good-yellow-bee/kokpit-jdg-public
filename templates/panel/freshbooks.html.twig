@@ -32,4 +32,25 @@
         {% endif %}
         <p>Płatności bez przypisanej faktury: {{ unmatched }}.</p>
     </section>
+    <section id="sales-tasks">
+        <h2>Zadania sprzedaży</h2>
+        <p>Faktura poza Draft bez KSeF (<code>freshbooks_bypass</code>), faktura spoza kokpitu (<code>outside_cockpit</code>) i zmiana numeru po przyjęciu (<code>freshbooks_number_changed</code>: przywróć numer we FreshBooks).</p>
+        {% if tasks is empty %}<p>Brak otwartych zadań.</p>{% else %}
+        <table>
+            <thead><tr><th>Zadanie</th><th>Faktura</th><th>Stan</th><th>Od</th><th></th></tr></thead>
+            <tbody>
+            {% for task in tasks %}
+                <tr><td>{{ task.panel_task }}</td><td>{{ task.kind }} {{ task.invoice_number }}</td><td>{{ task.status }}</td><td>{{ task.panel_task_at }}</td>
+                    <td><form method="post" action="{{ path('panel_freshbooks_task_close', {id: task.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('freshbooks_task') }}"><button type="submit">Zamknij</button></form></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        <h3>Szkice KOR</h3>
+        {% if corrections is empty %}<p>Brak szkiców KOR.</p>{% else %}
+        <ul>
+            {% for kor in corrections %}<li>{{ kor.invoice_number ?: 'bez numeru credit note' }} do {{ kor.corrected_invoice_number }}: {{ kor.status }}{% if kor.ready_blockers %} – {{ kor.ready_blockers }}{% endif %}</li>{% endfor %}
+        </ul>
+        {% endif %}
+    </section>
 {% endblock %}

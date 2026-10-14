@@ -94,6 +94,12 @@ final readonly class FreshBooksInvoice
         );
     }
 
+    /** Ta sama faktura z innym numerem: odróżnia zmianę samego P_2 od edycji po przyjęciu (F3.2 część b). */
+    public function withNumber(string $number): self
+    {
+        return new self($this->id, $number, $this->clientId, $this->clientName, $this->address, $this->vatNumber, $this->currency, $this->gross, $this->net, $this->vat, $this->createDate, $this->status, $this->deleted, $this->updatedOn, $this->lines, $this->poNumber);
+    }
+
     public function isDraft(): bool
     {
         return $this->status === 'draft';

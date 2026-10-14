@@ -83,7 +83,7 @@ Znacznik działa od go-live F3, gdy `setting` `freshbooks.sales_enabled` jest w�
 
 - `freshbooks.ready_marker`: konfiguracja aplikacji, nie `setting`; domyślnie `KSEF-GOTOWA` w `po_number`.
 - Implementacja F3.2 część a (D-52): `SalesReadiness` po każdym odczycie szkicu. Pozycje trafiają do `invoice_line` (`qty`, `unit_cost`, stawka z `ryczalt.service_map`). Szkic ze znacznikiem, który nie spełnia warunków stanu `ready` (onboarding klienta, data usługi, stawka pozycji, cel, warunki prośby), zostaje w `draft` z powodami w `invoice.ready_blockers`. Datę albo okres usługi wpisujesz w panelu przed `ready`.
-- F3.2 część b: alert obejścia (`freshbooks-bypass-alert`), faktura spoza kokpitu o tym samym P_2 (`subject1-cancels-approval`, `subject1-outside-cockpit-task`) i szkic KOR z FreshBooks (`kor-draft-from-freshbooks`).
+- F3.2 część b (D-53): `FreshBooksBypass` po udanym przebiegu Subject1 daje `freshbooks_bypass` i zadanie w panelu („Zadania sprzedaży”, `invoice.panel_task`). Faktura z Subject1 o tym samym `kind` i P_2 anuluje szkic i żywe zatwierdzenie (`manual_invoice`); bez lokalnego wiersza od go-live powstaje zadanie `outside_cockpit`. Credit notes czyta strumień `credit_notes`; fakturę korygowaną wskazuje linia `Faktura: <numer>` w `notes`. Credit note daje szkic KOR (`CorrectionDrafts`), a edycja przyjętej faktury szkic KOR bez numeru do credit note. Zmiana samego numeru daje alert `freshbooks_number_changed`.
 - Dokumentacja faktur FreshBooks nie opisuje tagów (sprawdzone 2026-10-08, [FreshBooks, faktury](https://www.freshbooks.com/api/invoices)).
 
 ## Blokady obejścia

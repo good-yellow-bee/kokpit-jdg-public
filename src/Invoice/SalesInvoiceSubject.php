@@ -241,9 +241,13 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
     /** @param array<string,mixed> $invoice */
     private function collision(array $invoice): ?string
     {
+        $number = self::text($invoice, 'invoice_number');
+        if ($number === null) {
+            return 'Faktura bez numeru (P_2); szkic KOR czeka na numer credit note.';
+        }
         $taken = $this->db->fetchOne(
             "SELECT 1 FROM invoice WHERE environment=? AND direction='sale' AND kind=? AND invoice_number=? AND id<>? AND ksef_number IS NOT NULL",
-            [self::string($invoice, 'environment'), self::string($invoice, 'kind'), self::string($invoice, 'invoice_number'), self::string($invoice, 'id')],
+            [self::string($invoice, 'environment'), self::string($invoice, 'kind'), $number, self::string($invoice, 'id')],
         );
         return $taken === false ? null : 'P_2 koliduje z numerem faktury już przyjętej w KSeF; zmień numer we FreshBooks (docs/modules/ksef.md, „Kolizje P_2”).';
     }
