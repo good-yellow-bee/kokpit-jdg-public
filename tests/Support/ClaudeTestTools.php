@@ -16,6 +16,7 @@ use App\Chat\ChatSessions;
 use App\Chat\ChatToolExecutor;
 use App\Chat\ChatToolRegistry;
 use App\Chat\ChatTurn;
+use App\Chat\DraftDocumentTool;
 use App\Connector\Claude\ChatRequestProfile;
 use App\Connector\Claude\ClaudeClientFactory;
 use App\Connector\Claude\ClaudeMessages;
@@ -211,15 +212,31 @@ final class ClaudeTestTools
         return new ChatRedaction($db, ConnectorTestTools::configuration(false), new Redactor());
     }
 
-    public static function executor(Connection $db, MockClock $clock, ?ChatToolRegistry $registry = null): ChatToolExecutor
+    public static function executor(Connection $db, MockClock $clock, ?ChatToolRegistry $registry = null, ?DraftDocumentTool $drafts = null): ChatToolExecutor
     {
-        return new ChatToolExecutor(new ChatQueryRunner($db, ConnectorTestTools::configuration(false), new BusinessDate($clock), new PolishCalendar(), 200, ChatTestTools::CURRENCIES), $registry ?? self::registry(), self::redaction($db));
+        return new ChatToolExecutor(new ChatQueryRunner($db, ConnectorTestTools::configuration(false), new BusinessDate($clock), new PolishCalendar(), 200, ChatTestTools::CURRENCIES), $registry ?? self::registry(), self::redaction($db), $drafts);
     }
 
     /**
-     * Pełna tura czatu nad atrapą HTTP; opcje: `budget`, `context` (ChatContextGuard), `iterations`, `enabled`, `registry`.
+     * Fixture z podstawieniami znaczników `{{NAZWA}}`: wartości, których skaner nie wpuszcza jako literałów (IBAN, NRB),
+     * powstają w kodzie testu.
      *
-     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor} $options
+     * @param array<string,string> $values
+     */
+    public static function responseWith(string $name, array $values): MockResponse
+    {
+        $replace = [];
+        foreach ($values as $key => $value) {
+            $replace['{{' . $key . '}}'] = $value;
+        }
+        return new MockResponse(strtr(self::fixture($name), $replace), ['http_code' => 200, 'response_headers' => ['content-type' => 'application/json', 'request-id' => 'req_fictional_' . $name]]);
+    }
+
+    /**
+     * Pełna tura czatu nad atrapą HTTP; opcje: `budget`, `context` (ChatContextGuard), `iterations`, `enabled`, `registry`,
+     * `drafts` (narzędzie `draft_document` z F6.4; bez niego szkic zawsze odmawia).
+     *
+     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor,drafts?:DraftDocumentTool} $options
      */
     public static function turn(Connection $db, MockClock $clock, MockHttpClient $mock, array $options = []): ChatTurn
     {
@@ -231,7 +248,7 @@ final class ClaudeTestTools
             self::sessions($db, $clock, $profile, $registry),
             $profile,
             $registry,
-            self::executor($db, $clock, $registry),
+            self::executor($db, $clock, $registry, $options['drafts'] ?? null),
             self::redaction($db),
             $options['budget'] ?? self::budget($db, $clock),
             $options['context'] ?? new ChatContextGuard(80000, 100000),
@@ -260,7 +277,7 @@ final class ClaudeTestTools
      * Panel czatu (F6.3) nad tą samą turą co `turn`: wykresy przez `ChatQueryRunner` na połączeniu testu (transakcja
      * testu z fikcyjnym zbiorem), blokada w pamięci. Opcje jak w `turn`.
      *
-     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor} $options
+     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor,drafts?:DraftDocumentTool} $options
      */
     public static function panel(Connection $db, MockClock $clock, MockHttpClient $mock, array $options = []): ChatPanel
     {

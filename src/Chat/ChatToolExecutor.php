@@ -7,28 +7,33 @@ namespace App\Chat;
 /**
  * Wykonuje wywołania narzędzi czatu (docs/modules/czat.md, „Narzędzia”): walidacja wejścia według schematu z
  * `ChatToolRegistry`, pseudonimy `K-NN` przez `PseudonymMap`, zapytania tylko przez `ChatQueryRunner` (połączenie
- * `chat`). Każdy błąd daje `tool_result` z `is_error`; wynik przechodzi przez `Redactor`, bez identyfikatorów z bazy.
+ * `chat`). Jedyny zapis to `draft_document` przez `DraftDocumentTool` (F6.4, D-62). Każdy błąd daje `tool_result` z
+ * `is_error`; wynik przechodzi przez `Redactor`, bez identyfikatorów z bazy.
  */
 final readonly class ChatToolExecutor
 {
-    public function __construct(private ChatQueryRunner $runner, private ChatToolRegistry $registry, private ChatRedaction $redaction) {}
+    public function __construct(private ChatQueryRunner $runner, private ChatToolRegistry $registry, private ChatRedaction $redaction, private ?DraftDocumentTool $drafts = null) {}
 
     /**
      * @param array<string,mixed> $toolUse blok `tool_use` z odpowiedzi
+     * @param string|null $sessionId rozmowa bieżącej tury; bez niej `draft_document` zawsze odmawia
      * @return array<string,mixed> blok `tool_result`
      */
-    public function execute(array $toolUse, PseudonymMap $map): array
+    public function execute(array $toolUse, PseudonymMap $map, ?string $sessionId = null): array
     {
         $id = is_string($toolUse['id'] ?? null) ? $toolUse['id'] : '';
         $name = is_string($toolUse['name'] ?? null) ? $toolUse['name'] : '';
         try {
             $input = $this->validate($name, $toolUse['input'] ?? null);
-            $result = $this->dispatch($name, $input, $map);
+            $result = $this->dispatch($name, $input, $map, $sessionId);
         } catch (ChatQueryRejected $exception) {
             return self::result($id, ['error' => $exception->reason, 'message' => $exception->getMessage()], true);
         } catch (\Doctrine\DBAL\Exception) {
             // Np. statement_timeout roli chat_ro; komunikat bazy nie trafia do modelu.
             return self::result($id, ['error' => 'query_failed', 'message' => 'Zapytanie nie powiodło się.'], true);
+        } catch (\DomainException) {
+            // Odmowa bramki przy zapisie szkicu; szczegóły zostają w panelu, nie w kontekście modelu.
+            return self::result($id, ['error' => 'draft_failed', 'message' => 'Szkic nie powstał.'], true);
         }
         return self::result($id, $this->redaction->value($result), false);
     }
@@ -112,7 +117,7 @@ final readonly class ChatToolExecutor
     }
 
     /** @param array<string,string|list<string>> $input */
-    private function dispatch(string $name, array $input, PseudonymMap $map): mixed
+    private function dispatch(string $name, array $input, PseudonymMap $map, ?string $sessionId): mixed
     {
         $text = static fn(string $key): ?string => isset($input[$key]) && is_string($input[$key]) ? $input[$key] : null;
         $range = array_filter(['date_from' => $text('date_from'), 'date_to' => $text('date_to'), 'currency' => $text('currency')], static fn(?string $value): bool => $value !== null);
@@ -122,8 +127,8 @@ final readonly class ChatToolExecutor
             'get_fx_rate' => $this->rows($this->runner->run(ChatQuery::GetFxRate, ['currency' => $text('currency'), 'date' => $text('date')]), $map),
             'verify_counterparty' => $this->rows($this->runner->run(ChatQuery::VerifyCounterparty, ['counterparty' => $this->counterparty($text('counterparty'), $map)]), $map),
             'render_chart' => $this->chart($this->query($text('query')), (string) $text('chart_type'), $range),
-            // Szkic powstaje tylko przy fladze `draft_requested` (F6.4); do tego czasu narzędzie niczego nie zapisuje.
-            'draft_document' => throw new ChatQueryRejected('draft_not_requested', 'Szkic powstaje tylko na prośbę z przełącznika „Szkic” w panelu.'),
+            // Szkic tylko przy fladze `draft_requested` bieżącej rozmowy (F6.4, D-62); bez rozmowy i narzędzia zero SQL.
+            'draft_document' => $this->drafts !== null && $sessionId !== null ? $this->drafts->create($sessionId, $input, $map) : throw new ChatQueryRejected('draft_not_requested', 'Szkic powstaje tylko na prośbę z przełącznika „Szkic” w panelu.'),
             default => throw new ChatQueryRejected('unknown_tool', 'Narzędzie spoza listy tej rozmowy.'),
         };
     }

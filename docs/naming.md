@@ -603,6 +603,21 @@ Część b: sekcja niżej.
 | Dowody | podkatalog paczki `screens/<klucz>.html` w `EvidenceArtefacts` i `EvidencePack` |
 | Testy | `ChatWebTestCase`, `ClaudeTestTools::panel`; testy `ChatTurboFrameTest`, `ChatSeqIdempotentTest`, `ChatRenderChartTest`, `ChatPanelMessagesTest`; fixtures `tests/Fixtures/Claude/messages-render-chart.json`, `messages-chart-end-turn.json`, `messages-context-limit.json` |
 
+### Implementacja F6.4 (D-62): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Czat (`src/Chat`) | `DraftDocumentTool` (`create`), `DraftSubject` (usługa `draft.subject`, alias klasy; `canonical`, `moveTo`, `list`), `DraftState` (obiekt znakowania workflow: `getStatus`, `setStatus`), `Drafts` (`fromApproval`, `confirm`, `edit`, `discard`), `DraftValueCheck` (`flag`, `TYPES`); `ChatToolExecutor::execute` z argumentem `$sessionId` |
+| Symfony Workflow | `draft` (`state_machine`, magazyn `method` na polu `status`, usługa `state_machine.draft`); przejścia `approve` (`pending` → `approved`), `reopen` (`approved` → `pending`), `execute` (`approved` → `executed`), `discard` (`pending`, `approved` → `discarded`) |
+| Bramka (`src/Approval`) | `ApprovalGate::requestByUser` (prośba z Twojej akcji bez push); `ApprovalGate::markCopied` zwraca `accepted`, `expired` albo `cancelled` |
+| Błędy wyniku narzędzia | nowe `ChatQueryRejected.reason`: `invalid_draft`; poza `ChatQueryRejected`: `draft_failed`; `draft_not_requested` zostaje dla szkicu bez flagi |
+| Pozycja `draft.flagged_values` | `type` (`iban`, `nrb`, `nip`, `amount`), `value`, `confirmed_at`, `confirmed_by` |
+| Pozycja `draft.provenance` | `source` = `chat_message` (`seq`, `sha256`, `excerpt`) albo `source_ref` (`pseudonym`) |
+| Wynik `draft_document` | `status`, `recipient`, `flagged_values` (liczba), `untrusted_sources` (liczba), `message` |
+| Payload `outbound_payload` | kanoniczny JSON: `body`, `kind`, `recipient` (`country`, `name`, `nip`), `subject` |
+| Panel | trasa `panel_draft_action` (`POST /approvals/{id}/draft/{action}`, akcje `confirm`, `edit`, `discard`; pola `confirm[]`, `subject`, `body`; token CSRF `approvals`); klasy `.draft-preview`, `.draft-body`, `mark.draft-flagged`, `.draft-sources`, `.draft-confirm`, `.draft-edit`, `.chat-draft-link` |
+| Testy | `DraftTestTools`, `ClaudeTestTools::responseWith` (znaczniki `{{NAZWA}}` w fixture, np. `FICTIONAL_IBAN`), `ApprovalTestTools::owner` (publiczna); testy `DraftRequestedOnlyTest`, `DraftRecipientDbTest`, `DraftFlaggedValuesTest`, `DraftApprovalCopyTest`, `DraftApprovalCopyPanelTest`; fixtures `tests/Fixtures/Claude/messages-draft-document.json`, `messages-draft-recipients.json`, `messages-draft-flagged.json`; dowody `cmd/draft-requested-only.txt`, `db/draft-approval-copy-approval.csv`, `screens/draft-approval-copy.html` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

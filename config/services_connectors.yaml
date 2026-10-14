@@ -148,11 +148,17 @@ when@dev:
       autowire: true
       autoconfigure: true
       arguments: { $fallback: '@dummy.subject.filing' }
+    # Atrapa `draft` bez własnego tagu: obsługuje ją `draft.subject` dla id bez wiersza `draft` (F6.4, D-62).
     dummy.subject.draft:
       class: App\Connector\Dummy\DummySubject
       autowire: true
-      autoconfigure: true
+      autoconfigure: false
       arguments: { $subjectType: draft }
+    draft.subject:
+      class: App\Chat\DraftSubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $fallback: '@dummy.subject.draft' }
 when@test:
   services:
     dummy.mock_response:
@@ -193,8 +199,14 @@ when@test:
       autowire: true
       autoconfigure: true
       arguments: { $fallback: '@dummy.subject.filing' }
+    # Atrapa `draft` bez własnego tagu: obsługuje ją `draft.subject` dla id bez wiersza `draft` (F6.4, D-62).
     dummy.subject.draft:
       class: App\Connector\Dummy\DummySubject
       autowire: true
-      autoconfigure: true
+      autoconfigure: false
       arguments: { $subjectType: draft }
+    draft.subject:
+      class: App\Chat\DraftSubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $fallback: '@dummy.subject.draft' }

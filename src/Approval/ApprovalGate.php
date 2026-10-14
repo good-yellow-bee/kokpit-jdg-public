@@ -39,6 +39,15 @@ final readonly class ApprovalGate
         return $this->create($subjectType, $subjectId, 'supersede', true, null);
     }
 
+    /**
+     * Prośba z Twojej akcji bez push `approval_pending`: szkic czatu na Twoją prośbę albo jego edycja w panelu
+     * (F6.4, D-62). Poprzednie `pending` albo `approved` dostaje `superseded` jak przy `request`.
+     */
+    public function requestByUser(string $subjectType, string $subjectId, ?string $userId): string
+    {
+        return $this->create($subjectType, $subjectId, 'supersede', false, $userId);
+    }
+
     /** „Odnów” po wygaśnięciu albo anulowaniu: Twoja akcja, bez push (przegląd S2). */
     public function renew(string $subjectType, string $subjectId, string $userId): string
     {
@@ -49,7 +58,7 @@ final readonly class ApprovalGate
     public function approve(string $id, string $userId): void
     {
         $credential = $this->stepUp->require();
-        $this->db->transactional(function () use ($id, $userId, $credential): void {
+        $connector = $this->db->transactional(function () use ($id, $userId, $credential): ?string {
             $row = $this->transitions->lock($id);
             ApprovalTransitions::action(ApprovalTransitions::string($row, 'status'), 'approved', 'approve');
             $now = $this->clock->now();
@@ -63,9 +72,13 @@ final readonly class ApprovalGate
             $subject->checkDecision(ApprovalTransitions::string($row, 'subject_id'));
             $expires = $this->expiry->at(ApprovalTransitions::string($row, 'subject_type'), 'approved', new \DateTimeImmutable(ApprovalTransitions::string($row, 'requested_at')), $now);
             $this->transitions->apply($row, 'approved', 'approve', ['decided_at' => $this->transitions->now(), 'decided_by' => $userId, 'step_up_credential_id' => $credential, 'expires_at' => $expires->format('Y-m-d\TH:i:s.uP')], ['step_up_credential_id' => $credential], $userId);
+            return is_string($row['connector']) ? $row['connector'] : null;
         });
-        // Wiadomość niesie tylko identyfikator; handler ponownie blokuje wiersz i wymaga `approved`.
-        $this->bus->dispatch(new ApprovalDispatchMessage($id));
+        // Szkic bez konektora (Q-35) czeka na „Skopiowano”, więc nic nie trafia do `official_writes`.
+        if ($connector !== null) {
+            // Wiadomość niesie tylko identyfikator; handler ponownie blokuje wiersz i wymaga `approved`.
+            $this->bus->dispatch(new ApprovalDispatchMessage($id));
+        }
     }
 
     /** „Anuluj” do chwili `dispatching`. */
@@ -80,15 +93,33 @@ final readonly class ApprovalGate
         });
     }
 
-    /** „Skopiowano” szkicu tylko do kopiowania (Q-35): `approved` → `accepted` bez konektora. */
-    public function markCopied(string $id, string $userId): void
+    /**
+     * „Skopiowano” szkicu tylko do kopiowania (Q-35): `approved` → `accepted` bez konektora. Jak worker przed wysyłką
+     * sprawdza termin i hash payloadu: po terminie `expired`, przy niezgodnych bajtach `outbound_payload` `cancelled`
+     * z `hash_mismatch` i alertem (szkic wraca do `pending`, F6.4, D-62).
+     *
+     * @return string stan zatwierdzenia po akcji: `accepted`, `expired` albo `cancelled`
+     */
+    public function markCopied(string $id, string $userId): string
     {
-        $this->db->transactional(function () use ($id, $userId): void {
+        return $this->db->transactional(function () use ($id, $userId): string {
             $row = $this->transitions->lock($id);
             if ($row['subject_type'] !== 'draft' || $row['connector'] !== null) {
                 throw new InvalidTransitionException('„Skopiowano” dotyczy tylko szkicu bez konektora.');
             }
+            ApprovalTransitions::action(ApprovalTransitions::string($row, 'status'), 'accepted', 'copied');
+            if (new \DateTimeImmutable(ApprovalTransitions::string($row, 'expires_at')) <= $this->clock->now()) {
+                $this->transitions->apply($row, 'expired', 'expire', ['finished_at' => $this->transitions->now()]);
+                return 'expired';
+            }
+            $bytes = $this->files->read(ApprovalTransitions::string($row, 'payload_file_id'));
+            if (!hash_equals(ApprovalTransitions::string($row, 'payload_sha256'), hash('sha256', $bytes))) {
+                $this->transitions->apply($row, 'cancelled', 'hash_mismatch', ['cancel_reason' => 'hash_mismatch', 'finished_at' => $this->transitions->now()], ['cancel_reason' => 'hash_mismatch']);
+                $this->notifications->failure($id, 'hash_mismatch');
+                return 'cancelled';
+            }
             $this->transitions->apply($row, 'accepted', 'copied', ['finished_at' => $this->transitions->now()], [], $userId);
+            return 'accepted';
         });
     }
 
