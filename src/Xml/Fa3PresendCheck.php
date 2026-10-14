@@ -66,7 +66,7 @@ final readonly class Fa3PresendCheck
         }
         foreach ($xpath->query('//f:NIP') ?: [] as $nip) {
             if ($nip instanceof \DOMElement && !SettingKeys::validNip(trim($nip->textContent))) {
-                $problems[] = sprintf('NIP w %s ma niepoprawną sumę kontrolną.', $nip->parentNode?->parentNode?->nodeName ?? 'dokumencie');
+                $problems[] = sprintf('NIP w %s ma niepoprawną sumę kontrolną.', $nip->parentNode->parentNode->nodeName ?? 'dokumencie');
             }
         }
         if ($problems === []) {

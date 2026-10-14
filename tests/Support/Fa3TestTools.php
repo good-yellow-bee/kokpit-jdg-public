@@ -140,7 +140,9 @@ final class Fa3TestTools
         $xpath->registerNamespace('f', 'http://crd.gov.pl/wzor/2025/06/25/13775/');
         $result = [];
         foreach ($xpath->query($query) ?: [] as $node) {
-            $result[] = trim($node->textContent);
+            if ($node instanceof \DOMElement) {
+                $result[] = trim($node->textContent);
+            }
         }
         return $result;
     }

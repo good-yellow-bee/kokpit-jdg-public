@@ -111,7 +111,7 @@ final readonly class Fa3Builder
             if ($groupVat !== null) {
                 self::child($fa, 'P_14_' . $group, (string) $groupVat->toScale(2));
                 $vatTotal = $vatTotal->plus($groupVat);
-                if ($polishVat && $rate !== null) {
+                if ($polishVat) {
                     $converted = VatFx::convert((string) $groupVat->toScale(2), $rate->mid);
                     self::child($fa, 'P_14_' . $group . 'W', $converted);
                     $vatPln = $vatPln->plus(BigDecimal::of($converted));
@@ -148,7 +148,7 @@ final readonly class Fa3Builder
                 self::child($original, 'NrKSeFN', '1');
             }
         }
-        if ($polishVat && $rate !== null) {
+        if ($polishVat) {
             $note = self::child($fa, 'DodatkowyOpis');
             self::child($note, 'Klucz', 'Kurs waluty do VAT');
             self::child($note, 'Wartosc', sprintf('1 %s = %s PLN, tabela NBP %s z %s', $rate->currency, $rate->mid, $rate->tableNo, $rate->effectiveDate));
@@ -168,7 +168,7 @@ final readonly class Fa3Builder
             self::child($row, 'P_9A', self::decimal($line->unitNetPrice, 2));
             self::child($row, 'P_11', (string) BigDecimal::of($line->netAmount)->toScale(2));
             self::child($row, 'P_12', $line->vatCode);
-            if ($polishVat && $rate !== null && self::domestic($line->vatCode)) {
+            if ($polishVat && self::domestic($line->vatCode)) {
                 self::child($row, 'KursWaluty', $rate->mid);
             }
             if ($line->stateBefore) {
