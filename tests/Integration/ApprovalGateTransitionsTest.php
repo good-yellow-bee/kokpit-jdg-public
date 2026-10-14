@@ -135,6 +135,7 @@ final class ApprovalGateTransitionsTest extends DatabaseTestCase
             'dispatching → rejected dispatch.rejected' => [$id = $tools->approved('filing', 'reject'), fn() => $tools->handler->dispatch($id)],
             'dispatching → accepted dispatch.accepted' => [$id = $tools->approved('filing', 'duplicate'), fn() => $tools->handler->dispatch($id)],
             'dispatching → unknown dispatch.unknown' => [$id = $tools->approved('filing', 'timeout'), fn() => $tools->handler->dispatch($id)],
+            'dispatching → approved dispatch.deferred' => [$id = $tools->approved('filing', 'rate_limited'), fn() => $tools->handler->dispatch($id)],
             'submitted → accepted dispatch.accepted' => [$dispatched('accept'), fn() => $tools->reconciler->poll()],
             'submitted → rejected dispatch.rejected' => [$dispatched('poll_reject'), fn() => $tools->reconciler->poll()],
             'submitted → unknown dispatch.unknown' => [$dispatched('poll_pending'), function () use ($tools): void {

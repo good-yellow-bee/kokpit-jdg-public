@@ -1,0 +1,15 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json, pobrane 2026-10-14); prawdziwe nagrania z api-test zastąpią je w F3.5 (ksef-te-fixtures).",
+  "scenario": "Rekoncyliacja bez referencji: brak sesji z dnia wysyłki.",
+  "interactions": [
+    {
+      "method": "GET",
+      "path": "/v2/sessions",
+      "status": 200,
+      "body": {
+        "sessions": []
+      }
+    }
+  ]
+}

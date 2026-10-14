@@ -127,6 +127,7 @@ Ta sekcja to dom przejść `approval.status`.
 | `dispatching` | `rejected` | odmowa przed nadaniem numeru referencyjnego, poza duplikatem, np. błąd walidacji | system | `dispatch.rejected` |
 | `dispatching` | `accepted` | duplikat przy wysyłce z referencją oryginału (JPK 170); UPO oryginału | system | `dispatch.accepted` |
 | `dispatching` | `unknown` | timeout albo błąd sieci; awaria workera: `approval.reconcile` znajduje `dispatching` starsze niż 10 min, potem zwykła rekoncyliacja | system | `dispatch.unknown` |
+| `dispatching` | `approved` | pierwsze wywołanie odrzucone przez limit (429 z `Retry-After` albo `blocked_until`), nic nie wyszło; `approval.dispatch_waiting` próbuje po `blocked_until` (D-54) | system | `dispatch.deferred` |
 | `submitted` | `accepted` | status końcowy pozytywny z UPO albo duplikat oryginału (KSeF 440 ze zgodnym `invoiceHash`, JPK 407); UPO i numer oryginału | system | `dispatch.accepted` |
 | `submitted` | `rejected` | status końcowy negatywny | system | `dispatch.rejected` |
 | `submitted` | `unknown` | brak statusu końcowego w oknie odpytywania (per konektor, z konfiguracji aplikacji); JPK 411 (identyczny dokument bez numeru oryginału) albo 300 po `FinishUpload`; e-Deklaracje 411 i 300; rekoncyliacja po sha256 ([modules/jpk.md](modules/jpk.md)) | system | `dispatch.unknown` |

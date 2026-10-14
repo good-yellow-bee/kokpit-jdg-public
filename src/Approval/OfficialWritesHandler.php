@@ -97,7 +97,12 @@ final readonly class OfficialWritesHandler
     {
         return $this->db->transactional(function () use ($id, $result): string {
             $row = $this->transitions->lock($id);
-            $to = $result->outcome === 'pending' ? 'unknown' : $result->outcome;
+            // `deferred`: pierwsze wywołanie odrzucił limit, nic nie wyszło; `approval.dispatch_waiting` spróbuje po `blocked_until`.
+            $to = match ($result->outcome) {
+                'pending' => 'unknown',
+                'deferred' => 'approved',
+                default => $result->outcome,
+            };
             $fields = ['result_code' => $result->resultCode];
             if ($result->externalRefs !== []) {
                 $fields['external_refs'] = json_encode(ApprovalTransitions::refs($row) + $result->externalRefs, JSON_THROW_ON_ERROR);
@@ -105,9 +110,10 @@ final readonly class OfficialWritesHandler
             $fields += match ($to) {
                 'submitted' => ['submitted_at' => $this->transitions->now()],
                 'accepted', 'rejected' => ['finished_at' => $this->transitions->now()],
+                'approved' => ['dispatching_at' => null],
                 default => [],
             };
-            $this->transitions->apply($row, $to, $to, $fields, ['result_code' => $result->resultCode]);
+            $this->transitions->apply($row, $to, $to === 'approved' ? 'deferred' : $to, $fields, ['result_code' => $result->resultCode]);
             return $to;
         });
     }

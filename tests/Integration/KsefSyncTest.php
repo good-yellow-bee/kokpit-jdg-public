@@ -15,6 +15,7 @@ use App\Rate\RateLimitExceededException;
 use App\Http\ConnectorHttpClient;
 use App\Http\ConnectorRequestContext;
 use App\Tests\Support\ConnectorTestTools;
+use App\Tests\Support\ExportOnlyKsefGateway;
 use App\Tests\Support\EvidenceArtefacts;
 use App\Tests\Support\F1TestTools;
 use App\Tests\Support\FakeKsefGateway;
@@ -202,6 +203,8 @@ final class KsefSyncTest extends DatabaseTestCase
     private function httpGateway(ConnectorHttpClient $http): KsefGateway
     {
         return new class ($http) implements KsefGateway {
+            use ExportOnlyKsefGateway;
+
             public function __construct(private readonly ConnectorHttpClient $http) {}
             public function startExport(string $stream, \DateTimeImmutable $from, ?\DateTimeImmutable $to): string
             {

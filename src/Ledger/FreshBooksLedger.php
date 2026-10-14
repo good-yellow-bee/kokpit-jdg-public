@@ -190,8 +190,9 @@ final readonly class FreshBooksLedger
             $this->db->update('invoice', ['status' => 'cancelled_before_send','freshbooks_status' => 'deleted','updated_at' => $now], ['id' => $id]);
             return 'draft_cancelled';
         }
-        // Szkic przed wysyłką (`draft`, `ready`, `approved`): zmiana źródła podnosi `version`; nowe zatwierdzenie robi `SalesReadiness` (F3.2).
-        if (in_array($known['status'], ['draft','ready','approved'], true) && !$invoice->deleted) {
+        // Szkic przed wysyłką (`draft`, `ready`, `approved`) i faktura odrzucona przez KSeF (`rejected`, poprawka bez KOR, F3.3):
+        // zmiana źródła podnosi `version`; nowe zatwierdzenie robi `SalesReadiness` (F3.2).
+        if (in_array($known['status'], ['draft','ready','approved','rejected'], true) && !$invoice->deleted) {
             if ($known['source_hash'] !== $invoice->sourceHash()) {
                 // P_2 równy innej fakturze tego rodzaju (np. już w KSeF): bez zapisu numeru; prośba czeka na poprawkę we FreshBooks.
                 $taken = $this->db->fetchOne(

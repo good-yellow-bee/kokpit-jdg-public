@@ -482,6 +482,23 @@ Część b: sekcja niżej.
 | Panel | sekcja „Zadania sprzedaży” w `panel/freshbooks.html.twig` |
 | Testy i odbiór | `CorrectionTestTools`, `SalesTestTools::$corrections`; fixture `tests/Fixtures/FreshBooks/credit-notes.json`; klucze kryteriów `freshbooks-bypass-alert`, `subject1-cancels-approval`, `subject1-outside-cockpit-task`, `kor-draft-from-freshbooks` |
 
+### Implementacja F3.3: nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| `KsefGateway` (`src/Connector/Ksef`) | metody `supportsWrites`, `openSession`, `sendInvoice`, `invoiceStatus`, `closeSession`, `invoiceUpo`, `sessions`, `sessionInvoices`, `failedInvoices`; DTO `KsefCall` (`dispatch` tylko w trakcie wysyłki, `read`), `KsefSession`, `KsefInvoiceStatus`; `KsefException::$detail` (kod błędu z odpowiedzi) |
+| `KsefError` | `SessionUnavailable` (`21184`), `RateLimited` (`rate_limited`: 429 albo `blocked_until` przy otwarciu sesji), `RequestRefused` (`request_refused`: inna odmowa 4xx) |
+| Konektor zapisu | `KsefWriter` (`OfficialWriter` i `StatusReader` dla `ksef`, usługa w `services_connectors.yaml`) |
+| Latarnia (`src/Connector/Latarnia`) | `LatarniaConnector` (`status`, `messages`), `LatarniaStatus` (`AVAILABLE`, `MAINTENANCE`, `FAILURE`, `TOTAL_FAILURE`), `LatarniaStatusStore` (klucz `ksef.latarnia_status` w puli `cache.scheduler`), `LatarniaStatusHandler`; wiadomość `LatarniaStatusMessage` z id `latarnia.status` na `reads`; konfiguracja `latarnia.endpoints` |
+| `connector_call.operation` | `ksef`: `session_open`, `invoice_send`, `invoice_status`, `session_close`, `invoice_upo`, `sessions_list`, `session_invoices`, `session_failed`; `latarnia`: `status`, `messages` |
+| Powody czekania (`OfficialWriter::waitingReason` dla `ksef`) | `connectors_disabled`, `target_mismatch`, `gateway_unavailable`, `credential_missing`, `blocked_until`, `latarnia_maintenance`, `latarnia_failure`, `latarnia_total_failure`, `latarnia_unreachable` |
+| Klucze `approval.external_refs` (`ksef`) | `correlation_id`, `session_reference`, `ksef_session_id`, `invoice_reference`, `sent_at`, `ksef_number`, `invoice_hash` (Base64 z KSeF), `acquisition_date`, `invoicing_mode`, `upo_file_id`, `original_ksef_number`, `original_session_reference`, `reconciled_by` (`invoice_status`, `session_invoices`, `session_failed`, `sessions_list`, `subject1`) |
+| `approval.result_code` (`ksef`) | kod statusu faktury KSeF (np. `200`, `440`, `450`), `form_code_mismatch`, `21184`, `p2_collision`, `subject1_match`, `rate_limited` |
+| Przejście zatwierdzenia | `dispatching` → `approved`, zdarzenie `deferred`, wpis `dispatch.deferred`; wynik `SubmissionResult` = `deferred` (pierwsze wywołanie odrzucone 429 albo `blocked_until`, nic nie wyszło) |
+| Kolumny i wyliczenia | `invoice.panel_task` = `p2_collision`; `notification.category` = `p2_collision` |
+| Subject1 | `Subject1Importer`: lokalna sprzedaż o tym samym `kind` i P_2 w `submitted` albo `unknown` → zgodny sha256 z `xml_sent` daje `accepted` (`subject1_match`), różny `rejected` (`p2_collision`) i zwykły import |
+| Testy i odbiór | `KsefSendTestTools`, `KsefSendTestCase`, `KsefRecordings` (odtwarzanie nagrań po metodzie i ścieżce, zmienne `{{nazwa}}`); nagrania `tests/Fixtures/Ksef/send-*.json`, `tests/Fixtures/Latarnia/status-*.json`; klucze kryteriów `ksef-send-accepted`, `ksef-send-hash-mismatch`, `ksef-send-once`, `ksef-send-p1-day-change`, `ksef-send-form-code`, `ksef-send-rejected`, `ksef-send-21184`, `ksef-send-timeout-reconcile`, `ksef-reconcile-paths`, `ksef-retry-440`, `ksef-send-latarnia`, `ksef-send-429` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

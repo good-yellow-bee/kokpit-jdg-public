@@ -57,6 +57,10 @@ final readonly class DummyWriter implements OfficialWriter, StatusReader
             throw new \UnexpectedValueException('Payload atrapy bez scenariusza.');
         }
         $scenario = $match[1];
+        if ($scenario === 'rate_limited') {
+            // Limit przed pierwszym wywołaniem: nic nie wyszło, zatwierdzenie wraca do `approved` (D-54).
+            return SubmissionResult::of('deferred', [], 'rate_limited');
+        }
         $response = $this->http->connectorRequest(new ConnectorRequestContext('dummy', 'default', 'submit', $request->environment, Uuid::fromString($request->approvalId)), 'dummy.call', 'POST', $this->baseUrl . '/submit', ['body' => $request->bytes]);
         $data = $response->toArray(false);
         if (($data['fictional'] ?? null) !== true) {

@@ -141,6 +141,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-51 | założenia F3.1 do przeglądu doradcy (Q-29): P_18 = 1 dla `non_eu_b2b`; `eu_b2b` z `PrefiksPodatnika` PL i wymaganym `vat_eu_number`; `eu_b2b_unidentified` odrzucany na każdym celu; kurs VAT z art. 31a ust. 1–2 bez ust. 2a (Q-23); KOR jako pary pozycji przed i po z `StanPrzed` | przyjęta 2026-10-14 | Q-23, Q-29 |
 | D-52 | założenia F3.2 część a: powody pozostania w `draft` w `invoice.ready_blockers`; pozycje szkicu z FreshBooks (`qty`, `unit_cost`, jednostka `usł.`); onboarding = identyfikator i wiersz `verification`; warunki prośby i decyzji z zapisanych weryfikacji (bez wywołań VIES); zdjęcie znacznika daje `superseded` bez następcy; P_1 i dane nabywcy zapisane przy prośbie | przyjęta 2026-10-14 | Q-26 |
 | D-53 | założenia F3.2 część b: credit note wskazuje fakturę korygowaną linią `Faktura: <numer>` w `notes`; pozycje „po” = „przed” minus uznanie pozycji o tej samej nazwie; edycja przyjętej faktury daje szkic KOR bez numeru do credit note; zadania sprzedaży w `invoice.panel_task`; obejście sprawdzane po udanym przebiegu Subject1 tylko dla faktur z wierszem `invoice`; zadanie „faktura spoza kokpitu” według P_1 względem `valid_from` | przyjęta 2026-10-14 | Q-27 |
+| D-54 | założenia F3.3: 429 przy pierwszym wywołaniu wraca do `approved` (`dispatch.deferred`); niezgodny `form_code` i drugie 21184 → `rejected`; rekoncyliacja odczytem bez zamykania sesji, okno dnia od `dispatching_at`; dopasowanie Subject1 w imporcie; 440 porównuje `invoiceHash` z listy faktur sesji oryginału; status Latarni w `cache.scheduler`; kolizja P_2 jako zadanie `p2_collision` z push | przyjęta 2026-10-14 | Q-28 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1015,4 +1016,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Zadanie „faktura spoza kokpitu” powstaje, gdy `freshbooks.sales_enabled` jest włączony w dniu P_1 faktury z Subject1.
   - Szkic, którego zatwierdzenie jest już w `dispatching`, `submitted` albo `unknown`, nie ustępuje fakturze z Subject1: import odmawia, a rozstrzyga `SubmissionReconciler` (F3.3).
 - **Skutki:** testy kryteriów F3.2 części b; zmiana założeń to nowy wpis tutaj.
+- **Pytania:** brak.
+
+### D-54 Założenia wysyłki i rekoncyliacji KSeF w F3.3
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude).
+- **Decyzja:**
+  - Odpowiedź 429 (albo zablokowany `rate_counter`) przy otwarciu sesji to stan, w którym nic nie dotarło do urzędu. Writer zwraca wynik `deferred`, a bramka wraca z `dispatching` do `approved` nowym przejściem `dispatch.deferred` (`result_code` `rate_limited`, `dispatching_at` wyczyszczone). `approval.dispatch_waiting` próbuje ponownie po `blocked_until`; to nie jest automatyczne ponowienie zapisu, bo pierwsze wywołanie się nie odbyło.
+  - Niezgodność `ksef_session.form_code` z `invoice.schema_version` przy otwarciu sesji: sesja zamknięta bez wysyłki, zatwierdzenie `rejected` z `form_code_mismatch`. Kod 21184 przy wysyłce: sesja zamknięta, jedna nowa sesja w tym samym przebiegu; drugie 21184 → `rejected` z `21184`.
+  - Kody statusu faktury: poniżej 200 w toku (`pending`), 200 z numerem KSeF → `accepted`, 440 → duplikat, pozostałe ≥ 400 → `rejected` z kodem. Niezgodny `invoiceHash` przy statusie 200 zostaje `pending` (do rozstrzygnięcia ręcznie).
+  - UPO pobierane per faktura i zapisane w `FileStore` jako `upo` z właścicielem `ksef_session`. Sesję zamyka `status()` po wyniku końcowym; `reconcile()` sesji nie zamyka.
+  - Rekoncyliacja `unknown`: z referencją faktury → status; z samą referencją sesji → najpierw lista błędnych, potem lista faktur sesji (dopasowanie po sha256 `xml_sent`); bez referencji → lista sesji online z dnia wysyłki (`dispatching_at`, inaczej `decided_at`, od północy Europe/Warsaw, jedna doba) i lista faktur każdej sesji.
+  - Dopasowanie z syncu Subject1 (`ksef_token_read`) działa w `Subject1Importer`: faktura sprzedaży w `submitted` albo `unknown` o tym samym rodzaju i P_2 z bajtami równymi `xml_sent` → `accepted` z `subject1_match`; inne bajty → `rejected` z `p2_collision` i zwykły import. Zastępuje ostatni punkt D-53 dla `submitted` i `unknown`; `dispatching` nadal odmawia.
+  - 440: writer czyta listę faktur sesji `originalSessionReferenceNumber`, znajduje `originalKsefNumber` i porównuje jego `invoiceHash` z każdym `xml_sent` tej faktury. Zgodny → `accepted` z `result_code` `440`, numerem i UPO oryginału; inny → `rejected` z `p2_collision`, zadanie panelu `p2_collision` i push. `retryAllowed` KSeF zwraca zawsze `true`, bo 440 chroni przed podwójnym przyjęciem.
+  - Kształt odpowiedzi Latarni (`/status`: `status` i `messages`; `/messages`: lista) przyjęty z README i do potwierdzenia nagraniem w F3.5. Latarnia nieosiągalna → `latarnia_unreachable`, wysyłka czeka. Ostatni status trzyma pula `cache.scheduler` (klucz `ksef.latarnia_status`) dla panelu, bez nowej tabeli.
+  - `FakeKsefGateway` nie szyfruje: `encryptedInvoiceContent` to Base64 jawnych bajtów; szyfrowanie robi biblioteka w F3.5.
+  - Faktura `rejected` wraca do poprawy przez FreshBooks: zmiana szkicu daje `draft_updated` i nową prośbę, bez KOR.
+- **Skutki:** migracja `Version20261019000100` (`p2_collision` w `invoice.panel_task` i `notification.category`); testy kryteriów F3.3; zmiana założeń to nowy wpis tutaj.
 - **Pytania:** brak.

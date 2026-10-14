@@ -11,7 +11,7 @@ namespace App\Connector\Dummy;
  */
 final class DummySubjects
 {
-    public const SCENARIOS = ['accept', 'reject', 'duplicate', 'timeout', 'poll_reject', 'poll_pending'];
+    public const SCENARIOS = ['accept', 'reject', 'duplicate', 'timeout', 'poll_reject', 'poll_pending', 'rate_limited'];
 
     /** @var array<string,int> */
     private array $versions = [];

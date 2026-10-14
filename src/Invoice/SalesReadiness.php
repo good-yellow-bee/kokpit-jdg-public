@@ -60,7 +60,7 @@ final readonly class SalesReadiness
             return;
         }
         $status = $this->db->fetchOne('SELECT status FROM invoice WHERE id=? FOR UPDATE', [$id]);
-        if (in_array($status, ['draft','ready','approved'], true) && ($outcome !== 'draft_unchanged' || !$this->hasLines($id))) {
+        if (in_array($status, ['draft','ready','approved','rejected'], true) && ($outcome !== 'draft_unchanged' || !$this->hasLines($id))) {
             $this->syncLines($id, $invoice);
         }
         $this->evaluate($id, $this->marked($invoice), $outcome);
@@ -89,8 +89,9 @@ final readonly class SalesReadiness
                 }
             } elseif ($status === 'ready' && !$marked) {
                 $this->retreat($invoiceId, null);
-            } elseif (in_array($status, ['ready','approved'], true) && $outcome === 'draft_updated') {
-                // Zdjęcie znacznika po zatwierdzeniu nie ma skutku; zmiana źródła przed wysyłką daje nową prośbę.
+            } elseif (in_array($status, ['ready','approved','rejected'], true) && $outcome === 'draft_updated') {
+                // Zdjęcie znacznika po zatwierdzeniu nie ma skutku; zmiana źródła przed wysyłką daje nową prośbę. Faktura
+                // odrzucona przez KSeF nie została wystawiona: poprawka we FreshBooks daje `ready` i nową prośbę, bez KOR.
                 $this->request($invoiceId);
             }
         });
