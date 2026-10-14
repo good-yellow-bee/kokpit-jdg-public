@@ -54,6 +54,16 @@ final readonly class ChatQueryRunner
     }
 
     /**
+     * Walidacja parametrów bez SQL, np. dla specyfikacji wykresu `render_chart` (F6.2): ten sam wyjątek co `run`.
+     *
+     * @param array<mixed> $parameters
+     */
+    public function check(ChatQuery $query, array $parameters): void
+    {
+        $this->validate($query, $parameters);
+    }
+
+    /**
      * @param array<mixed> $parameters
      * @return array<string,?string>
      */

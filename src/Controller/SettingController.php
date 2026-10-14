@@ -27,7 +27,7 @@ final class SettingController extends AbstractController
         }
         return $this->render('panel/settings.html.twig', ['current' => $current,'today' => $date->today(),'error' => null]);
     }
-    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|white_list\.pre_payment_threshold_pln|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on|ryczalt\.eligibility|freshbooks\.sales_enabled|ksef\.fa3_review'])]
+    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|white_list\.pre_payment_threshold_pln|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on|ryczalt\.eligibility|freshbooks\.sales_enabled|ksef\.fa3_review|chat\.law_snapshot'])]
     public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus): Response
     {
         if (!$this->isCsrfTokenValid('setting', $request->request->getString('_token'))) {
@@ -52,7 +52,7 @@ final class SettingController extends AbstractController
                 $value = array_merge(is_array($previous) ? $previous : [], $fields);
             } elseif (in_array($key, [SettingKeys::JPK_ST_ENABLED, SettingKeys::PIT_KASOWY, SettingKeys::LEDGER_AUTO_ENTRIES, SettingKeys::FRESHBOOKS_SALES_ENABLED], true)) {
                 $value = $request->request->getString('value') === '1';
-            } elseif ($key === SettingKeys::RYCZALT_SERVICE_MAP || $key === SettingKeys::KSEF_FA3_REVIEW) {
+            } elseif (in_array($key, [SettingKeys::RYCZALT_SERVICE_MAP, SettingKeys::KSEF_FA3_REVIEW, SettingKeys::CHAT_LAW_SNAPSHOT], true)) {
                 try {
                     $value = json_decode($request->request->getString('value'), true, 8, JSON_THROW_ON_ERROR);
                 } catch (\JsonException) {

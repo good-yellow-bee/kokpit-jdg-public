@@ -1,0 +1,14 @@
+{
+  "id": "msg_fictional_01",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "ZmljdGlvbmFsLXNpZ25hdHVyZS0wMQ=="},
+    {"type": "text", "text": "Sprawdzę obowiązki w październiku (fictional)."},
+    {"type": "tool_use", "id": "toolu_fictional_01", "name": "get_obligations", "input": {"status": "open", "date_from": "2026-10-01", "date_to": "2026-10-31"}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 1200, "output_tokens": 150, "cache_creation_input_tokens": 2000, "cache_read_input_tokens": 0}
+}

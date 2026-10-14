@@ -1,0 +1,11 @@
+{
+  "id": "msg_fictional_06",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [],
+  "stop_reason": "refusal",
+  "stop_details": {"type": "refusal", "category": null, "explanation": null},
+  "stop_sequence": null,
+  "usage": {"input_tokens": 300, "output_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "note": "fictional"}
+}

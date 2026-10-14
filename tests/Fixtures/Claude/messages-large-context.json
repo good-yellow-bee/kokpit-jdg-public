@@ -1,0 +1,13 @@
+{
+  "id": "msg_fictional_08",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "ZmljdGlvbmFsLXNpZ25hdHVyZS0wOA=="},
+    {"type": "text", "text": "Odpowiedź w długiej rozmowie (fictional)."}
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 60000, "output_tokens": 100, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 25000}
+}

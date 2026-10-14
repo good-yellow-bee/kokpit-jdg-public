@@ -1,0 +1,17 @@
+{
+  "id": "msg_fictional_10",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "tool_use", "id": "toolu_fictional_10", "name": "query_invoices", "input": {"query": "audit_log", "date_from": "2026-07-01", "date_to": "2026-09-30"}},
+    {"type": "tool_use", "id": "toolu_fictional_11", "name": "render_chart", "input": {"query": "audit_log", "chart_type": "bar", "date_from": "2026-07-01", "date_to": "2026-09-30"}},
+    {"type": "tool_use", "id": "toolu_fictional_12", "name": "get_obligations", "input": {"status": "open", "date_from": "2026-10-01", "date_to": "2026-10-31", "sql": "SELECT * FROM audit_log"}},
+    {"type": "tool_use", "id": "toolu_fictional_13", "name": "send_email", "input": {"to": "klient@example.invalid"}},
+    {"type": "tool_use", "id": "toolu_fictional_14", "name": "verify_counterparty", "input": {"counterparty": "K-99"}},
+    {"type": "tool_use", "id": "toolu_fictional_15", "name": "draft_document", "input": {"kind": "email", "recipient": "K-01", "subject": "fictional", "body": "fictional", "source_refs": []}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 500, "output_tokens": 200, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000}
+}

@@ -1,0 +1,14 @@
+{
+  "id": "msg_fictional_02",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "ZmljdGlvbmFsLXNpZ25hdHVyZS0wMg=="},
+    {"type": "tool_use", "id": "toolu_fictional_02", "name": "query_invoices", "input": {"query": "sales_by_currency", "date_from": "2026-07-01", "date_to": "2026-09-30"}},
+    {"type": "tool_use", "id": "toolu_fictional_03", "name": "unknown_tool", "input": {}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 400, "output_tokens": 90, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000}
+}

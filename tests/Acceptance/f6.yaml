@@ -1,5 +1,5 @@
 phase: f6
-# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części.
+# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części (F6.1, F6.2: D-60).
 criteria:
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
@@ -12,3 +12,19 @@ criteria:
   - { key: chat-named-queries, runner: ci, command: 'vendor/bin/phpunit --filter ChatNamedQueries', junit: true }
   - { key: chat-history-append-only, runner: ci, command: 'vendor/bin/phpunit --filter ChatHistoryAppendOnly', junit: true }
   - { key: chat-retention, runner: ci, command: 'vendor/bin/phpunit --filter ChatRetention', junit: true }
+  # F6.2 (bez sieci, fikcyjne odpowiedzi Messages API w tests/Fixtures/Claude przez MockHttpClient; D-60). cc-30 pokrywa chat-redaction; stoi przed nim, bo ten sam test zapisuje cmd/chat-redaction.txt.
+  - { key: claude-request-profile, runner: ci, command: 'vendor/bin/phpunit --filter ClaudeRequestProfile', junit: true }
+  - { key: chat-model-fixed, runner: ci, command: 'vendor/bin/phpunit --filter ChatModelFixed', junit: true }
+  - { key: claude-transport, runner: ci, command: 'vendor/bin/phpunit --filter ClaudeTransport', junit: true }
+  - { key: chat-tool-loop, runner: ci, command: 'vendor/bin/phpunit --filter ChatToolLoop', junit: true }
+  - { key: chat-tool-schema, runner: ci, command: 'vendor/bin/phpunit --filter ChatToolSchema', junit: true }
+  - { key: chat-tool-set, runner: ci, command: 'vendor/bin/phpunit --filter ChatToolSet', junit: true }
+  - { key: chat-stop-reasons, runner: ci, command: 'vendor/bin/phpunit --filter ChatStopReasons', junit: true }
+  - { key: chat-interrupted-turn, runner: ci, command: 'vendor/bin/phpunit --filter ChatInterruptedTurn', junit: true }
+  - { key: chat-rate-limit, runner: ci, command: 'vendor/bin/phpunit --filter ChatRateLimit', junit: true }
+  - { key: chat-budget, runner: ci, command: 'vendor/bin/phpunit --filter ChatBudget', junit: true }
+  - { key: chat-context-limit, runner: ci, command: 'vendor/bin/phpunit --filter ChatContextLimit', junit: true }
+  - { key: cc-30, runner: ci, command: 'vendor/bin/phpunit --filter ChatRedaction', junit: true }
+  - { key: chat-redaction, runner: ci, command: 'vendor/bin/phpunit --filter ChatRedaction', junit: true }
+  - { key: chat-law-snapshot, runner: ci, command: 'vendor/bin/phpunit --filter ChatLawSnapshot', junit: true }
+  - { key: claude-live-guard, runner: ci, command: 'vendor/bin/phpunit --filter ClaudeLiveGuard', junit: true }

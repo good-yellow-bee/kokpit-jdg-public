@@ -26,8 +26,10 @@ final class SettingKeys
     public const FRESHBOOKS_SALES_ENABLED = 'freshbooks.sales_enabled';
     /** Przegląd doradcy FA(3) (D-04): zatwierdzone `tax_scenario` i KOR; warunek decyzji przy `KSEF_TARGET=prod`. */
     public const KSEF_FA3_REVIEW = 'ksef.fa3_review';
+    /** Snapshot prawa czatu (F6.2, D-60): stawki, progi i terminy z podstawą prawną, wybrany na starcie rozmowy. */
+    public const CHAT_LAW_SNAPSHOT = 'chat.law_snapshot';
     public const FA3_SCENARIOS = ['eu_b2b','eu_b2b_unidentified','non_eu_b2b','pl_b2b'];
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW];
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW, self::CHAT_LAW_SNAPSHOT];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -57,6 +59,7 @@ final class SettingKeys
             self::KSEF_SALES_TRANSITION_ON => is_string($value) && self::isDate($value) ? $value : throw new \InvalidArgumentException('ksef.sales_transition_on to data RRRR-MM-DD.'),
             self::RYCZALT_ELIGIBILITY => self::eligibility($value),
             self::KSEF_FA3_REVIEW => self::fa3Review($value),
+            self::CHAT_LAW_SNAPSHOT => self::lawSnapshot($value),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };
     }
@@ -108,6 +111,45 @@ final class SettingKeys
         }
         $list = array_values(array_unique(array_map(static fn(mixed $item): string => is_string($item) ? $item : '', $scenarios)));
         return ['reviewed_on' => $reviewed,'scenarios' => $list,'kor' => $kor,'golden_sha256' => $hashes];
+    }
+    /**
+     * Snapshot prawa czatu: lista pozycji {name, value, legal_source?} i opcjonalna notatka; tylko tekst.
+     *
+     * @return array{items:list<array{name:string,value:string,legal_source?:string}>,note?:string}
+     */
+    private static function lawSnapshot(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), ['items','note']) !== [] || !is_array($value['items'] ?? null) || !array_is_list($value['items']) || $value['items'] === []) {
+            throw new \InvalidArgumentException('chat.law_snapshot ma pola items (niepusta lista) i note.');
+        }
+        $items = [];
+        foreach ($value['items'] as $item) {
+            if (!is_array($item) || array_diff(array_keys($item), ['name','value','legal_source']) !== []) {
+                throw new \InvalidArgumentException('Pozycja chat.law_snapshot ma pola name, value i legal_source.');
+            }
+            $normalized = [];
+            foreach (['name','value','legal_source'] as $field) {
+                $text = $item[$field] ?? null;
+                if ($text === null && $field === 'legal_source') {
+                    continue;
+                }
+                if (!is_string($text) || trim($text) === '' || mb_strlen($text) > 500) {
+                    throw new \InvalidArgumentException(sprintf('Pole %s pozycji chat.law_snapshot to niepusty tekst.', $field));
+                }
+                $normalized[$field] = trim($text);
+            }
+            /** @var array{name:string,value:string,legal_source?:string} $normalized */
+            $items[] = $normalized;
+        }
+        $result = ['items' => $items];
+        $note = $value['note'] ?? null;
+        if ($note !== null) {
+            if (!is_string($note) || mb_strlen($note) > 2000) {
+                throw new \InvalidArgumentException('chat.law_snapshot.note to tekst.');
+            }
+            $result['note'] = trim($note);
+        }
+        return $result;
     }
     private static function isDate(string $value): bool
     {

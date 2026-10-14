@@ -34,5 +34,7 @@ final class LiveGuard
         if (($environment['CONNECTORS_ENABLED'] ?? '0') !== '1') {
             throw new \RuntimeException('Live tests require CONNECTORS_ENABLED=1.');
         }
+        // Konektor `claude` (F6.2, D-60): przebieg live bez budżetu `chat.live_run_budget_usd` nie startuje.
+        LiveRunBudget::fromEnvironment($environment);
     }
 }

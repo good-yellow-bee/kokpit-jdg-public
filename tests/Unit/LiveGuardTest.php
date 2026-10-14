@@ -24,11 +24,11 @@ final class LiveGuardTest extends TestCase
     public function testLiveGuardRefusesProductionTarget(): void
     {
         $this->expectException(\RuntimeException::class);
-        LiveGuard::assertAllowed(['KSEF_TARGET' => 'prod','CONNECTORS_ENABLED' => '1']);
+        LiveGuard::assertAllowed(['KSEF_TARGET' => 'prod','CONNECTORS_ENABLED' => '1','CHAT_LIVE_RUN_BUDGET_USD' => '0.25']);
     }
     public function testLiveGuardAllowsOnlyTestTargetsAndEnabledConnectors(): void
     {
-        LiveGuard::assertAllowed(['KSEF_TARGET' => 'test','JPK_TARGET' => 'test','CONNECTORS_ENABLED' => '1']);
+        LiveGuard::assertAllowed(['KSEF_TARGET' => 'test','JPK_TARGET' => 'test','CONNECTORS_ENABLED' => '1','CHAT_LIVE_RUN_BUDGET_USD' => '0.25']);
         self::addToAssertionCount(1);
     }
 }

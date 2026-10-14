@@ -1,0 +1,5 @@
+{
+  "type": "error",
+  "error": {"type": "rate_limit_error", "message": "fictional rate limit"},
+  "request_id": "req_fictional_429"
+}
