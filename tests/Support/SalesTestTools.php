@@ -88,7 +88,7 @@ final class SalesTestTools
     /**
      * Jeden odczyt strumienia `invoices` z wybranymi szkicami fixture; `$variants` to id → nadpisane pola faktury.
      *
-     * @param array<string,array<string,mixed>> $variants
+     * @param array<array-key,array<string,mixed>> $variants
      * @return array<string,int>
      */
     public function poll(array $variants = [self::PL => []]): array

@@ -338,7 +338,7 @@ final readonly class ObligationEngine
                 throw new \LogicException('Niepoprawny wiersz szkicu sprzedaży.');
             }
             $next = self::day($row['period_start'])->modify('+1 month');
-            $nominal = $next->setDate((int) $next->format('Y'), (int) $next->format('n'), $rule['day'] ?? throw new \LogicException('invoice_issue.draft'))->format('Y-m-d');
+            $nominal = $next->setDate((int) $next->format('Y'), (int) $next->format('n'), $rule['day'])->format('Y-m-d');
             $due = $this->calendar->shift($nominal, $rule['policy']);
             if ($due > $until) {
                 continue;
