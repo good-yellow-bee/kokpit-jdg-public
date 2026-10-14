@@ -185,6 +185,7 @@ Kwota przychodu po kursie PIT jest w `revenue_entry.amount_pln`, nie w `invoice`
 | `freshbooks_status` | text null | ostatni widziany status FreshBooks; wykrywanie obejścia ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `ready_at` | timestamptz null | odczytany znacznik gotowości albo wybór w panelu ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `invoice_number_locked_at` | timestamptz null | blokada P_2 przy zatwierdzeniu |
+| `ready_blockers` | jsonb null | lista powodów, dla których szkic ze znacznikiem gotowości zostaje w `draft` (panel); pusta poza tym stanem (D-52) |
 | `source_hash` | char(64) null | sha256 zmapowanych pól źródła; zmiana po przyjęciu prowadzi do korekty, nigdy do ponownej wysyłki |
 | `tax_scenario` | text null | `eu_b2b`, `eu_b2b_unidentified`, `non_eu_b2b`, `pl_b2b`; `eu_b2b_unidentified` czeka na potwierdzenie doradcy (Q-29, D-05) i do tego czasu blokuje zatwierdzenie; mapowanie FA(3) w [modules/ksef.md](modules/ksef.md) |
 | `buyer_snapshot` | jsonb null | dane nabywcy z dnia wystawienia: nazwa, adres, kraj, identyfikator |
@@ -244,6 +245,7 @@ Jedna KOR koryguje jedną fakturę. Korekta zbiorcza jest poza zakresem.
 
 - Chronione są m.in. `kind`, `invoice_number`, `issue_date`, daty usługi, `currency`, `counterparty_id`, `buyer_snapshot`, `ksef_number`, `ksef_issue_mode`, `tax_scenario`, kwoty i kursy VAT (`fx_vat_rate_id`, `net_pln`, `vat_pln`).
 - W `invoice_line` chronione są pozostałe pola, w tym P_7–P_12. Pozycji nie dodaje się ani nie usuwa.
+- Przed wysyłką pozycje szkicu sprzedaży zmieniają się razem z FreshBooks; usunięcie pozycji poza szkicem odrzuca trigger `invoice_line_delete_draft_only` (D-52).
 
 Pliki faktury są w `stored_file` z właścicielem `invoice`: `xml_sent`, `upo`, `pdf`, `cost_document`. Przyjęty XML to payload przyjętego `approval`. Sprzedaż z Subject1 nie ma `approval`; jej `xml_sent` to bajty pobrane z eksportu KSeF.
 
@@ -545,7 +547,7 @@ Kolumny bramki zatwierdzeń. Semantyka, warunki wstępne, step-up i rekoncyliacj
 | `dispatching_at`, `submitted_at`, `finished_at` | timestamptz null | kroki wysyłki |
 | `external_refs` | jsonb | numery referencyjne zapisywane po każdym kroku API |
 | `result_code` | text null | kod wyniku systemu |
-| `superseded_by_id` | uuid FK null | nowsze zatwierdzenie tej samej encji |
+| `superseded_by_id` | uuid FK null | nowsze zatwierdzenie tej samej encji; przy fakturze `superseded` bywa bez następcy po zdjęciu znacznika gotowości (CHECK `approval_superseded_successor`, D-52) |
 | `cancel_reason` | text null | `user`, `hash_mismatch`, `manual_filing`, `manual_invoice` |
 
 - `UNIQUE (subject_type, subject_id) WHERE status IN ('pending', 'approved', 'dispatching', 'submitted', 'unknown')`: jedno żywe zatwierdzenie na encję.

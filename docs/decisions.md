@@ -139,6 +139,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-49 | złożenie poza kokpitem F2.3: JPK_V7M i VAT-UE z UPO jako `filing` `accepted`/`manual` bez `approval`; P_62 z pliku albo wpisany; bramki `period.checklist` liczone przy zapisie i tylko alarmują; korekta po ponownym otwarciu jako `purpose` 2; `vat_ue` po bramkach od pierwszego zamkniętego miesiąca | przyjęta 2026-10-14 | – |
 | D-50 | kod F3 przed odbiorem F0b, F1 i F2, częściami: F3.1–F3.4 bez sieci na `FakeKsefGateway`, ręcznie pisanych nagraniach KSeF i fixtures FreshBooks; F3.5 na api-test po `KsefGateway` z sesji 1 F1 | przyjęta 2026-10-14 | Q-29 |
 | D-51 | założenia F3.1 do przeglądu doradcy (Q-29): P_18 = 1 dla `non_eu_b2b`; `eu_b2b` z `PrefiksPodatnika` PL i wymaganym `vat_eu_number`; `eu_b2b_unidentified` odrzucany na każdym celu; kurs VAT z art. 31a ust. 1–2 bez ust. 2a (Q-23); KOR jako pary pozycji przed i po z `StanPrzed` | przyjęta 2026-10-14 | Q-23, Q-29 |
+| D-52 | założenia F3.2 część a: powody pozostania w `draft` w `invoice.ready_blockers`; pozycje szkicu z FreshBooks (`qty`, `unit_cost`, jednostka `usł.`); onboarding = identyfikator i wiersz `verification`; warunki prośby i decyzji z zapisanych weryfikacji (bez wywołań VIES); zdjęcie znacznika daje `superseded` bez następcy; P_1 i dane nabywcy zapisane przy prośbie | przyjęta 2026-10-14 | Q-26 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -982,4 +983,19 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - KOR: pozycje parami przed i po (`StanPrzed`) z jednym `NrWierszaFa`; korekta do zera ma pozycję „po” z ilością 0.
   - Limit rozmiaru przed wysyłką: parametr `ksef.invoice_max_bytes`, nie literał w kodzie.
 - **Skutki:** złote pliki w `tests/Fixtures/Ksef/golden` utrwalają te założenia; zmiana po przeglądzie to nowe złote pliki i wpis tutaj.
+- **Pytania:** brak.
+
+### D-52 Założenia znacznika gotowości i prośby o fakturę w F3.2 (część a)
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude).
+- **Decyzja:**
+  - Powody pozostania szkicu ze znacznikiem w `draft` zapisuje `invoice.ready_blockers` (jsonb, lista komunikatów dla panelu). Bez znacznika i w `ready` kolumna jest pusta.
+  - Pozycje szkicu przychodzą z FreshBooks do `invoice_line` (usunięcie i wstawienie, tylko w szkicu, trigger `invoice_line_delete_draft_only`): P_8B i P_9A z `qty` i `unit_cost` (domyślnie 1 i wartość netto), jednostka `usł.`, stawka ryczałtu z `ryczalt.service_map`. P_12 ustala prośba ze scenariusza (`np II`, `np I` albo `vat.standard_rate`).
+  - Onboarding klienta: identyfikator podatkowy i wiersz `verification` właściwy typowi (biała lista albo dowód przy NIP, VIES albo dowód przy VAT UE, dowód przy NrID).
+  - Warunki prośby i decyzji czytają zapisane wyniki `verification`; prośba nie wywołuje VIES ani białej listy. Wiek wyniku białej listy przy `pl_b2b`: `registry.pl_client_max_age` (P30D).
+  - Zdjęcie znacznika przed decyzją: zatwierdzenie `superseded` bez `superseded_by_id` (CHECK `approval_superseded_successor` dopuszcza to tylko dla faktur).
+  - Przy prośbie faktura dostaje P_1, `tax_scenario`, `buyer_snapshot`, `verification_id`, kurs i sumy z payloadu; `version` się nie zmienia. Decyzja ustawia `invoice_number_locked_at`, powrót do `ready` albo `draft` go czyści.
+  - Decyzja wymaga ważnego poświadczenia zapisu (`ksef_token_write` albo `ksef_auth_cert`) dla celu KSeF.
+  - Data i okres usługi wpisujesz w panelu (`SalesReadiness::setService`); interfejs panelu i KOR ze szkicu FreshBooks to F3.2 część b.
+- **Skutki:** testy kryteriów F3.2 części a; zmiana założeń to nowy wpis tutaj.
 - **Pytania:** brak.

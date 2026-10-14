@@ -60,6 +60,7 @@ final readonly class ApprovalGate
             if ($subject->currentVersion(ApprovalTransitions::string($row, 'subject_id')) !== $row['source_version']) {
                 throw new \DomainException('Źródło zmieniło się po prośbie; zatwierdź nową prośbę.');
             }
+            $subject->checkDecision(ApprovalTransitions::string($row, 'subject_id'));
             $expires = $this->expiry->at(ApprovalTransitions::string($row, 'subject_type'), 'approved', new \DateTimeImmutable(ApprovalTransitions::string($row, 'requested_at')), $now);
             $this->transitions->apply($row, 'approved', 'approve', ['decided_at' => $this->transitions->now(), 'decided_by' => $userId, 'step_up_credential_id' => $credential, 'expires_at' => $expires->format('Y-m-d\TH:i:s.uP')], ['step_up_credential_id' => $credential], $userId);
         });

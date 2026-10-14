@@ -82,6 +82,8 @@ Znacznik działa od go-live F3, gdy `setting` `freshbooks.sales_enabled` jest w�
 | usunięty szkic | `cancelled_before_send`; luka w numeracji widoczna w panelu |
 
 - `freshbooks.ready_marker`: konfiguracja aplikacji, nie `setting`; domyślnie `KSEF-GOTOWA` w `po_number`.
+- Implementacja F3.2 część a (D-52): `SalesReadiness` po każdym odczycie szkicu. Pozycje trafiają do `invoice_line` (`qty`, `unit_cost`, stawka z `ryczalt.service_map`). Szkic ze znacznikiem, który nie spełnia warunków stanu `ready` (onboarding klienta, data usługi, stawka pozycji, cel, warunki prośby), zostaje w `draft` z powodami w `invoice.ready_blockers`. Datę albo okres usługi wpisujesz w panelu przed `ready`.
+- F3.2 część b: alert obejścia (`freshbooks-bypass-alert`), faktura spoza kokpitu o tym samym P_2 (`subject1-cancels-approval`, `subject1-outside-cockpit-task`) i szkic KOR z FreshBooks (`kor-draft-from-freshbooks`).
 - Dokumentacja faktur FreshBooks nie opisuje tagów (sprawdzone 2026-10-08, [FreshBooks, faktury](https://www.freshbooks.com/api/invoices)).
 
 ## Blokady obejścia

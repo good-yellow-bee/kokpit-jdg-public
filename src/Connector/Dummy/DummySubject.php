@@ -47,6 +47,11 @@ final readonly class DummySubject implements ApprovalSubject
         return new ApprovalPayload($xml, 'application/xml', $version, ['fictional' => true, 'form' => 'DUMMY', 'period' => '2026-09', 'scenario' => $scenario, 'documents' => 0], ['xsd' => 'nie dotyczy (dummy)', 'connector_target' => 'test']);
     }
 
+    public function checkDecision(string $subjectId): void
+    {
+        // Atrapa nie ma warunków decyzji poza wersją źródła, którą sprawdza bramka.
+    }
+
     public function currentVersion(string $subjectId): int
     {
         return $this->subjects->version($subjectId);

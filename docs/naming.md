@@ -451,6 +451,23 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Złote pliki | `tests/Fixtures/Ksef/golden/fa3-eu-b2b.xml`, `fa3-non-eu-b2b.xml`, `fa3-pl-b2b.xml`, `fa3-pl-b2b-eur.xml`, `fa3-kor.xml`, `fa3-kor-reason.xml`, `fa3-kor-zero.xml`, `fa3-kor-nrksefn.xml` |
 | Testy i odbiór | `Fa3TestTools`, `Fa3BuilderTestCase`, `scripts/fa3-acceptance.php`; klucze kryteriów `fa3-golden-eu-b2b`, `fa3-golden-non-eu-b2b`, `fa3-golden-pl-b2b`, `fa3-golden-pl-b2b-eur`, `fa3-golden-kor`, `fa3-golden-kor-zero`, `fa3-presend-checks`, `fa3-p1-today`, `fa3-unidentified-blocked` |
 
+### Implementacja F3.2 (część a): nazwy techniczne
+
+Część b (`freshbooks-bypass-alert`, `subject1-cancels-approval`, `subject1-outside-cockpit-task`, `kor-draft-from-freshbooks`) dopisuje swoje nazwy w swojej sesji.
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Przedmioty bramki (`src/Invoice`) | `SalesInvoiceSubject` (usługi `invoice.subject.sales` i `invoice.subject.correction` dla `sales_invoice` i `correction_invoice`), `SalesConditions` (`scenario`, `buyerProblem`, `p1Problem`, `fa3ReviewProblem`, `onboarded`, `vatCode`), metoda `ApprovalSubject::checkDecision` (warunki z kolumną „decyzja”) |
+| Gotowość (`src/Invoice`) | `SalesReadiness` (`observe`, `evaluate`, `problems`, `setService`); opcjonalny argument `FreshBooksSync::$readiness` |
+| Kolumna | `invoice.ready_blockers` (`jsonb null`): powody, dla których szkic ze znacznikiem zostaje w `draft`; pusta bez znacznika i po `ready` |
+| Schemat (migracja F3.2 część a) | funkcja i wyzwalacz `invoice_line_delete_draft_only` (`DELETE` pozycji tylko przy sprzedaży w `draft`, `ready`, `approved` i `rejected`); `CHECK` `approval_superseded_successor` zamiast `approval_check3` (faktura po zdjęciu znacznika: `superseded` bez następcy) |
+| `setting` | `freshbooks.sales_enabled` (tak albo nie); `ksef.fa3_review` z polami `reviewed_on`, `scenarios` (lista `tax_scenario`), `kor` (tak albo nie), `golden_sha256` (plik → sha256) |
+| Konfiguracja | `freshbooks.ready_marker` = `KSEF-GOTOWA`; `registry.pl_client_max_age` = `P30D` (świeżość białej listy klienta z Polski) |
+| FreshBooks | `FreshBooksInvoice::$poNumber`; pozycje z kluczami `qty` i `unit_cost` |
+| `obligation.rule_key` | `invoice_issue.draft` (`invoice_issue:{miesiąc usługi}:{invoice_id}`) |
+| Akcje audytu | `invoice.service_set` (data albo okres usługi wpisany w panelu) |
+| Testy i odbiór | `SalesTestTools`, `SalesTestCase`, fixture `tests/Fixtures/FreshBooks/invoices-f3-ready.json`; klucze kryteriów `ready-marker-disabled`, `ready-marker-request`, `ready-marker-removed`, `ready-blockers`, `approval-buyer-id`, `approval-p1-future`, `approval-p2-lock`, `approval-fa3-review-prod`, `invoice-approval-renew`, `invoice-issue-per-draft` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

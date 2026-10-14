@@ -66,7 +66,7 @@ Wystawianie w KSeF obowiązuje od 1.04.2026 (art. 145m, [Dz.U. 2025 poz. 1203](h
 | 4. Przełączenie | go-live F3 | od pierwszego dnia miesiąca całą sprzedaż wystawia kokpit; okres zgodny z JPK_V7M; kolejność w „Go-live” niżej | jeden obowiązek, jedno źródło wysyłki |
 | 5. Faktury spoza kokpitu po przełączeniu | od F3 | faktura wystawiona ręcznie (np. awaria kokpitu) wraca przez Subject1 | zadanie w panelu „faktura spoza kokpitu” |
 
-**Kolizje P_2.** Klucz duplikatu KSeF to NIP sprzedawcy, `RodzajFaktury` i P_2, unikalny przez 10 pełnych lat od końca roku wystawienia. Duplikat daje błąd 440 ([weryfikacja faktury](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/faktury/weryfikacja-faktury.md)). Import Subject1 zapisuje Twoje faktury w `invoice`, więc ograniczenie unikalności z [../data-model.md](../data-model.md) łapie kolizję przed wysyłką. Numer, który już jest w KSeF, blokuje zatwierdzenie.
+**Kolizje P_2.** Klucz duplikatu KSeF to NIP sprzedawcy, `RodzajFaktury` i P_2, unikalny przez 10 pełnych lat od końca roku wystawienia. Duplikat daje błąd 440 ([weryfikacja faktury](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/faktury/weryfikacja-faktury.md)). Import Subject1 zapisuje Twoje faktury w `invoice`, więc ograniczenie unikalności z [../data-model.md](../data-model.md) łapie kolizję przed wysyłką. Numer, który już jest w KSeF, blokuje zatwierdzenie. Od F3.2 (D-52) szkic FreshBooks z takim numerem nie powstaje (`number_conflict`), a zmiana numeru szkicu na zajęty cofa go do `draft` z powodem w `ready_blockers`.
 
 **Raport serii P_2** (krok 2)
 

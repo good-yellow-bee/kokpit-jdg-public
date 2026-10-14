@@ -27,6 +27,8 @@ final class ObligationRules
         'vat_jpk_v7m.monthly' => ['type' => 'vat_jpk_v7m','policy' => PolishCalendar::OP12,'source' => self::VAT,'cadence' => 'monthly','day' => 25],
         'vat_ue.monthly' => ['type' => 'vat_ue','policy' => PolishCalendar::OP12,'source' => self::VAT,'cadence' => 'monthly','day' => 25],
         'invoice_issue.monthly' => ['type' => 'invoice_issue','policy' => PolishCalendar::NONE,'source' => self::VAT,'cadence' => 'monthly','day' => 15],
+        // Od F3.2: obowiązek per szkic sprzedaży z datą albo okresem usługi; `done` przy `accepted`.
+        'invoice_issue.draft' => ['type' => 'invoice_issue','policy' => PolishCalendar::NONE,'source' => self::VAT,'cadence' => 'entity','day' => 15],
         'ledger_entry.monthly' => ['type' => 'ledger_entry','policy' => PolishCalendar::NONE,'source' => 'https://api.sejm.gov.pl/eli/acts/DU/2025/1294/text.pdf','cadence' => 'monthly','day' => 20],
         'wht_payment.monthly' => ['type' => 'wht_payment','policy' => PolishCalendar::OP12,'source' => self::CIT,'cadence' => 'monthly','day' => 7],
         'wht_payment.supplier' => ['type' => 'wht_payment','policy' => PolishCalendar::OP12,'source' => self::CIT,'cadence' => 'entity'],

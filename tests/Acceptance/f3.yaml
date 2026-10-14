@@ -10,6 +10,16 @@ criteria:
   - { key: fa3-presend-checks, runner: ci, command: 'vendor/bin/phpunit --filter Fa3PresendChecks', junit: true }
   - { key: fa3-p1-today, runner: ci, command: 'vendor/bin/phpunit --filter Fa3P1Today', junit: true }
   - { key: fa3-unidentified-blocked, runner: ci, command: 'vendor/bin/phpunit --filter Fa3UnidentifiedBlocked', junit: true }
+  - { key: ready-marker-disabled, runner: ci, command: 'vendor/bin/phpunit --filter ReadyMarkerDisabledTest', junit: true }
+  - { key: ready-marker-request, runner: ci, command: 'vendor/bin/phpunit --filter ReadyMarkerRequestTest', junit: true }
+  - { key: ready-marker-removed, runner: ci, command: 'vendor/bin/phpunit --filter ReadyMarkerRemovedTest', junit: true }
+  - { key: ready-blockers, runner: ci, command: 'vendor/bin/phpunit --filter ReadyBlockersTest', junit: true }
+  - { key: approval-buyer-id, runner: ci, command: 'vendor/bin/phpunit --filter ApprovalBuyerIdTest', junit: true }
+  - { key: approval-p1-future, runner: ci, command: 'vendor/bin/phpunit --filter ApprovalP1FutureTest', junit: true }
+  - { key: approval-p2-lock, runner: ci, command: 'vendor/bin/phpunit --filter ApprovalP2LockTest', junit: true }
+  - { key: approval-fa3-review-prod, runner: ci, command: 'vendor/bin/phpunit --filter ApprovalFa3ReviewProdTest', junit: true }
+  - { key: invoice-approval-renew, runner: ci, command: 'vendor/bin/phpunit --filter InvoiceApprovalRenewTest', junit: true }
+  - { key: invoice-issue-per-draft, runner: ci, command: 'vendor/bin/phpunit --filter InvoiceIssuePerDraftTest', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

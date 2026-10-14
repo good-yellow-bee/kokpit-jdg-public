@@ -185,15 +185,26 @@ final readonly class FreshBooksLedger
     private function known(array $known, FreshBooksInvoice $invoice, string $now): string
     {
         $id = is_string($known['id']) ? $known['id'] : throw new \LogicException('Niepoprawny wiersz faktury.');
-        if ($known['status'] === 'draft') {
-            if ($invoice->deleted) {
-                // Usunięty szkic: `cancelled_before_send`; luka w numeracji widoczna w panelu (F3).
-                $this->db->update('invoice', ['status' => 'cancelled_before_send','freshbooks_status' => 'deleted','updated_at' => $now], ['id' => $id]);
-                return 'draft_cancelled';
-            }
+        if ($known['status'] === 'draft' && $invoice->deleted) {
+            // Usunięty szkic: `cancelled_before_send`; luka w numeracji widoczna w panelu (F3).
+            $this->db->update('invoice', ['status' => 'cancelled_before_send','freshbooks_status' => 'deleted','updated_at' => $now], ['id' => $id]);
+            return 'draft_cancelled';
+        }
+        // Szkic przed wysyłką (`draft`, `ready`, `approved`): zmiana źródła podnosi `version`; nowe zatwierdzenie robi `SalesReadiness` (F3.2).
+        if (in_array($known['status'], ['draft','ready','approved'], true) && !$invoice->deleted) {
             if ($known['source_hash'] !== $invoice->sourceHash()) {
-                $this->db->update('invoice', ['invoice_number' => $invoice->number,'currency' => $invoice->currency,'issue_date' => $invoice->createDate,'net_total' => $invoice->net,'vat_total' => $invoice->vat,
-                    'gross_total' => $invoice->gross,'source_hash' => $invoice->sourceHash(),'freshbooks_status' => $invoice->status,'updated_at' => $now], ['id' => $id]);
+                // P_2 równy innej fakturze tego rodzaju (np. już w KSeF): bez zapisu numeru; prośba czeka na poprawkę we FreshBooks.
+                $taken = $this->db->fetchOne(
+                    "SELECT 1 FROM invoice WHERE environment=? AND direction='sale' AND kind='VAT' AND invoice_number=? AND id<>? AND status NOT IN ('cancelled_before_send','rejected')",
+                    [$this->configuration->environment(), $invoice->number, $id],
+                );
+                if ($taken !== false) {
+                    return 'number_conflict';
+                }
+                $this->db->executeStatement(
+                    'UPDATE invoice SET invoice_number=?, currency=?, issue_date=?, net_total=?, vat_total=?, gross_total=?, source_hash=?, freshbooks_status=?, version=version+1, updated_at=? WHERE id=?',
+                    [$invoice->number, $invoice->currency, $invoice->createDate, $invoice->net, $invoice->vat, $invoice->gross, $invoice->sourceHash(), $invoice->status, $now, $id],
+                );
                 return 'draft_updated';
             }
             if ($known['freshbooks_status'] !== $invoice->status) {

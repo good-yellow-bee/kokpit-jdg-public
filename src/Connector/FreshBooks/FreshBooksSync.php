@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Connector\FreshBooks;
 
 use App\Config\ConnectorConfiguration;
+use App\Invoice\SalesReadiness;
 use App\Ledger\FreshBooksLedger;
 use App\Ledger\FxDifference;
 use App\Ledger\PaymentLedger;
@@ -35,6 +36,7 @@ final readonly class FreshBooksSync
         private BusinessDate $businessDate,
         private ClockInterface $clock,
         private ConnectorConfiguration $configuration,
+        private ?SalesReadiness $readiness = null,
     ) {}
 
     /** @return array<string,int> liczba faktur per wynik klasyfikacji */
@@ -51,6 +53,8 @@ final readonly class FreshBooksSync
             foreach ($invoices as $invoice) {
                 $outcome = $this->ledger->classify($invoice, $write, $transition);
                 $counts[$outcome] = ($counts[$outcome] ?? 0) + 1;
+                // Znacznik gotowości (F3.2): `draft` → `ready` i prośba o zatwierdzenie; nic nie wysyła do KSeF.
+                $this->readiness?->observe($invoice, $outcome);
                 if (in_array($outcome, FreshBooksLedger::WAITING, true) && $invoice->updatedOn < $holdback) {
                     $holdback = $invoice->updatedOn;
                 }

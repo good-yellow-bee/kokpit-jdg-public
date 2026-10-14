@@ -98,10 +98,10 @@ final class FreshBooksTestTools
     }
 
     /** @param array<string,array<string,string>> $rates */
-    public static function sync(Connection $db, MockClock $clock, MockHttpClient $mock, Vault $vault, array $rates = []): FreshBooksSync
+    public static function sync(Connection $db, MockClock $clock, MockHttpClient $mock, Vault $vault, array $rates = [], ?\App\Invoice\SalesReadiness $readiness = null): FreshBooksSync
     {
         $api = new FreshBooksConnector(ConnectorTestTools::http($db, $clock, $mock), self::oauth($db, $clock, $mock, $vault), ConnectorTestTools::configuration());
-        return new FreshBooksSync($api, self::ledger($db, $clock, $rates), self::payments($db, $clock), self::fx($db, $clock, $rates), F1TestTools::ledger($db, $clock, $rates), $db, new \App\Time\BusinessDate($clock), $clock, ConnectorTestTools::configuration());
+        return new FreshBooksSync($api, self::ledger($db, $clock, $rates), self::payments($db, $clock), self::fx($db, $clock, $rates), F1TestTools::ledger($db, $clock, $rates), $db, new \App\Time\BusinessDate($clock), $clock, ConnectorTestTools::configuration(), $readiness);
     }
 
     public const MAP = [
