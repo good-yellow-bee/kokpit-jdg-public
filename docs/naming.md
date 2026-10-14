@@ -432,6 +432,15 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Komendy | `app:fixtures:record vies <kraj>-<numer>`, `app:fixtures:record white_list search-<nip>-<data>` |
 | Fixtures | `tests/Support/RegistryTestTools.php` (mechanika, nie kontrakt) |
 
+### Plan F3 (D-50): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Części | `F3.1` FA(3) i XSD, `F3.2` gotowość, bramka i blokady, `F3.3` wysyłka i rekoncyliacja, `F3.4` po przyjęciu, `F3.5` api-test; rejestr `tests/Acceptance/f3.yaml`, lista `docs/evidence/f3.md` |
+| Akcje audytu | `invoice.written_back` (zapis zwrotny numeru KSeF do FreshBooks) |
+| Fixtures | `tests/Fixtures/Ksef/golden/fa3-*.xml`, `tests/Fixtures/Latarnia`; scenariusze `app:fixtures:record ksef <scenariusz>`, `app:fixtures:record latarnia status` |
+| Kod | klasy wysyłki, rekoncyliacji, PDF i zapisu zwrotnego dopisuje sesja części przed kodowaniem |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |
