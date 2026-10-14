@@ -46,7 +46,9 @@ final class KorDraftFromFreshBooksTest extends SalesTestCase
         $kor = $this->kor($original);
         self::assertSame(['draft', null, '-100.00'], [$kor['status'], $kor['invoice_number'], $kor['net_total']]);
         self::assertSame([[1, true, '2.000000', '500.00000000', '1000.00'], [1, false, '2.000000', '450.00000000', '900.00']], $this->lines($kor['id']));
-        self::assertContains('KOR bez numeru credit note (P_2); wystaw credit note we FreshBooks z linią „Faktura: <numer>” w notatce.', $sales->blockers($kor['id']));
+        $korId = $kor['id'];
+        self::assertIsString($korId);
+        self::assertContains('KOR bez numeru credit note (P_2); wystaw credit note we FreshBooks z linią „Faktura: <numer>” w notatce.', $sales->blockers($korId));
         self::assertSame(0, $sales->count('SELECT count(*) FROM approval WHERE subject_id=?', [$kor['id']]));
         // Faktura przyjęta zostaje bez zmian.
         self::assertSame(['accepted', '1000.00'], [$sales->invoice($original)['status'], $this->db()->fetchOne('SELECT net_total FROM invoice WHERE id=?', [$original])]);

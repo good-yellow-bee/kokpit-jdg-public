@@ -173,7 +173,11 @@ final class SalesTestTools
         return is_string($id) ? $id : throw new \LogicException('Brak zatwierdzenia.');
     }
 
-    /** @param list<mixed> $params */
+    /**
+     * @param list<mixed> $params
+     *
+     * @phpstan-impure
+     */
     public function count(string $sql, array $params = []): int
     {
         $count = $this->db->fetchOne($sql, $params);
