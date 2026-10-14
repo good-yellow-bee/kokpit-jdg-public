@@ -10,7 +10,12 @@ parameters:
   app.default_deployment: dev
   app.panel.default_origin: 'http://localhost'
   app.panel.default_certificate: '/run/kokpit/certificates/panel.crt'
-  connector.daily_limits: { dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200 }
+  connector.daily_limits: { dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, white_list.search: 80, white_list.check: 4000 }
+  # Adresy rejestrów per środowisko (docs/modules/rejestry-kursy.md); poza PROD tylko usługi testowe.
+  registry.vies_endpoints: { test: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service', prod: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number' }
+  registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
+  # Odstępy ponowień VIES po przeciążeniu, w sekundach; po 24 h od pierwszej próby alert connector_failure.
+  registry.vies_retry_delays: [900, 1800, 3600, 7200, 14400, 28800]
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\Config\ConnectorConfiguration:
@@ -60,6 +65,12 @@ services:
   App\Connector\FreshBooks\FreshBooksConnector: ~
   App\Connector\FreshBooks\FreshBooksSync: ~
   App\Connector\FreshBooks\FreshBooksPollHandler: ~
+  App\Connector\Vies\ViesConnector:
+    arguments: { $endpoints: '%registry.vies_endpoints%' }
+  App\Connector\WhiteList\WhiteListConnector:
+    arguments: { $endpoints: '%registry.white_list_endpoints%' }
+  App\Counterparty\CounterpartyVerifier:
+    arguments: { $viesRetryDelays: '%registry.vies_retry_delays%' }
 when@dev:
   services:
     dummy.mock_response:
