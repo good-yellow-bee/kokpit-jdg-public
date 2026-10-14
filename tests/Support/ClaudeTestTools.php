@@ -7,7 +7,9 @@ namespace App\Tests\Support;
 use App\Audit\AuditLog;
 use App\Calendar\PolishCalendar;
 use App\Chat\ChatBudget;
+use App\Chat\ChatChart;
 use App\Chat\ChatContextGuard;
+use App\Chat\ChatPanel;
 use App\Chat\ChatQueryRunner;
 use App\Chat\ChatRedaction;
 use App\Chat\ChatSessions;
@@ -110,6 +112,16 @@ final class ClaudeTestTools
             $out[(string) $key] = $value;
         }
         return $out;
+    }
+
+    /** @return list<mixed> lista JSON (np. atrybut `data-chart-values` ramki panelu) */
+    public static function decodeList(string $json): array
+    {
+        $decoded = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
+        if (!is_array($decoded) || !array_is_list($decoded)) {
+            throw new \LogicException('JSON nie jest listą.');
+        }
+        return $decoded;
     }
 
     /** @return list<array<string,mixed>> lista obiektów pod kluczem (`system`, `tools`, `content`, `rows`) */
@@ -240,5 +252,27 @@ final class ClaudeTestTools
         self::lawSnapshot($db, $clock);
         $owner = F1TestTools::owner($db, $clock);
         return [self::sessions($db, $clock)->start($owner), $owner];
+    }
+
+    public const SESSION_LIST_LIMIT = 50;
+
+    /**
+     * Panel czatu (F6.3) nad tą samą turą co `turn`: wykresy przez `ChatQueryRunner` na połączeniu testu (transakcja
+     * testu z fikcyjnym zbiorem), blokada w pamięci. Opcje jak w `turn`.
+     *
+     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor} $options
+     */
+    public static function panel(Connection $db, MockClock $clock, MockHttpClient $mock, array $options = []): ChatPanel
+    {
+        return new ChatPanel(
+            $db,
+            self::sessions($db, $clock, null, $options['registry'] ?? null),
+            self::turn($db, $clock, $mock, $options),
+            new ChatChart(ChatTestTools::runner($db, $clock), $db),
+            $options['context'] ?? new ChatContextGuard(80000, 100000),
+            new LockFactory(new InMemoryStore()),
+            $clock,
+            self::SESSION_LIST_LIMIT,
+        );
     }
 }

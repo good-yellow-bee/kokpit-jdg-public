@@ -1,0 +1,14 @@
+{
+  "id": "msg_fictional_20",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "ZmljdGlvbmFsLXNpZ25hdHVyZS0yMA=="},
+    {"type": "text", "text": "Narysuję przychód z III kwartału (fictional)."},
+    {"type": "tool_use", "id": "toolu_fictional_20", "name": "render_chart", "input": {"query": "revenue_by_month", "chart_type": "bar", "date_from": "2026-07-01", "date_to": "2026-09-30"}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 1300, "output_tokens": 120, "cache_creation_input_tokens": 2000, "cache_read_input_tokens": 0}
+}

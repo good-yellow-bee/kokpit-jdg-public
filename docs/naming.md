@@ -590,6 +590,19 @@ Część b: sekcja niżej.
 | Testy | `ClaudeTestTools`, `ClaudeTestCase`; fixtures `tests/Fixtures/Claude/messages-*.json` z `README.md`; testy `ClaudeRequestProfileTest`, `ChatModelFixedTest`, `ClaudeTransportTest`, `ChatToolLoopTest`, `ChatToolSchemaTest`, `ChatToolSetTest`, `ChatStopReasonsTest`, `ChatInterruptedTurnTest`, `ChatRateLimitTest`, `ChatBudgetTest`, `ChatContextLimitTest`, `ChatRedactionTest`, `ChatLawSnapshotTest`, `ClaudeLiveGuardTest` |
 | Wycofane z planu F6 | `DraftDocumentTool` i `DraftSubject` czekają na F6.4 (bez zmiany nazw) |
 
+### Implementacja F6.3 (D-61): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Panel (`src/Controller`) | `ChatController`: trasy `panel_chat` (`GET /chat`, parametr `session`), `panel_chat_new` (`POST /chat/new`), `panel_chat_close` (`POST /chat/{id}/close`), `panel_chat_ask` (`POST /chat/{id}/ask`); pola formularza `_token` (token CSRF `chat`), `seq`, `question`, `draft` (przełącznik „Szkic”); nagłówek `Turbo-Frame` = `chat-turn` daje samą ramkę |
+| Czat (`src/Chat`) | `ChatPanel` (`FRAME` = `chat-turn`, `sessions`, `start`, `close`, `owned`, `nextSeq`, `ask`, `frame`), `ChatPanelResult` (`turn`, `notice`, `questionSeq`, `replayed`, `message`), `ChatFrame` (`sessionId`, `turns`, `notice`, `suggestNewSession`, `nextSeq`, `closed`), `ChatPanelTurn` (`seq`, `question`, `draftRequested`, `answer`, `status`, `charts`), `ChatChart` (`fromToolResult`, `data`), `ChatChartData` (`query`, `chartType`, `parameters`, `datasetLabel`, `labels`, `values`, `truncated`, `view`); wyliczenie `ChatNotice` |
+| Wyliczenie `ChatNotice` | `seq_stale`, `answer_missing`, `turn_incomplete`, `config_changed`, `session_closed`, `empty_question` |
+| Blokada | `chat.turn.<chat_session.id>` (Symfony Lock): jedno pytanie rozmowy naraz, drugie wysłanie tej samej `seq` czeka i dostaje zapisaną odpowiedź |
+| Szablony | `templates/panel/chat.html.twig`, `templates/panel/_chat_frame.html.twig`; identyfikatory `#chat-sessions`, `#chat-ai-label`, `#chat-transcript`, `#chat-turn-<seq>`, `#chat-notice`, `#chat-suggest-new`, `#chat-form`, `.chat-working`, `.chat-chart` (atrybuty `data-chart-query`, `data-chart-type`, `data-chart-labels`, `data-chart-values`); `canvas` w formacie kontrolera `symfony--ux-chartjs--chart` |
+| Konfiguracja | `chat.session_list_limit` (50); limit czasu żądania panelu 780 s (`chat.max_iterations` × `chat.timeout_s` + 60 s zapasu) w `request_terminate_timeout` puli PHP-FPM (`docker/php/zz-kokpit-pool.conf`) i `fastcgi_read_timeout` proxy (`docker/proxy/*.conf`) |
+| Dowody | podkatalog paczki `screens/<klucz>.html` w `EvidenceArtefacts` i `EvidencePack` |
+| Testy | `ChatWebTestCase`, `ClaudeTestTools::panel`; testy `ChatTurboFrameTest`, `ChatSeqIdempotentTest`, `ChatRenderChartTest`, `ChatPanelMessagesTest`; fixtures `tests/Fixtures/Claude/messages-render-chart.json`, `messages-chart-end-turn.json`, `messages-context-limit.json` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

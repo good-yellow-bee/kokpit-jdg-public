@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Support;
 
 /**
- * Artefakty kryterium (`cmd/`, `db/`, `golden/`, `jpk/`) zapisywane przez test albo skrypt odbioru.
+ * Artefakty kryterium (`cmd/`, `db/`, `golden/`, `jpk/`, `screens/`) zapisywane przez test albo skrypt odbioru.
  * Działa tylko pod `kokpit:evidence`, który ustawia EVIDENCE_DIR na katalog paczki; poza nim nic nie zapisuje.
  */
 final class EvidenceArtefacts
@@ -16,7 +16,7 @@ final class EvidenceArtefacts
         if (!is_string($base) || $base === '') {
             return;
         }
-        if (!preg_match('~^(cmd|db|golden|jpk)/[a-z0-9]+(?:-[a-z0-9_]+)*\.(csv|diff|xml|txt)$~D', $relative)) {
+        if (!preg_match('~^(cmd|db|golden|jpk|screens)/[a-z0-9]+(?:-[a-z0-9_]+)*\.(csv|diff|xml|txt|html)$~D', $relative)) {
             throw new \InvalidArgumentException('Niepoprawna ścieżka artefaktu.');
         }
         $path = $base . '/' . $relative;

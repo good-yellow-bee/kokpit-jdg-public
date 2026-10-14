@@ -1,6 +1,6 @@
 # Fixtures Claude
 
-Ręcznie pisane odpowiedzi Messages API dla konektora `claude` (F6.2, D-60), według [dokumentacji Messages API](https://platform.claude.com/docs/en/api/messages). To nie są nagrania: nagrania `app:fixtures:record claude` powstają w F6.5.
+Ręcznie pisane odpowiedzi Messages API dla konektora `claude` (F6.2, D-60; F6.3, D-61), według [dokumentacji Messages API](https://platform.claude.com/docs/en/api/messages). To nie są nagrania: nagrania `app:fixtures:record claude` powstają w F6.5.
 
 Wszystkie dane są fikcyjne (fictional): identyfikatory `msg_fictional_*`, `toolu_fictional_*`, podpisy bloków thinking, teksty i liczby tokenów. Testy sprawdzają warstwę narzędzi i pętlę, nie tekst modelu.
 
@@ -19,3 +19,6 @@ Wszystkie dane są fikcyjne (fictional): identyfikatory `msg_fictional_*`, `tool
 | `messages-invalid-tools.json` | sześć wywołań odrzucanych przez warstwę narzędzi: `query` = `audit_log`, wykres z `audit_log`, pole spoza schematu, narzędzie spoza listy, pseudonim spoza mapy, szkic bez prośby |
 | `messages-invoice-list.json` | `tool_use` `query_invoices` z `invoice_list` (test maskowania wyników) |
 | `messages-rate-limit.json` | treść odpowiedzi 429; `Retry-After` ustawia test |
+| `messages-render-chart.json` | `tool_use` `render_chart` dla `revenue_by_month`, III kwartał (F6.3, D-61) |
+| `messages-chart-end-turn.json` | `end_turn` z liczbami w tekście celowo innymi niż w fikcyjnej bazie (test `chat-render-chart`) |
+| `messages-context-limit.json` | `end_turn` z promptem 100 001 tokenów (wejście z cache), próg odmowy kolejnego pytania (test `chat-panel-messages`) |
