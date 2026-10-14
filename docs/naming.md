@@ -384,6 +384,24 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Limity (`src/Rate`) | `RateLimitAlerts` (`rateLimited`): push `connector_failure` przy 429, klucz `{environment}:{connector}:{bucket}:{blocked_until}:rate_limited:push` |
 | Fixtures | `tests/Support/FakeKsefGateway.php` (mechanika, nie kontrakt) |
 
+### Implementacja F1 (część 3, D-42): nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Konektory | `ViesConnector` (`src/Connector/Vies`, `check`, `fetch`, `parse`), `ViesError` (`MS_UNAVAILABLE`, `TIMEOUT`, `SERVICE_UNAVAILABLE`, `MS_MAX_CONCURRENT_REQ`, `GLOBAL_MAX_CONCURRENT_REQ`, `INVALID_INPUT`, `OTHER`); `WhiteListConnector` (`src/Connector/WhiteList`, `search`, `check`, `fetch`, `parseSearch`, `parseCheck`, `QUIET_FROM_HOUR`); wynik `RegistryResult` (`src/Connector`) |
+| `connector_call.operation` | `vies`: `check_vat`; `white_list`: `search`, `check` |
+| Kontrahenci (`src/Counterparty`) | `CounterpartyVerifier` (`verify`, `checkAccount`, `vies`, `retry`, `ownVatNumber`, `requesterNip`, `RETRY_WINDOW_HOURS`), `VerificationRecorder` (`record`, `recordManual`, `EVIDENCE_TYPES`), `ManualEvidence` (`add`), `RefreshDue` (`run`), `SelfCheck` (`run`, `due`, `alerts`), `PrePaymentCheck` (`check`, `chooseNotice`, `EXITS`, `NOTICE_DAYS`), `RegistryAlerts` (`connectorFailure`) |
+| Wyjścia przy `NIE` powyżej progu | `change_account`, `split_payment`, `notify_tax_office` |
+| Alerty samosprawdzenia (stan pochodny) | `status_not_active`, `account_not_listed`, `vat_eu_invalid`, `vat_eu_unverified_retry` |
+| Wiadomości | `RegistryTaskMessage` (`counterparty.refresh_due`), `ViesRetryMessage` (`counterpartyId`, `firstCheckedAt`, `attempt`); handler `RegistryTaskHandler` |
+| Konfiguracja | `registry.vies_endpoints`, `registry.white_list_endpoints`, `registry.vies_retry_delays`; progi `white_list.search` 80 i `white_list.check` 4000 w `connector.daily_limits` |
+| `setting` od F1 | `white_list.pre_payment_threshold_pln` (`"15000.00"` od 2026-01-01 z migracji); `company.identity` dostaje pola `bank_accounts` (lista NRB) i `vat_eu_number` (`PL` + NIP) |
+| `obligation.rule_key` od F1 | `wl_notice.manual` (`wl_notice:{dzień zlecenia}:{invoice_id}`) |
+| `audit_log.action` od F1 | `cost.pre_payment_checked`, `cost.wl_notice_chosen`, `verification.manual_evidence` |
+| `notification.dedupe_key` | `connector_failure` rejestrów: `{environment}:vies:{powód}:{counterparty_id albo self}:{dzień pierwszej próby}:push` |
+| Komendy | `app:fixtures:record vies <kraj>-<numer>`, `app:fixtures:record white_list search-<nip>-<data>` |
+| Fixtures | `tests/Support/RegistryTestTools.php` (mechanika, nie kontrakt) |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

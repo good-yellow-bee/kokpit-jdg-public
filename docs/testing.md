@@ -53,7 +53,7 @@ Odłożone testy F4 są w [modules/e-doreczenia.md](modules/e-doreczenia.md); ni
 | `jpk` | `test-e-dokumenty.mf.gov.pl` | nagrania | bramka testowa | fikcyjny zbiór JPK, fikcyjne dane autoryzujące |
 | `edeklaracje` | bramka testowa, działanie do sprawdzenia | nagrania przez podklasę `SoapClient` | jeśli bramka działa | fikcyjna deklaracja VAT-UE |
 | `vies` | usługa testowa; błędy wracają jako HTTP 200 z `actionSucceed:false` ([VIES test](https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service)) | nagrania, także MS_UNAVAILABLE i TIMEOUT | usługa testowa | numery testowe usługi |
-| `white_list` | `wl-test.mf.gov.pl` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat)) | nagrania; liczniki `white_list.search` i `white_list.check` osobno | host testowy | – |
+| `white_list` | `wykazpodatnikowvat-test.mf.gov.pl`, dawny `wl-test.mf.gov.pl` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat)) | nagrania; liczniki `white_list.search` i `white_list.check` osobno | host testowy | – |
 | `nbp` | brak; PROD tylko do odczytu | nagrania | PROD przez licznik, ręcznie | kursy publiczne |
 | `freshbooks` | brak sandboxu i firmy testowej (D-35, [FreshBooks API, 8.10.2026](https://www.freshbooks.com/api/start)) | ręcznie pisane fixtures i nagrania oczyszczone | brak; prawdziwa firma tylko odczytem, ręcznie przez `app:fixtures:record` | fikcyjni klienci i faktury |
 | `claude` | brak | nagrane odpowiedzi Messages API | tak, z budżetem przebiegu | tylko dane fikcyjne |
