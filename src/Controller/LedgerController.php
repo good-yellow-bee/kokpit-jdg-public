@@ -10,8 +10,10 @@ use App\Connector\FreshBooks\FreshBooksException;
 use App\Connector\FreshBooks\FreshBooksInvoice;
 use App\Connector\FreshBooks\FreshBooksOAuth;
 use App\Ledger\CorrectionLedger;
+use App\Ledger\LedgerEntryCheck;
 use App\Ledger\LedgerReconciliation;
 use App\Ledger\ManualRevenueEntry;
+use App\Ledger\Periods;
 use App\Ledger\ServiceMap;
 use App\Passkey\AppUser;
 use App\Setting\SettingKeys;
@@ -33,7 +35,7 @@ final class LedgerController extends AbstractController
 {
     private const EVIDENCE_TYPES = ['application/pdf','image/jpeg','image/png','text/plain','application/xml','text/xml'];
 
-    public function __construct(private readonly Connection $db, private readonly BusinessDate $date, private readonly ConnectorConfiguration $configuration, private readonly SettingStore $settings, private readonly CorrectionLedger $corrections) {}
+    public function __construct(private readonly Connection $db, private readonly BusinessDate $date, private readonly ConnectorConfiguration $configuration, private readonly SettingStore $settings, private readonly CorrectionLedger $corrections, private readonly Periods $periods, private readonly LedgerEntryCheck $entryCheck) {}
 
     #[Route('/ledger', name: 'panel_ledger', methods: ['GET'])]
     public function index(): Response
@@ -130,6 +132,7 @@ final class LedgerController extends AbstractController
         );
         $rows = $this->db->fetchAllAssociative('SELECT lp, entry_date, revenue_date, document_number, ksef_number, counterparty_country, counterparty_tax_id, amount_pln, rate_pct, source, kind FROM revenue_entry WHERE environment=? AND year=? ORDER BY lp DESC LIMIT 50', [$environment, $year]);
         $services = ServiceMap::fromSetting($this->settings->value(SettingKeys::RYCZALT_SERVICE_MAP))->entries;
-        return $this->render('panel/ledger.html.twig', ['alerts' => $alerts,'rows' => $rows,'services' => $services,'today' => $today,'year' => $year,'auto' => $this->settings->value(SettingKeys::LEDGER_AUTO_ENTRIES) === true,'corrections' => $this->corrections->pending(),'error' => $error], new Response(status: $error === null ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
+        $previous = (new \DateTimeImmutable(Periods::month($today)))->modify('-1 month')->format('Y-m-d');
+        return $this->render('panel/ledger.html.twig', ['alerts' => $alerts,'rows' => $rows,'services' => $services,'today' => $today,'year' => $year,'auto' => $this->settings->value(SettingKeys::LEDGER_AUTO_ENTRIES) === true,'corrections' => $this->corrections->pending(),'periodCorrections' => $this->periods->corrections(),'previous' => $previous,'missing' => $this->entryCheck->missing($previous),'error' => $error], new Response(status: $error === null ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

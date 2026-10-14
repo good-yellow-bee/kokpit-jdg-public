@@ -6,6 +6,7 @@ namespace App\Tax;
 
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
+use App\Ledger\Periods;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -19,7 +20,7 @@ final readonly class ZusPayments
 {
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
 
-    public function __construct(private Connection $db, private ClockInterface $clock, private AuditLog $audit, private ConnectorConfiguration $configuration) {}
+    public function __construct(private Connection $db, private ClockInterface $clock, private AuditLog $audit, private ConnectorConfiguration $configuration, private Periods $periods) {}
 
     public function record(string $userId, string $month, string $social, string $health, string $other, string $paidOn): string
     {
@@ -38,6 +39,8 @@ final readonly class ZusPayments
         }
         $environment = $this->configuration->environment();
         $monthStart = $date->format('Y-m-d');
+        // `zus_payment` za zamknięty M jest zablokowane (docs/compliance-calendar.md, „Blokada okresu”).
+        $this->periods->assertOpen($monthStart, 'składki tego miesiąca zmienisz po ponownym otwarciu okresu');
         return $this->db->transactional(function () use ($userId, $monthStart, $social, $health, $other, $paidOn, $environment): string {
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
             $obligation = $this->db->fetchOne("SELECT id FROM obligation WHERE environment=? AND type='zus' AND period_start=?", [$environment, $monthStart]);

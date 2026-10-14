@@ -135,6 +135,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-45 | FreshBooks w F2.2: szkic `draft` od dnia przejścia, data przychodu z `create_date` albo wcześniejszej zapłaty, stan OAuth jako jeden zaszyfrowany JSON, przypisanie płatności i wiersze `fx_difference` | przyjęta 2026-10-14 | Q-24, Q-26 |
 | D-46 | korekty KOR i uzgodnienia w F2.2: różnica netto per stawka z `StanPrzed`, zamknięcie zadania bez step-upu, raport uzgodnień liczony na żądanie bez tabeli, FreshBooks czytany przy otwarciu widoku | przyjęta 2026-10-14 | Q-22 |
 | D-47 | kwoty F2.3: zaliczka dopiero po końcu okresu, próg zdrowotnej z przychodu narastająco do końca miesiąca minus zapłacone społeczne, `health_bracket_manual` jako dolna granica, miesiące rozliczenia zdrowotnej od pierwszych parametrów roku, `ryczalt.eligibility` z dwoma limitami w euro | przyjęta 2026-10-14 | Q-16, Q-17, Q-38 |
+| D-48 | okres F2.3: `period` powstaje przy pierwszym zapisie z datą w M; zamknięty M to też JPK_V7M w drodze albo przyjęty bez wiersza `period`; `ledger.entry_check` działa tylko po przełączeniu wpisów; komplet szukany kluczem deduplikacji; wpis do minionego M sprawdza komplet od razu | przyjęta 2026-10-14 | Q-11 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -915,3 +916,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Blokada zmian `zus_payment` w zamkniętym miesiącu przychodzi z tabelą `period` w drugiej części F2.3.
   - Pierwszy kod w `src/Tax` miał przełączyć job `mutation` na blokujący (D-28, D-43). `src/Tax` ma covered MSI 98% przy progu 95%, ale próg dotyczy całego zakresu z `infection.json5` (`src/Tax`, `src/Ledger`, `src/Calendar`, `src/Approval`). Job zostaje doradczy, dopóki przebieg na `main` nie pokaże progów na całym zakresie; przełączenie to osobna zmiana.
 - **Pytania:** Q-16, Q-17, Q-38.
+
+### D-48 Okres, komplet ewidencji i blokada w F2.3
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - [compliance-calendar.md](compliance-calendar.md) („Blokada okresu”) i [modules/ewidencja.md](modules/ewidencja.md) („Wpis do 20. dnia”) opisują stany okresu i `ledger.entry_check`, ale nie mówią, co robi kontrola przed przełączeniem wpisów, jak rozpoznać wpis dokumentu ani co zamyka okres, zanim powstanie złożenie z kokpitu.
+- **Decyzja:**
+  - Wiersz `period` (stan `open`) powstaje przy pierwszym zapisie z datą w M: wiersz ewidencji, KOR z okresem w M, `ledger.entry_check`. Silnik obowiązków go nie tworzy.
+  - Miesiąc jest zamknięty, gdy `period.status` = `closed` albo istnieje JPK_V7M za M w stanie `approved`, `submitted`, `accepted` lub `unknown`. To drugie chroni okres, zanim złożenie dostanie `closed_by_filing_id`.
+  - Koszt i `zus_payment` w zamkniętym M dostają odmowę `ClosedPeriod` z najwcześniejszym otwartym miesiącem. `revenue_entry` i KOR przechodzą (ewidencja jest tylko dopisywana) i ustawiają `correction_required_at` z wpisem `period.correction_required`.
+  - KOR z `TypKorekty` 1 wskazuje okres VAT faktury pierwotnej, inne typy okres samej KOR.
+  - `ledger.entry_check` działa tylko przy `ledger.auto_entries_enabled` = tak. Wcześniej wpis robi narzędzie z Q-11, a kokpit nie widzi całej sprzedaży, więc nie zamyka obowiązku `ledger_entry` sam; zamykasz go potwierdzeniem w kalendarzu.
+  - Komplet: przyjęta faktura `VAT` z `revenue_date` w M ma wiersz `regular` po `invoice_id`, numerze KSeF albo numerze dokumentu w roku, w każdym `source`; KOR z `issue_date` w M ma wiersz `correction`; rozliczona płatność w walucie z `paid_on` w M ma `fx_posted_at`.
+  - Wpis do minionego miesiąca (dokument, różnica kursowa, korekta) od razu sprawdza komplet tego miesiąca, więc obowiązek zamyka się bez czekania na 15. albo 20. dzień.
+- **Skutki:**
+  - Zadanie „korekta wymagana” jest na `/ledger` w sekcji `period-corrections`; braki poprzedniego miesiąca w sekcji `ledger-entry-check`.
+  - Ponowne otwarcie, złożenie `manual` z UPO i bramki `checklist` są w drugiej połowie części 2 F2.3.
+- **Pytania:** Q-11.

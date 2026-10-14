@@ -179,6 +179,6 @@ final class TaxCalculatorTest extends DatabaseTestCase
 
     private function zus(MockClock $clock, string $month, string $social, string $health, string $paidOn): string
     {
-        return (new ZusPayments($this->db(), $clock, F1TestTools::audit($this->db(), $clock), ConnectorTestTools::configuration(false)))->record(F1TestTools::owner($this->db(), $clock), $month, $social, $health, '0.00', $paidOn);
+        return (new ZusPayments($this->db(), $clock, F1TestTools::audit($this->db(), $clock), ConnectorTestTools::configuration(false), F1TestTools::periods($this->db(), $clock)))->record(F1TestTools::owner($this->db(), $clock), $month, $social, $health, '0.00', $paidOn);
     }
 }

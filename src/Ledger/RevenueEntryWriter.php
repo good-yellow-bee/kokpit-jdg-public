@@ -21,7 +21,7 @@ final readonly class RevenueEntryWriter
 {
     public const LOCK_NAMESPACE = 7071402;
 
-    public function __construct(private Connection $db, private ClockInterface $clock, private BusinessDate $businessDate, private JpkEwpSchema $schema, private ConnectorConfiguration $configuration) {}
+    public function __construct(private Connection $db, private ClockInterface $clock, private BusinessDate $businessDate, private JpkEwpSchema $schema, private ConnectorConfiguration $configuration, private Periods $periods, private LedgerEntryCheck $check) {}
 
     public function write(RevenueDocument $document, ?string $recordedBy = null): RevenueWriteResult
     {
@@ -68,6 +68,10 @@ final readonly class RevenueEntryWriter
                 ]);
                 $written[] = $id;
             }
+            // Pierwszy zapis z datą w M otwiera okres; zapis do zamkniętego M to „korekta wymagana” (blokada okresu).
+            $this->periods->correctionRequired($document->revenueDate, 'revenue_entry', 'revenue_entry', $written[0] ?? null);
+            // Wpis do minionego miesiąca może uzupełnić ostatni brak i zamknąć obowiązek `ledger_entry`.
+            $this->check->closeIfComplete($document->revenueDate);
             return new RevenueWriteResult($written, []);
         });
     }
@@ -90,9 +94,18 @@ final readonly class RevenueEntryWriter
                 $id = (string) UuidV7::generate($this->clock->now());
                 $this->db->insert('revenue_entry', ['id' => $id,'environment' => $environment,'year' => $year,'lp' => ++$lp,'entry_date' => $this->businessDate->today(),'recorded_at' => $this->clock->now()->format('Y-m-d\TH:i:s.uP')] + $row);
                 $written[] = $id;
+                if (is_string($row['revenue_date'] ?? null)) {
+                    $this->periods->correctionRequired($row['revenue_date'], 'revenue_entry', 'revenue_entry', $id);
+                }
             }
             return $written;
         });
+    }
+
+    /** Po zapisie spoza dokumentu (różnica kursowa, korekta): miesiąc dokumentu mógł właśnie dostać komplet. */
+    public function closeIfComplete(string $date): void
+    {
+        $this->check->closeIfComplete($date);
     }
 
     /** @return list<array<string,mixed>> */

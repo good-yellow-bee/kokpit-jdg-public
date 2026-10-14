@@ -123,6 +123,7 @@ final readonly class CorrectionLedger
                 $written = array_merge($written, $this->writer->append($year, $rows));
             }
             $this->audit->append('ledger.correction_closed', ['reason' => $reason,'rows' => count($written)], $this->configuration->environment(), 'invoice', $korId, $userId);
+            $this->writer->closeIfComplete($issue);
             return $written;
         });
     }

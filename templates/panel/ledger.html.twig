@@ -24,6 +24,36 @@
         {% endif %}
     </section>
 
+    <section id="period-corrections">
+        <h2>Korekta wymagana</h2>
+        {% if periodCorrections is empty %}<p>Brak zapisów do zamkniętych miesięcy.</p>{% else %}
+        <p>Zapis po zamknięciu miesiąca zmienia dane złożonego JPK_V7M. Złóż korektę JPK_V7M (i VAT-UEK przy dostawie WDU) za ten miesiąc.</p>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Zamknięty</th><th>Zapis po zamknięciu</th></tr></thead>
+            <tbody>
+            {% for period in periodCorrections %}
+                <tr><td>{{ period.period_start|slice(0, 7) }}</td><td>{{ period.closed_at }}</td><td>{{ period.correction_required_at }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="ledger-entry-check">
+        <h2>Komplet ewidencji za {{ previous|slice(0, 7) }}</h2>
+        {% if not auto %}<p>Przed przełączeniem wpis robisz w swoim narzędziu; kokpit nie zamyka obowiązku sam.</p>
+        {% elseif missing is empty %}<p>Każdy dokument przychodu ma wpis.</p>{% else %}
+        <table>
+            <thead><tr><th>Dokument</th><th>Numer</th><th>Data</th></tr></thead>
+            <tbody>
+            {% for document in missing %}
+                <tr><td>{{ {'invoice': 'faktura bez wpisu', 'correction': 'KOR bez wiersza korekty', 'payment': 'płatność w walucie bez różnicy kursowej'}[document.type] }}</td><td>{{ document.number }}</td><td>{{ document.date }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
     <section id="ledger-corrections">
         <h2>Korekty z KOR</h2>
         {% if corrections is empty %}<p>Brak zadań.</p>{% else %}

@@ -36,8 +36,12 @@ final class LedgerPanelTest extends WebTestCase
             self::assertInstanceOf(SettingStore::class, $settings);
             $settings->set(SettingKeys::RYCZALT_SERVICE_MAP, [['service_type' => 'software','freshbooks_item' => null,'p7_match' => [],'pkwiu' => '62.01.1','rate_pct' => '12.00','default' => true]], '2026-01-01', $id, 'przed przeglądem doradcy');
             $today = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Warsaw')))->format('Y-m-d');
+            // Fikcyjny zamknięty okres z zapisem po zamknięciu: zadanie „korekta wymagana” w panelu.
+            $db->insert('period', ['id' => (string) Uuid::v7(),'environment' => 'test','period_start' => '2026-01-01','status' => 'closed','closed_at' => '2026-02-20T10:00:00+00:00','correction_required_at' => '2026-03-02T10:00:00+00:00','created_at' => $now,'updated_at' => $now]);
             $crawler = $client->request('GET', '/ledger');
             self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('#period-corrections', '2026-01');
+            self::assertSelectorTextContains('#ledger-entry-check', 'Przed przełączeniem');
             $form = $crawler->filter('#ledger-manual form')->form(['revenue_date' => $today,'document_number' => 'UMOWA/FIKCYJNA/9','currency' => 'PLN','net' => '750.00','service_type' => 'software']);
             $field = $form['evidence'];
             self::assertInstanceOf(FileFormField::class, $field);

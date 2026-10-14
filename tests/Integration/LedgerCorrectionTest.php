@@ -89,6 +89,28 @@ final class LedgerCorrectionTest extends DatabaseTestCase
         }
     }
 
+    public function testClosedPeriodKorSetsCorrectionRequiredForItsVatPeriod(): void
+    {
+        $clock = new MockClock('2027-01-10T09:00:00Z');
+        $user = F1TestTools::owner($this->db(), $clock);
+        $this->settings($clock);
+        F1TestTools::subject1($this->db(), $clock)->import($this->vat('FV/8/11/2026'), self::KSEF_VAT, new \DateTimeImmutable('2026-11-02T10:05:00Z'));
+        // JPK_V7M za 12.2026 przyjęty; KOR z TypKorekty 2 ma skutek w miesiącu KOR, czyli w zamkniętym 12.2026.
+        $stamp = $clock->now()->format('c');
+        $filing = (string) \Symfony\Component\Uid\UuidV7::generate();
+        $this->db()->insert('filing', ['id' => $filing,'environment' => 'test','type' => 'JPK_V7M','period_start' => '2026-12-01','period_end' => '2026-12-31','purpose' => 1,'seq' => 0,'status' => 'accepted','schema_version' => 'JPK_V7M(3)','totals' => '{}','created_at' => $stamp,'updated_at' => $stamp]);
+        $periods = F1TestTools::periods($this->db(), $clock);
+        $periods->close('2026-12-01', $filing);
+        $clock->modify('2027-01-11T09:00:00Z');
+        $kor = F1TestTools::subject1($this->db(), $clock)->import($this->kor('FK/4/12/2026', 'FV/8/11/2026', '1000.00', '900.00'), self::KSEF_KOR, new \DateTimeImmutable('2026-12-05T10:05:00Z'));
+        self::assertSame(['2026-12-01'], array_column($periods->corrections(), 'period_start'));
+        $audit = $this->db()->fetchAssociative("SELECT details->>'cause' AS cause, details->>'target_id' AS target FROM audit_log WHERE action='period.correction_required'");
+        self::assertSame(['cause' => 'invoice_kor','target' => $kor], $audit);
+        // Wiersz `correction` dopisuje się mimo blokady (ewidencja jest tylko dopisywana).
+        self::assertCount(1, $this->ledger($clock)->close($kor, $user));
+        EvidenceArtefacts::write('db/closed-period-kor-period.csv', EvidenceArtefacts::csv($periods->corrections()));
+    }
+
     private function vat(string $number): string
     {
         return F1TestTools::fa3(['number' => $number,'issue' => '2026-11-05','service' => '2026-11-05','seller' => F1TestTools::plParty(F1TestTools::OWN_NIP, 'Fikcyjna JDG'),

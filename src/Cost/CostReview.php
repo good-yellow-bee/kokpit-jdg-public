@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cost;
 
 use App\Audit\AuditLog;
+use App\Ledger\Periods;
 use App\Config\ConnectorConfiguration;
 use App\Invoice\VatFx;
 use App\Time\BusinessDate;
@@ -26,6 +27,7 @@ final readonly class CostReview
         private AuditLog $audit,
         private ClockInterface $clock,
         private ConnectorConfiguration $configuration,
+        private Periods $periods,
     ) {}
 
     public function review(string $invoiceId, string $review, string $userId): void
@@ -194,12 +196,10 @@ final readonly class CostReview
         }
     }
 
+    /** Zamknięty okres odmawia z propozycją najwcześniejszego otwartego (docs/compliance-calendar.md, „Blokada okresu”). */
     private function assertPeriodOpen(string $environment, string $period): void
     {
-        $closed = $this->db->fetchOne("SELECT 1 FROM filing WHERE environment=? AND type='JPK_V7M' AND period_start=? AND status IN ('approved','submitted','accepted','unknown')", [$environment, $period]);
-        if ($closed !== false) {
-            throw new \DomainException(sprintf('Okres %s jest zamknięty: zmiana wymaga korekty JPK_V7M.', substr($period, 0, 7)));
-        }
+        $this->periods->assertOpen($period, 'przypisanie kosztu wymaga korekty JPK_V7M');
     }
 
     /**

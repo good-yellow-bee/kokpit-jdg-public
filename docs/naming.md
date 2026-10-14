@@ -343,7 +343,11 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Podatki (`src/Tax`) | `RyczaltAdvance` (`compute`; pola `shares`, `deductions`, `bases`, `taxes`, `advance`, `carryover`), `HealthContribution` (`bracket`, `amount`), `TaxCalculator` (`advance`, `zusAmount`, `healthReconciliation`, `pit28`, `eligibility`, `revenueAfterSocial`, `revenueByRate`), `ZusPayments` (`record`) |
 | Ustawienia | `ryczalt.eligibility`: `{limit_eur, watch_limit_eur}` (D-47), w `SettingKeys` i w panelu `/settings` |
 | Panel | `TaxController`: `/taxes?year=<rok>` (sekcje `ryczalt-eligibility-metric`, `ryczalt-advances`, `zus-payments`, `health-reconciliation`, `pit28-summary`), `POST /taxes/zus-payment` (token CSRF `taxes`) |
-| Akcje audytu | `zus.payment_recorded` |
+| Akcje audytu | `zus.payment_recorded`, `period.correction_required`, `period.ledger_closed`, `period.closed` |
+| Tabela (część 2) | `period` (migracja F2.3 część 2, D-48) |
+| Okres (`src/Ledger`) | `Periods` (`ensure`, `closed`, `earliestOpen`, `assertOpen`, `correctionRequired`, `markLedgerClosed`, `close`, `corrections`, `month`), wyjątek `ClosedPeriod` (`period`, `proposed`), `LedgerEntryCheck` (`run`, `check`, `missing`, `closeIfComplete`), `LedgerEntryCheckResult` |
+| Zadanie | `ledger.entry_check`: `LedgerTaskMessage`, `LedgerTaskHandler`, transport `reads`, cron `0 8 15,20 * *` |
+| Panel | `/ledger`: sekcje `period-corrections` („Korekta wymagana”) i `ledger-entry-check` |
 
 ### Implementacja F2.4: nazwy techniczne
 

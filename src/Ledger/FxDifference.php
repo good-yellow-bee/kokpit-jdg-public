@@ -97,6 +97,7 @@ final readonly class FxDifference
                 $this->writer->append((int) substr($paidOn, 0, 4), $rows);
             }
             $this->db->update('payment', ['fx_posted_at' => $this->now(),'updated_at' => $this->now()], ['id' => $paymentId]);
+            $this->writer->closeIfComplete($paidOn);
             return $rows === [] ? 'no_difference' : 'posted';
         });
     }

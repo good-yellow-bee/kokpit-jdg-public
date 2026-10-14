@@ -7,6 +7,7 @@ namespace App\Invoice;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Counterparty\CounterpartyDirectory;
+use App\Ledger\Periods;
 use App\Ledger\Subject1Ledger;
 use App\Storage\FileStore;
 use Doctrine\DBAL\Connection;
@@ -33,6 +34,7 @@ final readonly class Subject1Importer
         private ClockInterface $clock,
         private ConnectorConfiguration $configuration,
         private Subject1Ledger $ledger,
+        private Periods $periods,
     ) {}
 
     public function import(string $xml, string $ksefNumber, \DateTimeImmutable $assignedAt): string
@@ -82,10 +84,22 @@ final readonly class Subject1Importer
             }
             $this->files->put($xml, $environment, 'xml_sent', 'application/xml', 'invoice', $id, (int) substr($document->issueDate, 0, 4));
             $this->audit->append('sale.imported_subject1', ['ksef_number' => $ksefNumber] + ($draft === false ? [] : ['freshbooks_draft_id' => $draft['id']]), $environment, 'invoice', $id);
+            if ($document->kind === 'KOR') {
+                // KOR ze skutkiem w zamkniętym M wymaga korekty JPK_V7M: TypKorekty 1 to okres faktury pierwotnej, inaczej okres KOR.
+                $period = $document->corrected['type'] === 1 && $document->corrected['issueDate'] !== null ? $this->originalPeriod($corrects, $document->corrected['issueDate']) : ($taxPoint ?? $document->issueDate);
+                $this->periods->correctionRequired($period, 'invoice_kor', 'invoice', $id);
+            }
             // Kurs PIT, stawki pozycji i, po przełączeniu, wiersze ewidencji (F2.2).
             $this->ledger->onImported($id);
             return $id;
         });
+    }
+
+    /** Okres VAT faktury pierwotnej z bazy, a bez niej miesiąc jej wystawienia z KOR. */
+    private function originalPeriod(mixed $correctedId, string $correctedIssueDate): string
+    {
+        $period = is_string($correctedId) ? $this->db->fetchOne('SELECT vat_period_start FROM invoice WHERE id=?', [$correctedId]) : false;
+        return is_string($period) ? $period : $correctedIssueDate;
     }
 
     /** `tax_scenario` z Podmiot2 (docs/tax-rules.md, „Scenariusze”). */

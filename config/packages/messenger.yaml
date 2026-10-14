@@ -33,3 +33,4 @@ framework:
       'App\Messenger\Message\FreshBooksPollMessage': reads
       'App\Messenger\Message\RegistryTaskMessage': reads
       'App\Messenger\Message\ViesRetryMessage': reads
+      'App\Messenger\Message\LedgerTaskMessage': reads

@@ -15,6 +15,8 @@ use App\Invoice\Fa3Reader;
 use App\Invoice\Subject1Importer;
 use App\Invoice\VatFx;
 use App\Ledger\JpkEwpSchema;
+use App\Ledger\LedgerEntryCheck;
+use App\Ledger\Periods;
 use App\Ledger\RevenueEntryWriter;
 use App\Ledger\Subject1Ledger;
 use App\Xml\XsdDictionary;
@@ -89,13 +91,13 @@ final class F1TestTools
     /** @param array<string,array<string,string>> $rates */
     public static function review(Connection $db, MockClock $clock, array $rates = []): CostReview
     {
-        return new CostReview($db, self::vatFx($db, $clock, $rates), self::audit($db, $clock), $clock, ConnectorTestTools::configuration(false));
+        return new CostReview($db, self::vatFx($db, $clock, $rates), self::audit($db, $clock), $clock, ConnectorTestTools::configuration(false), self::periods($db, $clock));
     }
 
     /** @param array<string,array<string,string>> $rates */
     public static function subject1(Connection $db, MockClock $clock, array $rates = []): Subject1Importer
     {
-        return new Subject1Importer($db, self::reader(), self::directory($db, $clock), self::vatFx($db, $clock, $rates), self::files($db, $clock), self::audit($db, $clock), $clock, ConnectorTestTools::configuration(false), self::ledger($db, $clock, $rates));
+        return new Subject1Importer($db, self::reader(), self::directory($db, $clock), self::vatFx($db, $clock, $rates), self::files($db, $clock), self::audit($db, $clock), $clock, ConnectorTestTools::configuration(false), self::ledger($db, $clock, $rates), self::periods($db, $clock));
     }
 
     /** @param array<string,array<string,string>> $rates */
@@ -106,13 +108,23 @@ final class F1TestTools
 
     public static function writer(Connection $db, MockClock $clock): RevenueEntryWriter
     {
-        return new RevenueEntryWriter($db, $clock, new BusinessDate($clock), self::schema(), ConnectorTestTools::configuration(false));
+        return new RevenueEntryWriter($db, $clock, new BusinessDate($clock), self::schema(), ConnectorTestTools::configuration(false), self::periods($db, $clock), self::entryCheck($db, $clock));
+    }
+
+    public static function entryCheck(Connection $db, MockClock $clock): LedgerEntryCheck
+    {
+        return new LedgerEntryCheck($db, new BusinessDate($clock), ObligationTestTools::settings($db, $clock), self::periods($db, $clock), ConnectorTestTools::configuration(false));
     }
 
     /** @param array<string,array<string,string>> $rates */
     public static function ledger(Connection $db, MockClock $clock, array $rates = []): Subject1Ledger
     {
         return new Subject1Ledger($db, self::fxRates($db, $clock, $rates), ObligationTestTools::settings($db, $clock), $clock, self::writer($db, $clock));
+    }
+
+    public static function periods(Connection $db, MockClock $clock): Periods
+    {
+        return new Periods($db, $clock, self::audit($db, $clock), ConnectorTestTools::configuration(false));
     }
 
     public static function schema(): JpkEwpSchema
