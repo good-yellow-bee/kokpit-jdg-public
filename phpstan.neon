@@ -1,0 +1,11 @@
+parameters:
+  level: 9
+  paths: [src, tests, scripts, tools, migrations]
+  tmpDir: var/phpstan
+  reportUnmatchedIgnoredErrors: true
+  excludePaths:
+    - var/*
+services:
+  -
+    class: App\Architecture\ArchitectureRules
+    tags: [phpstan.rules.rule]

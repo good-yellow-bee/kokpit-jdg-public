@@ -1,0 +1,60 @@
+phase: f2
+# F2.1 i F2.4, a od D-44 także wiersze F2.2 części 1 (bez sieci). Wiersze jpk-st-* dochodzą ze schematem JPK_ST(1) (D-37).
+criteria:
+  - { key: ledger-import-idempotent, runner: ci, command: 'php scripts/ledger-acceptance.php idempotent' }
+  - { key: ledger-import-xml, runner: ci, command: 'php scripts/ledger-acceptance.php xml' }
+  - { key: ledger-import-invalid, runner: ci, command: 'vendor/bin/phpunit --filter LedgerImportInvalid', junit: true }
+  - { key: ledger-import-late-k2, runner: ci, command: 'vendor/bin/phpunit --filter LedgerImportLateK2', junit: true }
+  - { key: ledger-import-order, runner: ci, command: 'vendor/bin/phpunit --filter LedgerImportOrder', junit: true }
+  - { key: ledger-year-boundary, runner: ci, command: 'vendor/bin/phpunit --filter LedgerYearBoundary', junit: true }
+  - { key: ledger-import-sums, runner: ci, command: 'php scripts/ledger-acceptance.php sums' }
+  - { key: revenue-entry-append-only, runner: ci, command: 'vendor/bin/phpunit --filter RevenueEntryAppendOnly', junit: true }
+  - { key: setting-minimal, runner: ci, command: 'vendor/bin/phpunit --filter SettingMinimal', junit: true }
+  - { key: jpk-ewp-build, runner: ci, command: 'php scripts/jpk-acceptance.php ewp-build && vendor/bin/phpunit --filter JpkEwpBuild', junit: true }
+  - { key: jpk-ewp-podmiot1, runner: ci, command: 'vendor/bin/phpunit --filter JpkEwpPodmiot1', junit: true }
+  - { key: jpk-ewp-dry-run, runner: ci, command: 'php scripts/jpk-acceptance.php ewp-dry-run' }
+  - { key: ryczalt-rate-missing, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltServiceMapMissing', junit: true }
+  - { key: ledger-two-rates, runner: ci, command: 'vendor/bin/phpunit --filter LedgerTwoRates', junit: true }
+  - { key: ledger-subject1-fx, runner: ci, command: 'vendor/bin/phpunit --filter LedgerSubject1Fx', junit: true }
+  - { key: ledger-auto-entries-off, runner: ci, command: 'vendor/bin/phpunit --filter LedgerAutoEntriesOff', junit: true }
+  - { key: ledger-reconstruct-late-k2, runner: ci, command: 'vendor/bin/phpunit --filter LedgerReconstruct', junit: true }
+  - { key: ledger-manual-entry, runner: ci, command: 'vendor/bin/phpunit --filter LedgerManualEntry', junit: true }
+  - { key: ledger-entry-error, runner: ci, command: 'vendor/bin/phpunit --filter LedgerEntryError', junit: true }
+  - { key: freshbooks-oauth, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksOAuth', junit: true }
+  - { key: freshbooks-rate-limit-429, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksRateLimit429', junit: true }
+  - { key: freshbooks-ksef-dedup, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksKsefDedup', junit: true }
+  - { key: freshbooks-draft-before-subject1, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksDraftBeforeSubject1', junit: true }
+  - { key: freshbooks-poll-payments, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksPollPayments', junit: true }
+  - { key: fx-difference, runner: ci, command: 'vendor/bin/phpunit --filter FxDifference', junit: true }
+  - { key: fx-difference-year-boundary, runner: ci, command: 'vendor/bin/phpunit --filter FxDifferenceYearBoundary', junit: true }
+  - { key: ledger-correction, runner: ci, command: 'vendor/bin/phpunit --filter LedgerCorrection', junit: true }
+  - { key: ledger-reconciliation-report, runner: ci, command: 'vendor/bin/phpunit --filter LedgerReconciliationReport', junit: true }
+  - { key: ryczalt-advance, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltAdvance', junit: true }
+  - { key: ryczalt-advance-carryover, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltAdvanceCarryover', junit: true }
+  - { key: health-threshold, runner: ci, command: 'vendor/bin/phpunit --filter HealthThreshold', junit: true }
+  - { key: ryczalt-advance-obligation, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltAdvanceObligation', junit: true }
+  - { key: health-reconciliation, runner: ci, command: 'vendor/bin/phpunit --filter HealthReconciliation', junit: true }
+  - { key: pit28-summary, runner: ci, command: 'vendor/bin/phpunit --filter Pit28Summary', junit: true }
+  - { key: ryczalt-eligibility-metric, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltEligibilityMetric', junit: true }
+  - { key: ledger-entry-check, runner: ci, command: 'vendor/bin/phpunit --filter LedgerEntryCheck', junit: true }
+  - { key: closed-period-cost, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodCost', junit: true }
+  - { key: closed-period-revenue, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodRevenue', junit: true }
+  - { key: closed-period-kor, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodKor', junit: true }
+  - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
+  - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
+  - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }
+  - { key: cc-07, runner: ci, command: 'vendor/bin/phpunit --filter Redactor', junit: true }
+  - { key: cc-08, runner: ci, command: 'bin/console app:audit:verify && vendor/bin/phpunit --filter Audit', junit: true }
+  - { key: cc-09, runner: ci, command: 'vendor/bin/phpunit --filter OfficialWrites', junit: true }
+  - { key: cc-10, runner: ci, command: 'vendor/bin/phpunit --filter BusinessDate', junit: true }
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-12, runner: ci, command: 'composer check-licenses' }
+  - { key: cc-13, runner: ci, command: 'sh scripts/check-ci.sh', junit: true }
+  - { key: cc-15, runner: ci, command: 'vendor/bin/phpunit --filter Evidence', junit: true }
+  - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
+  - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }
+  - { key: cc-31, runner: ci, command: 'vendor/bin/phpunit --filter Architecture', junit: true }
+  - { key: cc-03, runner: manual }
+  - { key: cc-04, runner: manual }
+  - { key: cc-05, runner: manual }
+  - { key: cc-14, runner: manual }

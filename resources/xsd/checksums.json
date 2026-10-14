@@ -1,0 +1,50 @@
+[
+  {
+    "file": "Schemat_JPK_EWP(4)_v1-0.xsd",
+    "source": "https://www.gov.pl/attachment/67b55c59-e05c-42f0-be4c-28afcca460b6",
+    "fetched_on": "2026-10-10",
+    "sha256": "0061478a2af63894bf2ea6293eaf6ebd3da18a26ab43076899a20d3c3f32a79b"
+  },
+  {
+    "file": "schemat_FA(3)_v1-0E.xsd",
+    "source": "https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/faktury/schemy/FA/schemat_FA%283%29_v1-0E.xsd",
+    "fetched_on": "2026-10-11",
+    "sha256": "b646b6b525f51adf1bb2545f111fc8ca6e7aa6dd2f98948f1667d3695c06d958"
+  },
+  {
+    "file": "StrukturyDanych_v10-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/StrukturyDanych_v10-0E.xsd",
+    "fetched_on": "2026-10-10",
+    "sha256": "1137ce6e3c11c2b9ef3f05e4e72d6dcd6b4fa94908ea558f2ba15de0259bb2aa",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/StrukturyDanych_v10-0E.xsd"
+    ]
+  },
+  {
+    "file": "ElementarneTypyDanych_v10-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/ElementarneTypyDanych_v10-0E.xsd",
+    "fetched_on": "2026-10-10",
+    "sha256": "8a531cb181d3e298d11b28766655ae91fee2d7851440095932ffc82137ed2be1",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/ElementarneTypyDanych_v10-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyKrajow_v10-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/KodyKrajow_v10-0E.xsd",
+    "fetched_on": "2026-10-10",
+    "sha256": "1d41a1b3184188f2d20a51d3afde26204dda182ec5dacf018204dcc9870dc644",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/KodyKrajow_v10-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyUrzedowSkarbowych_v8-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/KodyUrzedowSkarbowych/KodyUrzedowSkarbowych_v8-0E.xsd",
+    "fetched_on": "2026-10-10",
+    "sha256": "af27f583ea1ceb44ed37e0ec0d9bfdf2bfda74aadd5841ccbf0fc241175c2e91",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/KodyUrzedowSkarbowych/KodyUrzedowSkarbowych_v8-0E.xsd"
+    ]
+  }
+]

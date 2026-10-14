@@ -1,0 +1,6 @@
+parameters:
+  app.database_password: '%env(DB_KOKPIT_APP_PASSWORD)%'
+imports:
+  - { resource: services_base.yaml }
+  - { resource: services_connectors.yaml }
+  - { resource: services_panel.yaml }

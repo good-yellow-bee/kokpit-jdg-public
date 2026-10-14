@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ewidencja – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Ewidencja przychodów {{ year }}</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_ledger_reconciliation') }}">Uzgodnienia</a></nav>
+    <p>Wpisy automatyczne: {{ auto ? 'włączone' : 'wyłączone (ewidencję prowadzisz w narzędziu z Q-11)' }}.</p>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+
+    <section id="ledger-alerts">
+        <h2>Faktury bez wpisu</h2>
+        {% if alerts is empty %}<p>Brak.</p>{% else %}
+        <table>
+            <thead><tr><th>Numer</th><th>Numer KSeF</th><th>Powód</th></tr></thead>
+            <tbody>
+            {% for alert in alerts %}
+                <tr><td>{{ alert.invoice_number }}</td><td>{{ alert.ksef_number }}</td>
+                    <td>{{ {'rate_missing': 'pozycja bez stawki w ryczalt.service_map', 'revenue_date_manual': 'różne P_6A: wpisz datę przychodu', 'fx_rate_pending': 'czeka na kurs PIT'}[alert.reason] }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="period-corrections">
+        <h2>Korekta wymagana</h2>
+        {% if periodCorrections is empty %}<p>Brak zapisów do zamkniętych miesięcy.</p>{% else %}
+        <p>Zapis po zamknięciu miesiąca zmienia dane złożonego JPK_V7M. Złóż korektę JPK_V7M (i VAT-UEK przy dostawie WDU) za ten miesiąc.</p>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Zamknięty</th><th>Zapis po zamknięciu</th></tr></thead>
+            <tbody>
+            {% for period in periodCorrections %}
+                <tr><td>{{ period.period_start|slice(0, 7) }}</td><td>{{ period.closed_at }}</td><td>{{ period.correction_required_at }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="ledger-entry-check">
+        <h2>Komplet ewidencji za {{ previous|slice(0, 7) }}</h2>
+        {% if not auto %}<p>Przed przełączeniem wpis robisz w swoim narzędziu; kokpit nie zamyka obowiązku sam.</p>
+        {% elseif missing is empty %}<p>Każdy dokument przychodu ma wpis.</p>{% else %}
+        <table>
+            <thead><tr><th>Dokument</th><th>Numer</th><th>Data</th></tr></thead>
+            <tbody>
+            {% for document in missing %}
+                <tr><td>{{ {'invoice': 'faktura bez wpisu', 'correction': 'KOR bez wiersza korekty', 'payment': 'płatność w walucie bez różnicy kursowej'}[document.type] }}</td><td>{{ document.number }}</td><td>{{ document.date }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="ledger-corrections">
+        <h2>Korekty z KOR</h2>
+        {% if corrections is empty %}<p>Brak zadań.</p>{% else %}
+        <table>
+            <thead><tr><th>KOR</th><th>Numer KSeF</th><th>Data wystawienia</th><th>Faktura korygowana</th><th>Zamknij</th></tr></thead>
+            <tbody>
+            {% for task in corrections %}
+                <tr><td>{{ task.invoice_number }}</td><td>{{ task.ksef_number }}</td><td>{{ task.issue_date }}</td><td>{{ task.corrected_invoice_number }}</td>
+                    <td><form method="post" action="{{ path('panel_ledger_correction', {id: task.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ledger') }}">
+                        <label>Przyczyna <select name="reason"><option value="other">inna niż błąd: K_3 = data KOR</option><option value="arithmetic_error">błąd rachunkowy albo oczywista omyłka: K_3 faktury korygowanej</option></select></label>
+                        <label>Kurs PIT (id, gdy wiersz korygowany go nie ma) <input name="fx_rate_id" maxlength="36"></label>
+                        <button type="submit">Zapisz korektę</button>
+                    </form></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="ledger-manual">
+        <h2>Wpis ręczny</h2>
+        {% if services is empty %}<p>Najpierw uzupełnij ryczalt.service_map w ustawieniach.</p>{% else %}
+        <form method="post" action="{{ path('panel_ledger_manual') }}" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="{{ csrf_token('ledger') }}">
+            <label>Data przychodu (K_3) <input name="revenue_date" type="date" required value="{{ today }}"></label>
+            <label>Numer dowodu (K_4) <input name="document_number" required maxlength="256"></label>
+            <label>Kraj kontrahenta (K_6) <input name="counterparty_country" maxlength="2" pattern="[A-Za-z]{2}"></label>
+            <label>Identyfikator kontrahenta (K_7) <input name="counterparty_tax_id" maxlength="50"></label>
+            <label>Waluta <input name="currency" required maxlength="3" value="PLN"></label>
+            <label>Kwota netto <input name="net" required pattern="[0-9]+\.[0-9]{2}"></label>
+            <label>Usługa <select name="service_type">{% for service in services %}<option value="{{ service.service_type }}">{{ service.service_type }} ({{ service.pkwiu }}, {{ service.rate_pct }}%)</option>{% endfor %}</select></label>
+            <label>Plik dowodu <input name="evidence" type="file" required></label>
+            <button type="submit">Zapisz wpis</button>
+        </form>
+        {% endif %}
+    </section>
+
+    <section id="ledger-rows">
+        <h2>Ostatnie wiersze</h2>
+        <table>
+            <thead><tr><th>K_1</th><th>K_2</th><th>K_3</th><th>K_4</th><th>K_5</th><th>K_6</th><th>K_7</th><th>K_8</th><th>K_9</th><th>Źródło</th><th>Rodzaj</th></tr></thead>
+            <tbody>
+            {% for row in rows %}
+                <tr><td>{{ row.lp }}</td><td>{{ row.entry_date }}</td><td>{{ row.revenue_date }}</td><td>{{ row.document_number }}</td><td>{{ row.ksef_number }}</td><td>{{ row.counterparty_country }}</td><td>{{ row.counterparty_tax_id }}</td><td>{{ row.amount_pln }}</td><td>{{ row.rate_pct }}</td><td>{{ row.source }}</td><td>{{ row.kind }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endblock %}

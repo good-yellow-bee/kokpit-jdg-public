@@ -1,0 +1,42 @@
+phase: f0a
+criteria:
+  - { key: secret-store, runner: ci, command: 'vendor/bin/phpunit --filter SecretStore', junit: true }
+  - { key: credential-register, runner: ci, command: 'php scripts/credential-acceptance.php register' }
+  - { key: credential-smoke, runner: ci, command: 'CONNECTORS_ENABLED=1 php scripts/credential-acceptance.php smoke' }
+  - { key: connector-call-log, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorCall', junit: true }
+  - { key: failed-transport, runner: ci, command: 'vendor/bin/phpunit --filter FailedTransport', junit: true }
+  - { key: file-store, runner: ci, command: 'vendor/bin/phpunit --filter FileStore', junit: true }
+  - { key: rate-counter, runner: ci, command: 'vendor/bin/phpunit --filter "RateCounter|RateDeferral"', junit: true }
+  - { key: retention-purge, runner: ci, command: 'vendor/bin/phpunit --filter RetentionPurge', junit: true }
+  - { key: target-change, runner: ci, command: 'vendor/bin/phpunit --filter "RecordDeploy|TargetBanner"', junit: true }
+  - { key: health-checks, runner: ci, command: 'vendor/bin/phpunit --filter HealthCheck', junit: true }
+  - { key: live-guard, runner: ci, command: 'sh scripts/check-live-guard.sh', junit: true }
+  - { key: scrubber, runner: ci, command: 'vendor/bin/phpunit --filter Scrubber', junit: true }
+  - { key: ci-shape, runner: ci, command: 'vendor/bin/phpunit --filter CiWorkflow', junit: true }
+  - { key: evidence-pack, runner: ci, command: 'vendor/bin/phpunit --filter Evidence', junit: true }
+  - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
+  - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
+  - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }
+  - { key: cc-07, runner: ci, command: 'vendor/bin/phpunit --filter Redactor', junit: true }
+  - { key: cc-08, runner: ci, command: 'bin/console app:audit:verify && vendor/bin/phpunit --filter Audit', junit: true }
+  - { key: cc-09, runner: ci, command: 'vendor/bin/phpunit --filter OfficialWrites', junit: true }
+  - { key: cc-10, runner: ci, command: 'vendor/bin/phpunit --filter BusinessDate', junit: true }
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-12, runner: ci, command: 'composer check-licenses' }
+  - { key: cc-13, runner: ci, command: 'sh scripts/check-ci.sh', junit: true }
+  - { key: cc-15, runner: ci, command: 'vendor/bin/phpunit --filter Evidence', junit: true }
+  - { key: cc-31, runner: ci, command: 'vendor/bin/phpunit --filter Architecture', junit: true }
+  - { key: cc-03, runner: manual }
+  - { key: cc-04, runner: manual }
+  - { key: cc-05, runner: manual }
+  - { key: cc-14, runner: manual }
+  - { key: deploy-prod, runner: manual }
+  - { key: vpn-only, runner: manual }
+  - { key: passkey-enrol, runner: manual }
+  - { key: passkey-reset, runner: manual }
+  - { key: connectors-enabled, runner: manual }
+  - { key: push-test, runner: manual }
+  - { key: push-test-mail, runner: manual }
+  - { key: emergency-card, runner: manual }
+  - { key: ci-green, runner: manual }
+  - { key: live-targets, runner: live, command: 'vendor/bin/phpunit --testsuite live', junit: true }

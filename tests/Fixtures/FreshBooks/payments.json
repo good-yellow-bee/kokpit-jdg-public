@@ -1,0 +1,4 @@
+{"response":{"result":{"payments":[
+{"id":501,"invoiceid":1001,"date":"2026-03-20","amount":{"amount":"1000.00","code":"EUR"},"gateway":"Stripe","type":"Credit Card","note":"Fictional payment","vis_state":0,"updated":"2026-03-20 11:00:00"},
+{"id":502,"invoiceid":1003,"date":"2026-11-20","amount":{"amount":"1230.00","code":"PLN"},"gateway":null,"type":"Bank Transfer","note":"Fictional transfer","vis_state":0,"updated":"2026-11-20 09:00:00"}
+],"page":1,"pages":1,"per_page":100,"total":2}}}

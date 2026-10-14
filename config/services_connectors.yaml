@@ -1,0 +1,151 @@
+parameters:
+  app.dummy.default_endpoint: 'https://dummy.invalid/call'
+  app.connectors.default_enabled: false
+  app.connectors.default_target: test
+  app.push.default_endpoint: 'http://ntfy/kokpit'
+  app.mail.default_host: 'smtp.example.invalid'
+  app.deadman.default_host: 'hc-ping.com'
+  app.mail.default_from: 'kokpit@example.invalid'
+  app.mail.default_to: 'owner@example.invalid'
+  app.default_deployment: dev
+  app.panel.default_origin: 'http://localhost'
+  app.panel.default_certificate: '/run/kokpit/certificates/panel.crt'
+  connector.daily_limits: { dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, white_list.search: 80, white_list.check: 4000 }
+  # Adresy rejestrów per środowisko (docs/modules/rejestry-kursy.md); poza PROD tylko usługi testowe.
+  registry.vies_endpoints: { test: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service', prod: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number' }
+  registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
+  # Odstępy ponowień VIES po przeciążeniu, w sekundach; po 24 h od pierwszej próby alert connector_failure.
+  registry.vies_retry_delays: [900, 1800, 3600, 7200, 14400, 28800]
+services:
+  _defaults: { autowire: true, autoconfigure: true }
+  App\Config\ConnectorConfiguration:
+    arguments:
+      $appEnvironment: '%kernel.environment%'
+      $deployment: '%env(default:app.default_deployment:KOKPIT_DEPLOYMENT)%'
+      $enabled: '%env(bool:default:app.connectors.default_enabled:CONNECTORS_ENABLED)%'
+      $ksefTarget: '%env(default:app.connectors.default_target:KSEF_TARGET)%'
+      $jpkTarget: '%env(default:app.connectors.default_target:JPK_TARGET)%'
+      $edeklaracjeTarget: '%env(default:app.connectors.default_target:EDEKLARACJE_TARGET)%'
+      $pushEndpoint: '%env(default:app.push.default_endpoint:PUSH_ENDPOINT)%'
+      $mailHost: '%env(default:app.mail.default_host:MAIL_HOST)%'
+      $deadmanHost: '%env(default:app.deadman.default_host:DEADMAN_HOST)%'
+      $dailyLimits: '%connector.daily_limits%'
+  App\Scheduler\DefaultScheduleProvider:
+    arguments: { $schedulerState: '@cache.scheduler' }
+  App\Scheduler\HeartbeatStore:
+    arguments: { $schedulerState: '@cache.scheduler' }
+  App\Messenger\FailedMessageNotifier:
+    arguments: { $failed: '@messenger.transport.failed' }
+  App\Messenger\RateLimitDeferralMiddleware:
+    arguments: { $reads: '@messenger.transport.reads', $notifications: '@messenger.transport.notifications' }
+  App\Rate\RateCounter:
+    arguments: { $dailyLimits: '%connector.daily_limits%' }
+  App\Http\HostAllowlist:
+    decorates: http_client
+    arguments:
+      $hosts: !php/const App\Config\ConnectorHosts::HOSTS
+      $client: '@App\Http\HostAllowlist.inner'
+  App\Http\ConnectorHttpClient:
+    arguments:
+      $httpClient: '@http_client'
+      $enabled: '%env(bool:default:app.connectors.default_enabled:CONNECTORS_ENABLED)%'
+  App\Connector\Mail\GuardedMailTransport:
+    arguments: { $transport: null }
+  App\Connector\Push\PushNotifier: ~
+  App\Connector\Mail\MailNotifier:
+    arguments:
+      $from: '%env(default:app.mail.default_from:MAIL_FROM)%'
+      $to: '%env(default:app.mail.default_to:MAIL_TO)%'
+  App\Connector\DeadMan\DeadManNotifier: ~
+  App\Connector\Nbp\NbpConnector: ~
+  App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
+  App\Connector\Ksef\UnavailableKsefGateway: ~
+  App\Connector\Ksef\KsefGateway: '@App\Connector\Ksef\UnavailableKsefGateway'
+  App\Connector\FreshBooks\FreshBooksOAuth: ~
+  App\Connector\FreshBooks\FreshBooksConnector: ~
+  App\Connector\FreshBooks\FreshBooksSync: ~
+  App\Connector\FreshBooks\FreshBooksPollHandler: ~
+  App\Connector\Vies\ViesConnector:
+    arguments: { $endpoints: '%registry.vies_endpoints%' }
+  App\Connector\WhiteList\WhiteListConnector:
+    arguments: { $endpoints: '%registry.white_list_endpoints%' }
+  App\Counterparty\CounterpartyVerifier:
+    arguments: { $viesRetryDelays: '%registry.vies_retry_delays%' }
+when@dev:
+  services:
+    dummy.mock_response:
+      class: Symfony\Component\HttpClient\Response\MockResponse
+      arguments: ['{"status":"ok","fictional":true}']
+    dummy.mock_http_client:
+      class: Symfony\Component\HttpClient\MockHttpClient
+      arguments: ['@dummy.mock_response', 'https://dummy.invalid']
+    dummy.host_allowlist:
+      class: App\Http\HostAllowlist
+      autowire: true
+      arguments:
+        $hosts: !php/const App\Config\ConnectorHosts::HOSTS
+        $client: '@dummy.mock_http_client'
+    dummy.http_client:
+      class: App\Http\ConnectorHttpClient
+      autowire: true
+      arguments:
+        $httpClient: '@dummy.host_allowlist'
+        $enabled: '%env(bool:default:app.connectors.default_enabled:CONNECTORS_ENABLED)%'
+    App\Connector\Dummy\DummyConnector:
+      autowire: true
+      autoconfigure: true
+      arguments: { $http: '@dummy.http_client', $endpoint: '%app.dummy.default_endpoint%' }
+    App\Connector\Dummy\DummySubjects: ~
+    App\Connector\Dummy\DummyWriter:
+      autowire: true
+      autoconfigure: true
+      arguments: { $http: '@dummy.http_client', $baseUrl: 'https://dummy.invalid' }
+    dummy.subject.filing:
+      class: App\Connector\Dummy\DummySubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $subjectType: filing }
+    dummy.subject.draft:
+      class: App\Connector\Dummy\DummySubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $subjectType: draft }
+when@test:
+  services:
+    dummy.mock_response:
+      class: Symfony\Component\HttpClient\Response\MockResponse
+      arguments: ['{"status":"ok","fictional":true}']
+    dummy.mock_http_client:
+      class: Symfony\Component\HttpClient\MockHttpClient
+      arguments: ['@dummy.mock_response', 'https://dummy.invalid']
+    dummy.host_allowlist:
+      class: App\Http\HostAllowlist
+      autowire: true
+      arguments:
+        $hosts: !php/const App\Config\ConnectorHosts::HOSTS
+        $client: '@dummy.mock_http_client'
+    dummy.http_client:
+      class: App\Http\ConnectorHttpClient
+      autowire: true
+      arguments:
+        $httpClient: '@dummy.host_allowlist'
+        $enabled: '%env(bool:default:app.connectors.default_enabled:CONNECTORS_ENABLED)%'
+    App\Connector\Dummy\DummyConnector:
+      autowire: true
+      autoconfigure: true
+      arguments: { $http: '@dummy.http_client', $endpoint: '%app.dummy.default_endpoint%' }
+    App\Connector\Dummy\DummySubjects: ~
+    App\Connector\Dummy\DummyWriter:
+      autowire: true
+      autoconfigure: true
+      arguments: { $http: '@dummy.http_client', $baseUrl: 'https://dummy.invalid' }
+    dummy.subject.filing:
+      class: App\Connector\Dummy\DummySubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $subjectType: filing }
+    dummy.subject.draft:
+      class: App\Connector\Dummy\DummySubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $subjectType: draft }

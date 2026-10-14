@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Kalendarz – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Kalendarz obowiązków</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <p>Dziś: {{ today }}. Mikrorachunek: {{ accounts.tax ?? 'brak ustawienia' }}. Rachunek składkowy: {{ accounts.zus ?? 'brak ustawienia' }}.</p>
+    <p>Symbole i format okresu w tytułach przelewów są do weryfikacji przy pierwszej wpłacie.</p>
+
+    <section id="letter">
+        <h2>Dodaj termin z pisma</h2>
+        <p>Po odbiorze pisma w aplikacji e-Doręczeń wpisz datę odbioru, znak pisma i termin odpowiedzi już po ewentualnym przesunięciu. Bez treści pisma.</p>
+        <form method="post" action="{{ path('panel_calendar_letter') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('calendar') }}">
+            <label>Data odbioru <input name="received_on" type="date" required max="{{ today }}"></label>
+            <label>Znak pisma <input name="reference" maxlength="120"></label>
+            <label>Termin odpowiedzi <input name="due_date" type="date" required></label>
+            <label>Nadawca i sygnatura <input name="note" required maxlength="240"></label>
+            <button type="submit">Dodaj termin</button>
+        </form>
+    </section>
+
+    <table>
+        <thead><tr><th>Termin</th><th>Nominalnie</th><th>Obowiązek</th><th>Kwota</th><th>Tytuł przelewu</th><th>Stan</th><th>Źródło</th><th>Akcje</th></tr></thead>
+        <tbody>
+        {% for item in items %}
+            <tr id="obligation-{{ item.id }}">
+                <td>{{ item.due_date }}{% if item.overdue %} <strong>zaległy</strong>{% endif %}</td>
+                <td>{{ item.nominal_due_date }}</td>
+                <td>{{ item.type }}{% if item.period_start %} ({{ item.period_start }}){% endif %}{% if item.note %}: {{ item.note }}{% endif %}</td>
+                <td>{{ item.amount_due ?? item.missing ?? '–' }}</td>
+                <td>{{ item.payment_title ?? '–' }}</td>
+                <td>{{ item.status }}</td>
+                <td>{% if item.source starts with 'https://' %}<a href="{{ item.source }}" rel="noreferrer">przepis</a>{% else %}{{ item.source }}{% endif %}</td>
+                <td>
+                    {% if item.status == 'open' %}
+                        {% if item.amount_due is null %}
+                            <form method="post" action="{{ path('panel_calendar_action', {id: item.id, action: 'complete'}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('calendar') }}">
+                                <button type="submit">Potwierdź wykonanie</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{{ path('panel_calendar_action', {id: item.id, action: 'payment'}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('calendar') }}">
+                            <input name="amount_paid" required pattern="[0-9]+(\.[0-9]{1,2})?" placeholder="kwota">
+                            <input name="paid_on" type="date" required max="{{ today }}">
+                            <button type="submit">Wpisz zapłatę</button>
+                        </form>
+                        <form method="post" action="{{ path('panel_calendar_action', {id: item.id, action: 'not-applicable'}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('calendar') }}">
+                            <input name="reason" required maxlength="500" placeholder="powód">
+                            <button type="submit">Nie dotyczy</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

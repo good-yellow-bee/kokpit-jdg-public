@@ -1,0 +1,19 @@
+x-dev: &dev
+  build:
+    target: development
+  volumes:
+    - .:/app
+    - vendor:/app/vendor
+services:
+  app:
+    <<: *dev
+  worker_reads:
+    <<: *dev
+  worker_official_writes:
+    <<: *dev
+  worker_notifications:
+    <<: *dev
+  scheduler:
+    <<: *dev
+volumes:
+  vendor:

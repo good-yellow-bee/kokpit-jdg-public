@@ -1,0 +1,15 @@
+doctrine:
+  dbal:
+    driver: pdo_pgsql
+    host: '%env(DB_HOST)%'
+    port: 5432
+    dbname: '%env(DB_NAME)%'
+    user: '%env(DB_ROLE)%'
+    password: '%env(default:app.database_password:trim:file:DB_OWNER_PASSWORD_FILE)%'
+    server_version: '17'
+    logging: false
+    profiling: false
+  orm:
+    controller_resolver: { auto_mapping: false }
+    auto_mapping: false
+    enable_native_lazy_objects: true

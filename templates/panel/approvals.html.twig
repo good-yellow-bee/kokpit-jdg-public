@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Zatwierdzenia – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Zatwierdzenia</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <p>Podgląd pokazuje dokładnie to, co wiąże hash payloadu. „Zatwierdź” i „Ponów” wymagają potwierdzenia passkeyem (ważne 5 minut).</p>
+    <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
+    <p id="passkey-result" role="status"></p>
+    {% for item in items %}
+        <section id="approval-{{ item.id }}">
+            <h2>{{ item.subject_type }}{% if item.connector %} przez {{ item.connector }}{% endif %}: {{ item.status }}</h2>
+            <p>Hash payloadu: <code>{{ item.hash_prefix }}…</code>. Prośba {{ item.requested_at }}.
+                {% if item.expires_in %}Wygasa za {{ item.expires_in }}.{% endif %}
+                {% if item.result_code %}Kod wyniku: {{ item.result_code }}.{% endif %}
+                {% if item.cancel_reason %}Powód anulowania: {{ item.cancel_reason }}.{% endif %}</p>
+            <pre>{{ item.summary_pretty }}</pre>
+            {% set actions = {
+                pending: {approve: 'Zatwierdź', cancel: 'Anuluj'},
+                approved: item.connector ? {cancel: 'Anuluj'} : {copied: 'Skopiowano', cancel: 'Anuluj'},
+                unknown: {retry: 'Ponów ręcznie'},
+                expired: {renew: 'Odnów'},
+                cancelled: {renew: 'Odnów'},
+                rejected: {renew: 'Odnów'},
+            }[item.status] ?? {} %}
+            {% for action, label in actions %}
+                <form method="post" action="{{ path('panel_approval_action', {id: item.id, action: action}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('approvals') }}">
+                    <button type="submit">{{ label }}</button>
+                </form>
+            {% endfor %}
+        </section>
+    {% else %}
+        <p>Brak zatwierdzeń.</p>
+    {% endfor %}
+    <script src="{{ asset('passkey.js') }}" defer></script>
+{% endblock %}

@@ -1,0 +1,107 @@
+name: CI
+on:
+  # Gałąź PR uruchamia CI raz, przez pull_request; push tylko na main (D-43).
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: Faza do testu live (np. f0a)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  KOKPIT_DEPLOYMENT: dev
+  APP_ENV: test
+  CONNECTORS_ENABLED: '0'
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app vendor/bin/php-cs-fixer fix --dry-run --diff
+      - run: docker compose exec -T app vendor/bin/phpstan analyse
+      - run: docker compose exec -T app composer check-licenses
+      - run: docker compose exec -T app composer fixtures:scan
+  unit_property:
+    name: unit+property
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app vendor/bin/phpunit --testsuite unit --fail-on-empty-test-suite
+      - run: docker compose exec -T app vendor/bin/phpunit --testsuite property --fail-on-empty-test-suite
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app vendor/bin/phpunit --testsuite contract --fail-on-empty-test-suite
+  xsd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app vendor/bin/phpunit --testsuite xsd --fail-on-empty-test-suite
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app vendor/bin/phpunit --testsuite integration --fail-on-empty-test-suite
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app vendor/bin/phpunit --testsuite security --fail-on-empty-test-suite
+  mutation:
+    if: github.event_name != 'pull_request'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T app sh scripts/run-mutation.sh | tee mutation.txt
+      - run: cat mutation.txt >> "$GITHUB_STEP_SUMMARY"
+  evidence:
+    if: (github.event_name != 'push' || github.ref_name != 'main') && (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref || github.ref_name, 'f'))
+    needs: [lint, unit_property, contract, xsd, integration, security]
+    env:
+      SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}
+      DISPATCH_PHASE: ${{ inputs.phase }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: sh scripts/ci-evidence.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence
+          path: var/evidence/**
+          if-no-files-found: error
+  live:
+    if: github.event_name == 'workflow_dispatch'
+    env:
+      SOURCE_BRANCH: ${{ github.ref_name }}
+      DISPATCH_PHASE: ${{ inputs.phase }}
+      EVIDENCE_RUNNER: live
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh scripts/ci-bootstrap.sh
+      - run: docker compose exec -T -e CONNECTORS_ENABLED=1 app vendor/bin/phpunit --testsuite live --fail-on-empty-test-suite
+      - run: sh scripts/ci-evidence.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-evidence
+          path: var/evidence/**
+          if-no-files-found: error

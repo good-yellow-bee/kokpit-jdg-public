@@ -1,0 +1,26 @@
+phase: f1
+# F1 powstaje częściami (D-42). Część 1: model danych, koszty, import usług, przedpłata, WHT, vat_ue i odczyt FA(3)
+# z pliku XML, bez sieci. Wiersze KSeF, NBP i rejestrów z nagraniami dochodzą w częściach 2 i 3; `subject1-fx-vat`
+# i `supplier-match` dostają wtedy wariant na nagraniu eksportu.
+criteria:
+  - { key: subject1-fx-vat, runner: ci, command: 'vendor/bin/phpunit --filter KsefSubject1FxVat', junit: true }
+  - { key: supplier-match, runner: ci, command: 'vendor/bin/phpunit --filter SupplierMatch', junit: true }
+  - { key: ledger-foreign-keys, runner: ci, command: 'vendor/bin/phpunit --filter F1ForeignKeys', junit: true }
+  - { key: manual-cost-requires-file, runner: ci, command: 'vendor/bin/phpunit --filter ManualCostEntry', junit: true }
+  - { key: manual-cost-dedup, runner: ci, command: 'vendor/bin/phpunit --filter ManualCostDedup', junit: true }
+  - { key: cost-not-mine, runner: ci, command: 'vendor/bin/phpunit --filter CostReviewNotMine', junit: true }
+  - { key: import-services-eu, runner: ci, command: 'vendor/bin/phpunit --filter ImportServicesEu', junit: true }
+  - { key: import-services-non-eu, runner: ci, command: 'vendor/bin/phpunit --filter ImportServicesNonEu', junit: true }
+  - { key: cost-tax-point-override, runner: ci, command: 'vendor/bin/phpunit --filter CostTaxPointOverride', junit: true }
+  - { key: cost-vat-period-warsaw, runner: ci, command: 'vendor/bin/phpunit --filter CostVatPeriodWarsaw', junit: true }
+  - { key: vat-ue-obligation, runner: ci, command: 'vendor/bin/phpunit --filter VatUeObligation', junit: true }
+  - { key: wht-payment-obligation, runner: ci, command: 'vendor/bin/phpunit --filter WhtPaymentObligation', junit: true }
+  - { key: wht-certificate-obligation, runner: ci, command: 'vendor/bin/phpunit --filter WhtCertificateObligation', junit: true }
+  - { key: wht-natural-person, runner: ci, command: 'vendor/bin/phpunit --filter WhtNaturalPerson', junit: true }
+  # Część 3 (rejestry): wiersze bez nagrań. `pre-payment-*`, `refresh-due-eu-supplier` i `self-check` dochodzą z nagraniami.
+  - { key: white-list-counters, runner: ci, command: 'vendor/bin/phpunit --filter WhiteListCounters', junit: true }
+  - { key: manual-evidence-gb, runner: ci, command: 'vendor/bin/phpunit --filter ManualEvidence', junit: true }
+  - { key: refresh-due-pl-client, runner: ci, command: 'vendor/bin/phpunit --filter RefreshDuePlClient', junit: true }
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
+  - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

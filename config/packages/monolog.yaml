@@ -1,0 +1,14 @@
+monolog:
+  channels: [connector]
+  handlers:
+    main:
+      type: stream
+      path: 'php://stderr'
+      level: info
+      formatter: monolog.formatter.json
+
+when@test:
+  monolog:
+    handlers:
+      main:
+        level: critical

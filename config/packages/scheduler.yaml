@@ -1,0 +1,8 @@
+framework:
+  scheduler:
+    enabled: true
+  cache:
+    default_doctrine_dbal_provider: doctrine.dbal.default_connection
+    pools:
+      cache.scheduler:
+        adapter: cache.adapter.doctrine_dbal

@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}FreshBooks – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>FreshBooks</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    <section id="freshbooks-connection">
+        <h2>Połączenie</h2>
+        <p>Stan: {{ credential ? credential.status ~ (credential.rotated_at ? ', odświeżone ' ~ credential.rotated_at : '') : 'niepołączone' }}.</p>
+        {% if credential and credential.status not in ['valid', 'expiring'] %}<p role="alert">Połącz ponownie FreshBooks: refresh token został odrzucony.</p>{% endif %}
+        <p>Do F3 kokpit tylko czyta faktury i płatności (D-35). Połączenie wymaga potwierdzenia passkeyem (ważne 5 minut).</p>
+        <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
+        <p id="passkey-result" role="status"></p>
+        <form method="post" action="{{ path('panel_freshbooks_connect') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('freshbooks') }}">
+            <button type="submit">{{ credential ? 'Połącz ponownie' : 'Połącz' }}</button>
+        </form>
+    </section>
+    <section id="freshbooks-sync">
+        <h2>Polling</h2>
+        {% if cursors is empty %}<p>Jeszcze bez przebiegu.</p>{% else %}
+        <table>
+            <thead><tr><th>Strumień</th><th>Kursor</th><th>Backfill</th><th>Ostatni sukces</th></tr></thead>
+            <tbody>
+            {% for cursor in cursors %}
+                <tr><td>{{ cursor.stream }}</td><td>{{ cursor.last_value }}</td><td>{{ cursor.backfill_done_at ?: 'w toku' }}</td><td>{{ cursor.last_success_at }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        <p>Płatności bez przypisanej faktury: {{ unmatched }}.</p>
+    </section>
+{% endblock %}
