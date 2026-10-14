@@ -26,7 +26,7 @@ Zasady, sposób pracy, komendy, układ katalogów i definicja ukończenia dla ka
   - e-Doręczenia INT dopiero po powrocie F4 nowym rekordem D-xx (D-29).
 - Wyjątek: jednorazowy GET bez uwierzytelnienia po opublikowane XSD i dokumentację z `www.gov.pl`, `podatki.gov.pl`, `podatki-arch.mf.gov.pl`, `crd.gov.pl`, `raw.githubusercontent.com/CIRFMF`. To nie jest wywołanie API urzędu.
   - Schematy trafiają do `resources/xsd` z manifestem: źródło, data pobrania, sha256 ([integrations.md](integrations.md)). Pliki możesz też dostarczyć Ty.
-- Rejestry w dev i testach: tylko `wl-test.mf.gov.pl`, VIES `check-vat-test-service` albo nagrane odpowiedzi. KRS, CEIDG i GUS są odłożone (D-29).
+- Rejestry w dev i testach: tylko test białej listy (`wykazpodatnikowvat-test.mf.gov.pl`, dawny `wl-test.mf.gov.pl`), VIES `check-vat-test-service` albo nagrane odpowiedzi. KRS, CEIDG i GUS są odłożone (D-29).
 - Produkcyjne rejestry i NBP tylko do odczytu, przez licznik, nigdy z testów automatycznych.
 - FreshBooks bez firmy testowej (D-35): testy na ręcznie pisanych fixtures, prawdziwą firmę czyta tylko `kokpit-prod`. Pierwszy zapis zwrotny robi F3 na PROD: jedna faktura przez bramkę, wynik w dowodach fazy.
 - Claude API dostaje w dev i testach tylko dane fikcyjne, z budżetem przebiegu.

@@ -13,6 +13,7 @@ use App\Messenger\Message\FreshBooksPollMessage;
 use App\Messenger\Message\CredentialExpiryMessage;
 use App\Messenger\Message\NotificationDispatchMessage;
 use App\Messenger\Message\ObligationRecomputeMessage;
+use App\Messenger\Message\RegistryTaskMessage;
 use App\Messenger\Message\RetentionPurgeMessage;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
@@ -42,6 +43,7 @@ final class DefaultScheduleProvider implements ScheduleProviderInterface
             ->add(RecurringMessage::cron('0 6 * * *', new RedispatchMessage(new ObligationRecomputeMessage('obligations.recompute'), 'reads'), $timezone))
             ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new NotificationDispatchMessage('notifications.dispatch'), 'notifications'), $timezone))
             ->add(RecurringMessage::cron('0 7 * * *', new RedispatchMessage(new CredentialExpiryMessage('credentials.check_expiry'), 'reads'), $timezone))
+            ->add(RecurringMessage::cron('0 8 * * *', new RedispatchMessage(new RegistryTaskMessage('counterparty.refresh_due'), 'reads'), $timezone))
             // Co 5 min obejmuje też 00:00, czyli północ wygaszającą faktury (docs/operations.md, „Katalog zadań”).
             ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new ApprovalTaskMessage('approval.expire'), 'reads'), $timezone))
             ->add(RecurringMessage::cron('*/2 * * * *', new RedispatchMessage(new ApprovalTaskMessage('approval.poll_status'), 'reads'), $timezone))

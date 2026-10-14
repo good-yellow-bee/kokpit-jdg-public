@@ -12,6 +12,16 @@
         </aside>
     {% endif %}
     {% if passkey_warning %}<p role="alert" id="passkey-warning">Masz tylko jeden passkey. <a href="{{ path('panel_passkeys') }}">Dodaj drugi</a> na innym urządzeniu.</p>{% endif %}
+    {% if registry_alerts %}
+        <section id="self-check-alerts" role="alert">
+            <h2>Samosprawdzenie w rejestrach</h2>
+            <ul>
+                {% for alert in registry_alerts %}
+                    <li>{{ {'status_not_active': 'Biała lista: status VAT inny niż „Czynny”.', 'account_not_listed': 'Biała lista: rachunek firmowy spoza wykazu.', 'vat_eu_invalid': 'VIES: Twój numer VAT UE jest nieważny.', 'vat_eu_unverified_retry': 'VIES: brak wyniku dla Twojego numeru VAT UE.'}[alert.code] ?? alert.code }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
     <p>Panel jest gotowy do bezpiecznego logowania passkeyem.</p>
     <nav><a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_taxes') }}">Podatki</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_passkeys') }}">Passkeye</a></nav>
 {% endblock %}
