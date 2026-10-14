@@ -58,6 +58,19 @@
         </form>
     </section>
 
+    {% set snapshot = current['chat.law_snapshot'] %}
+    <section id="chat-law_snapshot">
+        <h2>Snapshot prawa czatu (chat.law_snapshot)</h2>
+        <p>Obowiązuje od: {{ snapshot ? snapshot.valid_from : 'brak; rozmowa czatu nie startuje bez snapshotu (D-60)' }}. Nowy wiersz działa od następnej rozmowy.</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'chat.law_snapshot'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>JSON: items (name, value, legal_source), note <textarea name="value" rows="8" cols="80" required>{{ snapshot ? snapshot.value|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) : '' }}</textarea></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
     {% set map = current['ryczalt.service_map'] %}
     <section id="ryczalt-service_map">
         <h2>Stawki ryczałtu per usługa (ryczalt.service_map)</h2>

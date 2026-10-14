@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Architecture\LiveGuard;
+use App\Architecture\LiveRunBudget;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -21,4 +22,5 @@ if ($live) {
         }
     }
     LiveGuard::assertAllowed($environment);
+    LiveRunBudget::start(LiveRunBudget::fromEnvironment($environment));
 }

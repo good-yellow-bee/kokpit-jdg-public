@@ -572,6 +572,24 @@ Część b: sekcja niżej.
 | Połączenie i sekrety | połączenie Doctrine `chat` (usługa `doctrine.dbal.chat_connection`); sekret `DB_CHAT_RO_PASSWORD`; plik hosta `chat-ro-password` w wolumenie `app_credentials` (`/run/app/chat-ro-password` w `db`, `/run/kokpit/db/chat-ro-password` w `app`) |
 | Testy | `ChatTestTools`; `ChatRoDeniedTest`, `ChatViewsEnvironmentTest`, `ChatViewsMinimalTest`, `ChatNamedQueriesTest`, `ChatHistoryAppendOnlyTest`, `ChatRetentionTest` |
 
+### Implementacja F6.2 (D-60): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Zależność | `anthropic-ai/sdk` 0.58.0 (dokładna wersja); opcje `RequestOptions::with(transporter:, streamingTransporter:, maxRetries: 0, timeout:)`; wywołanie `messages->raw->create` z ciałem w formacie przewodowym |
+| Konektor `claude` (`src/Connector/Claude`) | `ClaudeClientFactory` (`create`; stałe `CONNECTOR` = `claude`, `OPERATION` = `messages.create`, `BUCKET` = `claude.messages`), `ClaudeMessages` (`create`), `ClaudeResponse` (`decode`, `blocks`, `text`; `content`, `stopReason`, `refusalCategory`, `usage`, `requestId`), `ClaudeException` (`error`, `blockedUntil`), `ChatRequestProfile` (`MODEL`, `EFFORTS`, `assertValid`, `body`); nowa wartość `ClaudeError` = `iteration_limit` |
+| Czat (`src/Chat`) | `ChatTurn` (`ask`), `ChatTurnResult` (`error`, `text`, `requests`, `suggestNewSession`, `blockedUntil`, `refusalCategory`, `message`), `ChatSessions` (`start`, `resolve`, `matches`, `find`, `lawSnapshot`, `systemPromptSha`), `ChatToolRegistry` (`tools`, `names`, `schema`, `queryValues`, `toolSet`; `PHASES`, `PSEUDONYM_PATTERN`), `ChatToolExecutor` (`execute`, `interrupted`), `ChatRedaction` (`question`, `value`), `PseudonymMap` (`pseudonym`, `resolve`, `toJson`), `ChartSpec`, `ChatBudget` (`cost`, `assertAvailable`, `alerts`, `spentSince`), `ChatContextGuard` (`promptTokens`, `warns`, `exceeds`, `estimate`), `ChatConfigurationCheck` (compiler pass w `Kernel::build`); `ChatQueryRunner::check` |
+| Wartość `tool_set` | `ts-` i 16 znaków hex sha256 listy narzędzi z żądania |
+| Pseudonimy | `K-NN` (`K-01`, `K-02`, …; wzorzec `^K-[0-9]{2,3}$`) w `chat_session.pseudonym_map` (pseudonim → `counterparty.id`) |
+| Błędy wyniku narzędzia (`tool_result` z `is_error`) | nowe `ChatQueryRejected.reason`: `unknown_tool`, `invalid_enum`, `invalid_pattern`, `invalid_query`, `unknown_pseudonym`, `invalid_chart`, `draft_not_requested` (do F6.4); poza `ChatQueryRejected`: `query_failed`, `interrupted` |
+| Ustawienie `setting` | `chat.law_snapshot` (`items`: `name`, `value`, `legal_source`; `note`); kolumna `chat_session.law_snapshot_from` = `valid_from` wiersza |
+| Konfiguracja aplikacji | `chat.system_prompt`, `claude.base_url`; wartości: `chat.effort` `low`, `chat.max_tokens` 8000, `chat.timeout_s` 90, `chat.budget_daily_usd` `1.00`, `chat.budget_monthly_usd` `10.00`; `chat.phases_live` pusty przy `APP_ENV=prod` do go-live F6.4 |
+| Sekret | `CLAUDE_<ENV>_API_KEY` w Symfony Secrets (`CLAUDE_TEST_API_KEY` fikcyjny w sejfie testowym) |
+| Push | `notification.category` = `budget_alert`, `dedupe_key` `chat:budget:<daily|monthly>:<okno>:<alert|exceeded>`, link `/chat` |
+| Live | zmienna `CHAT_LIVE_RUN_BUDGET_USD` (wartość `chat.live_run_budget_usd`), `LiveRunBudget` (`src/Architecture`: `fromEnvironment`, `start`, `current`, `record`, `exhausted`), `ClaudeLiveBudget` (`tests/Support`: `guard`, `record`) |
+| Testy | `ClaudeTestTools`, `ClaudeTestCase`; fixtures `tests/Fixtures/Claude/messages-*.json` z `README.md`; testy `ClaudeRequestProfileTest`, `ChatModelFixedTest`, `ClaudeTransportTest`, `ChatToolLoopTest`, `ChatToolSchemaTest`, `ChatToolSetTest`, `ChatStopReasonsTest`, `ChatInterruptedTurnTest`, `ChatRateLimitTest`, `ChatBudgetTest`, `ChatContextLimitTest`, `ChatRedactionTest`, `ChatLawSnapshotTest`, `ClaudeLiveGuardTest` |
+| Wycofane z planu F6 | `DraftDocumentTool` i `DraftSubject` czekają na F6.4 (bez zmiany nazw) |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

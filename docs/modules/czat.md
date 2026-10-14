@@ -40,8 +40,8 @@ Messages API i PHP tool runner z SDK `anthropic-ai/sdk` (`BetaRunnableTool`, `to
 | Limit czasu | pętla najwyżej 8 iteracji; limit czasu żądania w PHP-FPM i w kliencie SDK z konfiguracji, z zapasem na pętlę; po przekroczeniu komunikat w panelu |
 | Po błędzie | komunikat w panelu; bez ponowienia w SDK; ponawiasz nowym pytaniem |
 | Przerwana tura | błąd API albo limit czasu po zapisie `tool_use`, przed `tool_result`; przed kolejnym żądaniem kontroler dopisuje `tool_result` z `is_error: true` dla każdego otwartego `tool_use` |
-| Klient HTTP | klient PSR-18 z dekoratora Symfony HttpClient z `HostAllowlist` ([integrations.md](../../.claude/rules/integrations.md)); bez strumieniowania Guzzle nie jest potrzebny; sposób wstrzyknięcia do SDK potwierdza sesja F6 w README SDK |
-| Ponowienia SDK | wyłączone (`maxRetries` = 0, nazwę opcji potwierdza sesja F6); domyślnie SDK ponawia dwa razy 408, 409, 429, 5xx i błędy połączenia ([PHP SDK](https://github.com/anthropics/anthropic-sdk-php)) |
+| Klient HTTP | klient PSR-18 z dekoratora Symfony HttpClient z `HostAllowlist` ([integrations.md](../../.claude/rules/integrations.md)); bez strumieniowania Guzzle nie jest potrzebny. W `anthropic-ai/sdk` 0.58.0 opcja `RequestOptions::with(transporter: …)` (i `streamingTransporter`), sprawdzone w źródle w F6.2 (D-60) |
+| Ponowienia SDK | wyłączone: `RequestOptions::with(maxRetries: 0)` daje jedno żądanie (F6.2, D-60); domyślnie SDK ponawia dwa razy 408, 409, 429, 5xx i błędy połączenia ([PHP SDK](https://github.com/anthropics/anthropic-sdk-php)) |
 | Log | każde wywołanie w `connector_call` (hash i rozmiar); treść rozmowy tylko w `chat_message` |
 
 - `composer.json` przypina dokładną wersję `anthropic-ai/sdk` 0.x.

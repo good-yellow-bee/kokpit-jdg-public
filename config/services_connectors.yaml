@@ -27,6 +27,8 @@ parameters:
   # ustawia. Wynegocjowany zestaw sprawdza `jpk-te-tls` w F5.3 (D-57).
   jpk.tls_ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256'
   jpk.mf_certificates: { test: '%kernel.project_dir%/var/jpk/mf-test.crt', prod: '%kernel.project_dir%/var/jpk/mf-prod.crt' }
+  # Konektor `claude` (F6.2, D-60): jeden host, timeout z `chat.timeout_s`, bez ponowień SDK.
+  claude.base_url: 'https://api.anthropic.com'
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\Config\ConnectorConfiguration:
@@ -101,6 +103,11 @@ services:
     arguments: { $endpoints: '%registry.white_list_endpoints%' }
   App\Counterparty\CounterpartyVerifier:
     arguments: { $viesRetryDelays: '%registry.vies_retry_delays%' }
+  App\Connector\Claude\ChatRequestProfile:
+    arguments: { $model: '%chat.model%', $effort: '%chat.effort%', $maxTokens: '%chat.max_tokens%' }
+  App\Connector\Claude\ClaudeClientFactory:
+    arguments: { $baseUrl: '%claude.base_url%', $timeoutSeconds: '%chat.timeout_s%' }
+  App\Connector\Claude\ClaudeMessages: ~
 when@dev:
   services:
     dummy.mock_response:

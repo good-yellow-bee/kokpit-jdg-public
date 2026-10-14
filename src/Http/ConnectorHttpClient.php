@@ -82,7 +82,7 @@ final readonly class ConnectorHttpClient implements HttpClientInterface
             throw $exception;
         } catch (TransportExceptionInterface $exception) {
             $errorCode = 'network_error';
-            throw new ConnectorException(ConnectorError::NetworkError);
+            throw new ConnectorException(ConnectorError::NetworkError, $exception);
         } finally {
             $this->recorder->record($context, $host, $method, is_string($path) ? ($context->connector === 'deadman' ? '/{heartbeat}' : $this->redactor->text($this->sanitizedPath($path))) : null, $startedAt, $status, $errorCode, $retryAfter, $requestBody, $responseBody);
         }
