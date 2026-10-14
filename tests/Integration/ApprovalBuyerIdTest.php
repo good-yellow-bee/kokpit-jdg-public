@@ -33,7 +33,7 @@ final class ApprovalBuyerIdTest extends SalesTestCase
         $invoice = $tools->invoice($id);
         self::assertSame(['ready', 'eu_b2b', $valid], [$invoice['status'], $invoice['tax_scenario'], $invoice['verification_id']]);
         $approval = $tools->approvalId($id);
-        self::assertSame('pending', $tools->approval($id)['status']);
+        self::assertSame('pending', $tools->approval($id)['status'] ?? null);
 
         // Decyzja: nowszy wynik `unverified_retry` blokuje zatwierdzenie; prośba zostaje `pending`.
         $tools->verify($id, 'vies', 'unverified_retry');
@@ -69,7 +69,7 @@ final class ApprovalBuyerIdTest extends SalesTestCase
         $tools->readiness->evaluate($id, true);
         $invoice = $tools->invoice($id);
         self::assertSame(['ready', 'pl_b2b', $manual], [$invoice['status'], $invoice['tax_scenario'], $invoice['verification_id']]);
-        self::assertSame('pending', $tools->approval($id)['status']);
+        self::assertSame('pending', $tools->approval($id)['status'] ?? null);
     }
 
     private function assertBlocked(SalesTestTools $tools, string $id, string $reason): void
