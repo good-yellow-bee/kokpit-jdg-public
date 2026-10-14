@@ -31,3 +31,5 @@ framework:
       'App\Messenger\Message\ApprovalTaskMessage': reads
       'App\Messenger\Message\KsefSyncMessage': reads
       'App\Messenger\Message\FreshBooksPollMessage': reads
+      'App\Messenger\Message\RegistryTaskMessage': reads
+      'App\Messenger\Message\ViesRetryMessage': reads

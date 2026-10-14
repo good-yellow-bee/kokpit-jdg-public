@@ -17,6 +17,10 @@ criteria:
   - { key: wht-payment-obligation, runner: ci, command: 'vendor/bin/phpunit --filter WhtPaymentObligation', junit: true }
   - { key: wht-certificate-obligation, runner: ci, command: 'vendor/bin/phpunit --filter WhtCertificateObligation', junit: true }
   - { key: wht-natural-person, runner: ci, command: 'vendor/bin/phpunit --filter WhtNaturalPerson', junit: true }
+  # Część 3 (rejestry): wiersze bez nagrań. `pre-payment-*`, `refresh-due-eu-supplier` i `self-check` dochodzą z nagraniami.
+  - { key: white-list-counters, runner: ci, command: 'vendor/bin/phpunit --filter WhiteListCounters', junit: true }
+  - { key: manual-evidence-gb, runner: ci, command: 'vendor/bin/phpunit --filter ManualEvidence', junit: true }
+  - { key: refresh-due-pl-client, runner: ci, command: 'vendor/bin/phpunit --filter RefreshDuePlClient', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

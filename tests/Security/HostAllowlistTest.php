@@ -58,6 +58,21 @@ final class HostAllowlistTest extends TestCase
         $this->expectException(ConnectorException::class);
         $this->guard(true, 'prod')->assertAllowed('dummy', 'default', 'https://dummy.invalid');
     }
+    public function testRegistriesUseTestServicesOutsideProdAndOnlyCheckVatNumberOnProd(): void
+    {
+        $this->guard()->assertAllowed('white_list', 'test', 'https://wykazpodatnikowvat-test.mf.gov.pl/api/search/nip/1111111111?date=2026-11-04');
+        $this->guard(true, 'prod')->assertAllowed('vies', 'prod', 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number', 'POST');
+        $this->guard(true, 'prod')->assertAllowed('white_list', 'prod', 'https://wykazpodatnikowvat.mf.gov.pl/api/search/nip/1111111111?date=2026-11-04');
+        self::addToAssertionCount(3);
+        foreach ([['test','white_list','prod','https://wykazpodatnikowvat.mf.gov.pl/api/search/nip/1111111111'],['test','vies','test','https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number'],['prod','vies','prod','https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service'],['prod','vies','prod','https://ec.europa.eu/other']] as [$environment,$connector,$target,$url]) {
+            try {
+                $this->guard(true, $environment)->assertAllowed($connector, $target, $url, 'POST');
+                self::fail('Adres rejestru dopuszczony: ' . $url);
+            } catch (ConnectorException) {
+                self::addToAssertionCount(1);
+            }
+        }
+    }
     public function testRedirectsAreDisabledAndPsr18CannotBypassScope(): void
     {
         $seen = [];
