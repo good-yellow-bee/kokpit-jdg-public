@@ -18,7 +18,46 @@
                 {% if item.expires_in %}Wygasa za {{ item.expires_in }}.{% endif %}
                 {% if item.result_code %}Kod wyniku: {{ item.result_code }}.{% endif %}
                 {% if item.cancel_reason %}Powód anulowania: {{ item.cancel_reason }}.{% endif %}</p>
-            <pre>{{ item.summary_pretty }}</pre>
+            {% set draft = item.subject_type == 'draft' ? drafts[item.subject_id] ?? null : null %}
+            {% if draft %}
+                <div class="draft-preview" id="draft-{{ draft.id }}" data-draft-status="{{ draft.status }}">
+                    <p><strong>Szkic {{ draft.status }}</strong>{% if draft.model %} (asystent AI, {{ draft.model }}){% endif %}. Kokpit szkicu nie wysyła: kopiujesz go sam i klikasz „Skopiowano”.</p>
+                    <p>Temat: {{ draft.subject }}</p>
+                    <div class="draft-body">{% for segment in draft.segments %}{% if segment.flagged %}<mark class="draft-flagged">{{ segment.text }}</mark>{% else %}{{ segment.text|nl2br }}{% endif %}{% endfor %}</div>
+                    <h3>Źródła nieufne</h3>
+                    <ul class="draft-sources">
+                        {% for source in draft.sources %}
+                            <li>{% if source.source == 'chat_message' %}wiadomość czatu nr {{ source.seq }} (sha256 {{ source.sha256|slice(0, 12) }}…): {{ source.excerpt }}{% else %}{{ source.source }} {{ source.pseudonym ?? '' }}{% endif %}</li>
+                        {% else %}
+                            <li>brak</li>
+                        {% endfor %}
+                    </ul>
+                    {% if draft.flagged_items is not empty %}
+                        <form method="post" action="{{ path('panel_draft_action', {id: item.id, action: 'confirm'}) }}" class="draft-confirm">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approvals') }}">
+                            <p>Wartości niezgodne z bazą: potwierdź każdą osobno przed zatwierdzeniem.</p>
+                            {% for flagged in draft.flagged_items %}
+                                <label><input type="checkbox" name="confirm[]" value="{{ loop.index0 }}"{% if flagged.confirmed_at ?? null %} checked disabled{% endif %}> {{ flagged.type }}: <mark>{{ flagged.value }}</mark>{% if flagged.confirmed_at ?? null %} (potwierdzone){% endif %}</label>
+                            {% endfor %}
+                            {% if draft.status == 'pending' %}<button type="submit">Potwierdź zaznaczone</button>{% endif %}
+                        </form>
+                    {% endif %}
+                    {% if draft.status in ['pending', 'approved'] and item.status in ['pending', 'approved'] %}
+                        <form method="post" action="{{ path('panel_draft_action', {id: item.id, action: 'edit'}) }}" class="draft-edit">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approvals') }}">
+                            <label>Temat <input type="text" name="subject" value="{{ draft.subject }}" maxlength="500" required></label>
+                            <label>Treść <textarea name="body" rows="8" required>{{ draft.body }}</textarea></label>
+                            <button type="submit">Zapisz zmiany (nowa prośba)</button>
+                        </form>
+                        <form method="post" action="{{ path('panel_draft_action', {id: item.id, action: 'discard'}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('approvals') }}">
+                            <button type="submit">Odrzuć szkic</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <pre>{{ item.summary_pretty }}</pre>
+            {% endif %}
             {% set actions = {
                 pending: {approve: 'Zatwierdź', cancel: 'Anuluj'},
                 approved: item.connector ? {cancel: 'Anuluj'} : {copied: 'Skopiowano', cancel: 'Anuluj'},

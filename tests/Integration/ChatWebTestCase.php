@@ -67,7 +67,7 @@ abstract class ChatWebTestCase extends WebTestCase
      * `ChatPanel` w kontenerze panelu z podanymi odpowiedziami Messages API i zalogowany właściciel; zwraca nową rozmowę.
      *
      * @param list<MockResponse> $responses
-     * @param array{budget?:\App\Chat\ChatBudget,context?:\App\Chat\ChatContextGuard} $options
+     * @param array{budget?:\App\Chat\ChatBudget,context?:\App\Chat\ChatContextGuard,drafts?:\App\Chat\DraftDocumentTool} $options
      */
     protected function panel(array $responses, array $options = [], bool $login = true): string
     {

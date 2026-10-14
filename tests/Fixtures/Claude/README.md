@@ -1,6 +1,6 @@
 # Fixtures Claude
 
-Ręcznie pisane odpowiedzi Messages API dla konektora `claude` (F6.2, D-60; F6.3, D-61), według [dokumentacji Messages API](https://platform.claude.com/docs/en/api/messages). To nie są nagrania: nagrania `app:fixtures:record claude` powstają w F6.5.
+Ręcznie pisane odpowiedzi Messages API dla konektora `claude` (F6.2, D-60; F6.3, D-61; F6.4, D-62), według [dokumentacji Messages API](https://platform.claude.com/docs/en/api/messages). To nie są nagrania: nagrania `app:fixtures:record claude` powstają w F6.5.
 
 Wszystkie dane są fikcyjne (fictional): identyfikatory `msg_fictional_*`, `toolu_fictional_*`, podpisy bloków thinking, teksty i liczby tokenów. Testy sprawdzają warstwę narzędzi i pętlę, nie tekst modelu.
 
@@ -22,3 +22,6 @@ Wszystkie dane są fikcyjne (fictional): identyfikatory `msg_fictional_*`, `tool
 | `messages-render-chart.json` | `tool_use` `render_chart` dla `revenue_by_month`, III kwartał (F6.3, D-61) |
 | `messages-chart-end-turn.json` | `end_turn` z liczbami w tekście celowo innymi niż w fikcyjnej bazie (test `chat-render-chart`) |
 | `messages-context-limit.json` | `end_turn` z promptem 100 001 tokenów (wejście z cache), próg odmowy kolejnego pytania (test `chat-panel-messages`) |
+| `messages-draft-document.json` | `tool_use` `draft_document` do `K-01` z kwotą z fikcyjnej bazy (F6.4, D-62) |
+| `messages-draft-recipients.json` | pięć `draft_document`: `K-01`, `K-99` spoza mapy, adres e-mail, dwóch odbiorców, `K-02` z innego środowiska |
+| `messages-draft-flagged.json` | `draft_document` z IBAN (znacznik `{{FICTIONAL_IBAN}}` podstawia test, bo skaner pada na literałach rachunków), NIP i kwotą spoza bazy |

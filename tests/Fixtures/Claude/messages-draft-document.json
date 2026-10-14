@@ -1,0 +1,14 @@
+{
+  "id": "msg_fictional_40",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "ZmljdGlvbmFsLXNpZ25hdHVyZS00MA=="},
+    {"type": "text", "text": "Przygotuję szkic przypomnienia dla K-01 (fictional)."},
+    {"type": "tool_use", "id": "toolu_fictional_40", "name": "draft_document", "input": {"kind": "email", "recipient": "K-01", "subject": "Przypomnienie o fakturze FIKC/2026/07/1 dla K-01 (fictional)", "body": "Dzień dobry K-01,\nuprzejmie przypominamy o fakturze FIKC/2026/07/1 na kwotę 1230,00 PLN.\nPozdrawiamy (treść fikcyjna, fictional)", "source_refs": ["K-01"]}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 1500, "output_tokens": 220, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000}
+}

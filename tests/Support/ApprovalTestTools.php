@@ -150,7 +150,7 @@ final class ApprovalTestTools
     }
 
     /** @return array{string,string} fikcyjny właściciel i jego passkey */
-    private static function owner(Connection $db, MockClock $clock): array
+    public static function owner(Connection $db, MockClock $clock): array
     {
         $existing = $db->fetchAssociative('SELECT u.id AS user_id, c.id AS credential_id FROM app_user u JOIN webauthn_credential c ON c.app_user_id=u.id AND c.revoked_at IS NULL ORDER BY c.created_at LIMIT 1');
         if ($existing !== false && is_string($existing['user_id']) && is_string($existing['credential_id'])) {

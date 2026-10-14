@@ -1,0 +1,16 @@
+{
+  "id": "msg_fictional_41",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "tool_use", "id": "toolu_fictional_41", "name": "draft_document", "input": {"kind": "email", "recipient": "K-01", "subject": "Potwierdzenie dla K-01 (fictional)", "body": "Dzień dobry K-01,\npotwierdzamy otrzymanie wiadomości (fictional).", "source_refs": []}},
+    {"type": "tool_use", "id": "toolu_fictional_42", "name": "draft_document", "input": {"kind": "email", "recipient": "K-99", "subject": "Szkic do K-99 (fictional)", "body": "Treść fikcyjna (fictional).", "source_refs": []}},
+    {"type": "tool_use", "id": "toolu_fictional_43", "name": "draft_document", "input": {"kind": "email", "recipient": "klient@example.invalid", "subject": "Szkic na adres (fictional)", "body": "Treść fikcyjna (fictional).", "source_refs": []}},
+    {"type": "tool_use", "id": "toolu_fictional_44", "name": "draft_document", "input": {"kind": "email", "recipient": ["K-01", "K-02"], "subject": "Szkic do dwóch odbiorców (fictional)", "body": "Treść fikcyjna (fictional).", "source_refs": []}},
+    {"type": "tool_use", "id": "toolu_fictional_45", "name": "draft_document", "input": {"kind": "email", "recipient": "K-02", "subject": "Szkic do kontrahenta z innego środowiska (fictional)", "body": "Treść fikcyjna (fictional).", "source_refs": []}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {"input_tokens": 1600, "output_tokens": 300, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000}
+}

@@ -5,6 +5,7 @@
         {% for turn in frame.turns %}
             <li id="chat-turn-{{ turn.seq }}" class="chat-turn" data-seq="{{ turn.seq }}">
                 <p class="chat-question"><strong>Ty{% if turn.draftRequested %} (prośba o szkic){% endif %}:</strong> {{ turn.question|nl2br }}</p>
+                {% if turn.draftRequested %}<p class="chat-draft-link">Szkic z tej prośby, jeśli powstał, czeka w <a href="{{ path('panel_approvals') }}" data-turbo-frame="_top">kolejce zatwierdzeń</a>; kokpit go nie wysyła.</p>{% endif %}
                 {% if turn.answer != '' %}
                     <div class="chat-answer"><strong>asystent AI:</strong> {{ turn.answer|nl2br }}</div>
                 {% endif %}

@@ -53,7 +53,7 @@ services:
   _defaults: { autowire: true, autoconfigure: true }
   App\:
     resource: '../src/'
-    exclude: '../src/{Kernel.php,Chat/ChatConfigurationCheck.php,Chat/ChatTurnResult.php,Chat/PseudonymMap.php,Chat/ChartSpec.php,Chat/ChatChartData.php,Chat/ChatFrame.php,Chat/ChatNotice.php,Chat/ChatPanelResult.php,Chat/ChatPanelTurn.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php,Ledger/FilingSubject.php}'
+    exclude: '../src/{Kernel.php,Chat/ChatConfigurationCheck.php,Chat/ChatTurnResult.php,Chat/PseudonymMap.php,Chat/ChartSpec.php,Chat/ChatChartData.php,Chat/ChatFrame.php,Chat/ChatNotice.php,Chat/ChatPanelResult.php,Chat/ChatPanelTurn.php,Chat/DraftState.php,Chat/DraftSubject.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php,Ledger/FilingSubject.php}'
   App\Security\Vault:
     arguments: { $vault: '@secrets.vault', $appEnvironment: '%kernel.environment%' }
   App\Security\SecretStore:
@@ -97,6 +97,11 @@ services:
   filing.subject:
     class: App\Ledger\FilingSubject
     arguments: { $fallback: null }
+  # Przedmiot bramki szkiców czatu (F6.4, D-62); w dev i test z atrapą `dummy` dla id bez wiersza `draft` (services_connectors.yaml).
+  draft.subject:
+    class: App\Chat\DraftSubject
+    arguments: { $fallback: null }
+  App\Chat\DraftSubject: '@draft.subject'
   App\Invoice\SalesReadiness:
     arguments: { $readyMarker: '%freshbooks.ready_marker%' }
   App\Passkey\StepUp: '@App\Passkey\StepUpVerifier'

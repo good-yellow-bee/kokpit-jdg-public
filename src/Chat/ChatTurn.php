@@ -109,7 +109,7 @@ final readonly class ChatTurn
                     if ($toolUses === []) {
                         return new ChatTurnResult($sessionId, ClaudeError::InvalidResponse, '', $requests, $warn);
                     }
-                    $pending = array_map(fn(array $toolUse): array => $this->executor->execute($toolUse, $map), $toolUses);
+                    $pending = array_map(fn(array $toolUse): array => $this->executor->execute($toolUse, $map, $sessionId), $toolUses);
                     $this->saveMap($sessionId, $map);
                     if ($this->context->exceeds($this->context->estimate($response->usage, json_encode($pending, JSON_THROW_ON_ERROR)))) {
                         return new ChatTurnResult($sessionId, ClaudeError::ContextLimit, '', $requests, true);

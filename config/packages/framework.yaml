@@ -16,6 +16,19 @@ framework:
     gc_maxlifetime: 1800
   router: { utf8: true }
   php_errors: { log: true }
+  # Stany szkicu czatu (docs/modules/czat.md, „Stany szkicu”; F6.4, D-62): przejścia wywołuje `DraftSubject` po zmianie `approval.status`.
+  workflows:
+    draft:
+      type: state_machine
+      marking_store: { type: method, property: status }
+      supports: [App\Chat\DraftState]
+      initial_marking: pending
+      places: [pending, approved, discarded, executed]
+      transitions:
+        approve: { from: pending, to: approved }
+        reopen: { from: approved, to: pending }
+        execute: { from: approved, to: executed }
+        discard: { from: [pending, approved], to: discarded }
 when@test:
   framework:
     test: true

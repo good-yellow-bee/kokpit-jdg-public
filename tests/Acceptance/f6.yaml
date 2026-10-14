@@ -1,5 +1,5 @@
 phase: f6
-# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części (F6.1, F6.2: D-60; F6.3: D-61).
+# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części (F6.1, F6.2: D-60; F6.3: D-61; F6.4: D-62).
 criteria:
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
@@ -33,3 +33,9 @@ criteria:
   - { key: chat-seq-idempotent, runner: ci, command: 'vendor/bin/phpunit --filter ChatSeqIdempotent', junit: true }
   - { key: chat-render-chart, runner: ci, command: 'vendor/bin/phpunit --filter ChatRenderChart', junit: true }
   - { key: chat-panel-messages, runner: ci, command: 'vendor/bin/phpunit --filter ChatPanelMessages', junit: true }
+  # F6.4 (bez sieci, fikcyjne odpowiedzi Messages API z tests/Fixtures/Claude; IBAN w fixture podstawia test; D-62). cc-29 pokrywają draft-requested-only i chat-tool-schema; stoi przed nimi, bo ten sam test zapisuje cmd/draft-requested-only.txt. Testy zapisują też db/draft-approval-copy-approval.csv i screens/draft-approval-copy.html.
+  - { key: cc-29, runner: ci, command: 'vendor/bin/phpunit --filter "DraftRequestedOnly|ChatToolSchema"', junit: true }
+  - { key: draft-requested-only, runner: ci, command: 'vendor/bin/phpunit --filter DraftRequestedOnly', junit: true }
+  - { key: draft-recipient-db, runner: ci, command: 'vendor/bin/phpunit --filter DraftRecipientDb', junit: true }
+  - { key: draft-flagged-values, runner: ci, command: 'vendor/bin/phpunit --filter DraftFlaggedValues', junit: true }
+  - { key: draft-approval-copy, runner: ci, command: 'vendor/bin/phpunit --filter DraftApprovalCopy', junit: true }
