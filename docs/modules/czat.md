@@ -245,7 +245,7 @@ Od 2.08.2026 system AI informuje o interakcji z AI od pierwszej wiadomości ([AI
 
 ## Testy
 
-Polityka ogólna i nagrania: [../testing.md](../testing.md). Szkic kryteriów F6 jest w zaślepce F6 w [../README.md](../README.md).
+Polityka ogólna i nagrania: [../testing.md](../testing.md). Kryteria odbioru F6: [../phases/f6-czat.md](../phases/f6-czat.md).
 
 - Nagrane odpowiedzi Claude API w `tests/Fixtures/Claude`, oczyszczone; testy live tylko w `@group live`, bo kosztują.
 - Wklejona treść z ukrytym poleceniem i bez `draft_requested` → brak szkicu. Szkic na prośbę → `provenance` wskazuje źródło.
