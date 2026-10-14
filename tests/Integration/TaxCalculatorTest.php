@@ -85,10 +85,10 @@ final class TaxCalculatorTest extends DatabaseTestCase
     public function testHealthReconciliationCountsMonthsFromFirstParametersOfYear(): void
     {
         $clock = new MockClock('2027-01-15T08:00:00Z');
-        $tax = ObligationTestTools::tax($this->db(), $clock);
-        self::assertNull($tax->healthReconciliation(2026));
+        self::assertNull(ObligationTestTools::tax($this->db(), $clock)->healthReconciliation(2026));
         // Parametry od kwietnia (np. start działalności): 9 miesięcy podlegania × 498,35 zł = 4 485,15 zł.
         ObligationTestTools::settings($this->db(), $clock)->set('zus.parameters', ObligationTestTools::zusParameters('1600.00', '100.00', 1), '2026-04-01', null, 'fictional');
+        $tax = ObligationTestTools::tax($this->db(), $clock);
         $health = $tax->healthReconciliation(2026);
         self::assertNotNull($health);
         self::assertSame([9, '4485.15', '4485.15'], [$health['months'], $health['due'], $health['amount_due']]);
