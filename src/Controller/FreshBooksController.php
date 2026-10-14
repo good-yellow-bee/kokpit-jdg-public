@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Config\ConnectorConfiguration;
 use App\Connector\FreshBooks\FreshBooksException;
 use App\Connector\FreshBooks\FreshBooksOAuth;
+use App\Invoice\SalesTasks;
 use App\Passkey\AppUser;
 use App\Passkey\StepUp;
 use Doctrine\DBAL\Connection;
@@ -33,7 +34,22 @@ final class FreshBooksController extends AbstractController
         $credential = $this->db->fetchAssociative("SELECT status, rotated_at FROM credential_state WHERE environment=? AND kind='freshbooks_oauth'", [$this->configuration->environment()]);
         $cursors = $this->db->fetchAllAssociative("SELECT stream, last_value, backfill_done_at, last_success_at FROM sync_cursor WHERE environment=? AND connector='freshbooks' ORDER BY stream", [$this->configuration->environment()]);
         $unmatched = $this->db->fetchOne('SELECT count(*) FROM payment WHERE environment=? AND matched_at IS NULL', [$this->configuration->environment()]);
-        return $this->render('panel/freshbooks.html.twig', ['credential' => $credential,'cursors' => $cursors,'unmatched' => $unmatched]);
+        $tasks = $this->db->fetchAllAssociative('SELECT id, kind, invoice_number, status, panel_task, panel_task_at FROM invoice WHERE environment=? AND panel_task IS NOT NULL ORDER BY panel_task_at, id', [$this->configuration->environment()]);
+        $corrections = $this->db->fetchAllAssociative("SELECT id, invoice_number, corrected_invoice_number, status, ready_blockers FROM invoice WHERE environment=? AND direction='sale' AND kind='KOR' AND status IN ('draft','ready','approved') ORDER BY created_at, id", [$this->configuration->environment()]);
+        return $this->render('panel/freshbooks.html.twig', ['credential' => $credential,'cursors' => $cursors,'unmatched' => $unmatched,'tasks' => $tasks,'corrections' => $corrections]);
+    }
+
+    /** „Zamknij zadanie” sprzedaży (F3.2 część b): obejście, faktura spoza kokpitu, zmiana numeru po przyjęciu. */
+    #[Route('/freshbooks/tasks/{id}/close', name: 'panel_freshbooks_task_close', methods: ['POST'], requirements: ['id' => '[0-9a-f-]{36}'])]
+    public function closeTask(string $id, Request $request, SalesTasks $tasks): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof AppUser || !$this->isCsrfTokenValid('freshbooks_task', $request->request->getString('_token'))) {
+            throw new AccessDeniedHttpException('Nieprawidłowy token CSRF.');
+        }
+        $tasks->close($id, $user->id());
+        $this->addFlash('notice', 'Zadanie zamknięte.');
+        return $this->redirectToRoute('panel_freshbooks');
     }
 
     #[Route('/freshbooks/connect', name: 'panel_freshbooks_connect', methods: ['POST'])]

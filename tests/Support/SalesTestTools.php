@@ -13,6 +13,7 @@ use App\Approval\ApprovalTaskHandler;
 use App\Approval\ApprovalTransitions;
 use App\Approval\SubmissionReconciler;
 use App\Audit\AuditLog;
+use App\Invoice\CorrectionDrafts;
 use App\Invoice\SalesInvoiceSubject;
 use App\Invoice\SalesReadiness;
 use App\Security\Redactor;
@@ -47,6 +48,8 @@ final class SalesTestTools
     public readonly FileStore $files;
     public readonly CollectingBus $bus;
     public readonly string $userId;
+    /** Szkice KOR z FreshBooks (F3.2 część b); ustawia `CorrectionTestTools`. */
+    public ?CorrectionDrafts $corrections = null;
     private int $sequence = 0;
 
     public function __construct(private readonly Connection $db, public readonly MockClock $clock, private readonly Vault $vault, ?MockClock $builderClock = null)
@@ -105,7 +108,7 @@ final class SalesTestTools
         $body = json_encode(['response' => ['result' => ['invoices' => $invoices,'page' => 1,'pages' => 1,'per_page' => 100,'total' => count($invoices)]]], JSON_THROW_ON_ERROR);
         $calls = [];
         $client = FreshBooksTestTools::client(['GET ' . FreshBooksTestTools::ACCOUNT_PATH . 'invoices/invoices' => new MockResponse($body, ['http_code' => 200])], $calls);
-        return FreshBooksTestTools::sync($this->db, $this->clock, $client, $this->vault, Fa3TestTools::RATES, $this->readiness)->pollInvoices();
+        return FreshBooksTestTools::sync($this->db, $this->clock, $client, $this->vault, Fa3TestTools::RATES, $this->readiness, $this->corrections)->pollInvoices();
     }
 
     /** Wiersz `invoice` szkicu po id FreshBooks. */
@@ -170,7 +173,11 @@ final class SalesTestTools
         return is_string($id) ? $id : throw new \LogicException('Brak zatwierdzenia.');
     }
 
-    /** @param list<mixed> $params */
+    /**
+     * @param list<mixed> $params
+     *
+     * @phpstan-impure
+     */
     public function count(string $sql, array $params = []): int
     {
         $count = $this->db->fetchOne($sql, $params);

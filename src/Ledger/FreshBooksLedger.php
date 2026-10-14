@@ -28,7 +28,7 @@ final readonly class FreshBooksLedger
 {
     /** Wyniki faktur od dnia przejścia bez odpowiednika z KSeF: trzymają kursor `invoices` (docs/modules/freshbooks.md). */
     public const WAITING = ['draft_created','draft_updated','draft_unchanged','pending','number_conflict'];
-    public const OUTCOMES = ['linked','unchanged','draft_created','draft_updated','draft_unchanged','draft_cancelled','deleted','skipped_draft','pending','number_conflict','fields_only','written','duplicate','rate_missing','fx_rate_pending'];
+    public const OUTCOMES = ['number_changed','edited_after_acceptance','linked','unchanged','draft_created','draft_updated','draft_unchanged','draft_cancelled','deleted','skipped_draft','pending','number_conflict','fields_only','written','duplicate','rate_missing','fx_rate_pending'];
 
     public function __construct(
         private Connection $db,
@@ -57,7 +57,7 @@ final readonly class FreshBooksLedger
         return $this->db->transactional(function () use ($invoice, $write, $transition): string {
             $environment = $this->configuration->environment();
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
-            $known = $this->db->fetchAssociative("SELECT id,status,source_hash,freshbooks_status FROM invoice WHERE environment=? AND freshbooks_id=? AND direction='sale' FOR UPDATE", [$environment, $invoice->id]);
+            $known = $this->db->fetchAssociative("SELECT id,status,source_hash,freshbooks_status,invoice_number FROM invoice WHERE environment=? AND freshbooks_id=? AND direction='sale' FOR UPDATE", [$environment, $invoice->id]);
             if ($known !== false) {
                 return $this->known($known, $invoice, $now);
             }
@@ -213,6 +213,21 @@ final readonly class FreshBooksLedger
             return 'draft_unchanged';
         }
         $status = $invoice->deleted ? 'deleted' : $invoice->status;
+        // Faktura przyjęta (F3.2 część b): zmiana samego numeru daje alert, inna zmiana zmapowanych pól szkic KOR (`CorrectionDrafts`).
+        if (in_array($known['status'], ['accepted','corrected'], true) && !$invoice->deleted) {
+            if ($known['source_hash'] === null) {
+                // Faktura z Subject1 powiązana z FreshBooks: pierwszy odczyt ustala hash źródła (kolumna zapisywana raz).
+                $this->db->update('invoice', ['source_hash' => $invoice->sourceHash(),'freshbooks_status' => $status,'updated_at' => $now], ['id' => $id]);
+                return 'unchanged';
+            }
+            if ($known['source_hash'] !== $invoice->sourceHash()) {
+                if ($known['freshbooks_status'] !== $status) {
+                    $this->db->update('invoice', ['freshbooks_status' => $status,'updated_at' => $now], ['id' => $id]);
+                }
+                $number = is_string($known['invoice_number']) ? $known['invoice_number'] : '';
+                return $invoice->number !== $number && $invoice->withNumber($number)->sourceHash() === $known['source_hash'] ? 'number_changed' : 'edited_after_acceptance';
+            }
+        }
         if ($known['freshbooks_status'] !== $status && $known['status'] !== 'cancelled_before_send') {
             $this->db->update('invoice', ['freshbooks_status' => $status,'updated_at' => $now], ['id' => $id]);
         }

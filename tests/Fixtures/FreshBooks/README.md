@@ -12,3 +12,4 @@ Wszystkie dane są fikcyjne (fictional): klienci, numery VAT, kwoty, identyfikat
 | `invoice-1001.json` | jedna faktura po id |
 | `payments.json` | lista płatności |
 | `invoices-f3-ready.json` | dwa szkice F3.2 ze znacznikiem `KSEF-GOTOWA` w `po_number`: klient z Polski (PLN) i z Niemiec (EUR) |
+| `credit-notes.json` | dwie credit notes F3.2 część b: do faktury `FB-2026-0201` z `invoices-f3-ready.json` i do faktury nieznanej kokpitowi; numer faktury korygowanej w linii `Faktura: <numer>` w `notes` (D-53) |

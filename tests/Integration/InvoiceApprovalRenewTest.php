@@ -34,6 +34,7 @@ final class InvoiceApprovalRenewTest extends SalesTestCase
 
         $renewed = $tools->gate->renew('sales_invoice', $id, $tools->userId);
         $row = $tools->approval($id);
+        self::assertIsArray($row);
         self::assertSame([$renewed, 'pending'], [$row['id'], $row['status']]);
         self::assertNotSame($first['payload_sha256'], $row['payload_sha256']);
         self::assertSame('2026-11-17', $tools->invoice($id)['issue_date']);

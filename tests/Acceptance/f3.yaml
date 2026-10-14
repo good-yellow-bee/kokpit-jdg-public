@@ -20,6 +20,10 @@ criteria:
   - { key: approval-fa3-review-prod, runner: ci, command: 'vendor/bin/phpunit --filter ApprovalFa3ReviewProdTest', junit: true }
   - { key: invoice-approval-renew, runner: ci, command: 'vendor/bin/phpunit --filter InvoiceApprovalRenewTest', junit: true }
   - { key: invoice-issue-per-draft, runner: ci, command: 'vendor/bin/phpunit --filter InvoiceIssuePerDraftTest', junit: true }
+  - { key: freshbooks-bypass-alert, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksBypassAlertTest', junit: true }
+  - { key: subject1-cancels-approval, runner: ci, command: 'vendor/bin/phpunit --filter Subject1CancelsApprovalTest', junit: true }
+  - { key: subject1-outside-cockpit-task, runner: ci, command: 'vendor/bin/phpunit --filter Subject1OutsideCockpitTaskTest', junit: true }
+  - { key: kor-draft-from-freshbooks, runner: ci, command: 'vendor/bin/phpunit --filter KorDraftFromFreshBooksTest', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

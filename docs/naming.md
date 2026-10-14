@@ -453,7 +453,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 
 ### Implementacja F3.2 (część a): nazwy techniczne
 
-Część b (`freshbooks-bypass-alert`, `subject1-cancels-approval`, `subject1-outside-cockpit-task`, `kor-draft-from-freshbooks`) dopisuje swoje nazwy w swojej sesji.
+Część b: sekcja niżej.
 
 | Rodzaj | Nazwy |
 | --- | --- |
@@ -467,6 +467,20 @@ Część b (`freshbooks-bypass-alert`, `subject1-cancels-approval`, `subject1-ou
 | `obligation.rule_key` | `invoice_issue.draft` (`invoice_issue:{miesiąc usługi}:{invoice_id}`) |
 | Akcje audytu | `invoice.service_set` (data albo okres usługi wpisany w panelu) |
 | Testy i odbiór | `SalesTestTools`, `SalesTestCase`, fixture `tests/Fixtures/FreshBooks/invoices-f3-ready.json`; klucze kryteriów `ready-marker-disabled`, `ready-marker-request`, `ready-marker-removed`, `ready-blockers`, `approval-buyer-id`, `approval-p1-future`, `approval-p2-lock`, `approval-fa3-review-prod`, `invoice-approval-renew`, `invoice-issue-per-draft` |
+
+### Implementacja F3.2 (część b): nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Kolumny | `invoice.panel_task` (`text null`, `CHECK`: `freshbooks_bypass`, `outside_cockpit`, `freshbooks_number_changed`): zadanie sprzedaży w panelu; `invoice.panel_task_at` (`timestamptz null`); `invoice.freshbooks_credit_id` (`text null`, indeks unikalny `invoice_freshbooks_credit`): credit note FreshBooks szkicu KOR |
+| Schemat (migracja F3.2 część b) | `invoice.invoice_number` bez `NOT NULL`, `CHECK` `invoice_number_kor_draft` (pusty numer tylko w szkicu KOR przed numerem credit note); `invoice_sale_immutable` dopuszcza zmianę `panel_task` i `panel_task_at`; `sync_cursor.stream` = `credit_notes`; `notification.category` = `freshbooks_number_changed` |
+| FreshBooks | `FreshBooksCreditNote` (`fromApi`, `$document`, `$originalNumber`, stała `REFERENCE`: linia `Faktura: <numer>` w `notes`), `FreshBooksConnector::creditNotes`, `FreshBooksSync::pollCreditNotes`, opcjonalny argument `FreshBooksSync::$corrections`; operacja `connector_call` `credit_notes`; wyniki `FreshBooksLedger::classify` `number_changed` i `edited_after_acceptance` |
+| Korekty (`src/Invoice`) | `CorrectionDrafts` (`observe`, `fromCreditNote`, `fromEdit`, `numberChanged`); wyniki `kor_draft_created`, `kor_draft_updated`, `kor_unchanged`, `kor_skipped` |
+| Obejście i zadania (`src/Invoice`) | `FreshBooksBypass` (`check`), opcjonalny argument `KsefSync::$bypass` (po udanym przebiegu `subject1`); `SalesTasks` (`open`, `close`, stałe `TASKS`, `LINK`); trasa panelu `panel_freshbooks_task_close` |
+| Subject1 | opcjonalne argumenty `Subject1Importer::$settings`, `$transitions` i `$tasks`: szkic `draft`, `ready` albo `approved` o tym samym `kind` i P_2 → `cancelled_before_send`, żywe zatwierdzenie → `cancelled` z `manual_invoice`; bez lokalnego wiersza od go-live → `panel_task` = `outside_cockpit` |
+| Akcje audytu | `invoice.kor_drafted`, `invoice.panel_task` |
+| Panel | sekcja „Zadania sprzedaży” w `panel/freshbooks.html.twig` |
+| Testy i odbiór | `CorrectionTestTools`, `SalesTestTools::$corrections`; fixture `tests/Fixtures/FreshBooks/credit-notes.json`; klucze kryteriów `freshbooks-bypass-alert`, `subject1-cancels-approval`, `subject1-outside-cockpit-task`, `kor-draft-from-freshbooks` |
 
 ## Nazwy wycofane
 

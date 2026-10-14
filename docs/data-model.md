@@ -143,7 +143,7 @@ Jedna tabela na faktury sprzedaży i kosztowe. Kierunek rozróżnia `direction`;
 | --- | --- | --- |
 | `direction` | text | `sale` albo `cost` |
 | `kind` | text | `RodzajFaktury` z [FA(3)](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/faktury/schemy/FA/schemat_FA%283%29_v1-0E.xsd): `VAT`, `KOR`, `ZAL`, `ROZ`, `UPR`, `KOR_ZAL`, `KOR_ROZ`; dokument spoza KSeF dostaje najbliższy odpowiednik, zwykle `VAT` |
-| `invoice_number` | text | P_2, numer nadany przez wystawcę |
+| `invoice_number` | text null | P_2, numer nadany przez wystawcę; pusty tylko w szkicu KOR przed numerem credit note (`CHECK` `invoice_number_kor_draft`, D-53) |
 | `counterparty_id` | uuid FK | nabywca przy sprzedaży, sprzedawca przy koszcie |
 | `currency` | char(3) | KodWaluty |
 | `ksef_number` | text null | numer KSeF |
@@ -185,6 +185,8 @@ Kwota przychodu po kursie PIT jest w `revenue_entry.amount_pln`, nie w `invoice`
 | `freshbooks_status` | text null | ostatni widziany status FreshBooks; wykrywanie obejścia ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `ready_at` | timestamptz null | odczytany znacznik gotowości albo wybór w panelu ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `invoice_number_locked_at` | timestamptz null | blokada P_2 przy zatwierdzeniu |
+| `panel_task` | text null | zadanie sprzedaży w panelu: `freshbooks_bypass`, `outside_cockpit`, `freshbooks_number_changed` (D-53); `panel_task_at` to chwila otwarcia; zapisywalne też po przyjęciu |
+| `freshbooks_credit_id` | text null | credit note FreshBooks szkicu KOR (D-53); unikalny w `environment` |
 | `ready_blockers` | jsonb null | lista powodów, dla których szkic ze znacznikiem gotowości zostaje w `draft` (panel); pusta poza tym stanem (D-52) |
 | `source_hash` | char(64) null | sha256 zmapowanych pól źródła; zmiana po przyjęciu prowadzi do korekty, nigdy do ponownej wysyłki |
 | `tax_scenario` | text null | `eu_b2b`, `eu_b2b_unidentified`, `non_eu_b2b`, `pl_b2b`; `eu_b2b_unidentified` czeka na potwierdzenie doradcy (Q-29, D-05) i do tego czasu blokuje zatwierdzenie; mapowanie FA(3) w [modules/ksef.md](modules/ksef.md) |
@@ -241,6 +243,7 @@ Jedna KOR koryguje jedną fakturę. Korekta zbiorcza jest poza zakresem.
 | `freshbooks_id`, `source_hash` | raz, z pustej na wartość, przy powiązaniu z FreshBooks ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `freshbooks_status` | każda zmiana; zapis pollingu FreshBooks ([modules/freshbooks.md](modules/freshbooks.md)) |
 | `written_back_at` | raz, z pustej na wartość, po zapisie zwrotnym |
+| `panel_task`, `panel_task_at` | każda zmiana; zadanie sprzedaży w panelu (D-53) |
 | `invoice_line.service_type`, `pkwiu`, `ryczalt_rate_pct` | raz, z pustej na wartość; F2 |
 
 - Chronione są m.in. `kind`, `invoice_number`, `issue_date`, daty usługi, `currency`, `counterparty_id`, `buyer_snapshot`, `ksef_number`, `ksef_issue_mode`, `tax_scenario`, kwoty i kursy VAT (`fx_vat_rate_id`, `net_pln`, `vat_pln`).
@@ -674,7 +677,7 @@ Każde wywołanie zewnętrzne, także odczyty i polling. Akcje prawne idą do `a
 | Pole | Typ | Opis |
 | --- | --- | --- |
 | `connector` | text | slug konektora |
-| `stream` | text | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments` |
+| `stream` | text | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments`, `credit_notes` (D-53) |
 | `last_hwm` | timestamptz null | KSeF: `PermanentStorageHwmDate` ([przyrostowe pobieranie](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md)) |
 | `last_value` | text null | inny kursor, np. `updated_min` FreshBooks |
 | `backfill_from` | date null | początek jednorazowego backfillu |
@@ -715,7 +718,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | Pole | Typ | Opis |
 | --- | --- | --- |
 | `channel` | text | `push` albo `mail` |
-| `category` | text | `obligation.type` przy przypomnieniu; zdarzenia: `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass` |
+| `category` | text | `obligation.type` przy przypomnieniu; zdarzenia: `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `freshbooks_number_changed` (D-53) |
 | `obligation_id`, `approval_id` | uuid FK null | przyczyna |
 | `dedupe_key` | text | przyczyna, przesunięcie przypomnienia i kanał |
 | `body` | text | kategoria, liczba i link; bez nadawcy, kwot i danych osobowych ([security.md](security.md)) |

@@ -140,6 +140,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-50 | kod F3 przed odbiorem F0b, F1 i F2, częściami: F3.1–F3.4 bez sieci na `FakeKsefGateway`, ręcznie pisanych nagraniach KSeF i fixtures FreshBooks; F3.5 na api-test po `KsefGateway` z sesji 1 F1 | przyjęta 2026-10-14 | Q-29 |
 | D-51 | założenia F3.1 do przeglądu doradcy (Q-29): P_18 = 1 dla `non_eu_b2b`; `eu_b2b` z `PrefiksPodatnika` PL i wymaganym `vat_eu_number`; `eu_b2b_unidentified` odrzucany na każdym celu; kurs VAT z art. 31a ust. 1–2 bez ust. 2a (Q-23); KOR jako pary pozycji przed i po z `StanPrzed` | przyjęta 2026-10-14 | Q-23, Q-29 |
 | D-52 | założenia F3.2 część a: powody pozostania w `draft` w `invoice.ready_blockers`; pozycje szkicu z FreshBooks (`qty`, `unit_cost`, jednostka `usł.`); onboarding = identyfikator i wiersz `verification`; warunki prośby i decyzji z zapisanych weryfikacji (bez wywołań VIES); zdjęcie znacznika daje `superseded` bez następcy; P_1 i dane nabywcy zapisane przy prośbie | przyjęta 2026-10-14 | Q-26 |
+| D-53 | założenia F3.2 część b: credit note wskazuje fakturę korygowaną linią `Faktura: <numer>` w `notes`; pozycje „po” = „przed” minus uznanie pozycji o tej samej nazwie; edycja przyjętej faktury daje szkic KOR bez numeru do credit note; zadania sprzedaży w `invoice.panel_task`; obejście sprawdzane po udanym przebiegu Subject1 tylko dla faktur z wierszem `invoice`; zadanie „faktura spoza kokpitu” według P_1 względem `valid_from` | przyjęta 2026-10-14 | Q-27 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -998,4 +999,20 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Decyzja wymaga ważnego poświadczenia zapisu (`ksef_token_write` albo `ksef_auth_cert`) dla celu KSeF.
   - Data i okres usługi wpisujesz w panelu (`SalesReadiness::setService`); interfejs panelu i KOR ze szkicu FreshBooks to F3.2 część b.
 - **Skutki:** testy kryteriów F3.2 części a; zmiana założeń to nowy wpis tutaj.
+- **Pytania:** brak.
+
+### D-53 Założenia Subject1, obejścia i szkicu KOR w F3.2 (część b)
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude).
+- **Decyzja:**
+  - API FreshBooks nie wiąże credit note z fakturą. Fakturę korygowaną wskazuje linia `Faktura: <numer>` w `notes` credit note (`FreshBooksCreditNote::REFERENCE`); do potwierdzenia nagraniem przy go-live.
+  - Credit note czyta strumień `credit_notes` przy tym samym zadaniu co faktury (`freshbooks.poll_invoices`). Pozycja „po” = „przed” minus uznanie pozycji o tej samej nazwie; przy jednej pozycji faktury całe uznanie trafia na nią. Suma różnic różna od uznania blokuje `ready`.
+  - Edycja zmapowanych pól przyjętej faktury bez credit note daje szkic KOR bez numeru (`invoice_number` pusty tylko w szkicu KOR). Szkic czeka w `draft`, a credit note do tej faktury nadaje mu numer i pozycje. Zmiana samego numeru daje alert `freshbooks_number_changed` i zadanie, bez KOR.
+  - Szkic KOR nie wymaga znacznika gotowości: credit note jest Twoją decyzją. Prośba `correction_invoice` powstaje przy spełnionych warunkach i włączonym `freshbooks.sales_enabled`.
+  - Credit note do faktury nieznanej kokpitowi daje szkic KOR bez pozycji, zablokowany do oznaczenia oryginału (NrKSeFN) w panelu; to oznaczenie wraca w osobnym kroku.
+  - Zadania sprzedaży w panelu to `invoice.panel_task` (`freshbooks_bypass`, `outside_cockpit`, `freshbooks_number_changed`). Zamykasz je w panelu.
+  - Obejście sprawdza `FreshBooksBypass` po udanym przebiegu Subject1, dla faktur widzianych przed jego startem. Faktura FreshBooks bez wiersza `invoice` (kraj klienta nieustalony) nie jest kandydatem do czasu onboardingu.
+  - Zadanie „faktura spoza kokpitu” powstaje, gdy `freshbooks.sales_enabled` jest włączony w dniu P_1 faktury z Subject1.
+  - Szkic, którego zatwierdzenie jest już w `dispatching`, `submitted` albo `unknown`, nie ustępuje fakturze z Subject1: import odmawia, a rozstrzyga `SubmissionReconciler` (F3.3).
+- **Skutki:** testy kryteriów F3.2 części b; zmiana założeń to nowy wpis tutaj.
 - **Pytania:** brak.

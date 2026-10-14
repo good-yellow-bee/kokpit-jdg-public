@@ -1,0 +1,98 @@
+{
+  "response": {
+    "result": {
+      "credit_notes": [
+        {
+          "creditid": 3001,
+          "id": 3001,
+          "credit_number": "CN-2026-0001",
+          "clientid": 201,
+          "organization": "Fikcyjny Klient sp. z o.o.",
+          "fname": "",
+          "lname": "",
+          "street": "ul. Przykładowa 2",
+          "city": "Warszawa",
+          "code": "00-002",
+          "country": "Poland",
+          "vat_name": "VAT",
+          "vat_number": "7777777777",
+          "currency_code": "PLN",
+          "amount": {
+            "amount": "200.00",
+            "code": "PLN"
+          },
+          "create_date": "2026-11-16",
+          "status": "sent",
+          "vis_state": 0,
+          "updated": "2026-11-16 10:00:00",
+          "notes": "Fictional credit note (fikcyjna).\nFaktura: FB-2026-0201",
+          "lines": [
+            {
+              "lineid": 1,
+              "name": "Development",
+              "description": "Fikcyjny rabat za prace programistyczne",
+              "qty": "1",
+              "unit_cost": {
+                "amount": "200.00",
+                "code": "PLN"
+              },
+              "amount": {
+                "amount": "200.00",
+                "code": "PLN"
+              },
+              "taxAmount1": "46.00",
+              "taxAmount2": "0"
+            }
+          ]
+        },
+        {
+          "creditid": 3002,
+          "id": 3002,
+          "credit_number": "CN-2026-0002",
+          "clientid": 201,
+          "organization": "Fikcyjny Klient sp. z o.o.",
+          "fname": "",
+          "lname": "",
+          "street": "ul. Przykładowa 2",
+          "city": "Warszawa",
+          "code": "00-002",
+          "country": "Poland",
+          "vat_name": "VAT",
+          "vat_number": "7777777777",
+          "currency_code": "PLN",
+          "amount": {
+            "amount": "100.00",
+            "code": "PLN"
+          },
+          "create_date": "2026-11-16",
+          "status": "sent",
+          "vis_state": 0,
+          "updated": "2026-11-16 10:00:00",
+          "notes": "Fictional credit note (fikcyjna).\nFaktura: FB-2025-0999",
+          "lines": [
+            {
+              "lineid": 1,
+              "name": "Development",
+              "description": "Fikcyjny rabat za prace programistyczne",
+              "qty": "1",
+              "unit_cost": {
+                "amount": "100.00",
+                "code": "PLN"
+              },
+              "amount": {
+                "amount": "100.00",
+                "code": "PLN"
+              },
+              "taxAmount1": "23.00",
+              "taxAmount2": "0"
+            }
+          ]
+        }
+      ],
+      "page": 1,
+      "pages": 1,
+      "per_page": 100,
+      "total": 2
+    }
+  }
+}

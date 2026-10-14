@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Invoice;
 
+use App\Approval\ApprovalTransitions;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Counterparty\CounterpartyDirectory;
 use App\Ledger\Periods;
 use App\Ledger\Subject1Ledger;
+use App\Setting\SettingKeys;
+use App\Setting\SettingStore;
 use App\Storage\FileStore;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -35,6 +38,9 @@ final readonly class Subject1Importer
         private ConnectorConfiguration $configuration,
         private Subject1Ledger $ledger,
         private Periods $periods,
+        private ?SettingStore $settings = null,
+        private ?ApprovalTransitions $transitions = null,
+        private ?SalesTasks $tasks = null,
     ) {}
 
     public function import(string $xml, string $ksefNumber, \DateTimeImmutable $assignedAt): string
@@ -52,13 +58,14 @@ final readonly class Subject1Importer
             $corrects = $document->corrected['ksefNumber'] === null ? false : $this->db->fetchOne("SELECT id FROM invoice WHERE environment=? AND direction='sale' AND ksef_number=?", [$environment, $document->corrected['ksefNumber']]);
             $id = (string) UuidV7::generate($this->clock->now());
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
-            // Szkic FreshBooks o tym numerze oddaje `freshbooks_id` fakturze z KSeF w tej samej transakcji (D-45).
-            $draft = $document->kind === 'VAT' ? $this->db->fetchAssociative(
-                "SELECT id,freshbooks_id,freshbooks_status FROM invoice WHERE environment=? AND direction='sale' AND kind='VAT' AND invoice_number=? AND status='draft' AND freshbooks_id IS NOT NULL FOR UPDATE",
-                [$environment, $document->number],
-            ) : false;
+            // Szkic o tym `kind` i P_2 (`draft`, `ready`, `approved` bez wysyłki) ustępuje fakturze z KSeF w tej samej transakcji:
+            // żywe zatwierdzenie → `cancelled` z `manual_invoice`, szkic → `cancelled_before_send`, `freshbooks_id` przechodzi (D-45, F3.2).
+            $draft = $this->db->fetchAssociative(
+                "SELECT id,freshbooks_id,freshbooks_status FROM invoice WHERE environment=? AND direction='sale' AND kind=? AND invoice_number=? AND status IN ('draft','ready','approved') FOR UPDATE",
+                [$environment, $document->kind, $document->number],
+            );
             if ($draft !== false) {
-                $this->db->update('invoice', ['status' => 'cancelled_before_send','freshbooks_id' => null,'updated_at' => $now], ['id' => $draft['id']]);
+                $this->cancelDraft(is_string($draft['id']) ? $draft['id'] : throw new \LogicException('Niepoprawny szkic.'), $now);
             }
             $snapshot = ['name' => $document->buyer->name,'nip' => $document->buyer->nip,'eu_vat_prefix' => $document->buyer->euVatPrefix,'eu_vat_number' => $document->buyer->euVatNumber,
                 'id_country' => $document->buyer->idCountry,'foreign_tax_id' => $document->buyer->foreignTaxId,'no_id' => $document->buyer->noId,'address' => $document->buyer->address];
@@ -89,10 +96,30 @@ final readonly class Subject1Importer
                 $period = $document->corrected['type'] === 1 && $document->corrected['issueDate'] !== null ? $this->originalPeriod($corrects, $document->corrected['issueDate']) : ($taxPoint ?? $document->issueDate);
                 $this->periods->correctionRequired($period, 'invoice_kor', 'invoice', $id);
             }
+            if ($draft === false && $this->settings?->value(SettingKeys::FRESHBOOKS_SALES_ENABLED, $document->issueDate) === true) {
+                // Od go-live F3 faktura bez lokalnego wiersza to zadanie „faktura spoza kokpitu” (docs/modules/ksef.md).
+                $this->tasks?->open($id, 'outside_cockpit', false);
+            }
             // Kurs PIT, stawki pozycji i, po przełączeniu, wiersze ewidencji (F2.2).
             $this->ledger->onImported($id);
             return $id;
         });
+    }
+
+    /** Szkic przed wysyłką ustępuje fakturze spoza kokpitu; przy `dispatching` i dalej rozstrzyga `SubmissionReconciler` (F3.3). */
+    private function cancelDraft(string $draftId, string $now): void
+    {
+        $live = $this->db->fetchAssociative("SELECT * FROM approval WHERE subject_type IN ('sales_invoice','correction_invoice') AND subject_id=? AND status IN ('pending','approved','dispatching','submitted','unknown') FOR UPDATE", [$draftId]);
+        if ($live !== false && !in_array($live['status'], ['pending','approved'], true)) {
+            throw new \DomainException('Szkic o tym numerze ma wysyłkę w toku; rozstrzyga SubmissionReconciler.');
+        }
+        if ($live !== false) {
+            if ($this->transitions === null) {
+                throw new \LogicException('Brak ApprovalTransitions dla anulowania z manual_invoice.');
+            }
+            $this->transitions->apply($live, 'cancelled', 'cancel', ['cancel_reason' => 'manual_invoice','finished_at' => $now], ['cancel_reason' => 'manual_invoice']);
+        }
+        $this->db->update('invoice', ['status' => 'cancelled_before_send','freshbooks_id' => null,'ready_at' => null,'invoice_number_locked_at' => null,'ready_blockers' => null,'updated_at' => $now], ['id' => $draftId]);
     }
 
     /** Okres VAT faktury pierwotnej z bazy, a bez niej miesiąc jej wystawienia z KOR. */
