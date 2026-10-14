@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Config\ConnectorConfiguration;
+use App\Connector\FreshBooks\FreshBooksConnector;
+use App\Connector\FreshBooks\FreshBooksException;
+use App\Connector\FreshBooks\FreshBooksInvoice;
+use App\Connector\FreshBooks\FreshBooksOAuth;
+use App\Ledger\CorrectionLedger;
+use App\Ledger\LedgerReconciliation;
 use App\Ledger\ManualRevenueEntry;
 use App\Ledger\ServiceMap;
 use App\Passkey\AppUser;
@@ -21,13 +27,13 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Ewidencja w panelu (F2.2): alerty liczone zapytaniem (brak stawki, brak daty przychodu, kurs w toku), wiersze roku
- * i wpis ręczny z dowodem (docs/modules/ewidencja.md, „Alerty”).
+ * wpis ręczny z dowodem, zadania „korekta z KOR” i widok „Uzgodnienia” z eksportem CSV (docs/modules/ewidencja.md).
  */
 final class LedgerController extends AbstractController
 {
     private const EVIDENCE_TYPES = ['application/pdf','image/jpeg','image/png','text/plain','application/xml','text/xml'];
 
-    public function __construct(private readonly Connection $db, private readonly BusinessDate $date, private readonly ConnectorConfiguration $configuration, private readonly SettingStore $settings) {}
+    public function __construct(private readonly Connection $db, private readonly BusinessDate $date, private readonly ConnectorConfiguration $configuration, private readonly SettingStore $settings, private readonly CorrectionLedger $corrections) {}
 
     #[Route('/ledger', name: 'panel_ledger', methods: ['GET'])]
     public function index(): Response
@@ -59,6 +65,57 @@ final class LedgerController extends AbstractController
         return $this->redirectToRoute('panel_ledger');
     }
 
+    #[Route('/ledger/correction/{id}', name: 'panel_ledger_correction', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    public function correction(string $id, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('ledger', $request->request->getString('_token'))) {
+            throw new AccessDeniedHttpException('Nieprawidłowy token CSRF.');
+        }
+        $user = $this->getUser();
+        if (!$user instanceof AppUser) {
+            throw new AccessDeniedHttpException('Brak zalogowanego użytkownika.');
+        }
+        $fxRate = trim($request->request->getString('fx_rate_id'));
+        try {
+            $written = $this->corrections->close($id, $user->id(), $request->request->getString('reason', 'other'), [], $fxRate === '' ? null : $fxRate);
+        } catch (\InvalidArgumentException | \DomainException $exception) {
+            return $this->page($exception->getMessage());
+        }
+        $this->addFlash('notice', sprintf('Zamknięto korektę: %d wiersz(e) correction.', count($written)));
+        return $this->redirectToRoute('panel_ledger');
+    }
+
+    #[Route('/ledger/reconciliation', name: 'panel_ledger_reconciliation', methods: ['GET'])]
+    public function reconciliation(Request $request, LedgerReconciliation $reconciliation, FreshBooksOAuth $oauth, FreshBooksConnector $freshbooks): Response
+    {
+        $year = $this->year($request);
+        $rows = $reconciliation->report($year, $this->freshbooksInvoices($year, $oauth, $freshbooks));
+        if ($request->query->getString('format') === 'csv') {
+            return new Response(LedgerReconciliation::csv($rows), Response::HTTP_OK, ['Content-Type' => 'text/csv; charset=UTF-8','Content-Disposition' => sprintf('attachment; filename="uzgodnienia-%d.csv"', $year)]);
+        }
+        return $this->render('panel/ledger_reconciliation.html.twig', ['rows' => $rows,'year' => $year]);
+    }
+
+    private function year(Request $request): int
+    {
+        $current = (int) substr($this->date->today(), 0, 4);
+        $year = $request->query->getInt('year', $current);
+        return $year >= 2020 && $year <= $current ? $year : $current;
+    }
+
+    /** @return list<FreshBooksInvoice>|null null, gdy FreshBooks nie jest połączony albo odczyt się nie udał */
+    private function freshbooksInvoices(int $year, FreshBooksOAuth $oauth, FreshBooksConnector $freshbooks): ?array
+    {
+        if (!$oauth->connected()) {
+            return null;
+        }
+        try {
+            return $freshbooks->invoices(['date_min' => $year . '-01-01','date_max' => $year . '-12-31']);
+        } catch (FreshBooksException) {
+            return null;
+        }
+    }
+
     private function page(?string $error): Response
     {
         $environment = $this->configuration->environment();
@@ -73,6 +130,6 @@ final class LedgerController extends AbstractController
         );
         $rows = $this->db->fetchAllAssociative('SELECT lp, entry_date, revenue_date, document_number, ksef_number, counterparty_country, counterparty_tax_id, amount_pln, rate_pct, source, kind FROM revenue_entry WHERE environment=? AND year=? ORDER BY lp DESC LIMIT 50', [$environment, $year]);
         $services = ServiceMap::fromSetting($this->settings->value(SettingKeys::RYCZALT_SERVICE_MAP))->entries;
-        return $this->render('panel/ledger.html.twig', ['alerts' => $alerts,'rows' => $rows,'services' => $services,'today' => $today,'year' => $year,'auto' => $this->settings->value(SettingKeys::LEDGER_AUTO_ENTRIES) === true,'error' => $error], new Response(status: $error === null ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
+        return $this->render('panel/ledger.html.twig', ['alerts' => $alerts,'rows' => $rows,'services' => $services,'today' => $today,'year' => $year,'auto' => $this->settings->value(SettingKeys::LEDGER_AUTO_ENTRIES) === true,'corrections' => $this->corrections->pending(),'error' => $error], new Response(status: $error === null ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

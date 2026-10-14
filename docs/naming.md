@@ -331,6 +331,9 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Panel | `FreshBooksController`: `/freshbooks`, `POST /freshbooks/connect` (step-up, token CSRF `freshbooks`), `/freshbooks/callback`; sesja `freshbooks.oauth_state`; `ksef.sales_transition_on` w `/settings` |
 | Akcje audytu | `freshbooks.connected`; `sale.imported_subject1` z `freshbooks_draft_id`, gdy szkic oddał `freshbooks_id` |
 | Fixtures | `tests/Fixtures/FreshBooks` (ręcznie pisane, konto `fikc01`), `FreshBooksTestTools` |
+| Korekty i uzgodnienia (`src/Ledger`) | `CorrectionLedger` (`pending`, `close`; przyczyny `other`, `arithmetic_error`), `LedgerReconciliation` (`report`, `csv`; kontrole `import`, `ksef_subject1`, `freshbooks`, `duplicates`; wyniki `ok`, `difference`, `missing`, `duplicate`, `date_difference`, `amount_difference`, `fx_rate_pending`, `not_connected`) |
+| Panel korekt i uzgodnień | `/ledger` sekcja „Korekty z KOR”, `POST /ledger/correction/{id}` (token CSRF `ledger`); `/ledger/reconciliation?year=<rok>`, eksport `?format=csv` (`uzgodnienia-<rok>.csv`, średnik) |
+| Akcje audytu korekt | `ledger.correction_closed`; `ledger.imported` z `total_in_file` |
 
 ### Implementacja F2.4: nazwy techniczne
 

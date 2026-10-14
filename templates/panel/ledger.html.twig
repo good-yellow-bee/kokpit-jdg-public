@@ -4,7 +4,7 @@
 
 {% block body %}
     <h1>Ewidencja przychodów {{ year }}</h1>
-    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a></nav>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_ledger_reconciliation') }}">Uzgodnienia</a></nav>
     <p>Wpisy automatyczne: {{ auto ? 'włączone' : 'wyłączone (ewidencję prowadzisz w narzędziu z Q-11)' }}.</p>
     {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
@@ -18,6 +18,26 @@
             {% for alert in alerts %}
                 <tr><td>{{ alert.invoice_number }}</td><td>{{ alert.ksef_number }}</td>
                     <td>{{ {'rate_missing': 'pozycja bez stawki w ryczalt.service_map', 'revenue_date_manual': 'różne P_6A: wpisz datę przychodu', 'fx_rate_pending': 'czeka na kurs PIT'}[alert.reason] }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="ledger-corrections">
+        <h2>Korekty z KOR</h2>
+        {% if corrections is empty %}<p>Brak zadań.</p>{% else %}
+        <table>
+            <thead><tr><th>KOR</th><th>Numer KSeF</th><th>Data wystawienia</th><th>Faktura korygowana</th><th>Zamknij</th></tr></thead>
+            <tbody>
+            {% for task in corrections %}
+                <tr><td>{{ task.invoice_number }}</td><td>{{ task.ksef_number }}</td><td>{{ task.issue_date }}</td><td>{{ task.corrected_invoice_number }}</td>
+                    <td><form method="post" action="{{ path('panel_ledger_correction', {id: task.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ledger') }}">
+                        <label>Przyczyna <select name="reason"><option value="other">inna niż błąd: K_3 = data KOR</option><option value="arithmetic_error">błąd rachunkowy albo oczywista omyłka: K_3 faktury korygowanej</option></select></label>
+                        <label>Kurs PIT (id, gdy wiersz korygowany go nie ma) <input name="fx_rate_id" maxlength="36"></label>
+                        <button type="submit">Zapisz korektę</button>
+                    </form></td></tr>
             {% endfor %}
             </tbody>
         </table>
