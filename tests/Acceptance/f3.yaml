@@ -36,6 +36,12 @@ criteria:
   - { key: ksef-retry-440, runner: ci, command: 'vendor/bin/phpunit --filter KsefRetry440Test', junit: true }
   - { key: ksef-send-latarnia, runner: ci, command: 'vendor/bin/phpunit --filter KsefSendLatarniaTest', junit: true }
   - { key: ksef-send-429, runner: ci, command: 'vendor/bin/phpunit --filter KsefSend429Test', junit: true }
+  - { key: kod-i-url, runner: ci, command: 'vendor/bin/phpunit --filter KodIUrlTest', junit: true }
+  - { key: invoice-pdf, runner: ci, command: 'vendor/bin/phpunit --filter InvoicePdfTest', junit: true }
+  - { key: deliver-to-client, runner: ci, command: 'vendor/bin/phpunit --filter DeliverToClientTest', junit: true }
+  - { key: deliver-to-client-error, runner: ci, command: 'vendor/bin/phpunit --filter DeliverToClientErrorTest', junit: true }
+  - { key: freshbooks-write-back, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksWriteBackTest', junit: true }
+  - { key: ksef-parallel-compare, runner: ci, command: 'vendor/bin/phpunit --filter KsefParallelCompareTest', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

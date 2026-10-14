@@ -17,6 +17,7 @@ final readonly class FreshBooksInvoice
      * @param array{line1:?string,line2:?string,country:?string} $address
      * @param list<array{name:string,description:?string,net:string,vat:string,qty?:string,unit_cost?:string}> $lines
      * @param ?string $poNumber pole `po_number`: znacznik gotowości `freshbooks.ready_marker` (F3.2), poza `source_hash`
+     * @param ?string $notes pole `notes` bez zmian (F3.4: zapis zwrotny dopisuje linię z numerem KSeF), poza `source_hash`
      */
     public function __construct(
         public string $id,
@@ -35,6 +36,7 @@ final readonly class FreshBooksInvoice
         public string $updatedOn,
         public array $lines,
         public ?string $poNumber = null,
+        public ?string $notes = null,
     ) {}
 
     /** @param array<mixed> $row */
@@ -91,13 +93,14 @@ final readonly class FreshBooksInvoice
             substr($updated, 0, 10),
             $lines,
             self::text($row['po_number'] ?? null),
+            is_string($row['notes'] ?? null) ? $row['notes'] : null,
         );
     }
 
     /** Ta sama faktura z innym numerem: odróżnia zmianę samego P_2 od edycji po przyjęciu (F3.2 część b). */
     public function withNumber(string $number): self
     {
-        return new self($this->id, $number, $this->clientId, $this->clientName, $this->address, $this->vatNumber, $this->currency, $this->gross, $this->net, $this->vat, $this->createDate, $this->status, $this->deleted, $this->updatedOn, $this->lines, $this->poNumber);
+        return new self($this->id, $number, $this->clientId, $this->clientName, $this->address, $this->vatNumber, $this->currency, $this->gross, $this->net, $this->vat, $this->createDate, $this->status, $this->deleted, $this->updatedOn, $this->lines, $this->poNumber, $this->notes);
     }
 
     public function isDraft(): bool

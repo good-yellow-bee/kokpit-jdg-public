@@ -18,7 +18,9 @@ use App\Xml\Fa3Invoice;
 use App\Xml\Fa3InvoiceLine;
 use App\Xml\Fa3Scenario;
 use Doctrine\DBAL\Connection;
+use App\Messenger\Message\FreshBooksWriteBackMessage;
 use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Przedmiot bramki `sales_invoice` albo `correction_invoice` (D-41, docs/approval-gate.md): payload to FA(3) z F3.1
@@ -43,6 +45,7 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
         private string $subjectType,
         private string $plClientMaxAge,
         private ?SalesTasks $tasks = null,
+        private ?MessageBusInterface $bus = null,
     ) {
         if (!in_array($subjectType, ['sales_invoice','correction_invoice'], true)) {
             throw new \InvalidArgumentException('SalesInvoiceSubject obsługuje sales_invoice i correction_invoice.');
@@ -197,6 +200,11 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
         if ($state === 'accepted') {
             // Obowiązek `invoice_issue` szkicu zamyka przyjęcie w KSeF (docs/compliance-calendar.md).
             $this->db->executeStatement("UPDATE obligation SET status='done', done_at=?, updated_at=? WHERE invoice_id=? AND rule_key='invoice_issue.draft' AND status='open'", [$now, $now, $subjectId]);
+            // Zapis zwrotny numeru KSeF do FreshBooks (F3.4): wiadomość na `reads` z retry, poza `official_writes`; nie zapis
+            // w urzędzie. Transport Doctrine na tym samym połączeniu, więc wiadomość powstaje w transakcji przyjęcia.
+            if ($this->subjectType === 'sales_invoice') {
+                $this->bus?->dispatch(new FreshBooksWriteBackMessage($subjectId));
+            }
         }
     }
 
@@ -403,8 +411,12 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
         ], $rows);
     }
 
-    /** @param array{country:string,nip:?string,eu_vat_prefix:?string,eu_vat_number:?string,foreign_tax_id:?string,name:string,address:array{country:string,line1:?string,line2:?string}} $party */
-    private static function buyer(array $party): Fa3Party
+    /**
+     * Nabywca FA(3) z kontrahenta kokpitu; też dla `KsefParallelCompare` (F3.4).
+     *
+     * @param array{country:string,nip:?string,eu_vat_prefix:?string,eu_vat_number:?string,foreign_tax_id:?string,name:string,address:array{country:string,line1:?string,line2:?string}} $party
+     */
+    public static function buyer(array $party): Fa3Party
     {
         if ($party['nip'] !== null) {
             return new Fa3Party($party['nip'], null, null, null, null, false, $party['name'], $party['address']);

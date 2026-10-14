@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Faktury sprzedaży – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Faktury sprzedaży</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status" id="delivery-notice">{{ message }}</p>{% endfor %}
+    {% for message in app.flashes('error') %}<p role="alert" id="delivery-error">{{ message }}</p>{% endfor %}
+    <p>„Doręcz klientowi” wysyła e-mail z PDF (KOD I) i linkiem do płatności na adres z FreshBooks, od razu w tym żądaniu (D-31). Jedno kliknięcie to jedna próba; ponowienie to nowe kliknięcie.</p>
+    {% if invoices is empty %}<p>Brak faktur sprzedaży w bramce.</p>{% else %}
+    <table id="sales-invoices">
+        <thead><tr><th>Faktura</th><th>P_1</th><th>Stan</th><th>Numer KSeF</th><th>Kwota</th><th>Zapis zwrotny</th><th>Doręczenie</th><th></th></tr></thead>
+        <tbody>
+        {% for invoice in invoices %}
+            <tr id="invoice-{{ invoice.id }}">
+                <td>{{ invoice.kind }} {{ invoice.invoice_number }}</td>
+                <td>{{ invoice.issue_date }}</td>
+                <td>{{ invoice.status }}</td>
+                <td>{{ invoice.ksef_number ?? '–' }}</td>
+                <td>{{ invoice.gross_total }} {{ invoice.currency }}</td>
+                <td>{{ invoice.written_back_at ?? '–' }}</td>
+                <td class="delivered-at">{{ invoice.delivered_at ? 'ostatnio ' ~ invoice.delivered_at : 'nie doręczono' }}</td>
+                <td>
+                    {% if invoice.status == 'accepted' %}
+                        <a href="{{ path('panel_invoice_pdf', {id: invoice.id}) }}">PDF</a>
+                        <form method="post" action="{{ path('panel_invoice_deliver', {id: invoice.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('invoice_deliver') }}">
+                            <button type="submit">{{ invoice.delivered_at ? 'Doręcz ponownie' : 'Doręcz klientowi' }}</button>
+                        </form>
+                    {% else %}
+                        <span>Doręczenie po przyjęciu w KSeF</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

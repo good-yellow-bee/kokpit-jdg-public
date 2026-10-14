@@ -405,13 +405,14 @@ Pozostałe wartości `ksef_issue_mode` (`online`, `outside_ksef`) są w [../nami
 | Wybór | Stan |
 | --- | --- |
 | własny dwujęzyczny szablon Twig→PDF (PL i EN) z KOD I przez `endroid/qr-code` ^5.1, wymóg linii 1.10.x; ≥6.1 dopiero po migracji na 2.x (D-14, [../architecture.md](../architecture.md)) | domyślnie |
-| silnik HTML→PDF | wybiera sesja F3 spośród licencji bez GPL, np. dompdf (LGPL-2.1) |
+| silnik HTML→PDF | `dompdf/dompdf` ^3.1 (LGPL-2.1, bez modyfikacji), bez zasobów z sieci, czcionka DejaVu Sans (D-55) |
 | kontener Node z generatorem przypiętym do commita | tylko zapas |
 | mPDF | odpada: GPL-2.0-only |
 
 - Biblioteka KSeF renderuje PDF przez fork generatora w Node wołany przez `proc_open`. Oficjalny generator MF (TypeScript, Node 22) nie ma CLI, a jego plik angielski ma same placeholdery ([ksef-pdf-generator](https://github.com/CIRFMF/ksef-pdf-generator), [README biblioteki](https://raw.githubusercontent.com/N1ebieski/ksef-php-client/main/README.md)).
 - Szablon czyta dane z `xml_sent`, nie z FreshBooks, więc PDF zgadza się z XML.
-- PDF powstaje tylko w stanie `accepted`. Kryterium F3: QR otwiera działający adres qr-test.
+- PDF powstaje tylko w stanie `accepted`, raz, w `FileStore` jako `pdf` z właścicielem `invoice` (`InvoicePdf`). Kryterium F3: QR otwiera działający adres qr-test.
+- Bajty do KOD I: `xml_sent` o sha256 równym `invoiceHash` przyjęcia, inaczej payload przyjętego zatwierdzenia; host z `ksef.kod_i_hosts` dla celu faktury (`KodI`, D-55).
 
 ## Limity i 429
 

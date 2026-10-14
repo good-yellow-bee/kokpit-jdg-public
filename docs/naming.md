@@ -499,6 +499,21 @@ Część b: sekcja niżej.
 | Subject1 | `Subject1Importer`: lokalna sprzedaż o tym samym `kind` i P_2 w `submitted` albo `unknown` → zgodny sha256 z `xml_sent` daje `accepted` (`subject1_match`), różny `rejected` (`p2_collision`) i zwykły import |
 | Testy i odbiór | `KsefSendTestTools`, `KsefSendTestCase`, `KsefRecordings` (odtwarzanie nagrań po metodzie i ścieżce, zmienne `{{nazwa}}`); nagrania `tests/Fixtures/Ksef/send-*.json`, `tests/Fixtures/Latarnia/status-*.json`; klucze kryteriów `ksef-send-accepted`, `ksef-send-hash-mismatch`, `ksef-send-once`, `ksef-send-p1-day-change`, `ksef-send-form-code`, `ksef-send-rejected`, `ksef-send-21184`, `ksef-send-timeout-reconcile`, `ksef-reconcile-paths`, `ksef-retry-440`, `ksef-send-latarnia`, `ksef-send-429` |
 
+### Implementacja F3.4: nazwy techniczne
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| KOD I (`src/Invoice`) | `KodI` (`url`, `sentXml`); konfiguracja `ksef.kod_i_hosts` (cel → adres bazowy: `test` → `https://qr-test.ksef.mf.gov.pl`, `demo` → `https://qr-demo.ksef.mf.gov.pl`, `prod` → `https://qr.ksef.mf.gov.pl`); `Fa3Builder::build` z opcjonalnym `$issueDate` (P_1 tylko do porównania w `app:ksef:parallel-compare`) |
+| PDF (`src/Invoice`) | `InvoicePdf` (`render`, `store`), `InvoicePdfDocument` (`html`, `pdf`, `qrUrl`, `qrPng`), `InvoicePdfRefused`; szablon `templates/invoice/pdf.html.twig`; konfiguracja `invoice_pdf.cache_dir`; `stored_file.kind` = `pdf` z właścicielem `invoice` |
+| Doręczenie (`src/Invoice`) | `ClientDelivery` (`deliver`, `lastDelivery`), `ClientDeliveryFailed` (powody `not_accepted`, `freshbooks_missing`, `client_email_missing`, `share_link_missing`, `freshbooks_failed`, `mail_disabled`, `mail_failed`); konfiguracja `client_delivery.from` |
+| Zapis zwrotny (`src/Invoice`) | `FreshBooksWriteBack` (`writeBack`; wyniki `written`, `already_present`, `already_written`, `not_applicable`), wiadomość `FreshBooksWriteBackMessage` (transport `reads`); linia `notes` w stałej `FreshBooksWriteBack::NOTE` |
+| Konektor `freshbooks` | `FreshBooksConnector` (`client`, `shareLink`, `updateInvoice`), DTO `FreshBooksClient` (`id`, `email`, `contact`), pole `FreshBooksInvoice::$notes`; `connector_call.operation` = `client`, `share_link`, `invoice_update` |
+| Okres równoległy (`src/Invoice`) | `KsefParallelCompare` (`compare`, `csv`; kolumny `p1`, `p2`, `ksef_number`, `freshbooks_id`, `result`, `field`, `freshbooks`, `subject1`; wyniki wiersza `match`, `difference`, `xml_missing`, `freshbooks_missing`; odmowa mapowania to `difference` z polem `mapping`), komenda `KsefParallelCompareCommand` (`app:ksef:parallel-compare <rok-miesiąc>`) |
+| Panel | `InvoiceController`: `/invoices` (`panel_invoices`), `POST /invoices/{id}/deliver` (`panel_invoice_deliver`, token CSRF `invoice_deliver`), `GET /invoices/{id}/pdf` (`panel_invoice_pdf`); szablon `panel/invoices.html.twig` |
+| Akcje audytu | `invoice.delivered_to_client`, `invoice.written_back` (z planu F3) |
+| Licencje | wyjątek LGPL w `tools/check-licenses.php` tylko dla `dompdf/dompdf`, `dompdf/php-font-lib`, `dompdf/php-svg-lib` (D-55) |
+| Testy i odbiór | `PostAcceptanceTestTools`, `PostAcceptanceTestCase`, `ClientDeliveryWebTestCase`; dekoder QR w testach `khanamiryan/qrcode-detector-decoder` (`require-dev`); fixtures `tests/Fixtures/FreshBooks/client-201.json`, `share-link-2001.json`, `invoice-2001-accepted.json`, `invoice-2001-written-back.json`, `invoice-update-2001.json`, `parallel-compare-*.json`; klucze kryteriów `kod-i-url`, `invoice-pdf`, `deliver-to-client`, `deliver-to-client-error`, `freshbooks-write-back`, `ksef-parallel-compare` |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |
