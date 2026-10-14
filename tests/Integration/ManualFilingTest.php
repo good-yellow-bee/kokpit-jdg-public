@@ -106,7 +106,7 @@ final class ManualFilingTest extends DatabaseTestCase
         self::assertSame([], $periods->corrections());
         $audit = $this->db()->fetchAllAssociative("SELECT action, details->>'reason' AS reason, details->>'step_up_credential_id' AS step_up FROM audit_log WHERE action IN ('period.reopened','period.reclosed') ORDER BY sequence");
         self::assertSame(['period.reopened','period.reopened','period.reclosed'], array_column($audit, 'action'));
-        self::assertSame([self::STEP_UP], array_values(array_unique(array_column($audit, 'step_up'))));
+        self::assertSame([self::STEP_UP, self::STEP_UP, self::STEP_UP], array_column($audit, 'step_up'));
     }
 
     public function testManualFilingJpkV7mNeedsP62FromFileOrInput(): void
