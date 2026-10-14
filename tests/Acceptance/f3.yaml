@@ -1,0 +1,6 @@
+phase: f3
+# F3 powstaje częściami (D-50). Na start tylko wiersze przekrojowe; wiersze F3.1–F3.4 dochodzą z kodem swoich części.
+criteria:
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
+  - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }
