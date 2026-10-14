@@ -22,6 +22,21 @@
             </ul>
         </section>
     {% endif %}
+    <section id="connector-validity">
+        <h2>Ważność poświadczeń</h2>
+        {% if credentials %}
+            <table>
+                <thead><tr><th>Konektor</th><th>Poświadczenie</th><th>Stan</th><th>Ważne do</th></tr></thead>
+                <tbody>
+                {% for credential in credentials %}
+                    <tr><td>{{ credential.connector }}</td><td>{{ credential.kind }}</td><td>{{ {'valid': 'ważne', 'expiring': 'wygasa', 'expired': 'wygasło', 'revoked': 'unieważnione'}[credential.status] ?? credential.status }}</td><td>{{ credential.valid_until ?? '—' }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Brak zarejestrowanych poświadczeń.</p>
+        {% endif %}
+    </section>
     <p>Panel jest gotowy do bezpiecznego logowania passkeyem.</p>
     <nav><a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_taxes') }}">Podatki</a> · <a href="{{ path('panel_filings') }}">Złożenia</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_passkeys') }}">Passkeye</a></nav>
 {% endblock %}
