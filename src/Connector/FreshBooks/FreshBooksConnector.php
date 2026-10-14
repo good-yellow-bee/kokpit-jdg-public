@@ -9,9 +9,10 @@ use App\Http\ConnectorHttpClient;
 use App\Http\ConnectorRequestContext;
 
 /**
- * Odczyt faktur i płatności FreshBooks (docs/modules/freshbooks.md, „Polling i kursory”). Tylko `GET` na
- * `api.freshbooks.com` przez licznik `freshbooks.api`; do F3 kokpit nic we FreshBooks nie zapisuje (D-35).
- * Lista daje najwyżej 100 wyników na stronę, więc kokpit czyta każdą stronę do ostatniej.
+ * Odczyt faktur i płatności FreshBooks (docs/modules/freshbooks.md, „Polling i kursory”) przez licznik `freshbooks.api`
+ * na `api.freshbooks.com`. Lista daje najwyżej 100 wyników na stronę, więc kokpit czyta każdą stronę do ostatniej.
+ * Jedyny zapis to `updateInvoice` (F3.4, „Po przyjęciu”): zapis zwrotny numeru KSeF po przyjęciu, nie zapis w urzędzie;
+ * woła go tylko `FreshBooksWriteBack` na transporcie `reads` (D-35, D-55).
  */
 final readonly class FreshBooksConnector
 {
@@ -56,15 +57,59 @@ final readonly class FreshBooksConnector
     /** Jedna faktura po id; null, gdy FreshBooks jej nie zna (404). */
     public function invoice(string $id): ?FreshBooksInvoice
     {
-        if (!preg_match('/^[0-9]{1,20}$/D', $id)) {
-            throw new \InvalidArgumentException('Niepoprawne id faktury FreshBooks.');
-        }
+        self::assertId($id);
         $session = $this->oauth->session();
-        $data = $this->get($session, 'invoices/invoices/' . $id, ['include[]' => 'lines'], 'invoice');
+        $data = $this->request($session, 'GET', 'invoices/invoices/' . $id, ['include[]' => 'lines'], 'invoice');
         if ($data === null) {
             return null;
         }
         $invoice = $data['invoice'] ?? null;
+        if (!is_array($invoice)) {
+            throw new FreshBooksException(FreshBooksError::InvalidResponse);
+        }
+        return FreshBooksInvoice::fromApi($invoice);
+    }
+
+    /** Klient FreshBooks w chwili doręczenia: adres e-mail i osoba kontaktowa (bez kopii w kokpicie); null przy 404. */
+    public function client(string $id): ?FreshBooksClient
+    {
+        self::assertId($id);
+        $data = $this->request($this->oauth->session(), 'GET', 'users/clients/' . $id, [], 'client');
+        if ($data === null) {
+            return null;
+        }
+        $client = $data['client'] ?? null;
+        if (!is_array($client)) {
+            throw new FreshBooksException(FreshBooksError::InvalidResponse);
+        }
+        return FreshBooksClient::fromApi($client);
+    }
+
+    /** Link do płatności faktury (portal FreshBooks, `share_method=share_link`); null, gdy FreshBooks go nie podaje. */
+    public function shareLink(string $invoiceId): ?string
+    {
+        self::assertId($invoiceId);
+        $data = $this->request($this->oauth->session(), 'GET', 'invoices/invoices/' . $invoiceId . '/share_link', ['share_method' => 'share_link'], 'share_link');
+        $share = is_array($data) && is_array($data['share_link'] ?? null) ? $data['share_link'] : [];
+        $link = $share['share_link'] ?? null;
+        return is_string($link) && str_starts_with($link, 'https://') ? $link : null;
+    }
+
+    /**
+     * `PUT` faktury z podanymi polami (zapis zwrotny F3.4: `action_mark_as_sent`, `create_date`, `notes`).
+     *
+     * @param array<string,bool|string> $fields
+     */
+    public function updateInvoice(string $id, array $fields): FreshBooksInvoice
+    {
+        self::assertId($id);
+        foreach (array_keys($fields) as $name) {
+            if (!in_array($name, ['action_mark_as_sent','create_date','notes'], true)) {
+                throw new \InvalidArgumentException('Zapis zwrotny FreshBooks zmienia tylko action_mark_as_sent, create_date i notes.');
+            }
+        }
+        $data = $this->request($this->oauth->session(), 'PUT', 'invoices/invoices/' . $id, [], 'invoice_update', ['invoice' => $fields]);
+        $invoice = is_array($data) ? ($data['invoice'] ?? null) : null;
         if (!is_array($invoice)) {
             throw new FreshBooksException(FreshBooksError::InvalidResponse);
         }
@@ -91,7 +136,7 @@ final readonly class FreshBooksConnector
             foreach ($search as $name => $value) {
                 $query['search[' . $name . ']'] = $value;
             }
-            $result = $this->get($session, $path, $query, $key);
+            $result = $this->request($session, 'GET', $path, $query, $key);
             if ($result === null) {
                 throw new FreshBooksException(FreshBooksError::InvalidResponse);
             }
@@ -110,15 +155,28 @@ final readonly class FreshBooksConnector
         return $rows;
     }
 
+    private static function assertId(string $id): void
+    {
+        if (!preg_match('/^[0-9]{1,20}$/D', $id)) {
+            throw new \InvalidArgumentException('Niepoprawne id FreshBooks.');
+        }
+    }
+
     /**
      * @param array{access_token:string,account_id:string} $session
      * @param array<string,string> $query
+     * @param array<string,mixed>|null $body treść JSON tylko przy `PUT`
      * @return array<mixed>|null `response.result`; null przy 404
      */
-    private function get(array $session, string $path, array $query, string $operation): ?array
+    private function request(array $session, string $method, string $path, array $query, string $operation, ?array $body = null): ?array
     {
-        $url = sprintf('%s/%s/%s?%s', self::BASE_URL, rawurlencode($session['account_id']), $path, http_build_query($query, '', '&', PHP_QUERY_RFC3986));
-        $response = $this->http->connectorRequest(new ConnectorRequestContext('freshbooks', 'default', $operation, $this->configuration->environment()), 'freshbooks.api', 'GET', $url, ['headers' => ['Authorization' => 'Bearer ' . $session['access_token'],'Accept' => 'application/json']]);
+        $url = sprintf('%s/%s/%s', self::BASE_URL, rawurlencode($session['account_id']), $path) . ($query === [] ? '' : '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+        $options = ['headers' => ['Authorization' => 'Bearer ' . $session['access_token'],'Accept' => 'application/json']];
+        if ($body !== null) {
+            $options['headers']['Content-Type'] = 'application/json';
+            $options['body'] = json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+        $response = $this->http->connectorRequest(new ConnectorRequestContext('freshbooks', 'default', $operation, $this->configuration->environment()), 'freshbooks.api', $method, $url, $options);
         $status = $response->getStatusCode();
         if ($status === 404) {
             return null;

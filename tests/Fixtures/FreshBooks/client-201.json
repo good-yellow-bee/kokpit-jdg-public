@@ -1,0 +1,1 @@
+{"response": {"result": {"client": {"id": 201, "userid": 201, "organization": "Fikcyjny Klient sp. z o.o.", "fname": "Anna", "lname": "Fikcyjna", "email": "faktury@klient.example.invalid", "vat_number": "7777777777", "currency_code": "PLN", "note": "Fictional client (fikcyjny)."}}}}

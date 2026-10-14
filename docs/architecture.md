@@ -222,7 +222,7 @@ Wersje przypina `composer.lock`. Zmiana linii biblioteki to decyzja w [decisions
 | `web-auth/webauthn-symfony-bundle` | passkey | przypięta | [security.md](security.md) |
 | `brick/math` | kwoty i kursy, nigdy `float` | przypięta | [data-model.md](data-model.md) |
 | `endroid/qr-code` | KOD I | ^5.1, bo tej linii wymaga `ksef-php-client` 1.10.x ([Packagist](https://repo.packagist.org/p2/n1ebieski/ksef-php-client.json)); ≥6.1 dopiero po migracji na 2.x (D-14, D-17) | MIT |
-| silnik HTML→PDF | wizualizacja faktury | wybiera sesja F3 (D-17) | bez GPL; LGPL bez modyfikacji dopuszczalna |
+| `dompdf/dompdf` | wizualizacja faktury (silnik HTML→PDF) | ^3.1, wybór sesji F3.4 (D-17, D-55); z `dompdf/php-font-lib` i `dompdf/php-svg-lib` | LGPL-2.1 (zależności LGPL-2.1-or-later i LGPL-3.0-or-later), bez modyfikacji; wyjątek tylko dla tych pakietów w `tools/check-licenses.php` |
 | `anthropic-ai/sdk` | Messages API, PHP tool runner (D-11) | dokładna wersja; profil w [modules/czat.md](modules/czat.md) | – |
 | `ext-soap` | e-Deklaracje | rozszerzenie PHP | – |
 | własne cienkie klienty | bramka JPK, e-Deklaracje; e-Doręczenia (OIDC i REST) dopiero po powrocie F4 | brak utrzymywanej biblioteki PHP | kod kokpitu |

@@ -1,0 +1,93 @@
+{# Wizualizacja faktury z KOD I (F3.4, D-17): dane wyłącznie z xml_sent; PL i EN w jednym dokumencie. #}
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Faktura / Invoice {{ invoice.number }}</title>
+<style>
+    @page { margin: 18mm 15mm; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #111; }
+    h1 { font-size: 15pt; margin: 0 0 2mm; }
+    .en { color: #555; }
+    table { width: 100%; border-collapse: collapse; }
+    .parties td { vertical-align: top; width: 50%; padding: 2mm 0; }
+    .lines th, .lines td { border: 0.3mm solid #999; padding: 1.2mm; }
+    .lines th { background: #eee; text-align: left; }
+    .num { text-align: right; }
+    .qr { text-align: center; width: 48mm; }
+    .qr img { width: 40mm; height: 40mm; }
+    .ksef { font-size: 7.5pt; word-break: break-all; }
+    .annotations { margin-top: 3mm; border: 0.3mm solid #111; padding: 2mm; }
+</style>
+</head>
+<body>
+<table>
+    <tr>
+        <td>
+            <h1>Faktura <span class="en">/ Invoice</span> {{ invoice.number }}</h1>
+            <p>Numer KSeF <span class="en">/ KSeF number</span>: <strong id="ksef-number">{{ ksef_number }}</strong></p>
+            <p>Data wystawienia <span class="en">/ Issue date</span>: {{ invoice.issueDate }}<br>
+            {% if invoice.serviceDate %}Data wykonania usługi <span class="en">/ Date of supply</span>: {{ invoice.serviceDate }}<br>{% endif %}
+            {% if invoice.periodStart %}Okres usługi <span class="en">/ Service period</span>: {{ invoice.periodStart }} – {{ invoice.periodEnd }}<br>{% endif %}
+            Waluta <span class="en">/ Currency</span>: {{ invoice.currency }}</p>
+        </td>
+        <td class="qr">
+            <img src="{{ qr_data_uri }}" alt="KOD I">
+            <div class="ksef">{{ ksef_number }}</div>
+        </td>
+    </tr>
+</table>
+<table class="parties">
+    <tr>
+        {% for label, party in {'Sprzedawca <span class="en">/ Seller</span>': invoice.seller, 'Nabywca <span class="en">/ Buyer</span>': invoice.buyer} %}
+        <td>
+            <strong>{{ label|raw }}</strong><br>
+            {{ party.name }}<br>
+            {% if party.address.line1 %}{{ party.address.line1 }}<br>{% endif %}
+            {% if party.address.line2 %}{{ party.address.line2 }}<br>{% endif %}
+            {{ party.address.country }}<br>
+            {% if party.nip %}NIP: {{ party.nip }}{% elseif party.euVatNumber %}VAT UE <span class="en">/ EU VAT</span>: {{ party.euVatPrefix }}{{ party.euVatNumber }}{% elseif party.foreignTaxId %}Identyfikator podatkowy <span class="en">/ Tax ID</span>: {{ party.idCountry }} {{ party.foreignTaxId }}{% endif %}
+        </td>
+        {% endfor %}
+    </tr>
+</table>
+<table class="lines">
+    <thead>
+    <tr>
+        <th>Lp. <span class="en">/ No.</span></th>
+        <th>Nazwa <span class="en">/ Description</span></th>
+        <th>J.m. <span class="en">/ Unit</span></th>
+        <th class="num">Ilość <span class="en">/ Qty</span></th>
+        <th class="num">Cena netto <span class="en">/ Unit net price</span></th>
+        <th class="num">Wartość netto <span class="en">/ Net amount</span></th>
+        <th>Stawka <span class="en">/ VAT rate</span></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for line in invoice.lines %}
+        <tr>
+            <td>{{ line.lineNo }}</td>
+            <td>{{ line.description }}{% if line.stateBefore %} (stan przed <span class="en">/ before correction</span>){% endif %}</td>
+            <td>{{ line.unit }}</td>
+            <td class="num">{{ line.quantity }}</td>
+            <td class="num">{{ line.unitNetPrice }}</td>
+            <td class="num">{{ line.netAmount }}</td>
+            <td>{{ line.vatCode }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<table>
+    <tr><td class="num">Razem netto <span class="en">/ Total net</span>: {{ invoice.netTotal }} {{ invoice.currency }}</td></tr>
+    <tr><td class="num">VAT <span class="en">/ VAT</span>: {{ invoice.vatTotal }} {{ invoice.currency }}</td></tr>
+    <tr><td class="num"><strong>Do zapłaty <span class="en">/ Amount due</span>: {{ invoice.grossTotal }} {{ invoice.currency }}</strong></td></tr>
+</table>
+{% if annotations is not empty %}
+<div class="annotations" id="annotations">
+    {% for note in annotations %}<div>{{ note.pl }} <span class="en">/ {{ note.en }}</span></div>{% endfor %}
+</div>
+{% endif %}
+<p>Faktura wystawiona w KSeF; ten dokument jest jej wizualizacją z kodem weryfikującym (KOD I). Przy przelewie podaj numer KSeF.<br>
+<span class="en">Invoice issued in the Polish National e-Invoicing System (KSeF); this document is its visualisation with a verification code (KOD I). Please quote the KSeF number with your bank transfer.</span></p>
+</body>
+</html>

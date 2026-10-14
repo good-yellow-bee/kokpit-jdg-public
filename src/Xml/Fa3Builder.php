@@ -38,9 +38,16 @@ final readonly class Fa3Builder
         return str_replace(' ', '', self::SYSTEM_CODE) . ' ' . self::SCHEMA;
     }
 
-    public function build(Fa3Invoice $invoice): Fa3Payload
+    /**
+     * @param ?string $issueDate P_1 z faktury Subject1 tylko do porównania w `app:ksef:parallel-compare` (F3.4); bez
+     *                           tego argumentu P_1 to dziś z Symfony Clock (D-16). Taki XML nigdy nie trafia do bramki.
+     */
+    public function build(Fa3Invoice $invoice, ?string $issueDate = null): Fa3Payload
     {
-        $issueDate = BusinessDate::of($this->clock->now());
+        if ($issueDate !== null && !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $issueDate)) {
+            throw new \InvalidArgumentException('P_1 do porównania w formacie YYYY-MM-DD.');
+        }
+        $issueDate ??= BusinessDate::of($this->clock->now());
         $this->validate($invoice);
         $identity = $this->identity($invoice, $issueDate);
         $lines = $this->lines($invoice);

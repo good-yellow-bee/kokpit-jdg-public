@@ -119,7 +119,7 @@ Kolejność zawsze ta sama: KSeF, potem klient.
 
 1. `PUT` faktury z `"action_mark_as_sent": true`, `create_date` = P_1 i linią dopisaną do istniejących `notes`, bez ich nadpisania ([FreshBooks, faktury](https://www.freshbooks.com/api/invoices)). Linia: „KSeF: {numer KSeF}. Faktura wystawiona w KSeF; ten widok nie jest fakturą. Wizualizacja z kodem QR: PDF w e-mailu / Invoice issued in KSeF; this view is not the invoice. See the PDF with QR code in the e-mail.”
 2. Kokpit najpierw czyta fakturę; gdy numer już jest, pomija zapis. Ponowienie jest więc bezpieczne.
-3. To zapis do FreshBooks, nie zapis urzędowy, więc idzie transportem `reads` z retry i backoffem, poza `official_writes` ([../operations.md](../operations.md)).
+3. To zapis do FreshBooks, nie zapis urzędowy, więc idzie transportem `reads` z retry i backoffem, poza `official_writes` ([../operations.md](../operations.md)). Wiadomość `FreshBooksWriteBackMessage` powstaje przy przejściu faktury `sales_invoice` do `accepted`; obsługuje ją `FreshBooksWriteBack`, a `PUT` idzie na `invoices/invoices/{id}` (operacja `invoice_update`, D-55).
 4. Oznaczenie jako wysłana otwiera klientowi portal i płatność Stripe.
 
 **Pierwszy zapis zwrotny (D-35)**
@@ -135,7 +135,7 @@ Kolejność zawsze ta sama: KSeF, potem klient.
 - Polski nabywca z NIP otrzymuje fakturę w KSeF w dniu nadania numeru (art. 106na ust. 3, [ustawa o VAT, Dz.U. 2026 poz. 1263](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf)). PDF jest kopią i też ma kod QR.
 - Akcja „Doręcz klientowi” w panelu wysyła e-mail konektorem `mail`: PDF z kokpitu i link do płatności FreshBooks. Bez kliknięcia nic nie wychodzi.
 - Wysyłka idzie synchronicznie w żądaniu panelu, poza Messenger (D-31). Wynik albo błąd widzisz od razu w panelu.
-- Adres e-mail i osobę kontaktową kokpit czyta z FreshBooks w chwili wysyłki.
+- Adres e-mail i osobę kontaktową kokpit czyta z FreshBooks w chwili wysyłki (`users/clients/{id}`), a link do płatności z `invoices/invoices/{id}/share_link`. Oba endpointy potwierdza pierwsze doręczenie na PROD (D-35, D-55).
 - Doręczenie to osobna wiadomość, nie `notification`. Zasada treści powiadomień z D-19 jej nie dotyczy ([../security.md](../security.md)).
 - Jedno kliknięcie to jedna próba, bez automatycznego ponowienia. Ponowienie to nowe kliknięcie; panel pokazuje wtedy datę poprzedniego doręczenia.
 - Linia w `notes` z kroku 1 zapisu zwrotnego wskazuje klientowi PDF z kodem QR.
