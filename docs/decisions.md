@@ -130,6 +130,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-40 | step-up w sesji przez 5 minut; ostatniego passkeya nie unieważnisz w panelu | przyjęta 2026-10-11 | – |
 | D-41 | szkielet bramki F0b: rejestr przedmiotów, `DispatchGuard`, wiek `unknown`, okna odpytywania, ochrona przed `messenger:failed:retry` | przyjęta 2026-10-11 | Q-35 |
 | D-42 | kod F1 przed odbiorem F0a, F0b, F2.1 i F2.4, częściami; nagrania HTTP z laptopa albo ze środowiska z dozwolonymi hostami testowymi | przyjęta 2026-10-11 | Q-19, Q-39 |
+| D-43 | oszczędne minuty GitHub Actions: push tylko na `main`, gałąź PR przez `pull_request`, anulowanie starszych przebiegów PR, `mutation` bez PR, póki doradczy, `evidence` tylko na gałęziach faz | przyjęta 2026-10-14 | Q-43 |
 | D-44 | kod F2.2 przed odbiorem F0b i F1, częściami: najpierw bez sieci (stawki, kurs PIT, wpisy z Subject1, wpis ręczny, błąd wpisu), potem FreshBooks i płatności, potem korekty KOR i uzgodnienia | przyjęta 2026-10-14 | Q-22 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
@@ -815,7 +816,25 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Wejścia „stop” F1 zatrzymują odbiór i go-live F1, nie kod.
   - Rejestr `tests/Acceptance/f1.yaml` rośnie z każdą częścią.
   - Wiersze `live` F1 czekają na sesję z dostępem do hostów testowych.
+  - Stan 12.10.2026: część 2 ma konektor NBP, `KsefSync` (kursor, okna backfillu, odstęp 15 minut, 21165, 429 z pushem) i raport przejścia za interfejsem `KsefGateway`, sprawdzone na bramce w pamięci. Implementacja bramki nad biblioteką, nagrania, wiersze `f1.yaml` tej części oraz wpisy `ksef.sync` i `ksef.backfill` w harmonogramie czekają na sesję z dostępem do api-test.
 - **Pytania:** Q-19, Q-39.
+
+### D-43 Oszczędne minuty GitHub Actions
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Od 12.10.2026 każdy job CI w repo prywatnym kończy się porażką po 1–3 s, bez runnera i bez logu (PR #12 i #13). Tak wygląda wyczerpany limit minut albo limit wydatków GitHub Actions dla repo prywatnego.
+  - Workflow uruchamiał się dwa razy na każdy push do gałęzi z PR (`push` i `pull_request`), a każdy przebieg ma 8 jobów, z których każdy buduje obraz od zera (ok. 3 min). Jeden push do PR kosztował ok. 50 minut.
+- **Decyzja:**
+  - `push` uruchamia CI tylko na `main`. Gałąź z PR liczy się raz, przez `pull_request`.
+  - `concurrency` anuluje starszy przebieg tego samego PR po nowym pushu; przebiegi `main` nie są anulowane.
+  - `mutation` nie biegnie przy `pull_request`, póki jest doradczy (D-28). Z pierwszym plikiem w `src/Tax` job staje się blokujący i wraca do PR.
+  - `evidence` biegnie tylko na gałęziach zaczynających się od `f` (prefiks fazy sprawdza `scripts/ci-evidence.sh`) albo przy `workflow_dispatch`. Gałąź bez fazy nie ma czego dowodzić.
+  - Id jobów zostają bez zmian (kontrakt z [naming.md](naming.md)).
+- **Skutki:**
+  - Push do PR kosztuje ok. 21 minut zamiast ok. 50.
+  - Przywrócenie minut (limit wydatków albo nowy okres rozliczeniowy) robi właściciel w ustawieniach rozliczeń GitHub; sesja Claude nie może też ponowić jobów (403).
+- **Pytania:** Q-43.
 
 ### D-44 Kod F2.2 częściami, przed odbiorem F0b i F1
 
