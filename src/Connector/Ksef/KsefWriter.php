@@ -99,7 +99,8 @@ final readonly class KsefWriter implements OfficialWriter, StatusReader
         $refs = ['correlation_id' => $correlation];
         $request->record($refs);
         $schema = $this->db->fetchOne('SELECT schema_version FROM invoice WHERE id=?', [$request->subjectId]);
-        for ($attempt = 1; $attempt <= self::SESSIONS; ++$attempt) {
+        // Pętla kończy się zwrotem: przy 21184 najwyżej `SESSIONS` sesji.
+        for ($attempt = 1; ; ++$attempt) {
             try {
                 $session = $this->gateway->openSession($call, $this->formCode);
             } catch (KsefException $exception) {
@@ -140,7 +141,6 @@ final readonly class KsefWriter implements OfficialWriter, StatusReader
             $request->record($refs);
             return SubmissionResult::of('submitted', $refs);
         }
-        throw new \LogicException('Brak sesji wysyłki.');
     }
 
     public function status(string $approvalId, array $externalRefs, string $sha256): SubmissionResult
