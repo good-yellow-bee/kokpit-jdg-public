@@ -1,0 +1,4 @@
+[
+  { "file": "InitUpload.xsd", "source": "fictional test-only stub written by hand for F5.1 (D-57); not an MF schema", "fetched_on": "2026-10-14", "sha256": "70202eaf1c04500fd2b2e73e0a7362087e8e22b0b5fb89e47e90149fa3c4b04b" },
+  { "file": "SIG-2008_v2-0.xsd", "source": "fictional test-only stub written by hand for F5.1 (D-57); not an MF schema", "fetched_on": "2026-10-14", "sha256": "395f19aaa7d98685a8ab6efd5789802938a11a4a6d388e61ea8156bbada99b60" }
+]

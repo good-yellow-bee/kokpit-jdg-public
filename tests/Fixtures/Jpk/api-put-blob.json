@@ -1,0 +1,16 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według specyfikacji interfejsów usług JPK 5.6.0 (https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf); kształt JSON założony w D-57, prawdziwe nagrania z test-e-dokumenty zastąpią je w F5.3 (jpk-te-fixtures).",
+  "scenario": "Put Blob 201.",
+  "interactions": [
+    {
+      "method": "PUT",
+      "path": "/fikcyjny-kontener/fikcyjny-blob-a01-001",
+      "status": 201,
+      "body_text": "",
+      "headers": {
+        "Content-MD5": "fictional"
+      }
+    }
+  ]
+}

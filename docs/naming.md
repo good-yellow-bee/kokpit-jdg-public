@@ -143,7 +143,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `stored_file.kind` | `xml_sent`, `upo`, `pdf`, `evidence`, `attachment`, `verification_raw`, `cost_document`, `outbound_payload` |
 | `credential_state.kind` | `ksef_token_read`, `ksef_token_write`, `ksef_auth_cert`, `ksef_offline_cert`, `ksef_jwt_read`, `ksef_jwt_write`, `auth_data`, `freshbooks_oauth`, `dummy_token` (tylko konektor `dummy`); `edoreczenia_qualified_cert` i `edoreczenia_access_token` odłożone (D-29) |
 | `sync_cursor.stream` | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments`; e-Doręczenia `inbox`, `outbox` odłożone (D-29) |
-| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `freshbooks.api`, `jpk.init_upload`, `edeklaracje.send`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
+| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
 | `ryczalt.advance_frequency` (`setting`) | `monthly`, `quarterly` (Q-17) |
 | `zus.variant` (`setting`) | `full`, `preferential`, `start_relief`; F0b implementuje `full` (Q-16) |
 | `environment` | `test`, `demo`, `prod`; `int` odłożone (D-29) |
@@ -529,6 +529,20 @@ Część b: sekcja niżej.
 | Fixtures | fikcyjny zbiór `tests/Fixtures/Jpk` z „Fikcyjnego zbioru JPK” w [testing.md](testing.md); złote pliki `tests/Fixtures/Jpk/golden/jpk-v7m-*.xml`, `vat-ue-*.xml`; nagrania `tests/Fixtures/Jpk/api-*.json`, `tests/Fixtures/EDeklaracje/*.xml`; scenariusze `app:fixtures:record jpk <scenariusz>`, `app:fixtures:record edeklaracje <scenariusz>` |
 | Klucze kryteriów | F5.1: `jpk-envelope`, `jpk-init-upload`, `jpk-auth-data`, `jpk-ewp-request`, `jpk-send-accepted`, `jpk-send-hash-mismatch`, `jpk-send-once`, `jpk-send-duplicate`, `jpk-send-reconcile`, `jpk-send-rejected`, `jpk-rate-limit`, `jpk-storage-host`; F5.2: `jpk-st-request`; F5.3: `jpk-te-ewp-upo`, `jpk-te-duplicate`, `jpk-te-st-upo`, `jpk-te-tls`, `jpk-te-fixtures`; F5.4: `jpk-v7m-golden`, `jpk-v7m-markers`, `jpk-v7m-declaration`, `jpk-v7m-gates`, `jpk-v7m-send`, `jpk-v7m-correction`, `jpk-replace-di`, `opening-balance-confirm`, `wht-obligation-amounts`; F5.5: `vat-ue-golden`, `vat-ue-k12-gate`, `vat-ue-kor-routing`, `edeklaracje-send-accepted`, `edeklaracje-status-codes`, `edeklaracje-rate-limit`; F5.6: `jpk-te-v7m-upo`, `edeklaracje-te-vat-ue`, `edeklaracje-te-vat-uek`, `edeklaracje-te-fixtures`; go-live: `jpk-ewp-prod-first`, `opening-balance-prod`, `jpk-v7m-prod-first`, `vat-ue-prod-first` |
 | Kod | pozostałe klasy dopisuje sesja części przed kodowaniem; nazwy z tej tabeli są propozycją planu i mogą się zawęzić w „Implementacji F5.x” |
+
+### Implementacja F5.1 (D-57): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Konektor `jpk` (`src/Connector/Jpk`) | `JpkGateway` (`initUploadSigned`, `assertStorage`, `putBlob`, `finishUpload`, `status`; stałe grup `BUCKET_INIT`, `BUCKET_UPLOAD`, `BUCKET_FINISH`, `BUCKET_STATUS`), `JpkCall` (`dispatch`, `read`), `JpkEnvelope` (`seal`), `JpkSealedFile` (`ivBase64`, `encrypt`, `partNames`), `JpkPart`, `JpkInitUpload` (`formCode`, `build`, `check`, `schemaAvailable`), `JpkUploadSession`, `JpkUploadTarget`, `JpkStatus`, `JpkMfCertificate` (`problem`, `pem`), `JpkException` (`of`, `schemaMissing`), `JpkWriter`; `AuthDataDocument` (`build`, `schemaAvailable`) |
+| `JpkError` | kody API `136`, `140`, `142`, `158`, `170`, `100`, `101`, `120`, `200`, `300`, `407`, `411`; kody kokpitu `storage_host_not_allowed`, `upload_targets_mismatch`, `put_blob_failed`, `finish_upload_timeout`, `invalid_response`, `mf_key_invalid`, `xsd_missing`, `metadata_invalid`, `auth_data_invalid`, `no_reference` |
+| `connector_call.operation` (`jpk`) | `init_upload_signed`, `put_blob`, `finish_upload`, `status` |
+| Powody czekania (`OfficialWriter::waitingReason` dla `jpk`) | `connectors_disabled`, `target_mismatch`, `credential_missing` (`auth_data`), `mf_key_missing`, `mf_key_invalid`, `mf_key_expired`, `xsd_missing`, `rate_limited` |
+| Klucze `approval.external_refs` (`jpk`) | `correlation_id`, `reference_number`, `timeout_s`, `init_upload_at`, `blob_names`, `finish_upload_at`, `status_code`, `original_reference_number`, `upo_file_id`, `accepted_at`, `reconciled_by` (`own_filing`), `original_approval_id`, `original_filing_id` |
+| Parametry (`config/services_connectors.yaml`) | `jpk.endpoints`, `jpk.init_upload` (`document_type`, `version`, `max_bytes`), `jpk.part_max_bytes`, `jpk.tls_ciphers`, `jpk.mf_certificates`; limit `jpk.init_upload` w `connector.daily_limits` |
+| Przedmiot bramki (`src/Ledger`) | `FilingSubject` (usługa `filing.subject`; w dev i test z atrapą `dummy.subject.filing` dla identyfikatorów bez `filing`), `FilingRequest` (`jpkEwp`), `FilingManualUpo` (`record`); `ApprovalSubject::connector(string $subjectId)` |
+| Licznik | `RateCounter::exhausted` (odczyt bez zużycia: `blocked_until` albo wyczerpany limit dobowy) |
+| Testy | `FakeJpkGateway`, `JpkSendTestTools`, `JpkSendTestCase`; nagrania `tests/Fixtures/Jpk/api-init-upload*.json`, `api-put-blob.json`, `api-finish-upload*.json`, `api-status-*.json`; fikcyjne zaślepki testowe XSD `tests/Fixtures/Jpk/xsd-stub` (nie schematy MF); test `JpkMetadataSchemaMissingTest` |
 
 ## Nazwy wycofane
 

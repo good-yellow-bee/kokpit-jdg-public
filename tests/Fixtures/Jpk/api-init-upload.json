@@ -1,0 +1,34 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według specyfikacji interfejsów usług JPK 5.6.0 (https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf); kształt JSON założony w D-57, prawdziwe nagrania z test-e-dokumenty zastąpią je w F5.3 (jpk-te-fixtures).",
+  "scenario": "InitUploadSigned 200, magazyn testowy taxdocumentstorage01tst.",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/api/Storage/InitUploadSigned",
+      "status": 200,
+      "body": {
+        "ReferenceNumber": "fc000000000000000000000000000a01",
+        "TimeoutInSec": 900,
+        "RequestToUploadFileList": [
+          {
+            "BlobName": "fikcyjny-blob-a01-001",
+            "FileName": "JPK_EWP_20260101.zip.001.aes",
+            "Url": "https://taxdocumentstorage01tst.blob.core.windows.net/fikcyjny-kontener/fikcyjny-blob-a01-001?sv=fictional&sig=FICTIONAL",
+            "Method": "PUT",
+            "HeaderList": [
+              {
+                "Key": "x-ms-blob-type",
+                "Value": "BlockBlob"
+              },
+              {
+                "Key": "x-ms-version",
+                "Value": "2015-02-21"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

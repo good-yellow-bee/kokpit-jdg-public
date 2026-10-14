@@ -39,13 +39,14 @@ final readonly class SubmissionReconciler
             $result = $reader->status($id, ApprovalTransitions::refs($current), ApprovalTransitions::string($current, 'payload_sha256'));
             $window = $this->pollWindow[ApprovalTransitions::string($row, 'connector')] ?? 'PT1H';
             $late = (new \DateTimeImmutable(ApprovalTransitions::string($row, 'submitted_at')))->add(new \DateInterval($window)) <= $this->clock->now();
+            // `unknown` ze statusu: kod oznaczający wynik nieustalony przed końcem okna, np. JPK 411 albo 300 po `FinishUpload`.
             $to = match (true) {
-                in_array($result->outcome, ['accepted', 'rejected'], true) => $result->outcome,
+                in_array($result->outcome, ['accepted', 'rejected', 'unknown'], true) => $result->outcome,
                 $late => 'unknown',
                 default => null,
             };
             if ($to !== null) {
-                $changed += $this->move($id, 'submitted', $to, $to, $result, $to === 'unknown' ? ['reason' => 'poll_window'] : []);
+                $changed += $this->move($id, 'submitted', $to, $to, $result, $to === 'unknown' ? ['reason' => $result->outcome === 'unknown' ? 'status' : 'poll_window'] : []);
             }
         }
         return $changed;

@@ -10,7 +10,7 @@ parameters:
   app.default_deployment: dev
   app.panel.default_origin: 'http://localhost'
   app.panel.default_certificate: '/run/kokpit/certificates/panel.crt'
-  connector.daily_limits: { dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, white_list.search: 80, white_list.check: 4000 }
+  connector.daily_limits: { jpk.init_upload: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, white_list.search: 80, white_list.check: 4000 }
   # Adresy rejestrów per środowisko (docs/modules/rejestry-kursy.md); poza PROD tylko usługi testowe.
   registry.vies_endpoints: { test: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service', prod: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number' }
   registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
@@ -18,6 +18,15 @@ parameters:
   registry.vies_retry_delays: [900, 1800, 3600, 7200, 14400, 28800]
   # Latarnia KSeF per cel (docs/modules/ksef.md, „Awarie KSeF i Latarnia”); DEMO nie ma Latarni.
   latarnia.endpoints: { test: 'https://api-latarnia-test.ksef.mf.gov.pl', prod: 'https://api-latarnia.ksef.mf.gov.pl' }
+  # Konektor `jpk` (F5.1, docs/modules/jpk.md): API JPK 5.6.0 per cel, metadane `InitUpload`, części pliku, TLS i
+  # certyfikat klucza publicznego MF per cel (plik poza repo, odświeża go `mf_keys.refresh`).
+  jpk.endpoints: { test: 'https://test-e-dokumenty.mf.gov.pl/api/Storage/', prod: 'https://e-dokumenty.mf.gov.pl/api/Storage/' }
+  jpk.init_upload: { document_type: JPK, version: '01.02.01.20160617', max_bytes: 102400 }
+  jpk.part_max_bytes: 62914560
+  # Cztery zestawy TLS 1.2 z listy sześciu; dwa zestawy TLS 1.3 (TLS_AES_*_GCM) to domyślne OpenSSL, `ciphers` ich nie
+  # ustawia. Wynegocjowany zestaw sprawdza `jpk-te-tls` w F5.3 (D-57).
+  jpk.tls_ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256'
+  jpk.mf_certificates: { test: '%kernel.project_dir%/var/jpk/mf-test.crt', prod: '%kernel.project_dir%/var/jpk/mf-prod.crt' }
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\Config\ConnectorConfiguration:
@@ -68,6 +77,17 @@ services:
     arguments: { $formCode: '%ksef.form_code%' }
   App\Connector\Latarnia\LatarniaConnector:
     arguments: { $endpoints: '%latarnia.endpoints%' }
+  # Konektor zapisu JPK (F5.1): `OfficialWriter` i `StatusReader`; wysyła tylko `OfficialWritesHandler`.
+  App\Connector\Jpk\JpkGateway:
+    arguments: { $endpoints: '%jpk.endpoints%', $cryptoMethod: !php/const STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT, $ciphers: '%jpk.tls_ciphers%' }
+  App\Connector\Jpk\JpkEnvelope:
+    arguments: { $partMaxBytes: '%jpk.part_max_bytes%' }
+  App\Connector\Jpk\JpkInitUpload:
+    arguments: { $settings: '%jpk.init_upload%' }
+  App\Connector\Jpk\JpkMfCertificate:
+    arguments: { $paths: '%jpk.mf_certificates%' }
+  App\Connector\Jpk\AuthDataDocument: ~
+  App\Connector\Jpk\JpkWriter: ~
   App\Connector\Latarnia\LatarniaStatusStore:
     arguments: { $schedulerState: '@cache.scheduler' }
   App\Connector\Latarnia\LatarniaStatusHandler: ~
@@ -110,11 +130,17 @@ when@dev:
       autowire: true
       autoconfigure: true
       arguments: { $http: '@dummy.http_client', $baseUrl: 'https://dummy.invalid' }
+    # Atrapa `filing` bez własnego tagu: obsługuje ją `filing.subject` dla id bez wiersza `filing` (F5.1).
     dummy.subject.filing:
       class: App\Connector\Dummy\DummySubject
       autowire: true
-      autoconfigure: true
+      autoconfigure: false
       arguments: { $subjectType: filing }
+    filing.subject:
+      class: App\Ledger\FilingSubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $fallback: '@dummy.subject.filing' }
     dummy.subject.draft:
       class: App\Connector\Dummy\DummySubject
       autowire: true
@@ -149,11 +175,17 @@ when@test:
       autowire: true
       autoconfigure: true
       arguments: { $http: '@dummy.http_client', $baseUrl: 'https://dummy.invalid' }
+    # Atrapa `filing` bez własnego tagu: obsługuje ją `filing.subject` dla id bez wiersza `filing` (F5.1).
     dummy.subject.filing:
       class: App\Connector\Dummy\DummySubject
       autowire: true
-      autoconfigure: true
+      autoconfigure: false
       arguments: { $subjectType: filing }
+    filing.subject:
+      class: App\Ledger\FilingSubject
+      autowire: true
+      autoconfigure: true
+      arguments: { $fallback: '@dummy.subject.filing' }
     dummy.subject.draft:
       class: App\Connector\Dummy\DummySubject
       autowire: true

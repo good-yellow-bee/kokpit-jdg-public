@@ -57,7 +57,7 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
         return $this->subjectType;
     }
 
-    public function connector(): string
+    public function connector(string $subjectId): string
     {
         return 'ksef';
     }

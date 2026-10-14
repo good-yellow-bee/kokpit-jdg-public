@@ -16,8 +16,8 @@ interface ApprovalSubject
 {
     public function subjectType(): string;
 
-    /** Slug konektora wysyłki; NULL tylko dla szkicu do kopiowania (Q-35). */
-    public function connector(): ?string;
+    /** Slug konektora wysyłki encji; NULL tylko dla szkicu do kopiowania (Q-35). Złożenie wybiera go po typie (F5). */
+    public function connector(string $subjectId): ?string;
 
     /** Buduje payload i sprawdza warunki z kolumną „prośba”; niespełniony warunek rzuca wyjątek. */
     public function payload(string $subjectId): ApprovalPayload;

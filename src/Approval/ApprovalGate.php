@@ -175,7 +175,7 @@ final readonly class ApprovalGate
             }
             $sha = hash('sha256', $payload->bytes);
             $this->db->insert('approval', [
-                'id' => $id, 'environment' => $this->configuration->environment(), 'subject_type' => $subjectType, 'subject_id' => $subjectId, 'connector' => $subject->connector(),
+                'id' => $id, 'environment' => $this->configuration->environment(), 'subject_type' => $subjectType, 'subject_id' => $subjectId, 'connector' => $subject->connector($subjectId),
                 'payload_file_id' => $fileId, 'payload_sha256' => $sha, 'source_version' => $payload->sourceVersion,
                 'summary' => json_encode($payload->summary, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), 'preconditions' => json_encode($payload->preconditions, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
                 'requested_at' => $now->format('Y-m-d\TH:i:s.uP'), 'expires_at' => $this->expiry->at($subjectType, 'pending', $now, $now)->format('Y-m-d\TH:i:s.uP'), 'status' => 'pending',
