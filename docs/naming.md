@@ -514,6 +514,22 @@ Część b: sekcja niżej.
 | Licencje | wyjątek LGPL w `tools/check-licenses.php` tylko dla `dompdf/dompdf`, `dompdf/php-font-lib`, `dompdf/php-svg-lib` (D-55) |
 | Testy i odbiór | `PostAcceptanceTestTools`, `PostAcceptanceTestCase`, `ClientDeliveryWebTestCase`; dekoder QR w testach `khanamiryan/qrcode-detector-decoder` (`require-dev`); fixtures `tests/Fixtures/FreshBooks/client-201.json`, `share-link-2001.json`, `invoice-2001-accepted.json`, `invoice-2001-written-back.json`, `invoice-update-2001.json`, `parallel-compare-*.json`; klucze kryteriów `kod-i-url`, `invoice-pdf`, `deliver-to-client`, `deliver-to-client-error`, `freshbooks-write-back`, `ksef-parallel-compare` |
 
+### Plan F5 (D-56): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Części | `F5.1` konektor `jpk` i bramka złożeń, `F5.2` JPK_ST(1), `F5.3` JPK_EWP i JPK_ST na test-e-dokumenty, `F5.4` JPK_V7M(3) i zamknięcie miesiąca, `F5.5` VAT-UE i VAT-UEK, `F5.6` JPK_V7M i VAT-UE na bramkach testowych; rejestr `tests/Acceptance/f5.yaml`, lista `docs/evidence/f5.md` |
+| Konektor `jpk` (`src/Connector/Jpk`) | `JpkGateway` (własny cienki klient: `InitUploadSigned`, Put Blob, `FinishUpload`, `Status`), `JpkEnvelope` (ZIP DEFLATE, części do 62 914 560 bajtów, AES-256-CBC z PKCS#7, MD5 części w Base64, klucz AES opakowany RSA-2048 certyfikatem MF celu), `JpkInitUpload` (metadane `InitUpload`), `JpkWriter` (`OfficialWriter` i `StatusReader` dla `jpk`), `JpkError` (kody wyników z [modules/jpk.md](modules/jpk.md)); w testach `FakeJpkGateway` i fikcyjna para kluczy MF celu `test` |
+| Konektor `edeklaracje` (`src/Connector/EDeklaracje`) | `EDeklaracjeGateway` (SOAP: `sendUnsignDocument`, `requestUPO`), `EDeklaracjeWriter` (`OfficialWriter` i `StatusReader` dla `edeklaracje`), `EDeklaracjeError`; w testach `FakeEDeklaracjeGateway` |
+| Dane autoryzujące | `AuthDataDocument` (SIG-2008_v2-0 z `auth_data`; tylko w pamięci workera, przy wysyłce) |
+| Generatory (`src/Xml`) | `JpkV7mBuilder` (JPK_V7M(3) z ewidencją i deklaracją), `JpkMarker` (znaczniki `NrKSeF`, `OFF`, `BFK`, `DI`), `VatUeBuilder` (VAT-UE(5) i VAT-UEK(5)); `JpkEwpBuilder`, `JpkStBuilder` i `JpkDocument` z F2.4 |
+| Przedmiot bramki | `FilingSubject` (`ApprovalSubject` dla `subject_type` = `filing`; usługa `filing.subject`); warunki prośby z bramek „Zamknięcia miesiąca” i „Bramek przed budową JPK_EWP(4)” w [compliance-calendar.md](compliance-calendar.md) |
+| Bilans otwarcia | `OpeningBalance` (`confirm`); panel „Otwarcie” `/opening` (token CSRF `opening`, step-up); akcja audytu `opening_balance.confirmed` |
+| Zadania | `jpk.replace_di` (`JpkReplaceDi`) z [operations.md](operations.md) |
+| Fixtures | fikcyjny zbiór `tests/Fixtures/Jpk` z „Fikcyjnego zbioru JPK” w [testing.md](testing.md); złote pliki `tests/Fixtures/Jpk/golden/jpk-v7m-*.xml`, `vat-ue-*.xml`; nagrania `tests/Fixtures/Jpk/api-*.json`, `tests/Fixtures/EDeklaracje/*.xml`; scenariusze `app:fixtures:record jpk <scenariusz>`, `app:fixtures:record edeklaracje <scenariusz>` |
+| Klucze kryteriów | F5.1: `jpk-envelope`, `jpk-init-upload`, `jpk-auth-data`, `jpk-ewp-request`, `jpk-send-accepted`, `jpk-send-hash-mismatch`, `jpk-send-once`, `jpk-send-duplicate`, `jpk-send-reconcile`, `jpk-send-rejected`, `jpk-rate-limit`, `jpk-storage-host`; F5.2: `jpk-st-request`; F5.3: `jpk-te-ewp-upo`, `jpk-te-duplicate`, `jpk-te-st-upo`, `jpk-te-tls`, `jpk-te-fixtures`; F5.4: `jpk-v7m-golden`, `jpk-v7m-markers`, `jpk-v7m-declaration`, `jpk-v7m-gates`, `jpk-v7m-send`, `jpk-v7m-correction`, `jpk-replace-di`, `opening-balance-confirm`, `wht-obligation-amounts`; F5.5: `vat-ue-golden`, `vat-ue-k12-gate`, `vat-ue-kor-routing`, `edeklaracje-send-accepted`, `edeklaracje-status-codes`, `edeklaracje-rate-limit`; F5.6: `jpk-te-v7m-upo`, `edeklaracje-te-vat-ue`, `edeklaracje-te-vat-uek`, `edeklaracje-te-fixtures`; go-live: `jpk-ewp-prod-first`, `opening-balance-prod`, `jpk-v7m-prod-first`, `vat-ue-prod-first` |
+| Kod | pozostałe klasy dopisuje sesja części przed kodowaniem; nazwy z tej tabeli są propozycją planu i mogą się zawęzić w „Implementacji F5.x” |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

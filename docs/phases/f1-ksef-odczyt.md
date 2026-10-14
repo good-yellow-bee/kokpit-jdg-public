@@ -136,7 +136,7 @@ Kolejność wynika z zależności: import z KSeF potrzebuje kursów NBP, a koszt
 - Wysyłka faktur, `ksef_token_write` na PROD, FA(3), reguła P_1, KOR, Latarnia, KOD I i PDF: zaślepka F3 w [../README.md](../README.md).
 - Ewidencja, FreshBooks i kurs PIT dla `revenue_entry`: F2.2 w [f2-ewidencja.md](f2-ewidencja.md).
 - `period` i blokada okresu: F2.3 w [f2-ewidencja.md](f2-ewidencja.md). Do tego czasu `assigned` działa bez blokady.
-- Pola JPK_V7M(3) i wysyłka JPK: zaślepka F5 w [../README.md](../README.md).
+- Pola JPK_V7M(3) i wysyłka JPK: [f5-jpk.md](f5-jpk.md).
 - KRS, CEIDG i GUS: odłożone (D-20, D-29), wiersz w [../roadmap.md](../roadmap.md).
 - Okna przesuwne limitów KSeF: odłożone do pierwszych odpowiedzi 429 (D-29).
 - Tryb offline i certyfikat typ 2: D-15, Q-28.

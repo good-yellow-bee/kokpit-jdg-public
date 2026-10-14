@@ -152,7 +152,7 @@ Dom: „KSeF TE” w [../testing.md](../testing.md). Tylko `KSEF_TARGET=test`, t
 - Faktury zaliczkowe i rozliczeniowe (`ZAL`, `ROZ`, `KOR_ZAL`, `KOR_ROZ`) oraz korekta zbiorcza.
 - Sprzedaż B2C i OSS (D-05).
 - Okna przesuwne limitów KSeF: odłożone do pierwszych odpowiedzi 429 na PROD (D-29).
-- JPK_V7M(3), VAT-UE i VAT-UEK z kokpitu: zaślepka F5 w [../README.md](../README.md). F3 tworzy tylko zadania po przyjętej KOR.
+- JPK_V7M(3), VAT-UE i VAT-UEK z kokpitu: [f5-jpk.md](f5-jpk.md). F3 tworzy tylko zadania po przyjętej KOR.
 - Ewidencja z przyjętej sprzedaży: F2.2 w [f2-ewidencja.md](f2-ewidencja.md); F3 jej nie zmienia.
 - Webhooki FreshBooks: kokpit tylko odpytuje.
 

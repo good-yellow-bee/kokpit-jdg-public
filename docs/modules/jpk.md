@@ -391,4 +391,4 @@ Wszystkie schematy są w `resources/xsd`, z sumami kontrolnymi, walidowane z `LI
 ## Kryteria odbioru
 
 - Dry run F2.4: część F2.4 w [phases/f2-ewidencja.md](../phases/f2-ewidencja.md); dowody w `docs/evidence/f2.md`.
-- Wysyłki F5: szkic kryteriów w zaślepce F5 w [README.md](../README.md).
+- Wysyłki F5: [phases/f5-jpk.md](../phases/f5-jpk.md).

@@ -143,6 +143,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-53 | założenia F3.2 część b: credit note wskazuje fakturę korygowaną linią `Faktura: <numer>` w `notes`; pozycje „po” = „przed” minus uznanie pozycji o tej samej nazwie; edycja przyjętej faktury daje szkic KOR bez numeru do credit note; zadania sprzedaży w `invoice.panel_task`; obejście sprawdzane po udanym przebiegu Subject1 tylko dla faktur z wierszem `invoice`; zadanie „faktura spoza kokpitu” według P_1 względem `valid_from` | przyjęta 2026-10-14 | Q-27 |
 | D-54 | założenia F3.3: 429 przy pierwszym wywołaniu wraca do `approved` (`dispatch.deferred`); niezgodny `form_code` i drugie 21184 → `rejected`; rekoncyliacja odczytem bez zamykania sesji, okno dnia od `dispatching_at`; dopasowanie Subject1 w imporcie; 440 porównuje `invoiceHash` z listy faktur sesji oryginału; status Latarni w `cache.scheduler`; kolizja P_2 jako zadanie `p2_collision` z push | przyjęta 2026-10-14 | Q-28 |
 | D-55 | założenia F3.4: dompdf z wąskim wyjątkiem LGPL w sprawdzeniu licencji; KOD I z `xml_sent` o sha256 równym `invoiceHash` przyjęcia, host z `ksef.kod_i_hosts` dla celu faktury; jeden dwujęzyczny PDF zapisany raz; link płatności i adres klienta z endpointów FreshBooks do potwierdzenia na PROD; zapis zwrotny tylko `sales_invoice` VAT, wiadomość przy `accepted`; okres równoległy bez faktur z `approval` | przyjęta 2026-10-14 | Q-26, Q-10 |
+| D-56 | kod F5 częściami, przed odbiorem F0b, F1, F2 i F3: F5.1, F5.2, F5.4 i F5.5 bez sieci na `FakeJpkGateway`, `FakeEDeklaracjeGateway` i ręcznie pisanych nagraniach; F5.3 i F5.6 (live) po bramkach testowych; brak XSD zatrzymuje tylko swoją część | przyjęta 2026-10-14 | Q-12, Q-25, Q-31 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1050,3 +1051,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy sprawdzają treść QR dekoderem `khanamiryan/qrcode-detector-decoder` (MIT, tylko `require-dev`) na obrazie PNG wstawionym do PDF, a teksty na HTML szablonu, bo strumienie PDF dompdf są skompresowane.
 - **Skutki:** bez migracji; zależności w `composer.json` i `composer.lock`; testy kryteriów F3.4; zmiana założeń to nowy wpis tutaj.
 - **Pytania:** brak.
+
+### D-56 Kod F5 częściami, przed odbiorem F0b, F1, F2 i F3
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - F5 startuje po F3 (D-30). Kod F0b, F1, F2 i F3.1–F3.4 jest na `main`, a odbiory czekają na VPS (D-18), hosty testowe i przegląd doradcy (D-04).
+  - Sesja w chmurze nie łączy się z `test-e-dokumenty.mf.gov.pl` ani z `test-bramka.edeklaracje.gov.pl`. W `resources/xsd` jest tylko XSD JPK_EWP(4); JPK_ST(1) czeka według D-37, a JPK_V7M(3), VAT-UE(5), VAT-UEK(5), SIG-2008 i metadane `InitUpload` nie są jeszcze w repo.
+  - F2.4 dał generator JPK_EWP(4), `app:jpk:dry-run` i tabelę `filing`; F0b dał bramkę i `OfficialWritesHandler`; F3.3 dał wzór `OfficialWriter` i `StatusReader` (`KsefWriter`).
+- **Decyzja:**
+  - Plik fazy [phases/f5-jpk.md](phases/f5-jpk.md) dzieli F5 na F5.1–F5.6. F5.1, F5.2, F5.4 i F5.5 powstają teraz na gałęziach `f5-…`, każda część z osobnym PR.
+  - Części offline działają na `FakeJpkGateway`, `FakeEDeklaracjeGateway`, ręcznie pisanych nagraniach z danymi fikcyjnymi i fikcyjnej parze kluczy MF celu `test`. Zapisy idą wyłącznie przez bramkę i `official_writes`.
+  - F5.3 i F5.6 (live) czekają na sesję z dostępem do hostów testowych JPK i e-Deklaracji; nagrania ręczne zastępuje wtedy `app:fixtures:record`.
+  - Brak XSD zatrzymuje tylko część, która go potrzebuje: JPK_ST(1) → F5.2 (D-37), JPK_V7M(3) → F5.4, VAT-UE(5) i VAT-UEK(5) → F5.5, SIG-2008 i `InitUpload` → wiersze `jpk-auth-data` i `jpk-init-upload` F5.1. Schematy dostarczasz Ty albo sesja pobiera je jednorazowo według wyjątku GET z [../.claude/rules/zasady-twarde.md](../.claude/rules/zasady-twarde.md).
+  - Rejestr `tests/Acceptance/f5.yaml` ma od startu wiersze przekrojowe `cc-11`, `cc-25` i `cc-26`; wiersze części dochodzą w ich sesjach.
+- **Skutki:**
+  - Odbiór F5 i go-live nadal czekają na odbiory F0b, F1, F2 i F3. Go-live F5b czeka na złożenie PROD JPK_EWP (bramka 31.03.2027, D-30).
+  - Kod F5.4 i F5.5 może powstać przed go-live F5a, bo nie zależy od sieci.
+- **Pytania:** Q-12, Q-25, Q-31.

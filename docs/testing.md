@@ -465,7 +465,7 @@ Kryteria z [archive/SPEC-2026-10-05.md](archive/SPEC-2026-10-05.md) mają nowe m
 | Faza 1: token na api-test, faktury kosztowe, wysyłka ze szkicu FreshBooks, numer KSeF, UPO, PDF z QR | odczyt w [phases/f1-ksef-odczyt.md](phases/f1-ksef-odczyt.md); wysyłka, UPO i PDF w zaślepce F3 w [README.md](README.md) |
 | Faza 2: rejestracja na INT, lista bez odbioru, push z datą fikcji, odbiór i archiwum | odłożone (D-29): [modules/e-doreczenia.md](modules/e-doreczenia.md) i [roadmap.md](roadmap.md); teraz bez wniosku INT |
 | Faza 3: snapshoty rejestrów i NBP, licznik białej listy | [phases/f1-ksef-odczyt.md](phases/f1-ksef-odczyt.md); dwa liczniki białej listy w [modules/rejestry-kursy.md](modules/rejestry-kursy.md); KRS, CEIDG i GUS w [roadmap.md](roadmap.md) |
-| Faza 4: JPK_V7M z UPO na test-e-dokumenty, JPK_EWP zgodny z XSD | dry run XSD po F2.4 w [phases/f2-ewidencja.md](phases/f2-ewidencja.md); wysyłki w zaślepce F5 w [README.md](README.md) |
+| Faza 4: JPK_V7M z UPO na test-e-dokumenty, JPK_EWP zgodny z XSD | dry run XSD po F2.4 w [phases/f2-ewidencja.md](phases/f2-ewidencja.md); wysyłki w [phases/f5-jpk.md](phases/f5-jpk.md) |
 | Czat: tylko odczyt, wykres z bazy, wklejona treść z ukrytym poleceniem bez akcji | zaślepka F6 w [README.md](README.md); `cc-28`–`cc-30`, test na warstwie narzędzi |
 | basal: CPU, decyzje poniżej progu do panelu, korekty w `classification`, porównanie wersji | odłożone (D-29): [modules/basal.md](modules/basal.md) i [roadmap.md](roadmap.md) |
 
