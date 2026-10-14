@@ -36,8 +36,13 @@ final readonly class Periods
     {
         $month = self::month($date);
         $environment = $this->configuration->environment();
-        if ($this->db->fetchOne("SELECT 1 FROM period WHERE environment=? AND period_start=? AND status='closed'", [$environment, $month]) !== false) {
+        $status = $this->db->fetchOne('SELECT status FROM period WHERE environment=? AND period_start=?', [$environment, $month]);
+        if ($status === 'closed') {
             return true;
+        }
+        // Ponowne otwarcie zdejmuje blokadę także przy przyjętym JPK_V7M (D-49).
+        if ($status === 'reopened') {
+            return false;
         }
         return $this->db->fetchOne("SELECT 1 FROM filing WHERE environment=? AND type='JPK_V7M' AND period_start=? AND status IN ('approved','submitted','accepted','unknown')", [$environment, $month]) !== false;
     }
@@ -110,6 +115,54 @@ final readonly class Periods
     }
 
     /**
+     * Wynik bramek kompletności zapisany przed stanem `accepted` złożenia (docs/compliance-calendar.md, „Zamknięcie miesiąca”).
+     *
+     * @param array<string,mixed> $checklist
+     */
+    public function saveChecklist(string $periodStart, array $checklist): void
+    {
+        $month = self::month($periodStart);
+        $this->ensure($month);
+        $this->db->executeStatement('UPDATE period SET checklist=?, updated_at=? WHERE environment=? AND period_start=?', [json_encode($checklist, JSON_THROW_ON_ERROR), $this->now(), $this->configuration->environment(), $month]);
+    }
+
+    public function status(string $periodStart): ?string
+    {
+        $status = $this->db->fetchOne('SELECT status FROM period WHERE environment=? AND period_start=?', [$this->configuration->environment(), self::month($periodStart)]);
+        return is_string($status) ? $status : null;
+    }
+
+    /** `closed` → `reopened` z powodem; step-up sprawdza panel, a jego passkey trafia do `audit_log`. */
+    public function reopen(string $periodStart, string $reason, string $userId, string $stepUpCredentialId): void
+    {
+        $month = self::month($periodStart);
+        $reason = self::reason($reason);
+        if (!$this->closed($month)) {
+            throw new \DomainException(sprintf('Okres %s nie jest zamknięty.', substr($month, 0, 7)));
+        }
+        $this->ensure($month);
+        $now = $this->now();
+        $environment = $this->configuration->environment();
+        // Okres zamknięty samym złożeniem (bez stanu `closed`) dostaje datę zamknięcia przy ponownym otwarciu.
+        $this->db->executeStatement("UPDATE period SET status='reopened', closed_at=coalesce(closed_at, ?), reopened_at=?, reopen_reason=?, updated_at=? WHERE environment=? AND period_start=?", [$now, $now, $reason, $now, $environment, $month]);
+        $this->audit->append('period.reopened', ['period_start' => $month,'reason' => $reason,'step_up_credential_id' => $stepUpCredentialId], $environment, 'period', $this->id($month), $userId);
+    }
+
+    /** `reopened` → `closed` bez korekty JPK_V7M: powód w `audit_log`, zadanie „korekta wymagana” znika. */
+    public function reclose(string $periodStart, string $reason, string $userId, string $stepUpCredentialId): void
+    {
+        $month = self::month($periodStart);
+        $reason = self::reason($reason);
+        if ($this->status($month) !== 'reopened') {
+            throw new \DomainException(sprintf('Okres %s nie jest ponownie otwarty.', substr($month, 0, 7)));
+        }
+        $now = $this->now();
+        $environment = $this->configuration->environment();
+        $this->db->executeStatement("UPDATE period SET status='closed', closed_at=?, updated_at=? WHERE environment=? AND period_start=?", [$now, $now, $environment, $month]);
+        $this->audit->append('period.reclosed', ['period_start' => $month,'reason' => $reason,'step_up_credential_id' => $stepUpCredentialId], $environment, 'period', $this->id($month), $userId);
+    }
+
+    /**
      * Zadania „korekta wymagana”: zapis po zamknięciu.
      *
      * @return list<array{period_start:string,closed_at:string,correction_required_at:string}>
@@ -129,6 +182,15 @@ final readonly class Periods
             throw new \InvalidArgumentException(sprintf('Data %s nie ma formatu RRRR-MM-DD.', $date));
         }
         return substr($date, 0, 8) . '01';
+    }
+
+    private static function reason(string $reason): string
+    {
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw new \InvalidArgumentException('Podaj powód (do 500 znaków).');
+        }
+        return $reason;
     }
 
     private function id(string $month): string
