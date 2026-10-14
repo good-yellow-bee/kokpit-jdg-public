@@ -235,6 +235,14 @@ final readonly class ObligationEngine
         if ($sale !== false) {
             return true;
         }
+        // Od pierwszego miesiąca zamkniętego w kokpicie: `not_applicable` dopiero po zapisie `period.checklist` za M (D-49).
+        $checklist = $this->db->fetchOne('SELECT checklist IS NOT NULL FROM period WHERE environment=? AND period_start=?', [$environment, $periodStart]);
+        if ($checklist === true) {
+            return false;
+        }
+        if ($this->db->fetchOne('SELECT 1 FROM period WHERE environment=? AND checklist IS NOT NULL AND period_start<?', [$environment, $periodStart]) !== false) {
+            return true;
+        }
         $cutoff = new \DateTimeImmutable(substr($next, 0, 8) . '16 00:00:00', new \DateTimeZone('Europe/Warsaw'));
         $hwm = $this->db->fetchOne("SELECT last_hwm FROM sync_cursor WHERE environment=? AND connector='ksef' AND stream='subject1'", [$environment]);
         return !is_string($hwm) || new \DateTimeImmutable($hwm) < $cutoff;

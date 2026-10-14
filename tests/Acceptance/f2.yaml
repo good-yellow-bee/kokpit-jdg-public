@@ -40,6 +40,8 @@ criteria:
   - { key: closed-period-cost, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodCost', junit: true }
   - { key: closed-period-revenue, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodRevenue', junit: true }
   - { key: closed-period-kor, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodKor', junit: true }
+  - { key: manual-filing, runner: ci, command: 'vendor/bin/phpunit --filter ManualFiling', junit: true }
+  - { key: vat-ue-after-checklist, runner: ci, command: 'vendor/bin/phpunit --filter VatUeAfterChecklist', junit: true }
   - { key: cc-01, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorsDisabled', junit: true }
   - { key: cc-02, runner: ci, command: 'vendor/bin/phpunit --filter HostAllowlist', junit: true }
   - { key: cc-06, runner: ci, command: 'vendor/bin/phpunit --filter "Passkey|SessionLifetime"', junit: true }

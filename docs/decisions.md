@@ -136,6 +136,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-46 | korekty KOR i uzgodnienia w F2.2: różnica netto per stawka z `StanPrzed`, zamknięcie zadania bez step-upu, raport uzgodnień liczony na żądanie bez tabeli, FreshBooks czytany przy otwarciu widoku | przyjęta 2026-10-14 | Q-22 |
 | D-47 | kwoty F2.3: zaliczka dopiero po końcu okresu, próg zdrowotnej z przychodu narastająco do końca miesiąca minus zapłacone społeczne, `health_bracket_manual` jako dolna granica, miesiące rozliczenia zdrowotnej od pierwszych parametrów roku, `ryczalt.eligibility` z dwoma limitami w euro | przyjęta 2026-10-14 | Q-16, Q-17, Q-38 |
 | D-48 | okres F2.3: `period` powstaje przy pierwszym zapisie z datą w M; zamknięty M to też JPK_V7M w drodze albo przyjęty bez wiersza `period`; `ledger.entry_check` działa tylko po przełączeniu wpisów; komplet szukany kluczem deduplikacji; wpis do minionego M sprawdza komplet od razu | przyjęta 2026-10-14 | Q-11 |
+| D-49 | złożenie poza kokpitem F2.3: JPK_V7M i VAT-UE z UPO jako `filing` `accepted`/`manual` bez `approval`; P_62 z pliku albo wpisany; bramki `period.checklist` liczone przy zapisie i tylko alarmują; korekta po ponownym otwarciu jako `purpose` 2; `vat_ue` po bramkach od pierwszego zamkniętego miesiąca | przyjęta 2026-10-14 | – |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -934,3 +935,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Zadanie „korekta wymagana” jest na `/ledger` w sekcji `period-corrections`; braki poprzedniego miesiąca w sekcji `ledger-entry-check`.
   - Ponowne otwarcie, złożenie `manual` z UPO i bramki `checklist` są w drugiej połowie części 2 F2.3.
 - **Pytania:** Q-11.
+
+### D-49 Złożenie poza kokpitem, bramki i ponowne otwarcie w F2.3
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Do go-live F5 JPK_V7M i VAT-UE składasz w narzędziach MF, a kokpit rejestruje złożenie z UPO ([phases/f2-ewidencja.md](phases/f2-ewidencja.md), „Zakres” F2.3). Plik fazy nie mówi, skąd wziąć P_62, jak zapisać korektę ani od kiedy `vat_ue` czeka na bramki zamiast kursora Subject1.
+- **Decyzja:**
+  - Panel `/filings` tworzy `filing` od razu w stanie `accepted` z `submitted_via` = `manual`, UPO w `stored_file` (`upo`) i wpisem `filing.manual_recorded` z sha256 UPO. Bez `approval`. Każda zmiana na stronie wymaga step-upu.
+  - JPK_V7M wymaga P_62: z elementu `P_62` wgranego pliku (zapisanego jako `xml_sent`) albo wpisanego w formularzu, w pełnych złotych, do `filing.totals`.
+  - Przed zapisem JPK_V7M bramki kroku 4, które działają przed F5 (`sales_final`, `costs_reviewed`, `fx_rates`, `vies_eu_b2b`), trafiają do `period.checklist`. Niespełniona bramka to alert na stronie, nie odmowa: kokpit tylko liczy i porównuje.
+  - Przyjęty JPK_V7M zamyka okres i oznacza obowiązek `vat_jpk_v7m` za M jako `done`. VAT-UE oznacza `vat_ue` jako `done` i nie zamyka okresu.
+  - JPK_V7M za zamknięty M jest odrzucany. Po ponownym otwarciu (powód, step-up) złożenie jest korektą: `purpose` 2, kolejny `seq`, `supersedes_id`, poprzednie `superseded`. Ponowne otwarcie zdejmuje blokadę także przy przyjętym JPK_V7M.
+  - Zamknięcie bez korekty ustawia nowe `closed_at`, więc zadanie „korekta wymagana” znika; powód jest w `period.reclosed`.
+  - `vat_ue` bez sprzedaży `eu_b2b`: `not_applicable` po zapisie `period.checklist` za M. Od pierwszego miesiąca z `checklist` późniejsze miesiące czekają na swoje bramki; wcześniejsze zostają przy regule kursora Subject1 z F1.
+- **Skutki:**
+  - Złożenia z bramki (F5) użyją tych samych bramek i zamknięcia; `checklist` przy prośbie o zatwierdzenie.
+  - Bilans otwarcia (`opening.*`) i lista DI zostają na F5.
+- **Pytania:** brak.

@@ -348,6 +348,9 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Okres (`src/Ledger`) | `Periods` (`ensure`, `closed`, `earliestOpen`, `assertOpen`, `correctionRequired`, `markLedgerClosed`, `close`, `corrections`, `month`), wyjątek `ClosedPeriod` (`period`, `proposed`), `LedgerEntryCheck` (`run`, `check`, `missing`, `closeIfComplete`), `LedgerEntryCheckResult` |
 | Zadanie | `ledger.entry_check`: `LedgerTaskMessage`, `LedgerTaskHandler`, transport `reads`, cron `0 8 15,20 * *` |
 | Panel | `/ledger`: sekcje `period-corrections` („Korekta wymagana”) i `ledger-entry-check` |
+| Złożenie poza kokpitem (D-49) | `ManualFiling` (`record`), `MonthChecklist` (`evaluate`; bramki `sales_final`, `costs_reviewed`, `fx_rates`, `vies_eu_b2b`), `Periods` (`saveChecklist`, `status`, `reopen`, `reclose`); `filing.totals` klucz `p62` |
+| Panel złożeń | `FilingController`: `/filings` (sekcje `filing-manual`, `filing-periods`, `filing-list`), `POST /filings/manual`, `POST /filings/period/<RRRR-MM>/reopen`, `POST /filings/period/<RRRR-MM>/reclose` (token CSRF `filings`, step-up) |
+| Akcje audytu (D-49) | `filing.manual_recorded`, `period.reopened`, `period.reclosed` |
 
 ### Implementacja F2.4: nazwy techniczne
 
