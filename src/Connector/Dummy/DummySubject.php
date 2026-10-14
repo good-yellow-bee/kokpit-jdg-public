@@ -30,7 +30,7 @@ final readonly class DummySubject implements ApprovalSubject
         return $this->subjectType;
     }
 
-    public function connector(): ?string
+    public function connector(string $subjectId): ?string
     {
         return $this->subjectType === 'filing' ? 'dummy' : null;
     }

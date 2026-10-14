@@ -21,7 +21,7 @@ services:
   _defaults: { autowire: true, autoconfigure: true }
   App\:
     resource: '../src/'
-    exclude: '../src/{Kernel.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php}'
+    exclude: '../src/{Kernel.php,Entity,Connector,Architecture,Invoice/SalesInvoiceSubject.php,Ledger/FilingSubject.php}'
   App\Security\Vault:
     arguments: { $vault: '@secrets.vault', $appEnvironment: '%kernel.environment%' }
   App\Security\SecretStore:
@@ -61,6 +61,10 @@ services:
   invoice.subject.correction:
     class: App\Invoice\SalesInvoiceSubject
     arguments: { $subjectType: correction_invoice, $plClientMaxAge: '%registry.pl_client_max_age%' }
+  # Przedmiot bramki złożeń (F5.1); w dev i test z atrapą `dummy` dla id bez wiersza `filing` (services_connectors.yaml).
+  filing.subject:
+    class: App\Ledger\FilingSubject
+    arguments: { $fallback: null }
   App\Invoice\SalesReadiness:
     arguments: { $readyMarker: '%freshbooks.ready_marker%' }
   App\Passkey\StepUp: '@App\Passkey\StepUpVerifier'

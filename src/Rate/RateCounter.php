@@ -34,6 +34,20 @@ final readonly class RateCounter
             return new RateCounterResult((int) $count, null);
         });
     }
+    /**
+     * Odczyt bez zużycia: chwila, do której grupa jest zablokowana (`blocked_until` albo północ po wyczerpanym limicie
+     * dobowym), albo NULL, gdy wywołanie może ruszyć. Warunek „wysyłka” bramki sprawdza go przed pierwszym wywołaniem.
+     */
+    public function exhausted(string $environment, string $connector, string $bucket): ?\DateTimeImmutable
+    {
+        $blocked = $this->connection->fetchOne('SELECT max(blocked_until) FROM rate_counter WHERE environment=? AND connector=? AND bucket=?', [$environment,$connector,$bucket]);
+        if (is_string($blocked) && new \DateTimeImmutable($blocked) > $this->clock->now()) {
+            return new \DateTimeImmutable($blocked);
+        }
+        $limit = $this->dailyLimits[$bucket] ?? null;
+        $count = $this->connection->fetchOne('SELECT count FROM rate_counter WHERE environment=? AND connector=? AND bucket=? AND window_start=?', [$environment,$connector,$bucket,$this->dates->midnight()->format('c')]);
+        return $limit !== null && is_numeric($count) && (int) $count >= $limit ? $this->dates->nextMidnight() : null;
+    }
     public function blockUntil(string $environment, string $connector, string $bucket, \DateTimeImmutable $windowStart, \DateTimeImmutable $until): void
     {
         $this->connection->transactional(function () use ($environment, $connector, $bucket, $windowStart, $until): void {

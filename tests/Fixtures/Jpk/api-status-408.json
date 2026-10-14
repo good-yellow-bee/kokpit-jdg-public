@@ -1,0 +1,19 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według specyfikacji interfejsów usług JPK 5.6.0 (https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf); kształt JSON założony w D-57, prawdziwe nagrania z test-e-dokumenty zastąpią je w F5.3 (jpk-te-fixtures).",
+  "scenario": "Status 408: błąd przetwarzania.",
+  "interactions": [
+    {
+      "method": "GET",
+      "path": "/api/Storage/Status/fc000000000000000000000000000a01",
+      "status": 200,
+      "body": {
+        "Code": 408,
+        "Description": "Dokument zawiera błędy uniemożliwiające jego przetworzenie (fictional).",
+        "Details": "",
+        "Upo": "",
+        "Timestamp": "2027-01-15T09:00:30+00:00"
+      }
+    }
+  ]
+}

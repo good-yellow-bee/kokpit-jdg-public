@@ -1,0 +1,29 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według specyfikacji interfejsów usług JPK 5.6.0 (https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf); kształt JSON założony w D-57, prawdziwe nagrania z test-e-dokumenty zastąpią je w F5.3 (jpk-te-fixtures).",
+  "scenario": "InitUploadSigned 400, kod 170: duplikat z numerem oryginału; potem Status oryginału 200 z UPO.",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/api/Storage/InitUploadSigned",
+      "status": 400,
+      "body": {
+        "Code": 170,
+        "Message": "Fikcyjny komunikat: dokument był już przetworzony, numer referencyjny oryginału fc000000000000000000000000000b02.",
+        "Errors": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/Storage/Status/fc000000000000000000000000000b02",
+      "status": 200,
+      "body": {
+        "Code": 200,
+        "Description": "Przetwarzanie dokumentu zakończone poprawnie, pobierz UPO (fictional).",
+        "Details": "",
+        "Upo": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Potwierdzenie fictional=\"true\"><NazwaPodmiotuPrzyjmujacego>Fikcyjny podmiot przyjmujący (fictional)</NazwaPodmiotuPrzyjmujacego><NumerReferencyjny>fc000000000000000000000000000b02</NumerReferencyjny><Uwagi>Fikcyjne UPO, dane testowe.</Uwagi></Potwierdzenie>",
+        "Timestamp": "2027-01-15T09:00:30+00:00"
+      }
+    }
+  ]
+}

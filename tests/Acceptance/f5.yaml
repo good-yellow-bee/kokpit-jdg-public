@@ -4,3 +4,14 @@ criteria:
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }
+  # F5.1 (bez sieci, FakeJpkGateway). `jpk-init-upload` i `jpk-auth-data` czekają na oficjalne XSD InitUpload i SIG-2008 (stop, D-57).
+  - { key: jpk-envelope, runner: ci, command: 'vendor/bin/phpunit --filter JpkEnvelope', junit: true }
+  - { key: jpk-ewp-request, runner: ci, command: 'vendor/bin/phpunit --filter JpkEwpRequest', junit: true }
+  - { key: jpk-send-accepted, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendAccepted', junit: true }
+  - { key: jpk-send-hash-mismatch, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendHashMismatch', junit: true }
+  - { key: jpk-send-once, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendOnce', junit: true }
+  - { key: jpk-send-duplicate, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendDuplicate', junit: true }
+  - { key: jpk-send-reconcile, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendReconcile', junit: true }
+  - { key: jpk-send-rejected, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendRejected', junit: true }
+  - { key: jpk-rate-limit, runner: ci, command: 'vendor/bin/phpunit --filter JpkRateLimit', junit: true }
+  - { key: jpk-storage-host, runner: ci, command: 'vendor/bin/phpunit --filter JpkStorageHost', junit: true }

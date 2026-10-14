@@ -13,7 +13,8 @@ interface StatusReader
     public function connector(): string;
 
     /**
-     * Status zatwierdzenia `submitted`: `accepted`, `rejected` albo `pending`.
+     * Status zatwierdzenia `submitted`: `accepted`, `rejected`, `pending` albo `unknown` (kod wyniku nieustalonego,
+     * np. JPK 411; dalej rozstrzyga rekoncyliacja).
      *
      * @param array<string,string> $externalRefs
      */
