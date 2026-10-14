@@ -45,9 +45,9 @@ final readonly class RevenueEntryWriter
             $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [self::LOCK_NAMESPACE, $year]);
             $existing = $this->existing($document, $environment, $year);
             if ($existing !== []) {
-                $dates = array_values(array_unique(array_column($existing, 'revenue_date')));
-                $other = array_values(array_filter($dates, static fn(mixed $date): bool => $date !== $document->revenueDate));
-                return new RevenueWriteResult([], array_map(static fn(array $row): string => self::str($row['id']), $existing), is_string($other[0] ?? null) ? $other[0] : null);
+                $dates = array_values(array_unique(array_map(static fn(array $row): string => self::str($row['revenue_date']), $existing)));
+                $other = array_values(array_filter($dates, static fn(string $date): bool => $date !== $document->revenueDate));
+                return new RevenueWriteResult([], array_map(static fn(array $row): string => self::str($row['id']), $existing), $other[0] ?? null);
             }
             $lp = $this->db->fetchOne('SELECT coalesce(max(lp),0) FROM revenue_entry WHERE environment=? AND year=?', [$environment, $year]);
             $lp = is_numeric($lp) ? (int) $lp : 0;

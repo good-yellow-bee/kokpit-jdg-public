@@ -112,7 +112,7 @@ final class F1TestTools
     /** @param array<string,array<string,string>> $rates */
     public static function ledger(Connection $db, MockClock $clock, array $rates = []): Subject1Ledger
     {
-        return new Subject1Ledger($db, self::fxRates($db, $clock, $rates), ObligationTestTools::settings($db, $clock), new BusinessDate($clock), $clock, self::writer($db, $clock));
+        return new Subject1Ledger($db, self::fxRates($db, $clock, $rates), ObligationTestTools::settings($db, $clock), $clock, self::writer($db, $clock));
     }
 
     public static function schema(): JpkEwpSchema

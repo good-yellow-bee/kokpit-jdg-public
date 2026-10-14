@@ -10,6 +10,7 @@ use App\Setting\SettingStore;
 use App\Tests\Support\EvidenceArtefacts;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\FileFormField;
 use Symfony\Component\Uid\Uuid;
 
 /** Wpis ręczny w panelu z plikiem dowodu (kryterium `ledger-manual-entry`). Dane fikcyjne. */
@@ -38,7 +39,9 @@ final class LedgerPanelTest extends WebTestCase
             $crawler = $client->request('GET', '/ledger');
             self::assertResponseIsSuccessful();
             $form = $crawler->filter('#ledger-manual form')->form(['revenue_date' => $today,'document_number' => 'UMOWA/FIKCYJNA/9','currency' => 'PLN','net' => '750.00','service_type' => 'software']);
-            $form['evidence']->upload($evidence);
+            $field = $form['evidence'];
+            self::assertInstanceOf(FileFormField::class, $field);
+            $field->upload($evidence);
             $client->submit($form);
             self::assertResponseRedirects('/ledger');
             $client->followRedirect();
@@ -46,7 +49,7 @@ final class LedgerPanelTest extends WebTestCase
             $row = $db->fetchAssociative("SELECT id, entry_date, amount_pln, rate_pct, source, recorded_by FROM revenue_entry WHERE document_number='UMOWA/FIKCYJNA/9'");
             self::assertIsArray($row);
             self::assertSame([$today, '750.00', '12.00', 'manual', $id], [$row['entry_date'], $row['amount_pln'], $row['rate_pct'], $row['source'], $row['recorded_by']]);
-            self::assertSame('1', (string) $db->fetchOne("SELECT count(*) FROM stored_file WHERE owner_id=? AND kind='evidence'", [$row['id']]));
+            self::assertEquals(1, $db->fetchOne("SELECT count(*) FROM stored_file WHERE owner_id=? AND kind='evidence'", [$row['id']]));
             $audit = $db->fetchAllAssociative("SELECT action, target_id, actor_user_id FROM audit_log WHERE action='ledger.manual_entry'");
             self::assertSame([['action' => 'ledger.manual_entry','target_id' => $row['id'],'actor_user_id' => $id]], $audit);
             EvidenceArtefacts::write('db/ledger-manual-entry-audit_log.csv', EvidenceArtefacts::csv($audit));
