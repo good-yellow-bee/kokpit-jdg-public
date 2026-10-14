@@ -106,7 +106,7 @@ Pracujesz na klonie repo, na gałęzi fazy `f0a-szkielet`, według [../../.claud
 - Tabela `setting` i minimalny panel edycji: [f2-ewidencja.md](f2-ewidencja.md), F2.1 według [../data-model.md](../data-model.md).
 - Bramka zatwierdzeń, step-up, drugi passkey, `PolishCalendar`, `ObligationEngine`, tabele `approval`, `obligation`, `notification`, klucze kalendarza i przeliczenia po edycji `setting`: [f0b-bramka-kalendarz.md](f0b-bramka-kalendarz.md), po dry runie (D-30).
 - `revenue_entry`, import ewidencji 2026 i generator JPK: [f2-ewidencja.md](f2-ewidencja.md), F2.1 i F2.4 zaraz po F0a.
-- Konektory urzędów i rejestrów: KSeF, VIES, biała lista i NBP w [f1-ksef-odczyt.md](f1-ksef-odczyt.md); FreshBooks w F2.2/F2.3; reszta w zaślepkach F3, F5 i F6 w [../README.md](../README.md).
+- Konektory urzędów i rejestrów: KSeF, VIES, biała lista i NBP w [f1-ksef-odczyt.md](f1-ksef-odczyt.md); FreshBooks w F2.2/F2.3; reszta w [f3-ksef-sprzedaz.md](f3-ksef-sprzedaz.md), [f5-jpk.md](f5-jpk.md) i [f6-czat.md](f6-czat.md).
 - Odłożone (D-29, sekcja „Odłożone” w [../README.md](../README.md)): API e-Doręczeń z `EDORECZENIA_TARGET`, basal z tabelą `classification`, rejestry KRS, CEIDG i GUS.
 - Wycięte z F0a (D-28): projekty dev, staging i restore na VPS, PWA, Web Push, VAPID, `kokpit:demo`, wykonawca `host`, generator podsumowania.
 - Usługa `pdf` (F3, tylko zapas z D-17).

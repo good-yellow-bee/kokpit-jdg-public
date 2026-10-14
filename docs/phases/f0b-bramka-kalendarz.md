@@ -136,7 +136,7 @@ Prawdziwe przedmioty dochodzą później: faktury w F3, złożenia w F5, szkice 
 
 ## Poza zakresem
 
-- Prawdziwe przedmioty bramki i ich wysyłka: faktury w zaślepce F3, JPK i VAT-UE w [f5-jpk.md](f5-jpk.md), szkice w zaślepce F6 ([../README.md](../README.md)).
+- Prawdziwe przedmioty bramki i ich wysyłka: faktury w [f3-ksef-sprzedaz.md](f3-ksef-sprzedaz.md), JPK i VAT-UE w [f5-jpk.md](f5-jpk.md), szkice w [f6-czat.md](f6-czat.md).
 - Kwoty zaliczki, progu składki zdrowotnej i rozliczenia rocznego, bo wymagają ewidencji: [f2-ewidencja.md](f2-ewidencja.md).
 - `period`, zamknięcie miesiąca, blokada okresu i bilans otwarcia (klucze `opening.*` w `setting`): [f2-ewidencja.md](f2-ewidencja.md).
 - Wykrywanie miesięcy ze sprzedażą `eu_b2b` i WHT per dostawca: [f1-ksef-odczyt.md](f1-ksef-odczyt.md).

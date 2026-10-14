@@ -544,6 +544,20 @@ Część b: sekcja niżej.
 | Licznik | `RateCounter::exhausted` (odczyt bez zużycia: `blocked_until` albo wyczerpany limit dobowy) |
 | Testy | `FakeJpkGateway`, `JpkSendTestTools`, `JpkSendTestCase`; nagrania `tests/Fixtures/Jpk/api-init-upload*.json`, `api-put-blob.json`, `api-finish-upload*.json`, `api-status-*.json`; fikcyjne zaślepki testowe XSD `tests/Fixtures/Jpk/xsd-stub` (nie schematy MF); test `JpkMetadataSchemaMissingTest` |
 
+### Plan F6 (D-58): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Części | `F6.1` dane czatu i rola `chat_ro`, `F6.2` konektor `claude` i pętla narzędzi, `F6.3` panel czatu i wykresy, `F6.4` szkice `draft_document`, `F6.5` Claude API na danych fikcyjnych; rejestr `tests/Acceptance/f6.yaml`, lista `docs/evidence/f6.md` |
+| Konektor `claude` (`src/Connector/Claude`) | `ClaudeClientFactory` (klient `anthropic-ai/sdk` z `transporter` = dekorowany `Psr18Client`, ponowienia wyłączone), `ChatRequestProfile` (profil żądania Haiku 5.5), `ClaudeError` (wyliczenie kodów: `connectors_disabled`, `host_not_allowed`, `rate_limited`, `timeout`, `api_error`, `refusal`, `max_tokens`, `budget_exceeded`, `context_limit`, `invalid_response`); `connector_call.operation` = `messages.create` |
+| Czat (`src/Chat`) | `ChatTurn` (pętla narzędzi), `ChatToolRegistry` (lista narzędzi i `tool_set`), `ChatToolExecutor`, `ChatQuery` (wyliczenie nazwanych zapytań), `ChatQueryRunner` (połączenie `chat`), `PseudonymMap`, `ChatBudget`, `ChatContextGuard`, `ChartSpec`, `DraftDocumentTool`, `DraftSubject` (`ApprovalSubject` dla `subject_type` = `draft`; usługa `draft.subject`); Symfony Workflow `draft` |
+| Widoki `chat_*` | `chat_obligation`, `chat_invoice`, `chat_revenue`, `chat_counterparty`, `chat_fx_rate`, `chat_verification`; połączenie Doctrine `chat` z rolą `chat_ro` |
+| Konfiguracja aplikacji | `chat.max_tokens`, `chat.max_iterations` (8), `chat.timeout_s`, `chat.row_limit` (200), `chat.context_warn_tokens` (80 000), `chat.context_max_tokens` (100 000), `chat.budget_daily_usd`, `chat.budget_monthly_usd`, `chat.budget_alert_ratio` (0,8), `chat.pricing` (USD za MTok: wejście, wyjście, odczyt i zapis cache, próg 100 tys. tokenów), `chat.phases_live` (fazy po go-live, z których czat bierze narzędzia i wartości `query`), `chat.live_run_budget_usd` (tylko testsuite `live`); obok istniejących `chat.model` i `chat.effort` |
+| Panel | trasa `/chat` (`ChatController`), token CSRF `chat`, ramka Turbo `chat-turn`, przełącznik „Szkic”, etykieta „asystent AI”, przycisk „Skopiowano” przy szkicu; biblioteka `symfony/ux-chartjs` |
+| Fixtures | `tests/Fixtures/Claude/messages-*.json` (ręcznie pisane odpowiedzi Messages API z danymi fikcyjnymi, potem nagrania F6.5); scenariusze `app:fixtures:record claude <scenariusz>` |
+| Klucze kryteriów | F6.1: `chat-ro-denied`, `chat-views-environment`, `chat-views-minimal`, `chat-named-queries`, `chat-history-append-only`, `chat-retention`; F6.2: `claude-request-profile`, `chat-model-fixed`, `claude-transport`, `chat-tool-loop`, `chat-tool-schema`, `chat-tool-set`, `chat-stop-reasons`, `chat-interrupted-turn`, `chat-rate-limit`, `chat-budget`, `chat-context-limit`, `chat-redaction`, `chat-law-snapshot`, `claude-live-guard`; F6.3: `chat-turbo-frame`, `chat-seq-idempotent`, `chat-render-chart`, `chat-panel-messages`; F6.4: `draft-requested-only`, `draft-recipient-db`, `draft-flagged-values`, `draft-approval-copy`; F6.5: `claude-live-smoke`, `claude-fixtures-record`; go-live: `chat-dpa`, `chat-spend-limit` |
+| Kod | pozostałe klasy dopisuje sesja części przed kodowaniem; nazwy z tej tabeli są propozycją planu i mogą się zawęzić w „Implementacji F6.x” |
+
 ## Nazwy wycofane
 
 | Nazwa | Zamiast niej | Decyzja albo dom |

@@ -13,8 +13,8 @@ Pracuje jedna osoba po godzinach, ok. 10 h tygodniowo. Plan opiera się na bramk
 | 4 | F0b bramka i kalendarz | szkielet bramki zatwierdzeń, step-up i drugi passkey, `PolishCalendar`, silnik obowiązków, przypomnienia, ustawienia z datą obowiązywania | [phases/f0b-bramka-kalendarz.md](phases/f0b-bramka-kalendarz.md) | kod na `main`; odbiór czeka na F0a i wiersze `[manual]` (D-38) | — |
 | 5 | F1 KSeF odczyt | sync Subject1 i Subject2 od 1.02.2026, przegląd kosztów, koszty spoza KSeF, kursy NBP, VIES, biała lista | [phases/f1-ksef-odczyt.md](phases/f1-ksef-odczyt.md) | kod bez sieci na `main` (D-42); wiersze na nagraniach KSeF, NBP i rejestrów czekają na sesję z dostępem do hostów testowych | — |
 | 7 | F3 KSeF sprzedaż | FreshBooks → FA(3) → bramka → KSeF, QR i PDF, korekty | [phases/f3-ksef-sprzedaz.md](phases/f3-ksef-sprzedaz.md) | kod F3.1–F3.4 na `main` (PR #12–#16, D-50); F3.5 (live, api-test) czeka na sesję z dostępem do hostów testowych; go-live czeka na przegląd doradcy (D-04) | — |
-| 8 | F5 JPK | JPK_EWP(4) i JPK_ST(1) w PROD, potem JPK_V7M(3) i VAT-UE | [phases/f5-jpk.md](phases/f5-jpk.md) | plik fazy gotowy; kod F5.1, F5.2, F5.4 i F5.5 bez sieci, częściami (D-56); F5.3 i F5.6 (live) czekają na hosty testowe | — |
-| 9 | F6 czat | czat z Claude Haiku 5.5 na narzędziach tylko do odczytu i `draft_document` | zaślepka w tym pliku | nie rozpoczęta | — |
+| 8 | F5 JPK | JPK_EWP(4) i JPK_ST(1) w PROD, potem JPK_V7M(3) i VAT-UE | [phases/f5-jpk.md](phases/f5-jpk.md) | kod F5.1 na `main` (PR #18, D-57), bez wierszy `jpk-init-upload` i `jpk-auth-data` do XSD `InitUpload` i SIG-2008; F5.2, F5.4 i F5.5 czekają na XSD (JPK_ST(1), JPK_V7M(3), VAT-UE(5) i VAT-UEK(5)); F5.3 i F5.6 (live) czekają na hosty testowe | — |
+| 9 | F6 czat | czat z Claude Haiku 5.5 na narzędziach tylko do odczytu i `draft_document` | [phases/f6-czat.md](phases/f6-czat.md) | plik fazy gotowy; kod F6.1–F6.4 bez sieci, częściami (D-58); F6.5 (live) czeka na klucz Claude API workspace testowego | — |
 | – | F4 e-Doręczenia API | lista i odbiór pism przez API | sekcja „Odłożone” | odłożona (D-29) | — |
 | – | F7 basal | lokalny klasyfikator w trybie cienia | sekcja „Odłożone” | odłożona (D-29) | — |
 
@@ -175,7 +175,7 @@ Tabela obejmuje wszystkie osiem elementów z „Odłożonych z planu faz” w [r
 | Dane autoryzujące (`auth_data`): data urodzenia do `Podmiot1` przed dry runem na danych PROD, przychód N−2 przed F5 PROD | Ty | od ręki | dry run na danych PROD, F5 PROD | przed dry runem; potem co roku 2 stycznia | otwarte ([security.md](security.md)) |
 | Certyfikaty rezydencji zagranicznych dostawców (WHT) | Ty | tygodnie | przypomnienia od F0b, F5 | przed F5 | otwarte (Q-21) |
 | Parametry ZUS na 2027 | ZUS (publikacja) | styczeń 2027 | kwoty kalendarza 2027 | styczeń 2027 | czeka |
-| Konto Claude API: osobny workspace, klucz z niskim limitem wydatków w Symfony Secrets | Ty | od ręki | F6 | przed F6 | otwarte |
+| Konto Claude API: osobne workspace testowe i PROD, klucze z niskim limitem wydatków w Symfony Secrets | Ty | od ręki | F6.5 (live, workspace testowe), go-live F6 (PROD); F6.1–F6.4 bez klucza (D-58) | przed F6.5 | otwarte |
 
 Warunki powrotu F4 (INT, certyfikat kwalifikowany, bramki 3–4) i rejestrów KRS, CEIDG i GUS są w [roadmap.md](roadmap.md).
 
@@ -234,28 +234,7 @@ Zaślepka przeniesiona do pliku fazy: [phases/f5-jpk.md](phases/f5-jpk.md).
 
 ### F6 czat
 
-- Zakres:
-  - tylko Claude Haiku 5.5 (`claude-haiku-5-5`) przez Messages API i PHP tool runner, pętla w Symfony; licznik `claude.messages`;
-  - odpowiedź w synchronicznym żądaniu z ramką Turbo, bez Mercure i workera strumieniowania (D-29);
-  - narzędzia jako nazwane zapytania ze schematem JSON, nigdy SQL; rola `chat_ro` i widoki `chat_*`;
-  - narzędzia włączane według ukończonych faz;
-  - `draft_document` z odbiorcą tylko z bazy i oznaczeniem źródeł nieufnych;
-  - tabela danych do modelu; historia `chat_session` i `chat_message` tylko dopisywana;
-  - budżety w kodzie; aktualne stawki i progi z narzędzi.
-- Otwarte decyzje: Q-33, Q-34, Q-35; D-22.
-- Decyzje: D-10 (bez eskalacji do Sonnet 5.5), D-11, D-29.
-- Profil żądań: [modules/czat.md](modules/czat.md).
-- Szkic kryteriów:
-  - `UPDATE` przez połączenie `chat` → błąd bazy;
-  - `render_chart` z zapytaniem `revenue_by_month` → panel rysuje wykres z danych pobranych przez siebie; liczby równe wynikowi zapytania, nie tekstowi modelu;
-  - wstrzyknięty „wykres z `audit_log`” → odrzucony przez walidację schematu;
-  - wklejona treść z ukrytym poleceniem → brak szkicu, jeśli nie prosiłeś; każdy szkic oznacza źródła nieufne;
-  - przekroczony budżet dzienny → żądanie odrzucone i push;
-  - odpowiedź `refusal` → komunikat w panelu, brak ponowienia.
-- Dowody:
-  - test wklejonej treści z ukrytym poleceniem: linia `junit.xml`, sha256 fixture treści, zero wierszy `draft`;
-  - odmowa zapisu `chat_ro`: wyjście komendy z błędem uprawnień PostgreSQL dla `UPDATE` przez połączenie `chat`;
-  - liczby wykresu: linia `junit.xml` testu porównującego dane `render_chart` z wynikiem `revenue_by_month` i zrzut panelu.
+Zaślepka przeniesiona do pliku fazy: [phases/f6-czat.md](phases/f6-czat.md).
 
 ## Archiwum i materiały poza fazami
 

@@ -1,0 +1,6 @@
+phase: f6
+# F6 powstaje częściami (D-58). Na starcie tylko wiersze przekrojowe; wiersze F6.1–F6.5 oraz cc-28, cc-29 i cc-30 dochodzą z kodem swoich części.
+criteria:
+  - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
+  - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
+  - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

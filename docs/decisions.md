@@ -145,6 +145,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-55 | założenia F3.4: dompdf z wąskim wyjątkiem LGPL w sprawdzeniu licencji; KOD I z `xml_sent` o sha256 równym `invoiceHash` przyjęcia, host z `ksef.kod_i_hosts` dla celu faktury; jeden dwujęzyczny PDF zapisany raz; link płatności i adres klienta z endpointów FreshBooks do potwierdzenia na PROD; zapis zwrotny tylko `sales_invoice` VAT, wiadomość przy `accepted`; okres równoległy bez faktur z `approval` | przyjęta 2026-10-14 | Q-26, Q-10 |
 | D-56 | kod F5 częściami, przed odbiorem F0b, F1, F2 i F3: F5.1, F5.2, F5.4 i F5.5 bez sieci na `FakeJpkGateway`, `FakeEDeklaracjeGateway` i ręcznie pisanych nagraniach; F5.3 i F5.6 (live) po bramkach testowych; brak XSD zatrzymuje tylko swoją część | przyjęta 2026-10-14 | Q-12, Q-25, Q-31 |
 | D-57 | założenia F5.1: kształt JSON API JPK i numer oryginału jako 32 znaki hex do potwierdzenia w F5.3; odmowa przed `FinishUpload` → `rejected`, timeout `FinishUpload` → `unknown`; fikcyjne zaślepki XSD tylko w testach, `jpk-init-upload` i `jpk-auth-data` wstrzymane; `hash_mismatch` → złożenie `draft`; data urodzenia tylko w `Podmiot1` (wymóg XSD); atrapa `dummy` w `FilingSubject` poza prod | przyjęta 2026-10-14 | – |
+| D-58 | kod F6 częściami, przed odbiorem F0b–F5: F6.1–F6.4 bez sieci na `MockHttpClient` i ręcznie pisanych odpowiedziach Messages API z danymi fikcyjnymi; F6.5 (live) po kluczu workspace testowego z budżetem przebiegu; model tylko `claude-haiku-5-5`, narzędzia z `chat.phases_live`, `chat_ro` na widokach właściciela | przyjęta 2026-10-14 | Q-33, Q-35 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1091,3 +1092,28 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - TLS: `crypto_method` TLS 1.2 jako minimum i cztery zestawy TLS 1.2 z listy sześciu w `jpk.tls_ciphers`; dwa zestawy TLS 1.3 to domyślne OpenSSL, bo opcja `ciphers` ich nie ustawia. Wynegocjowany zestaw sprawdza `jpk-te-tls` w F5.3.
 - **Skutki:** bez migracji; testy kryteriów F5.1 w `tests/Acceptance/f5.yaml` bez `jpk-init-upload` i `jpk-auth-data`; nazwy w [naming.md](naming.md), „Implementacja F5.1”; zmiana założeń to nowy wpis tutaj.
 - **Pytania:** brak.
+
+### D-58 Kod F6 częściami, przed odbiorem F0b–F5
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - F6 startuje po F5 (D-30). Kod F0b, F1, F2, F3.1–F3.4 i F5.1 jest na `main`, a odbiory czekają na VPS (D-18), hosty testowe, XSD i przegląd doradcy (D-04).
+  - Claude API nie ma środowiska testowego; testy idą na nagranych odpowiedziach, a `@group live` kosztuje ([testing.md](testing.md), „Polityka per konektor”). Klucza workspace testowego jeszcze nie ma.
+  - Tabel `chat_session`, `chat_message` i `draft` ani roli `chat_ro` nie ma w schemacie. Bramka F0b obsługuje `subject_type` = `draft` atrapą `dummy.subject.draft` (D-41).
+- **Decyzja:**
+  - Plik fazy [phases/f6-czat.md](phases/f6-czat.md) dzieli F6 na F6.1–F6.5. F6.1–F6.4 powstają teraz na gałęziach `f6-…`, każda część z osobnym PR.
+  - Części offline działają na `MockHttpClient` z ręcznie pisanymi odpowiedziami Messages API w `tests/Fixtures/Claude`, wyłącznie z danymi fikcyjnymi, przez ten sam dekorator `HostAllowlist` co w produkcji. Kryteria sprawdzają warstwę narzędzi, schematy i stan bazy, nie treść odpowiedzi modelu.
+  - F6.5 (live) czeka na klucz osobnego workspace testowego z niskim limitem wydatków; działa na danych fikcyjnych z budżetem przebiegu `chat.live_run_budget_usd` (propozycja $0.25). Nagrania `app:fixtures:record claude` robisz Ty albo sesja ręcznie, poza CI; inny kształt odpowiedzi niż w nagraniach ręcznych to nowy rekord.
+  - Model: walidacja konfiguracji przyjmuje tylko `chat.model` = `claude-haiku-5-5`; `chat.effort` jest wymagany, bez wartości domyślnej (D-10). Zmiana modelu to nowy rekord po teście.
+  - Narzędzia i wartości `query` wchodzą do listy z faz w konfiguracji `chat.phases_live`: `get_obligations` od F0b; `query_invoices`, `get_fx_rate`, `verify_counterparty`, `render_chart` i `costs_by_month` od F1; `revenue_by_month` od F2; `sales_by_currency`, `invoice_list` i `top_counterparties` od F3. W dev i testach lista obejmuje wszystkie fazy na danych fikcyjnych; na `kokpit-prod` tylko fazy po go-live.
+  - Rola `chat_ro` powstaje w `docker/db/init-db.sh` jak `kokpit_app`, z `default_transaction_read_only = on` i `statement_timeout` 2 s na roli. Widoki `chat_*` należą do `kokpit_owner` bez `security_invoker`, więc `chat_ro` ma tylko `SELECT` na widokach i zero praw do tabel.
+  - `chat_message` jest tylko dopisywane: trigger odrzuca `UPDATE`; `retention.purge` usuwa całą rozmowę po 12 miesiącach od `closed_at`, a `draft.chat_session_id` przechodzi na NULL.
+  - Koszt liczy cennik `chat.pricing` z konfiguracji (`brick/math`, `NUMERIC(12,6)`), bez literałów w kodzie. `cache_control` na stałym prefiksie (prompt systemowy, narzędzia, snapshot prawa) od pierwszej wersji, jak w „Szybkich wygranych” [roadmap.md](roadmap.md).
+  - `DraftSubject` zastępuje atrapę dla `subject_type` = `draft`; poza `APP_ENV=prod` atrapa zostaje dla identyfikatorów bez wiersza `draft` (D-32). Szkic tylko do kopiowania (Q-35), `approval.connector` = NULL.
+  - Fakty F6 z [facts.md](facts.md) sprawdza sesja F6.1 jednorazowym odczytem dokumentacji Anthropic; F6.5 potwierdza je przebiegiem live.
+  - Rejestr `tests/Acceptance/f6.yaml` ma od startu wiersze przekrojowe `cc-11`, `cc-25` i `cc-26`; wiersze części oraz `cc-28`, `cc-29` i `cc-30` dochodzą w ich sesjach.
+- **Skutki:**
+  - Odbiór F6 i go-live czekają na odbiory F0b–F5, udany przebieg `live` F6.5 oraz wiersze `[manual]` `chat-dpa` i `chat-spend-limit`.
+  - D-22 zostaje „proponowana”: Claude API na DPA z SCC (Q-33) i szkice tylko do kopiowania (Q-35) to założenia domyślne.
+  - Nowe nazwy w [naming.md](naming.md), „Plan F6 (D-58)”; zmiana założeń to nowy wpis tutaj.
+- **Pytania:** Q-33, Q-35.
