@@ -18,7 +18,9 @@ final class SettingKeys
     public const VAT_STANDARD_RATE = 'vat.standard_rate';
     public const RYCZALT_SERVICE_MAP = 'ryczalt.service_map';
     public const LEDGER_AUTO_ENTRIES = 'ledger.auto_entries_enabled';
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES];
+    /** Dzień pierwszej Twojej faktury w KSeF (Q-10); dzień przejścia importu FreshBooks (docs/modules/freshbooks.md). */
+    public const KSEF_SALES_TRANSITION_ON = 'ksef.sales_transition_on';
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -41,8 +43,14 @@ final class SettingKeys
             self::ADVANCE_FREQUENCY => self::oneOf($key, $value, self::ADVANCE_FREQUENCIES),
             self::RYCZALT_SERVICE_MAP => \App\Ledger\ServiceMap::normalize($value),
             self::VAT_STANDARD_RATE => is_string($value) && preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', $value) ? $value : throw new \InvalidArgumentException('vat.standard_rate to procent z dwoma miejscami, np. 23.00.'),
+            self::KSEF_SALES_TRANSITION_ON => is_string($value) && self::isDate($value) ? $value : throw new \InvalidArgumentException('ksef.sales_transition_on to data RRRR-MM-DD.'),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };
+    }
+    private static function isDate(string $value): bool
+    {
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        return $date !== false && $date->format('Y-m-d') === $value;
     }
     /** @return array<string,string> */
     private static function identity(mixed $value): array

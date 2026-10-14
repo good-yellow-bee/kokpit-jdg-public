@@ -54,6 +54,10 @@ services:
   App\Connector\DeadMan\DeadManNotifier: ~
   App\Connector\Nbp\NbpConnector: ~
   App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
+  App\Connector\FreshBooks\FreshBooksOAuth: ~
+  App\Connector\FreshBooks\FreshBooksConnector: ~
+  App\Connector\FreshBooks\FreshBooksSync: ~
+  App\Connector\FreshBooks\FreshBooksPollHandler: ~
 when@dev:
   services:
     dummy.mock_response:

@@ -27,7 +27,7 @@ final class SettingController extends AbstractController
         }
         return $this->render('panel/settings.html.twig', ['current' => $current,'today' => $date->today(),'error' => null]);
     }
-    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|ryczalt\.service_map|ledger\.auto_entries_enabled'])]
+    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on'])]
     public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus): Response
     {
         if (!$this->isCsrfTokenValid('setting', $request->request->getString('_token'))) {

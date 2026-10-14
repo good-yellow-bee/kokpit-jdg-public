@@ -9,6 +9,7 @@ use App\Messenger\Message\ApprovalTaskMessage;
 use App\Messenger\Message\AuditVerifyMessage;
 use App\Messenger\Message\ConnectorCallMessage;
 use App\Messenger\Message\FileVerifyMessage;
+use App\Messenger\Message\FreshBooksPollMessage;
 use App\Messenger\Message\CredentialExpiryMessage;
 use App\Messenger\Message\NotificationDispatchMessage;
 use App\Messenger\Message\ObligationRecomputeMessage;
@@ -45,6 +46,8 @@ final class DefaultScheduleProvider implements ScheduleProviderInterface
             ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new ApprovalTaskMessage('approval.expire'), 'reads'), $timezone))
             ->add(RecurringMessage::cron('*/2 * * * *', new RedispatchMessage(new ApprovalTaskMessage('approval.poll_status'), 'reads'), $timezone))
             ->add(RecurringMessage::cron('*/10 * * * *', new RedispatchMessage(new ApprovalTaskMessage('approval.reconcile'), 'reads'), $timezone))
-            ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new ApprovalDispatchWaitingMessage('approval.dispatch_waiting'), 'official_writes'), $timezone));
+            ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new ApprovalDispatchWaitingMessage('approval.dispatch_waiting'), 'official_writes'), $timezone))
+            ->add(RecurringMessage::cron('*/15 * * * *', new RedispatchMessage(new FreshBooksPollMessage('freshbooks.poll_invoices'), 'reads'), $timezone))
+            ->add(RecurringMessage::cron('7 * * * *', new RedispatchMessage(new FreshBooksPollMessage('freshbooks.poll_payments'), 'reads'), $timezone));
     }
 }

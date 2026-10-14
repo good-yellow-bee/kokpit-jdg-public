@@ -101,6 +101,20 @@
         </form>
     </section>
 
+    {% set row = current['ksef.sales_transition_on'] %}
+    <section id="ksef-sales_transition_on">
+        <h2>Dzień przejścia na KSeF (ksef.sales_transition_on)</h2>
+        <p>Dzień pierwszej Twojej faktury w KSeF. Faktury FreshBooks sprzed tego dnia trafiają do ewidencji jako wystawione poza KSeF; od tego dnia czekają na odpowiednik z KSeF. Bez ustawienia kokpit bierze datę wystawienia najstarszej faktury z Subject1.</p>
+        <p>Teraz: {{ row ? row.value ~ ' od ' ~ row.valid_from : 'brak ustawienia' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'ksef.sales_transition_on'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>Dzień przejścia <input name="value" type="date" required></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
     {% set zus = current['zus.parameters'] %}
     <section id="zus-parameters">
         <h2>Parametry ZUS na rok (zus.parameters)</h2>

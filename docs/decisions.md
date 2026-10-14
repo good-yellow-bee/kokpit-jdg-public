@@ -131,6 +131,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-41 | szkielet bramki F0b: rejestr przedmiotów, `DispatchGuard`, wiek `unknown`, okna odpytywania, ochrona przed `messenger:failed:retry` | przyjęta 2026-10-11 | Q-35 |
 | D-42 | kod F1 przed odbiorem F0a, F0b, F2.1 i F2.4, częściami; nagrania HTTP z laptopa albo ze środowiska z dozwolonymi hostami testowymi | przyjęta 2026-10-11 | Q-19, Q-39 |
 | D-44 | kod F2.2 przed odbiorem F0b i F1, częściami: najpierw bez sieci (stawki, kurs PIT, wpisy z Subject1, wpis ręczny, błąd wpisu), potem FreshBooks i płatności, potem korekty KOR i uzgodnienia | przyjęta 2026-10-14 | Q-22 |
+| D-45 | FreshBooks w F2.2: szkic `draft` od dnia przejścia, data przychodu z `create_date` albo wcześniejszej zapłaty, stan OAuth jako jeden zaszyfrowany JSON, przypisanie płatności i wiersze `fx_difference` | przyjęta 2026-10-14 | Q-24, Q-26 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -836,3 +837,24 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Wiersze F2.2 w `tests/Acceptance/f2.yaml` rosną z każdą częścią. Odbiór F2.2 dalej czeka na odbiory F0b i F1.
   - Zrzuty `screens/…` z kryteriów F2.2 to kroki `[manual]` przy odbiorze.
 - **Pytania:** Q-22.
+
+### D-45 FreshBooks w F2.2: szkice, data przychodu, OAuth i płatności
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - [modules/freshbooks.md](modules/freshbooks.md) mówił, że do go-live F3 faktura FreshBooks od dnia przejścia czeka bez wiersza. Plik fazy F2 i kryterium `freshbooks-draft-before-subject1` wymagają szkicu `draft`, który przy imporcie Subject1 oddaje `freshbooks_id`.
+  - Pole daty usługi FreshBooks (`fulfillment_date`) nie jest potwierdzone nagraniem, a firmy testowej nie ma (D-35).
+  - FreshBooks zwraca jeden refresh token na grant i `account_id` tylko z `users/me`.
+- **Decyzja:**
+  - Wygrywa plik fazy: od dnia przejścia polling tworzy wiersz `invoice` w stanie `draft` (bez pozycji, bez `ready`), z kontrahentem po `freshbooks_client_id`. Szkic, którego kraju nie da się ustalić, czeka bez wiersza (wynik `pending`). Import Subject1 o tym samym numerze w jednej transakcji przenosi szkic do `cancelled_before_send` i daje `freshbooks_id` fakturze z KSeF.
+  - Dzień przejścia: `setting` `ksef.sales_transition_on`, a bez niego P_1 najstarszej faktury sprzedaży z Subject1. Bez faktur z KSeF każda faktura FreshBooks jest sprzed przejścia.
+  - Data przychodu faktury FreshBooks sprzed przejścia to `create_date`, a przy wcześniejszej zapłacie w `payment` dzień zapłaty (art. 14 ust. 1c). Różnicę z datą usługi pokazuje uzgodnienie FreshBooks (część 3).
+  - Stan `freshbooks_oauth` to jeden zaszyfrowany JSON: refresh token, bearer, jego ważność, `account_id` i adres zwrotny. `valid_until` przesuwa się o rok przy każdym odświeżeniu. Odrzucony refresh token daje stan `expired` i błąd `grant_lost`.
+  - Sekrety aplikacji OAuth: `FRESHBOOKS_<CEL>_CLIENT_ID` i `FRESHBOOKS_<CEL>_CLIENT_SECRET` ([security.md](security.md)).
+  - Płatność bez faktury z `freshbooks_id` dostaje `revenue_entry_id` wiersza `regular` o tym numerze z najnowszego roku nie późniejszego niż zapłata.
+  - Wiersz `fx_difference` ma `source` = `freshbooks` i `invoice_id` wiersza źródłowego. Zerowa różnica nie daje wiersza, ale ustawia `fx_posted_at`.
+  - Kursor `invoices` nie cofa się. Faktura oczekująca ma zmianę najwyżej dzień przed `last_value`, więc okno `updated_min` minus 1 dzień ją obejmuje.
+- **Skutki:**
+  - Tabela „Klasyfikacja faktury FreshBooks” w [modules/freshbooks.md](modules/freshbooks.md) ma szkic `draft` już w F2.2.
+  - Powiadomienie push „połącz ponownie FreshBooks” czeka na kategorię `notification`; do tego czasu stan `expired` pokazuje panel `/freshbooks`.
+- **Pytania:** Q-24, Q-26.

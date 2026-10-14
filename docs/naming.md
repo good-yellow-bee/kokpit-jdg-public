@@ -320,7 +320,17 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Ustawienia | `ryczalt.service_map`, `ledger.auto_entries_enabled` w `SettingKeys` i w panelu `/settings` |
 | Panel | `LedgerController`; `/ledger` (braki wpisów, wiersze roku, wpis ręczny), `POST /ledger/manual` |
 | Akcje audytu | `ledger.manual_entry`, `ledger.entry_corrected` |
-| Komendy | `app:ledger:import ksef_subject1 <rok>` (odtworzenie) |
+| Komendy | `app:ledger:import ksef_subject1 <rok>` i `app:ledger:import freshbooks <rok>` (odtworzenie) |
+| Konektor `freshbooks` (`src/Connector/FreshBooks`) | `FreshBooksOAuth` (`authorizeUrl`, `connect`, `connected`, `session`), `FreshBooksConnector` (`invoices`, `payments`, `invoice`), `FreshBooksInvoice`, `FreshBooksPayment`, `FreshBooksSync` (`pollInvoices`, `pollPayments`, `reconstruct`; `BACKFILL_FROM`), `FreshBooksPollHandler`; wyliczenie `FreshBooksError` (`not_connected`, `grant_lost`, `token_rejected`, `invalid_response`, `http_error`, `rate_limited`), `FreshBooksException` |
+| Operacje `connector_call` FreshBooks | `oauth_token`, `me`, `invoices`, `payments`, `invoice` |
+| Ewidencja z FreshBooks i płatności (`src/Ledger`) | `FreshBooksLedger` (`transitionDay`, `classify`, `ledger`, `taxIdentity`, `party`, `countryCode`; wyniki `linked`, `unchanged`, `draft_created`, `draft_updated`, `draft_unchanged`, `draft_cancelled`, `deleted`, `skipped_draft`, `pending`, `number_conflict`, `fields_only`, `written`, `duplicate`, `rate_missing`, `fx_rate_pending`), `PaymentLedger` (`upsert`: `new`, `known`, `deleted`; `matchByInvoice`, `matchByNumber`, `awaitingFx`), `FxDifference` (`post`: `posted`, `no_difference`, `already_posted`, `pln`, `unmatched`, `source_missing`, `source_without_fx`, `fx_rate_pending`), `RevenueEntryWriter::append`, `CounterpartyDirectory::freshbooksClient` |
+| Tabela | `payment` (migracja F2.2 część 2), klucz obcy `revenue_entry_payment_fk`, indeks `revenue_entry_payment_source` |
+| Stan `freshbooks_oauth` | zaszyfrowany JSON z kluczami `refresh_token`, `access_token`, `access_expires_at`, `account_id`, `redirect_uri` (D-45) |
+| Sekrety | `FRESHBOOKS_<CEL>_CLIENT_ID`, `FRESHBOOKS_<CEL>_CLIENT_SECRET`; w sejfie testowym fikcyjne `FRESHBOOKS_TEST_*` |
+| Harmonogram | `FreshBooksPollMessage` (transport `reads`): `freshbooks.poll_invoices` co 15 min, `freshbooks.poll_payments` co godzinę (minuta 7) |
+| Panel | `FreshBooksController`: `/freshbooks`, `POST /freshbooks/connect` (step-up, token CSRF `freshbooks`), `/freshbooks/callback`; sesja `freshbooks.oauth_state`; `ksef.sales_transition_on` w `/settings` |
+| Akcje audytu | `freshbooks.connected`; `sale.imported_subject1` z `freshbooks_draft_id`, gdy szkic oddał `freshbooks_id` |
+| Fixtures | `tests/Fixtures/FreshBooks` (ręcznie pisane, konto `fikc01`), `FreshBooksTestTools` |
 
 ### Implementacja F2.4: nazwy techniczne
 

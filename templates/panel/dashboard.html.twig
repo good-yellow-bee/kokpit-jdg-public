@@ -13,5 +13,5 @@
     {% endif %}
     {% if passkey_warning %}<p role="alert" id="passkey-warning">Masz tylko jeden passkey. <a href="{{ path('panel_passkeys') }}">Dodaj drugi</a> na innym urządzeniu.</p>{% endif %}
     <p>Panel jest gotowy do bezpiecznego logowania passkeyem.</p>
-    <nav><a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_passkeys') }}">Passkeye</a></nav>
+    <nav><a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_passkeys') }}">Passkeye</a></nav>
 {% endblock %}

@@ -43,6 +43,19 @@ final readonly class CounterpartyDirectory
         return $id;
     }
 
+    /** Klient FreshBooks: najpierw `freshbooks_client_id`, potem identyfikator podatkowy; kraj i identyfikator potwierdzasz w onboardingu F3. */
+    public function freshbooksClient(string $clientId, Fa3Party $party): string
+    {
+        $environment = $this->configuration->environment();
+        $id = $this->db->fetchOne('SELECT id FROM counterparty WHERE environment=? AND freshbooks_client_id=? FOR UPDATE', [$environment, $clientId]);
+        if (is_string($id)) {
+            return $id;
+        }
+        $id = $this->match($party, 'is_client');
+        $this->db->executeStatement('UPDATE counterparty SET freshbooks_client_id=?, updated_at=? WHERE id=? AND freshbooks_client_id IS NULL', [$clientId, $this->now(), $id]);
+        return $id;
+    }
+
     private function match(Fa3Party $party, string $role): string
     {
         $environment = $this->configuration->environment();

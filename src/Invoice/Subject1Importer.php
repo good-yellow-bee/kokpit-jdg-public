@@ -50,6 +50,14 @@ final readonly class Subject1Importer
             $corrects = $document->corrected['ksefNumber'] === null ? false : $this->db->fetchOne("SELECT id FROM invoice WHERE environment=? AND direction='sale' AND ksef_number=?", [$environment, $document->corrected['ksefNumber']]);
             $id = (string) UuidV7::generate($this->clock->now());
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
+            // Szkic FreshBooks o tym numerze oddaje `freshbooks_id` fakturze z KSeF w tej samej transakcji (D-45).
+            $draft = $document->kind === 'VAT' ? $this->db->fetchAssociative(
+                "SELECT id,freshbooks_id,freshbooks_status FROM invoice WHERE environment=? AND direction='sale' AND kind='VAT' AND invoice_number=? AND status='draft' AND freshbooks_id IS NOT NULL FOR UPDATE",
+                [$environment, $document->number],
+            ) : false;
+            if ($draft !== false) {
+                $this->db->update('invoice', ['status' => 'cancelled_before_send','freshbooks_id' => null,'updated_at' => $now], ['id' => $draft['id']]);
+            }
             $snapshot = ['name' => $document->buyer->name,'nip' => $document->buyer->nip,'eu_vat_prefix' => $document->buyer->euVatPrefix,'eu_vat_number' => $document->buyer->euVatNumber,
                 'id_country' => $document->buyer->idCountry,'foreign_tax_id' => $document->buyer->foreignTaxId,'no_id' => $document->buyer->noId,'address' => $document->buyer->address];
             $this->db->insert('invoice', [
@@ -63,6 +71,7 @@ final readonly class Subject1Importer
                 'corrected_invoice_number' => $document->corrected['number'],'corrected_issue_date' => $document->corrected['issueDate'],'corrected_ksef_number' => $document->corrected['ksefNumber'],
                 'correction_reason' => $document->corrected['reason'],'correction_type' => $document->corrected['type'],
                 'corrects_invoice_id' => is_string($corrects) ? $corrects : null,'created_at' => $now,'updated_at' => $now,
+                'freshbooks_id' => $draft === false ? null : $draft['freshbooks_id'],'freshbooks_status' => $draft === false ? null : $draft['freshbooks_status'],
             ]);
             foreach ($document->lines as $line) {
                 $this->db->insert('invoice_line', [
@@ -72,7 +81,7 @@ final readonly class Subject1Importer
                 ]);
             }
             $this->files->put($xml, $environment, 'xml_sent', 'application/xml', 'invoice', $id, (int) substr($document->issueDate, 0, 4));
-            $this->audit->append('sale.imported_subject1', ['ksef_number' => $ksefNumber], $environment, 'invoice', $id);
+            $this->audit->append('sale.imported_subject1', ['ksef_number' => $ksefNumber] + ($draft === false ? [] : ['freshbooks_draft_id' => $draft['id']]), $environment, 'invoice', $id);
             // Kurs PIT, stawki pozycji i, po przełączeniu, wiersze ewidencji (F2.2).
             $this->ledger->onImported($id);
             return $id;
