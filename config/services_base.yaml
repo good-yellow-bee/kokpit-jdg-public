@@ -7,6 +7,9 @@ parameters:
     draft: { pending: P30D, approved: PT24H }
   # Okno odpytywania `submitted` → `unknown` per konektor.
   approval.poll_window: { dummy: PT1H, ksef: PT12H, jpk: P3D, edeklaracje: P3D }
+  # formCode sesji KSeF dla faktur (docs/modules/ksef.md) i limit rozmiaru faktury bez załączników (1 MB), F3.1.
+  ksef.form_code: { system_code: 'FA (3)', schema_version: '1-0E', value: FA }
+  ksef.invoice_max_bytes: 1000000
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\:
@@ -37,6 +40,8 @@ services:
     arguments: ['@Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore']
   App\Xml\XsdCatalog:
     arguments: { $directory: '%kernel.project_dir%/resources/xsd' }
+  App\Xml\Fa3PresendCheck:
+    arguments: { $formCode: '%ksef.form_code%', $maxBytes: '%ksef.invoice_max_bytes%' }
   App\Approval\ApprovalExpiry:
     arguments: { $expiry: '%approval.expiry%' }
   App\Approval\SubmissionReconciler:

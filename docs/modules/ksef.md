@@ -261,7 +261,7 @@ Większość wartości ustalają XSD FA(3) 1-0E i broszura MF ([schemat](https:/
 | `P_16`, `P_17`, `P_18A` | 2 (bez metody kasowej VAT, bez samofakturowania, bez podzielonej płatności); zmianę wskazuje przegląd doradcy |
 | `P_14_xW` i kurs w pozycjach | tylko gdy faktura w walucie obcej ma polski VAT; kurs według [../tax-rules.md](../tax-rules.md) |
 | `KursWalutyZ` | tylko faktura zaliczkowa; zaliczki poza zakresem |
-| Podmiot1 | z `setting` `company.identity` (sekcja „Dane własne sprzedawcy”) |
+| Podmiot1 | z `setting` `company.identity` (sekcja „Dane własne sprzedawcy”); przy `eu_b2b` też `PrefiksPodatnika` PL, bo faktura podaje numer VAT UE sprzedawcy (art. 106e ust. 1 pkt 4); brak `vat_eu_number` blokuje budowę |
 | Podmiot2 | ze `buyer_snapshot` z dnia wystawienia |
 | `BrakID` | nigdy: tylko B2B, identyfikator nabywcy obowiązkowy (D-05) |
 
@@ -271,7 +271,7 @@ Większość wartości ustalają XSD FA(3) 1-0E i broszura MF ([schemat](https:/
 | --- | --- | --- | --- | --- |
 | P_12 | `np II` | `np I` | `np I` | stawka krajowa, zwykle `23` |
 | suma | P_13_9 | P_13_8 | P_13_8 | P_13_1 i P_14_1 |
-| P_18 „odwrotne obciążenie” | 1, bo VAT rozlicza nabywca | rozstrzyga przegląd doradcy | rozstrzyga przegląd doradcy: zależy od tego, czy nabywca płaci VAT albo podatek o podobnym charakterze | 2 |
+| P_18 „odwrotne obciążenie” | 1, bo VAT rozlicza nabywca | rozstrzyga przegląd doradcy | rozstrzyga przegląd doradcy: zależy od tego, czy nabywca płaci VAT albo podatek o podobnym charakterze; założenie F3.1 do przeglądu: 1 | 2 |
 | Podmiot2 | `KodUE` i `NrVatUE` bez prefiksu kraju | `KodKraju` i `NrID` (krajowy identyfikator podatkowy) | `KodKraju` i `NrID` | `NIP` |
 | adnotacja w PDF (PL i EN) | odwrotne obciążenie; usługa z art. 100 ust. 1 pkt 4 | usługa poza terytorium kraju; adnotacja według P_18 | usługa poza terytorium kraju; adnotacja według P_18 | brak |
 | VAT-UE | tak, w miesiącu obowiązku podatkowego | nie: VAT-UE obejmuje tylko nabywców zidentyfikowanych (art. 100 ust. 1 pkt 4) | nie | nie |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Xsd;
 
+use App\Invoice\Fa3Reader;
 use App\Ledger\JpkEwpSchema;
 use App\Xml\XsdCatalog;
 use App\Xml\XsdValidator;
@@ -29,6 +30,19 @@ final class XsdInventoryTest extends TestCase
         self::assertIsString($xml);
         self::assertSame([], (new XsdValidator(XsdCatalog::default()))->validate($xml, JpkEwpSchema::SCHEMA));
         // Loader działa w całym procesie, więc po walidacji wraca domyślny.
+        self::assertNull(libxml_get_external_entity_loader());
+    }
+    public function testFa3GoldenFilesValidateOffline(): void
+    {
+        // F3.1: złote pliki FA(3) w tests/Fixtures/Ksef/golden walidują się bez sieci (FA(3) 1-0E z importami crd.gov.pl).
+        $files = glob(dirname(__DIR__) . '/Fixtures/Ksef/golden/fa3-*.xml') ?: [];
+        self::assertNotSame([], $files);
+        $validator = new XsdValidator(XsdCatalog::default());
+        foreach ($files as $file) {
+            $xml = file_get_contents($file);
+            self::assertIsString($xml);
+            self::assertSame([], $validator->validate($xml, Fa3Reader::SCHEMA), basename($file));
+        }
         self::assertNull(libxml_get_external_entity_loader());
     }
     public function testUnknownRemoteSchemaIsNeverFetched(): void

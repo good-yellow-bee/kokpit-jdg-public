@@ -192,7 +192,8 @@ final class SettingKeys
         }
         return $value;
     }
-    private static function validNip(string $value): bool
+    /** Suma kontrolna NIP (wagi 6,5,7,2,3,4,5,6,7); używa jej też kontrola FA(3) przed wysyłką. */
+    public static function validNip(string $value): bool
     {
         if (!preg_match('/^[0-9]{10}$/D', $value)) {
             return false;

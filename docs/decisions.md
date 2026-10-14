@@ -138,6 +138,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-48 | okres F2.3: `period` powstaje przy pierwszym zapisie z datą w M; zamknięty M to też JPK_V7M w drodze albo przyjęty bez wiersza `period`; `ledger.entry_check` działa tylko po przełączeniu wpisów; komplet szukany kluczem deduplikacji; wpis do minionego M sprawdza komplet od razu | przyjęta 2026-10-14 | Q-11 |
 | D-49 | złożenie poza kokpitem F2.3: JPK_V7M i VAT-UE z UPO jako `filing` `accepted`/`manual` bez `approval`; P_62 z pliku albo wpisany; bramki `period.checklist` liczone przy zapisie i tylko alarmują; korekta po ponownym otwarciu jako `purpose` 2; `vat_ue` po bramkach od pierwszego zamkniętego miesiąca | przyjęta 2026-10-14 | – |
 | D-50 | kod F3 przed odbiorem F0b, F1 i F2, częściami: F3.1–F3.4 bez sieci na `FakeKsefGateway`, ręcznie pisanych nagraniach KSeF i fixtures FreshBooks; F3.5 na api-test po `KsefGateway` z sesji 1 F1 | przyjęta 2026-10-14 | Q-29 |
+| D-51 | założenia F3.1 do przeglądu doradcy (Q-29): P_18 = 1 dla `non_eu_b2b`; `eu_b2b` z `PrefiksPodatnika` PL i wymaganym `vat_eu_number`; `eu_b2b_unidentified` odrzucany na każdym celu; kurs VAT z art. 31a ust. 1–2 bez ust. 2a (Q-23); KOR jako pary pozycji przed i po z `StanPrzed` | przyjęta 2026-10-14 | Q-23, Q-29 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -968,4 +969,17 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - `eu_b2b_unidentified` zostaje zablokowany do przeglądu doradcy (Q-29).
 - **Skutki:**
   - Odbiór F3 i go-live nadal czekają na odbiory F0b, F1 i F2 oraz przegląd doradcy (D-04).
+- **Pytania:** brak.
+
+### D-51 Założenia FA(3) w F3.1
+
+- **Status:** przyjęta 2026-10-14 (decyzja Claude; wszystkie punkty wracają do przeglądu doradcy, Q-29, D-04).
+- **Decyzja:**
+  - `non_eu_b2b`: P_18 = 1. [modules/ksef.md](modules/ksef.md) zostawiał to doradcy bez wartości domyślnej.
+  - `eu_b2b`: Podmiot1 z `PrefiksPodatnika` PL; brak `vat_eu_number` w `company.identity` blokuje budowę (art. 106e ust. 1 pkt 4).
+  - `eu_b2b_unidentified` odrzucany przy budowie na każdym celu, z odwołaniem do Q-29 (D-05, D-50).
+  - Kurs VAT według art. 31a ust. 1 i 2, bez wyboru z ust. 2a (Q-23).
+  - KOR: pozycje parami przed i po (`StanPrzed`) z jednym `NrWierszaFa`; korekta do zera ma pozycję „po” z ilością 0.
+  - Limit rozmiaru przed wysyłką: parametr `ksef.invoice_max_bytes`, nie literał w kodzie.
+- **Skutki:** złote pliki w `tests/Fixtures/Ksef/golden` utrwalają te założenia; zmiana po przeglądzie to nowe złote pliki i wpis tutaj.
 - **Pytania:** brak.
