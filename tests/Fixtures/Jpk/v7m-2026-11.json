@@ -1,0 +1,40 @@
+{
+    "_note": "Fikcyjny miesiac JPK_V7M(3) 11.2026 (fictional, F5.4, D-65): wszystkie nazwy, numery, NIP i numery KSeF sa fikcyjne.",
+    "period_start": "2026-11-01",
+    "now": "2026-12-10T09:00:00Z",
+    "opening_vat_carry_forward_pln": "150.00",
+    "fx_rates": [
+        {"ref": "EUR-2026-11-09", "currency": "EUR", "effective_date": "2026-11-09", "table_no": "217/A/NBP/2026 (fictional)", "mid": "4.240000"},
+        {"ref": "EUR-2026-11-27", "currency": "EUR", "effective_date": "2026-11-27", "table_no": "231/A/NBP/2026 (fictional)", "mid": "4.250000"},
+        {"ref": "USD-2026-11-04", "currency": "USD", "effective_date": "2026-11-04", "table_no": "214/A/NBP/2026 (fictional)", "mid": "3.800000"}
+    ],
+    "counterparties": {
+        "client_eu": {"name": "Fictional Kunde GmbH", "country": "DE", "eu_vat_prefix": "DE", "eu_vat_number": "999999999", "is_client": true},
+        "client_us": {"name": "Fictional Client Inc.", "country": "US", "foreign_tax_id": "12-0000001", "is_client": true},
+        "client_pl": {"name": "Fikcyjny Klient sp. z o.o. (fictional)", "country": "PL", "nip": "5555555555", "is_client": true},
+        "supplier_eu": {"name": "Fictional Hosting Ltd", "country": "IE", "eu_vat_prefix": "IE", "eu_vat_number": "9999999WX", "is_supplier": true},
+        "supplier_us": {"name": "Fictional Software LLC", "country": "US", "foreign_tax_id": "98-7654321", "is_supplier": true},
+        "supplier_fees": {"name": "Fictional Payments Inc.", "country": "US", "foreign_tax_id": "12-3456789", "is_supplier": true},
+        "supplier_pl": {"name": "Fikcyjny Dostawca sp. z o.o. (fictional)", "country": "PL", "nip": "7777777777", "is_supplier": true}
+    },
+    "verifications": [
+        {"counterparty": "client_eu", "source": "vies", "subject": "DE999999999", "result": "valid", "checked_for_date": "2026-11-30"}
+    ],
+    "sales": [
+        {"number": "FV/2026/11/1", "counterparty": "client_eu", "scenario": "eu_b2b", "currency": "EUR", "net": "1000.00", "vat": "0.00", "issue_date": "2026-12-01", "tax_point_date": "2026-11-30", "fx": "EUR-2026-11-27", "net_pln": "4250.00", "vat_pln": "0.00", "ksef_number": "1111111111-20261201-0A1B2C-3D4E5F-A1", "ksef_issue_mode": "online"},
+        {"number": "FV/2026/11/2", "counterparty": "client_us", "scenario": "non_eu_b2b", "currency": "USD", "net": "500.00", "vat": "0.00", "issue_date": "2026-11-05", "tax_point_date": "2026-11-05", "fx": "USD-2026-11-04", "net_pln": "1900.00", "vat_pln": "0.00", "ksef_number": "1111111111-20261105-0A1B2C-3D4E5F-B2", "ksef_issue_mode": "online"},
+        {"number": "FV/2026/11/3", "counterparty": "client_pl", "scenario": "pl_b2b", "currency": "PLN", "net": "2000.00", "vat": "460.00", "issue_date": "2026-11-16", "tax_point_date": "2026-11-16", "fx": null, "net_pln": "2000.00", "vat_pln": "460.00", "ksef_number": "1111111111-20261116-0A1B2C-3D4E5F-C3", "ksef_issue_mode": "online"}
+    ],
+    "costs": [
+        {"number": "IE-2026-0042", "counterparty": "supplier_eu", "source": "email", "ksef_issue_mode": "outside_ksef", "import_services": "eu_28b", "currency": "EUR", "net": "100.00", "vat": "0.00", "issue_date": "2026-11-10", "tax_point_date": "2026-11-10", "received_on": "2026-11-10", "fx": "EUR-2026-11-09", "net_pln": "424.00", "vat_pln": "0.00", "self_assessed_vat_pln": "97.52", "vat_exempt": false, "deductible": true},
+        {"number": "US-INV-7781", "counterparty": "supplier_us", "source": "email", "ksef_issue_mode": "outside_ksef", "import_services": "other", "currency": "USD", "net": "50.00", "vat": "0.00", "issue_date": "2026-11-05", "tax_point_date": "2026-11-05", "received_on": "2026-11-06", "fx": "USD-2026-11-04", "net_pln": "190.00", "vat_pln": "0.00", "self_assessed_vat_pln": "43.70", "vat_exempt": false, "deductible": true},
+        {"number": "WEW/2026/11/1", "counterparty": "supplier_fees", "source": "manual", "ksef_issue_mode": "outside_ksef", "jpk_doc_type": "WEW", "import_services": "other", "currency": "PLN", "net": "30.00", "vat": "0.00", "issue_date": "2026-11-30", "tax_point_date": "2026-11-30", "received_on": "2026-11-30", "fx": null, "net_pln": "30.00", "vat_pln": "0.00", "self_assessed_vat_pln": "0.00", "vat_exempt": true, "deductible": false},
+        {"number": "FZ/2026/11/77", "counterparty": "supplier_pl", "source": "ksef", "ksef_issue_mode": null, "ksef_number": "7777777777-20261105-1A2B3C-4D5E6F-D4", "ksef_number_assigned_at": "2026-11-05T10:00:00Z", "currency": "PLN", "net": "1000.00", "vat": "230.00", "issue_date": "2026-11-05", "tax_point_date": "2026-11-05", "fx": null, "net_pln": "1000.00", "vat_pln": "230.00", "vat_exempt": false, "deductible": true},
+        {"number": "P/2026/11/5", "counterparty": "supplier_pl", "source": "paper", "ksef_issue_mode": "outside_ksef", "currency": "PLN", "net": "200.00", "vat": "46.00", "issue_date": "2026-11-12", "tax_point_date": "2026-11-12", "received_on": "2026-11-13", "fx": null, "net_pln": "200.00", "vat_pln": "46.00", "vat_exempt": false, "deductible": true},
+        {"number": "FZ/2026/11/9", "counterparty": "supplier_pl", "source": "email", "ksef_issue_mode": "offline24", "currency": "PLN", "net": "100.00", "vat": "23.00", "issue_date": "2026-11-20", "tax_point_date": "2026-11-20", "received_on": "2026-11-21", "fx": null, "net_pln": "100.00", "vat_pln": "23.00", "vat_exempt": false, "deductible": true}
+    ],
+    "expected": {
+        "k11": "6150.00", "k12": "4250.00", "vat_due": "601.22", "vat_input": "440.22",
+        "declaration": {"P_11": "6150", "P_12": "4250", "P_19": "2000", "P_20": "460", "P_27": "220", "P_28": "44", "P_29": "424", "P_30": "98", "P_37": "8794", "P_38": "602", "P_39": "150", "P_42": "1914", "P_43": "440", "P_48": "590", "P_51": "12"}
+    }
+}

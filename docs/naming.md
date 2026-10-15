@@ -554,6 +554,20 @@ Część b: sekcja niżej.
 | Testy i odbiór | `JpkStBuildTest`, `JpkStRequestTest`; `JpkTestTools` (`stBuilder`, `taxpayer`, `seedFixedAssets`, `stRows`, `stValue`), `JpkSendTestTools::filing(type)`; `scripts/jpk-acceptance.php st-dry-run`; artefakty `jpk/jpk-st-build.xml`, `cmd/jpk-st-build.txt`, `cmd/jpk-st-dry-run-off.txt`, `cmd/jpk-st-dry-run-on.txt`, `jpk/jpk-st-dry-run.xml`, `jpk/jpk-st-request.xml` |
 | Fixtures | `tests/Fixtures/Jpk/fixed-assets-2026.json` (fikcyjny wykaz `fixed_asset`) |
 
+### Implementacja F5.4 (D-65): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Generator (`src/Xml`) | `JpkV7mBuilder` (`build`; `SCHEMA` = `Schemat_JPK_V7M(3)_v1-0E.xsd`, `SCHEMA_VERSION` = `JPK_V7M(3)`), `JpkV7mDocument` (`valid`, `sha256`; `totals`, `declaration`, `diItems`, `p39Source`), `JpkMarker` (wyliczenie `NrKSeF`, `OFF`, `BFK`, `DI`; `of`, `wew`) |
+| Bramki i zamknięcie (`src/Ledger`) | `V7mGates` (`evaluate`; bramki `sales_final`, `costs_reviewed`, `fx_rates`, `vies_eu_b2b`, `eu_b2b_unidentified`, `opening_balance`), `MonthClose` (`accepted`), `FilingRequest::jpkV7m`, `FilingRequest::jpkV7mCorrection`, `JpkReplaceDi` (`run`), `OpeningBalance` (`confirm`, `confirmed`) |
+| Klucze `filing.totals` (JPK_V7M) | `p38`, `p39`, `p39_source` (`previous_filing`, `opening`), `p48`, `p51`, `p53`, `p62`, `k11`, `k12`, `sales_net`, `vat_due`, `vat_input`, `documents`, `sales_rows`, `purchase_rows`, `xml_sha256`, `p_ordzu`, `excess_policy` |
+| Klucze `approval.summary` (JPK_V7M) | jak `totals` oraz `type`, `period`, `period_start`, `period_end`, `purpose`, `schema_version`, `di_items` (`register`, `lp`, `document`, `counterparty`, `reason`: `wew`, `offline_without_number`), `checklist`, `previous` (P_51 i P_62 złożenia zastępowanego) |
+| Klucze `setting` | `vat.excess_policy` (`carry_forward`, Q-31), `wht.rates` (`standard` i `treaty` per kraj: stawki w procentach dla `license` i `services_21_2a`); kształty kluczy `opening.*`: `opening.vat_carry_forward_pln` (napis w pełnych złotych z `.00`), `opening.revenue_ytd` (stawka ryczałtu → kwota), `opening.zus_paid_ytd` (`social_pln`, `health_pln`), `opening.last_invoice_numbers` (seria → ostatni numer) |
+| Panel | „Otwarcie” `/opening` (`panel_opening`), `POST /opening/confirm` (`panel_opening_confirm`), token CSRF `opening`; pliki `evidence_vat`, `evidence_revenue`, `evidence_zus`, `evidence_invoices` |
+| Audyt | `opening_balance.confirmed`; `period.correction_required` z `cause` = `jpk.replace_di` i `target_id` faktury |
+| Zadania | `jpk.replace_di` przez `LedgerTaskMessage` (transport `reads`, codziennie 09:00) |
+| Testy i odbiór | `JpkV7mGoldenTest`, `JpkV7mMarkersTest`, `JpkV7mDeclarationTest`, `JpkV7mGatesTest`, `JpkV7mSendTest`, `JpkV7mCorrectionTest`, `JpkReplaceDiTest`, `OpeningBalanceConfirmTest`, `WhtObligationAmountsTest`; `JpkV7mTestTools`, `JpkV7mTestCase`; fikcyjny miesiąc `tests/Fixtures/Jpk/v7m-2026-11.json`; złoty plik `tests/Fixtures/Jpk/golden/jpk-v7m-golden.xml` |
+
 ### Plan F6 (D-58): nazwy
 
 | Rodzaj | Nazwy |

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JPK xmlns="http://crd.gov.pl/wzor/2025/12/19/14090/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="JPK_V7M (3)" wersjaSchemy="1-0E">JPK_VAT</KodFormularza>
+    <WariantFormularza>3</WariantFormularza>
+    <DataWytworzeniaJPK>2026-12-10T09:00:00Z</DataWytworzeniaJPK>
+    <CelZlozenia poz="P_7">1</CelZlozenia>
+    <KodUrzedu>1471</KodUrzedu>
+    <Rok>2026</Rok>
+    <Miesiac>11</Miesiac>
+  </Naglowek>
+  <Podmiot1 rola="Podatnik">
+    <OsobaFizyczna>
+      <etd:NIP>1111111111</etd:NIP>
+      <etd:ImiePierwsze>Fictional</etd:ImiePierwsze>
+      <etd:Nazwisko>Podatnik</etd:Nazwisko>
+      <etd:DataUrodzenia>1980-01-01</etd:DataUrodzenia>
+      <Email>fictional@example.invalid</Email>
+    </OsobaFizyczna>
+  </Podmiot1>
+  <Deklaracja>
+    <Naglowek>
+      <KodFormularzaDekl kodSystemowy="VAT-7 (23)" kodPodatku="VAT" rodzajZobowiazania="Z" wersjaSchemy="1-0E">VAT-7</KodFormularzaDekl>
+      <WariantFormularzaDekl>23</WariantFormularzaDekl>
+    </Naglowek>
+    <PozycjeSzczegolowe>
+      <P_11>6150</P_11>
+      <P_12>4250</P_12>
+      <P_19>2000</P_19>
+      <P_20>460</P_20>
+      <P_27>220</P_27>
+      <P_28>44</P_28>
+      <P_29>424</P_29>
+      <P_30>98</P_30>
+      <P_37>8794</P_37>
+      <P_38>602</P_38>
+      <P_39>150</P_39>
+      <P_42>1914</P_42>
+      <P_43>440</P_43>
+      <P_48>590</P_48>
+      <P_51>12</P_51>
+    </PozycjeSzczegolowe>
+    <Pouczenia>1</Pouczenia>
+  </Deklaracja>
+  <Ewidencja>
+    <SprzedazWiersz>
+      <LpSprzedazy>1</LpSprzedazy>
+      <KodKrajuNadaniaTIN>US</KodKrajuNadaniaTIN>
+      <NrKontrahenta>12-0000001</NrKontrahenta>
+      <NazwaKontrahenta>Fictional Client Inc.</NazwaKontrahenta>
+      <DowodSprzedazy>FV/2026/11/2</DowodSprzedazy>
+      <DataWystawienia>2026-11-05</DataWystawienia>
+      <NrKSeF>1111111111-20261105-0A1B2C-3D4E5F-B2</NrKSeF>
+      <K_11>1900.00</K_11>
+    </SprzedazWiersz>
+    <SprzedazWiersz>
+      <LpSprzedazy>2</LpSprzedazy>
+      <KodKrajuNadaniaTIN>US</KodKrajuNadaniaTIN>
+      <NrKontrahenta>98-7654321</NrKontrahenta>
+      <NazwaKontrahenta>Fictional Software LLC</NazwaKontrahenta>
+      <DowodSprzedazy>US-INV-7781</DowodSprzedazy>
+      <DataWystawienia>2026-11-05</DataWystawienia>
+      <BFK>1</BFK>
+      <K_27>190.00</K_27>
+      <K_28>43.70</K_28>
+    </SprzedazWiersz>
+    <SprzedazWiersz>
+      <LpSprzedazy>3</LpSprzedazy>
+      <KodKrajuNadaniaTIN>IE</KodKrajuNadaniaTIN>
+      <NrKontrahenta>9999999WX</NrKontrahenta>
+      <NazwaKontrahenta>Fictional Hosting Ltd</NazwaKontrahenta>
+      <DowodSprzedazy>IE-2026-0042</DowodSprzedazy>
+      <DataWystawienia>2026-11-10</DataWystawienia>
+      <BFK>1</BFK>
+      <K_29>424.00</K_29>
+      <K_30>97.52</K_30>
+    </SprzedazWiersz>
+    <SprzedazWiersz>
+      <LpSprzedazy>4</LpSprzedazy>
+      <NrKontrahenta>5555555555</NrKontrahenta>
+      <NazwaKontrahenta>Fikcyjny Klient sp. z o.o. (fictional)</NazwaKontrahenta>
+      <DowodSprzedazy>FV/2026/11/3</DowodSprzedazy>
+      <DataWystawienia>2026-11-16</DataWystawienia>
+      <NrKSeF>1111111111-20261116-0A1B2C-3D4E5F-C3</NrKSeF>
+      <K_19>2000.00</K_19>
+      <K_20>460.00</K_20>
+    </SprzedazWiersz>
+    <SprzedazWiersz>
+      <LpSprzedazy>5</LpSprzedazy>
+      <KodKrajuNadaniaTIN>US</KodKrajuNadaniaTIN>
+      <NrKontrahenta>12-3456789</NrKontrahenta>
+      <NazwaKontrahenta>Fictional Payments Inc.</NazwaKontrahenta>
+      <DowodSprzedazy>WEW/2026/11/1</DowodSprzedazy>
+      <DataWystawienia>2026-11-30</DataWystawienia>
+      <DI>1</DI>
+      <TypDokumentu>WEW</TypDokumentu>
+      <K_27>30.00</K_27>
+      <K_28>0.00</K_28>
+    </SprzedazWiersz>
+    <SprzedazWiersz>
+      <LpSprzedazy>6</LpSprzedazy>
+      <KodKrajuNadaniaTIN>DE</KodKrajuNadaniaTIN>
+      <NrKontrahenta>999999999</NrKontrahenta>
+      <NazwaKontrahenta>Fictional Kunde GmbH</NazwaKontrahenta>
+      <DowodSprzedazy>FV/2026/11/1</DowodSprzedazy>
+      <DataWystawienia>2026-12-01</DataWystawienia>
+      <DataSprzedazy>2026-11-30</DataSprzedazy>
+      <NrKSeF>1111111111-20261201-0A1B2C-3D4E5F-A1</NrKSeF>
+      <K_11>4250.00</K_11>
+      <K_12>4250.00</K_12>
+    </SprzedazWiersz>
+    <SprzedazCtrl>
+      <LiczbaWierszySprzedazy>6</LiczbaWierszySprzedazy>
+      <PodatekNalezny>601.22</PodatekNalezny>
+    </SprzedazCtrl>
+    <ZakupWiersz>
+      <LpZakupu>1</LpZakupu>
+      <NrDostawcy>7777777777</NrDostawcy>
+      <NazwaDostawcy>Fikcyjny Dostawca sp. z o.o. (fictional)</NazwaDostawcy>
+      <DowodZakupu>FZ/2026/11/77</DowodZakupu>
+      <DataZakupu>2026-11-05</DataZakupu>
+      <DataWplywu>2026-11-05</DataWplywu>
+      <NrKSeF>7777777777-20261105-1A2B3C-4D5E6F-D4</NrKSeF>
+      <K_42>1000.00</K_42>
+      <K_43>230.00</K_43>
+    </ZakupWiersz>
+    <ZakupWiersz>
+      <LpZakupu>2</LpZakupu>
+      <KodKrajuNadaniaTIN>US</KodKrajuNadaniaTIN>
+      <NrDostawcy>98-7654321</NrDostawcy>
+      <NazwaDostawcy>Fictional Software LLC</NazwaDostawcy>
+      <DowodZakupu>US-INV-7781</DowodZakupu>
+      <DataZakupu>2026-11-05</DataZakupu>
+      <DataWplywu>2026-11-06</DataWplywu>
+      <BFK>1</BFK>
+      <K_42>190.00</K_42>
+      <K_43>43.70</K_43>
+    </ZakupWiersz>
+    <ZakupWiersz>
+      <LpZakupu>3</LpZakupu>
+      <KodKrajuNadaniaTIN>IE</KodKrajuNadaniaTIN>
+      <NrDostawcy>9999999WX</NrDostawcy>
+      <NazwaDostawcy>Fictional Hosting Ltd</NazwaDostawcy>
+      <DowodZakupu>IE-2026-0042</DowodZakupu>
+      <DataZakupu>2026-11-10</DataZakupu>
+      <DataWplywu>2026-11-10</DataWplywu>
+      <BFK>1</BFK>
+      <K_42>424.00</K_42>
+      <K_43>97.52</K_43>
+    </ZakupWiersz>
+    <ZakupWiersz>
+      <LpZakupu>4</LpZakupu>
+      <NrDostawcy>7777777777</NrDostawcy>
+      <NazwaDostawcy>Fikcyjny Dostawca sp. z o.o. (fictional)</NazwaDostawcy>
+      <DowodZakupu>P/2026/11/5</DowodZakupu>
+      <DataZakupu>2026-11-12</DataZakupu>
+      <DataWplywu>2026-11-13</DataWplywu>
+      <BFK>1</BFK>
+      <K_42>200.00</K_42>
+      <K_43>46.00</K_43>
+    </ZakupWiersz>
+    <ZakupWiersz>
+      <LpZakupu>5</LpZakupu>
+      <NrDostawcy>7777777777</NrDostawcy>
+      <NazwaDostawcy>Fikcyjny Dostawca sp. z o.o. (fictional)</NazwaDostawcy>
+      <DowodZakupu>FZ/2026/11/9</DowodZakupu>
+      <DataZakupu>2026-11-20</DataZakupu>
+      <DataWplywu>2026-11-21</DataWplywu>
+      <DI>1</DI>
+      <K_42>100.00</K_42>
+      <K_43>23.00</K_43>
+    </ZakupWiersz>
+    <ZakupCtrl>
+      <LiczbaWierszyZakupow>5</LiczbaWierszyZakupow>
+      <PodatekNaliczony>440.22</PodatekNaliczony>
+    </ZakupCtrl>
+  </Ewidencja>
+</JPK>

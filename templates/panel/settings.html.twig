@@ -71,6 +71,20 @@
         </form>
     </section>
 
+    {% set rates = current['wht.rates'] %}
+    <section id="wht-rates">
+        <h2>Stawki WHT (wht.rates)</h2>
+        <p>Obowiązuje od: {{ rates ? rates.valid_from : 'brak; obowiązek wht_payment bez kwoty' }}. Stawka z umowy tylko przy ważnym certyfikacie rezydencji dostawcy (Q-21).</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'wht.rates'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>JSON: standard (license, services_21_2a), treaty (kraj → stawki) <textarea name="value" rows="6" cols="80" required>{{ rates ? rates.value|json_encode(constant('JSON_PRETTY_PRINT')) : '' }}</textarea></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Źródło <input name="legal_source"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
     {% set map = current['ryczalt.service_map'] %}
     <section id="ryczalt-service_map">
         <h2>Stawki ryczałtu per usługa (ryczalt.service_map)</h2>
@@ -99,7 +113,7 @@
         </section>
     {% endfor %}
 
-    {% for key, options in {'zus.variant': {'full': 'pełne składki', 'preferential': 'preferencyjne', 'start_relief': 'ulga na start'}, 'ryczalt.advance_frequency': {'monthly': 'co miesiąc', 'quarterly': 'co kwartał'}} %}
+    {% for key, options in {'zus.variant': {'full': 'pełne składki', 'preferential': 'preferencyjne', 'start_relief': 'ulga na start'}, 'ryczalt.advance_frequency': {'monthly': 'co miesiąc', 'quarterly': 'co kwartał'}, 'vat.excess_policy': {'carry_forward': 'przeniesienie całej nadwyżki do P_62 (Q-31)'}} %}
         {% set row = current[key] %}
         <section id="{{ key|replace({'.': '-'}) }}">
             <h2>{{ key }}</h2>

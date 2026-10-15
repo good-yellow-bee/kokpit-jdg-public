@@ -28,8 +28,20 @@ final class SettingKeys
     public const KSEF_FA3_REVIEW = 'ksef.fa3_review';
     /** Snapshot prawa czatu (F6.2, D-60): stawki, progi i terminy z podstawą prawną, wybrany na starcie rozmowy. */
     public const CHAT_LAW_SNAPSHOT = 'chat.law_snapshot';
+    /** Polityka nadwyżki VAT (Q-31): tylko `carry_forward`, czyli cała P_53 do P_62 (D-65). */
+    public const VAT_EXCESS_POLICY = 'vat.excess_policy';
+    /** Stawki WHT w procentach: `standard` i `treaty` per kraj, dla `license` i `services_21_2a` (Q-21, D-65). */
+    public const WHT_RATES = 'wht.rates';
+    /** Bilans otwarcia (docs/compliance-calendar.md, „Bilans otwarcia”): zapis tylko formularzem „Otwarcie” ze step-up. */
+    public const OPENING_VAT_CARRY_FORWARD = 'opening.vat_carry_forward_pln';
+    public const OPENING_REVENUE_YTD = 'opening.revenue_ytd';
+    public const OPENING_ZUS_PAID_YTD = 'opening.zus_paid_ytd';
+    public const OPENING_LAST_INVOICE_NUMBERS = 'opening.last_invoice_numbers';
+    public const OPENING_KEYS = [self::OPENING_VAT_CARRY_FORWARD, self::OPENING_REVENUE_YTD, self::OPENING_ZUS_PAID_YTD, self::OPENING_LAST_INVOICE_NUMBERS];
+    public const EXCESS_POLICIES = ['carry_forward'];
+    public const WHT_CATEGORIES = ['license','services_21_2a'];
     public const FA3_SCENARIOS = ['eu_b2b','eu_b2b_unidentified','non_eu_b2b','pl_b2b'];
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW, self::CHAT_LAW_SNAPSHOT];
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW, self::CHAT_LAW_SNAPSHOT, self::VAT_EXCESS_POLICY, self::WHT_RATES, self::OPENING_VAT_CARRY_FORWARD, self::OPENING_REVENUE_YTD, self::OPENING_ZUS_PAID_YTD, self::OPENING_LAST_INVOICE_NUMBERS];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -60,6 +72,12 @@ final class SettingKeys
             self::RYCZALT_ELIGIBILITY => self::eligibility($value),
             self::KSEF_FA3_REVIEW => self::fa3Review($value),
             self::CHAT_LAW_SNAPSHOT => self::lawSnapshot($value),
+            self::VAT_EXCESS_POLICY => self::oneOf($key, $value, self::EXCESS_POLICIES),
+            self::WHT_RATES => self::whtRates($value),
+            self::OPENING_VAT_CARRY_FORWARD => is_string($value) && preg_match('/^(0|[1-9][0-9]{0,11})\.00$/D', $value) ? $value : throw new \InvalidArgumentException('opening.vat_carry_forward_pln to P_62 w pełnych złotych jako napis, np. "1250.00".'),
+            self::OPENING_REVENUE_YTD => self::revenueYtd($value),
+            self::OPENING_ZUS_PAID_YTD => self::zusPaidYtd($value),
+            self::OPENING_LAST_INVOICE_NUMBERS => self::lastInvoiceNumbers($value),
             default => throw new \InvalidArgumentException(sprintf('Nieznany klucz ustawienia %s.', $key)),
         };
     }
@@ -149,6 +167,90 @@ final class SettingKeys
             }
             $result['note'] = trim($note);
         }
+        return $result;
+    }
+    /**
+     * Stawki WHT w procentach z dwoma miejscami: `standard` dla kategorii i `treaty` per kraj umowy (kod ISO).
+     *
+     * @return array{standard:array<string,string>,treaty:array<string,array<string,string>>}
+     */
+    private static function whtRates(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), ['standard','treaty']) !== [] || !is_array($value['standard'] ?? null)) {
+            throw new \InvalidArgumentException('wht.rates ma pola standard i treaty.');
+        }
+        $treaties = $value['treaty'] ?? [];
+        if (!is_array($treaties)) {
+            throw new \InvalidArgumentException('wht.rates.treaty to obiekt kraj → stawki.');
+        }
+        $result = ['standard' => self::whtCategories('standard', $value['standard'], true),'treaty' => []];
+        foreach ($treaties as $country => $rates) {
+            if (!is_string($country) || !preg_match('/^[A-Z]{2}$/D', $country) || !is_array($rates)) {
+                throw new \InvalidArgumentException('wht.rates.treaty to obiekt kraj (kod ISO) → stawki.');
+            }
+            $result['treaty'][$country] = self::whtCategories('treaty.' . $country, $rates, false);
+        }
+        ksort($result['treaty']);
+        return $result;
+    }
+    /**
+     * @param array<mixed> $rates
+     * @return array<string,string>
+     */
+    private static function whtCategories(string $field, array $rates, bool $complete): array
+    {
+        if (array_diff(array_keys($rates), self::WHT_CATEGORIES) !== [] || ($complete && count($rates) !== count(self::WHT_CATEGORIES))) {
+            throw new \InvalidArgumentException(sprintf('wht.rates.%s ma stawki dla: %s.', $field, implode(', ', self::WHT_CATEGORIES)));
+        }
+        $result = [];
+        foreach ($rates as $category => $rate) {
+            if (!is_string($rate) || !preg_match('/^(0|[1-9][0-9]?|100)\.[0-9]{2}$/D', $rate)) {
+                throw new \InvalidArgumentException(sprintf('Stawka wht.rates.%s.%s to procent z dwoma miejscami, np. "20.00".', $field, (string) $category));
+            }
+            $result[(string) $category] = $rate;
+        }
+        ksort($result);
+        return $result;
+    }
+    /** @return array<string,string> stawka ryczałtu (procent) → przychód narastająco */
+    private static function revenueYtd(mixed $value): array
+    {
+        if (!is_array($value) || $value === []) {
+            throw new \InvalidArgumentException('opening.revenue_ytd to obiekt stawka → kwota, np. {"12.00": "84000.00"}.');
+        }
+        $result = [];
+        foreach ($value as $rate => $amount) {
+            if (!preg_match('/^(0|[1-9][0-9]?)\.[0-9]{2}$/D', (string) $rate)) {
+                throw new \InvalidArgumentException('Stawka w opening.revenue_ytd to procent z dwoma miejscami, np. "12.00".');
+            }
+            $result[(string) $rate] = self::amount('opening.revenue_ytd', $amount);
+        }
+        ksort($result);
+        return $result;
+    }
+    /** @return array{social_pln:string,health_pln:string} */
+    private static function zusPaidYtd(mixed $value): array
+    {
+        if (!is_array($value) || array_diff(array_keys($value), ['social_pln','health_pln']) !== []) {
+            throw new \InvalidArgumentException('opening.zus_paid_ytd ma pola social_pln i health_pln.');
+        }
+        return ['social_pln' => self::amount('social_pln', $value['social_pln'] ?? null),'health_pln' => self::amount('health_pln', $value['health_pln'] ?? null)];
+    }
+    /** @return array<string,string> seria → ostatni numer faktury */
+    private static function lastInvoiceNumbers(mixed $value): array
+    {
+        if (!is_array($value)) {
+            throw new \InvalidArgumentException('opening.last_invoice_numbers to obiekt seria → ostatni numer.');
+        }
+        $result = [];
+        foreach ($value as $series => $number) {
+            $series = trim((string) $series);
+            if ($series === '' || mb_strlen($series) > 64 || !is_string($number) || trim($number) === '' || mb_strlen($number) > 256) {
+                throw new \InvalidArgumentException('opening.last_invoice_numbers to obiekt seria → ostatni numer (tekst).');
+            }
+            $result[$series] = trim($number);
+        }
+        ksort($result);
         return $result;
     }
     private static function isDate(string $value): bool

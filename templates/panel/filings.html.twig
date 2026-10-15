@@ -35,7 +35,7 @@
             {% for period in periods %}
                 <tr><td>{{ period.period_start|slice(0, 7) }}</td><td>{{ {'open': 'otwarty', 'closed': 'zamknięty', 'reopened': 'otwarty ponownie'}[period.status] }}</td>
                     <td>{{ period.ledger_closed_at ? 'tak' : 'nie' }}</td>
-                    <td>{% if period.checklist is null %}–{% elseif period.checklist.ok %}spełnione{% else %}<span role="alert">niespełnione: {% for gate, result in period.checklist.gates %}{% if not result.ok %}{{ {'sales_final': 'faktury sprzedaży nie w stanie końcowym', 'costs_reviewed': 'koszty bez przeglądu albo okresu', 'fx_rates': 'brak kursu VAT albo PIT', 'vies_eu_b2b': 'sprzedaż eu_b2b bez VIES'}[gate] }} ({{ result.count }}) {% endif %}{% endfor %}</span>{% endif %}</td>
+                    <td>{% if period.checklist is null %}–{% elseif period.checklist.ok %}spełnione{% else %}<span role="alert">niespełnione: {% for gate, result in period.checklist.gates %}{% if not result.ok %}{{ {'sales_final': 'faktury sprzedaży nie w stanie końcowym', 'costs_reviewed': 'koszty bez przeglądu albo okresu', 'fx_rates': 'brak kursu VAT albo PIT', 'vies_eu_b2b': 'sprzedaż eu_b2b bez VIES', 'eu_b2b_unidentified': 'eu_b2b_unidentified bez dowodu albo przeglądu doradcy', 'opening_balance': 'brak P_39: złożenia za M−1 albo bilansu otwarcia'}[gate] }} ({{ result.count }}) {% endif %}{% endfor %}</span>{% endif %}</td>
                     <td>{% if period.status == 'closed' %}
                         <form method="post" action="{{ path('panel_filings_reopen', {month: period.period_start|slice(0, 7)}) }}">
                             <input type="hidden" name="_token" value="{{ csrf_token('filings') }}">

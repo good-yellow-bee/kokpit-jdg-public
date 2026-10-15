@@ -10,6 +10,7 @@ use App\Setting\SettingStore;
 use App\Tax\TaxCalculator;
 use App\Time\BusinessDate;
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Uid\UuidV7;
@@ -222,6 +223,7 @@ final readonly class ObligationEngine
         return match ($type) {
             'jpk_st' => $this->settings->value(SettingKeys::JPK_ST_ENABLED, substr($periodStart, 0, 4) . '-12-31') === true,
             'vat_ue' => $this->vatUeApplies($periodStart),
+            'cit_10z' => $this->cit10zApplies($periodStart),
             default => true,
         };
     }
@@ -275,10 +277,80 @@ final readonly class ObligationEngine
                 continue;
             }
             $result[] = ['environment' => $environment,'dedupe_key' => 'wht_payment:' . $row['period_start'] . ':' . $row['counterparty_id'],'type' => 'wht_payment','rule_key' => 'wht_payment.supplier',
-                'period_start' => $row['period_start'],'nominal_due_date' => $nominal,'due_date' => $due,'amount_due' => null,'payment_title' => $this->title('wht_payment.supplier', $row['period_start']),
+                'period_start' => $row['period_start'],'nominal_due_date' => $nominal,'due_date' => $due,'amount_due' => $this->whtAmount($environment, $row['period_start'], $row['counterparty_id']),'payment_title' => $this->title('wht_payment.supplier', $row['period_start']),
                 'status' => 'open','credential_state_id' => null,'counterparty_id' => $row['counterparty_id']];
         }
         return $result;
+    }
+
+    /**
+     * Kwota `wht_payment` za miesiąc wypłaty i dostawcę (F5.4, D-65): suma `gross_total` faktur zapłaconych w miesiącu,
+     * przeliczona po średnim kursie NBP z ostatniej tabeli przed `paid_on` (tylko kursy w bazie, bez sieci), razy stawka
+     * z `wht.rates` na dzień `paid_on`: stawka z umowy kraju `wht_treaty_country` tylko przy certyfikacie ważnym w dniu
+     * wypłaty, inaczej podstawowa. Wynik w pełnych złotych (HALF_UP, art. 63 Ordynacji podatkowej). Brak stawki albo kursu
+     * daje kwotę pustą: panel pokazuje obowiązek bez kwoty, a wpłatę liczysz ręcznie (Q-21, Q-29).
+     */
+    private function whtAmount(string $environment, string $periodStart, string $counterpartyId): ?string
+    {
+        $next = self::day($periodStart)->modify('+1 month')->format('Y-m-d');
+        $rows = $this->db->fetchAllAssociative(
+            "SELECT i.gross_total, i.currency, i.paid_on, c.wht_category, c.wht_treaty_country, c.wht_cert_valid_until,
+                (SELECT r.mid FROM fx_rate r WHERE r.source='nbp' AND r.currency=i.currency AND r.effective_date<i.paid_on AND r.effective_date>=i.paid_on - 10 ORDER BY r.effective_date DESC LIMIT 1) AS mid
+             FROM invoice i JOIN counterparty c ON c.id=i.counterparty_id
+             WHERE i.environment=? AND i.direction='cost' AND i.counterparty_id=? AND i.paid_on>=? AND i.paid_on<? AND i.cost_review IS DISTINCT FROM 'not_mine'
+             ORDER BY i.paid_on, i.id",
+            [$environment, $counterpartyId, $periodStart, $next],
+        );
+        $tax = BigDecimal::zero();
+        foreach ($rows as $row) {
+            $paidOn = is_string($row['paid_on']) ? $row['paid_on'] : throw new \LogicException('Niepoprawna wypłata WHT.');
+            $rates = $this->settings->value(SettingKeys::WHT_RATES, $paidOn);
+            $category = is_string($row['wht_category']) ? $row['wht_category'] : '';
+            if (!is_array($rates) || !is_array($rates['standard'] ?? null)) {
+                return null;
+            }
+            $rate = $rates['standard'][$category] ?? null;
+            $country = $row['wht_treaty_country'];
+            $certified = is_string($row['wht_cert_valid_until']) && $row['wht_cert_valid_until'] >= $paidOn;
+            if ($certified && is_string($country) && is_array($rates['treaty'] ?? null) && is_array($rates['treaty'][$country] ?? null) && isset($rates['treaty'][$country][$category])) {
+                $rate = $rates['treaty'][$country][$category];
+            }
+            if (!is_string($rate)) {
+                return null;
+            }
+            $gross = BigDecimal::of(is_scalar($row['gross_total']) ? (string) $row['gross_total'] : '0');
+            if ($row['currency'] !== 'PLN') {
+                if (!is_scalar($row['mid'])) {
+                    return null;
+                }
+                $gross = $gross->multipliedBy((string) $row['mid']);
+            }
+            $tax = $tax->plus($gross->multipliedBy($rate)->dividedBy(100, 10, RoundingMode::HALF_UP));
+        }
+        return (string) $tax->toScale(0, RoundingMode::HALF_UP)->toScale(2);
+    }
+
+    /**
+     * `cit_10z` za rok od F5 (docs/compliance-calendar.md, „Uwagi do wierszy”): suma `amount_due` obowiązków
+     * `wht_payment` z wypłat w roku > 0. Obowiązek bez kwoty (brak stawki albo kursu) liczy się ostrożnie jako pobór.
+     */
+    private function cit10zApplies(string $periodStart): bool
+    {
+        $environment = $this->configuration->environment();
+        $year = (int) substr($periodStart, 0, 4);
+        $rows = $this->db->fetchAllAssociative("SELECT DISTINCT date_trunc('month', i.paid_on)::date AS period_start, c.id AS counterparty_id FROM invoice i JOIN counterparty c ON c.id=i.counterparty_id
+            WHERE i.environment=? AND i.direction='cost' AND i.paid_on>=? AND i.paid_on<? AND i.cost_review IS DISTINCT FROM 'not_mine' AND c.wht_category IN ('license','services_21_2a') AND NOT c.is_natural_person AND c.country<>'PL'
+            ORDER BY 1, 2", [$environment, sprintf('%04d-01-01', $year), sprintf('%04d-01-01', $year + 1)]);
+        foreach ($rows as $row) {
+            if (!is_string($row['period_start']) || !is_string($row['counterparty_id'])) {
+                throw new \LogicException('Niepoprawny wiersz wypłaty WHT.');
+            }
+            $amount = $this->whtAmount($environment, $row['period_start'], $row['counterparty_id']);
+            if ($amount === null || BigDecimal::of($amount)->isPositive()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

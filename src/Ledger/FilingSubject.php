@@ -13,6 +13,7 @@ use App\Xml\JpkBuildRefused;
 use App\Xml\JpkDocument;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
+use App\Xml\JpkV7mBuilder;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -23,18 +24,32 @@ use Symfony\Component\Clock\ClockInterface;
  * z docs/compliance-calendar.md i uzgodnieniu K_8 z `revenue_entry`. F5.2 dodaje JPK_ST(1) tą samą ścieżką: payload
  * z `JpkStBuilder`, jedyna bramka to `jpk_st.enabled` na ostatni dzień roku (Q-25, D-64). Stan złożenia według „Powiązania z bramką
  * zatwierdzeń” w docs/data-model.md. W dev i test identyfikator bez wiersza `filing` obsługuje atrapa `dummy`
- * (`$fallback`, D-32); przy `APP_ENV=prod` atrapy nie ma.
+ * (`$fallback`, D-32); przy `APP_ENV=prod` atrapy nie ma. F5.4 dodaje JPK_V7M(3) za miesiąc (D-65): bramki kompletności
+ * `V7mGates` przy prośbie (wynik w `period.checklist`, niespełniona bramka blokuje), payload z `JpkV7mBuilder`, lista
+ * pozycji `DI` w `summary`, a przyjęcie zamyka okres przez `MonthClose`.
  */
 final readonly class FilingSubject implements ApprovalSubject
 {
     /** Stan złożenia po `approval.status`; `cancelled`, `expired` i `superseded` zależą od kontekstu. */
     private const STATES = ['pending' => 'ready', 'approved' => 'approved', 'dispatching' => 'approved', 'submitted' => 'submitted', 'accepted' => 'accepted', 'rejected' => 'rejected', 'unknown' => 'unknown'];
-    /** Konektor wysyłki per typ złożenia; JPK_V7M (F5.4) i VAT-UE (F5.5) dochodzą w swoich częściach. */
-    private const CONNECTORS = ['JPK_EWP' => 'jpk', 'JPK_ST' => 'jpk'];
+    /** Konektor wysyłki per typ złożenia; VAT-UE (F5.5) dochodzi w swojej części. */
+    private const CONNECTORS = ['JPK_EWP' => 'jpk', 'JPK_ST' => 'jpk', 'JPK_V7M' => 'jpk'];
     private const FINAL_SALES = "('accepted','corrected','superseded','cancelled_before_send')";
     private const TIMESTAMP = 'Y-m-d\TH:i:s.uP';
 
-    public function __construct(private Connection $db, private JpkEwpBuilder $ewp, private JpkStBuilder $st, private SettingStore $settings, private ConnectorConfiguration $configuration, private ClockInterface $clock, private ?ApprovalSubject $fallback = null) {}
+    public function __construct(
+        private Connection $db,
+        private JpkEwpBuilder $ewp,
+        private JpkStBuilder $st,
+        private JpkV7mBuilder $v7m,
+        private V7mGates $v7mGates,
+        private MonthClose $monthClose,
+        private Periods $periods,
+        private SettingStore $settings,
+        private ConnectorConfiguration $configuration,
+        private ClockInterface $clock,
+        private ?ApprovalSubject $fallback = null,
+    ) {}
 
     public function subjectType(): string
     {
@@ -65,6 +80,9 @@ final readonly class FilingSubject implements ApprovalSubject
         if (!in_array($filing['status'], ['draft', 'ready'], true)) {
             throw new JpkBuildRefused(sprintf('Złożenie w stanie %s; prośba tylko ze szkicu albo gotowego złożenia.', self::string($filing, 'status')));
         }
+        if ($type === 'JPK_V7M') {
+            return $this->jpkV7m($subjectId, $filing, $environment);
+        }
         $year = (int) substr(self::string($filing, 'period_start'), 0, 4);
         $purpose = (int) self::string($filing, 'purpose');
         [$document, $summary, $preconditions] = $type === 'JPK_ST' ? $this->jpkSt($environment, $year, $purpose) : $this->jpkEwp($environment, $year, $purpose);
@@ -73,6 +91,51 @@ final readonly class FilingSubject implements ApprovalSubject
         $totals = ['rows' => $document->rows, 'sum' => $document->sum, 'sum_by_rate' => $document->sumsByRate, 'xml_sha256' => $document->sha256()] + array_intersect_key($summary, ['revenue_entry_sum' => true]);
         $this->db->update('filing', ['schema_version' => $document->schemaVersion, 'totals' => json_encode($totals, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), 'updated_at' => $this->now()], ['id' => $subjectId]);
         return new ApprovalPayload($document->xml, 'application/xml', (int) self::string($filing, 'version'), $summary, $preconditions);
+    }
+
+    /**
+     * JPK_V7M(3) za miesiąc: stan okresu (pierwsze złożenie tylko w okresie niezamkniętym, korekta tylko po ponownym
+     * otwarciu), bramki `V7mGates`, budowa i XSD; `period.checklist` z listą `DI`, `filing.totals` i `summary` (D-65).
+     *
+     * @param array<string,mixed> $filing
+     */
+    private function jpkV7m(string $subjectId, array $filing, string $environment): ApprovalPayload
+    {
+        $periodStart = self::string($filing, 'period_start');
+        $purpose = (int) self::string($filing, 'purpose');
+        $status = $this->periods->status($periodStart);
+        if ($purpose === 1 && ($status === 'closed' || $this->acceptedV7m($environment, $periodStart, $subjectId))) {
+            throw new JpkBuildRefused(sprintf('Okres %s ma przyjęty JPK_V7M albo jest zamknięty; zmiana to korekta po ponownym otwarciu.', substr($periodStart, 0, 7)));
+        }
+        if ($purpose === 2 && $status !== 'reopened') {
+            throw new JpkBuildRefused(sprintf('Korekta JPK_V7M za %s tylko po ponownym otwarciu okresu ze step-up.', substr($periodStart, 0, 7)));
+        }
+        $gates = $this->v7mGates->evaluate($periodStart);
+        if (!$gates['ok']) {
+            throw new JpkBuildRefused('Bramki kompletności przed budową JPK_V7M niespełnione: ' . V7mGates::failures($gates) . '.');
+        }
+        $previousTotals = json_decode(self::string($filing, 'totals'), true, 8, JSON_THROW_ON_ERROR);
+        $reason = is_array($previousTotals) && is_string($previousTotals['p_ordzu'] ?? null) ? $previousTotals['p_ordzu'] : null;
+        $document = $this->v7m->build($periodStart, $purpose, $reason);
+        if (!$document->valid()) {
+            throw new JpkBuildRefused('JPK_V7M(3) niezgodny z XSD: ' . implode('; ', array_slice($document->xsdErrors, 0, 3)));
+        }
+        $this->periods->saveChecklist($periodStart, $gates + ['di_items' => $document->diItems]);
+        $summary = ['type' => 'JPK_V7M', 'period' => substr($periodStart, 0, 7), 'period_start' => $periodStart, 'period_end' => self::string($filing, 'period_end'), 'purpose' => $purpose, 'schema_version' => JpkV7mBuilder::SCHEMA_VERSION]
+            + $document->totals + ['declaration' => $document->declaration, 'di_items' => $document->diItems, 'checklist' => $gates['gates']];
+        if ($filing['supersedes_id'] !== null) {
+            $previous = $this->db->fetchOne('SELECT totals FROM filing WHERE id=?', [$filing['supersedes_id']]);
+            $previous = is_string($previous) ? json_decode($previous, true, 8, JSON_THROW_ON_ERROR) : null;
+            $summary['previous'] = ['filing_id' => self::string($filing, 'supersedes_id'), 'p51' => is_array($previous) ? ($previous['p51'] ?? null) : null, 'p62' => is_array($previous) ? ($previous['p62'] ?? null) : null];
+        }
+        $preconditions = ['xsd' => 'ok (LIBXML_NONET)', 'connector_target' => $this->configuration->target('jpk'), 'environment' => $environment, 'gates' => 'ok', 'p39_source' => $document->p39Source];
+        $this->db->update('filing', ['schema_version' => JpkV7mBuilder::SCHEMA_VERSION, 'totals' => json_encode($document->totals, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'updated_at' => $this->now()], ['id' => $subjectId]);
+        return new ApprovalPayload($document->xml, 'application/xml', (int) self::string($filing, 'version'), $summary, $preconditions);
+    }
+
+    private function acceptedV7m(string $environment, string $periodStart, string $except): bool
+    {
+        return $this->db->fetchOne("SELECT 1 FROM filing WHERE environment=? AND type='JPK_V7M' AND period_start=? AND status='accepted' AND id<>?", [$environment, $periodStart, $except]) !== false;
     }
 
     /**
@@ -162,7 +225,8 @@ final readonly class FilingSubject implements ApprovalSubject
 
     public function onStatus(string $subjectId, string $status, ?string $cancelReason): void
     {
-        if ($this->db->fetchOne('SELECT 1 FROM filing WHERE id=?', [$subjectId]) === false) {
+        $current = $this->db->fetchAssociative('SELECT type, status FROM filing WHERE id=?', [$subjectId]);
+        if ($current === false) {
             $this->fallback?->onStatus($subjectId, $status, $cancelReason);
             return;
         }
@@ -186,6 +250,11 @@ final readonly class FilingSubject implements ApprovalSubject
             $fields = $this->result($subjectId, $status);
         }
         $this->db->update('filing', ['status' => $state, 'updated_at' => $this->now()] + $fields, ['id' => $subjectId]);
+        // Przyjęty JPK_V7M (z bramki albo `manual` z UPO) zamyka okres raz (D-49, D-65).
+        if ($state === 'accepted' && $current['type'] === 'JPK_V7M' && $current['status'] !== 'accepted') {
+            $decided = $this->db->fetchOne("SELECT decided_by FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
+            $this->monthClose->accepted($subjectId, is_string($decided) ? $decided : null);
+        }
     }
 
     /**
