@@ -154,6 +154,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-64 | założenia F5.2 JPK_ST(1): generator na XSD 1-2, węzeł `EWP` z `ZnacznikST` 1 i `Podmiot1` jak JPK_EWP; w pliku środki przyjęte do końca okresu i niewykreślone przed jego początkiem, F_1 od 1 w kolejności F_4; prośba tylko przy `jpk_st.enabled` = true na 31.12. roku, inaczej komunikat Q-25 bez wiersza `filing`; bez bramek JPK_EWP, pusty wykaz przy włączonej fladze to plik bez wierszy; wysyłka tym samym `JpkWriter` | przyjęta 2026-10-15 | Q-25 |
 | D-65 | założenia F5.4 JPK_V7M(3): generator `JpkV7mBuilder` z kwot w PLN po kursie VAT z `invoice`, znacznik `JpkMarker` liczony przy budowie (pusty tryb bez numeru blokuje jak `online`); deklaracja z sum K zaokrąglonych HALF_UP do pełnych złotych, P_39 z P_62 przyjętego JPK_V7M za M−1 albo z `opening.vat_carry_forward_pln` z `valid_from` = M, `vat.excess_policy` tylko `carry_forward`; bramki `V7mGates` blokują prośbę, wynik i lista `DI` w `period.checklist`; przyjęcie zamyka okres przez `MonthClose`; korekta `purpose` 2 tylko w okresie `reopened`; `jpk.replace_di` od chwili `xml_sent`; „Otwarcie” przez `OpeningBalance` ze step-up; kwota WHT z `wht.rates` i kursu NBP z bazy | przyjęta 2026-10-15 | Q-21, Q-29, Q-31 |
 | D-66 | założenia F5.5 VAT-UE(5) i VAT-UEK(5): `VatUeBuilder` grupuje sprzedaż `eu_b2b` miesiąca (z KOR ze znakiem różnicy) per kraj i numer VAT UE, P_Uc HALF_UP do pełnych złotych, `eu_b2b_unidentified` poza plikiem; twarda bramka K_12 (`VatUeK12Gate`); trasa KOR `vat_ue`/`wait`/`vat_uek`; własny cienki konektor `edeklaracje` (podklasa `SoapClient` na `ConnectorHttpClient`), `DaneAutoryzujace` wstawiane w pamięci workera jako ostatni element korzenia, walidacja deklaracji i SIG-2008 osobno, bo XSD VAT-UE(5) go nie deklaruje; mapowanie statusów `requestUPO` | przyjęta 2026-10-15 | Q-32 |
+| D-67 | kształt żądań bramki e-Deklaracji z opublikowanego WSDL bramki testowej: element `sendUnsignDocument` (nie `sendUnsignDocumentRequest`), przestrzeń nazw `https://bramka.e-deklaracje.mf.gov.pl/xsd` i `SOAPAction` `urn:<operacja>` potwierdzone; `GateService.xsd` w `resources/xsd`, ciała żądań walidowane nim w testach | przyjęta 2026-10-15 | F5.6 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1313,3 +1314,17 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - F5.6 zastępuje nagrania prawdziwymi z bramki testowej i potwierdza: przestrzeń nazw i kształt odpowiedzi, adres usługi PROD, przyjęcie `DaneAutoryzujace` spoza XSD deklaracji (401 albo 410/418 → nowy D-xx), status odpowiedzi `sendUnsignDocument`.
 - **Pytania:**
   - Q-32: kanał z danymi autoryzującymi (potwierdzenie na bramce testowej w F5.6).
+
+### D-67 Kształt żądań bramki e-Deklaracji z WSDL bramki testowej
+
+- **Status:** przyjęta 2026-10-15 (decyzja Claude; odczyt opublikowanego WSDL bez uwierzytelnienia, bez wysyłki dokumentu).
+- **Kontekst:**
+  - D-66 założyło przestrzeń nazw i kształt SOAP ze specyfikacji we-wy 2.4, do potwierdzenia w F5.6.
+  - Sesja z dostępem do `test-bramka.edeklaracje.gov.pl` pobrała `uslugi/dokumenty?wsdl` i dołączony `GateService.xsd` (GET bez uwierzytelnienia, host testowy).
+- **Decyzja:**
+  - Przestrzeń nazw `https://bramka.e-deklaracje.mf.gov.pl/xsd`, `SOAPAction` `urn:sendUnsignDocument` i `urn:requestUPO`, pola `document`, `language`, `signatureType` (`PIT`) oraz odpowiedzi `refId`, `status`, `statusOpis`, `upo` są zgodne z założeniem D-66.
+  - Element ciała żądania wysyłki to `sendUnsignDocument`; założony `sendUnsignDocumentRequest` nie istnieje w WSDL i bramka odrzuciłaby żądanie. `EDeklaracjeGateway` poprawiony.
+  - `GateService.xsd` trafia do `resources/xsd` z wpisem w `checksums.json`; `EDeklaracjeSendAcceptedTest` waliduje nim ciało każdego żądania SOAP (`FakeEDeklaracjeGateway::soapBodies`).
+- **Skutki:**
+  - Kod: `EDeklaracjeGateway`, `FakeEDeklaracjeGateway`, testy F5.5; bez migracji.
+  - Otwarte dla F5.6 z D-66: przyjęcie `DaneAutoryzujace` spoza XSD deklaracji, kody 410 i 418, adres usługi PROD, prawdziwe nagrania.

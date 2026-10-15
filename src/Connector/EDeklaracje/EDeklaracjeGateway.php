@@ -16,8 +16,8 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Własny cienki klient bramki e-Deklaracji (docs/modules/jpk.md, „Bramka e-Deklaracji (SOAP)”, specyfikacja 2.4):
  * `sendUnsignDocument` (dokument w Base64, `signatureType` = `PIT`, czyli dane autoryzujące) i `requestUPO`. Adres per
- * cel z `edeklaracje.endpoints`, przestrzeń nazw i parametry z `edeklaracje.soap` (D-66, do potwierdzenia nagraniami
- * F5.6). Transport: `EDeklaracjeSoapClient` na `ConnectorHttpClient`; bez ponowień. `sendUnsignDocument` przyjmuje
+ * cel z `edeklaracje.endpoints`, przestrzeń nazw i parametry z `edeklaracje.soap` (D-66), zgodne z WSDL bramki testowej
+ * (D-67). Transport: `EDeklaracjeSoapClient` na `ConnectorHttpClient`; bez ponowień. `sendUnsignDocument` przyjmuje
  * tylko `EDeklaracjeCall::dispatch` (worker `official_writes`).
  */
 final readonly class EDeklaracjeGateway
@@ -44,7 +44,7 @@ final readonly class EDeklaracjeGateway
         if (!$call->dispatching) {
             throw new GateBypassException('Zapis e-Deklaracji wyłącznie z workera bramki (official_writes).');
         }
-        $body = $this->body('sendUnsignDocumentRequest', ['document' => base64_encode($document), 'language' => $this->soap['language'], 'signatureType' => $this->soap['signature_type']]);
+        $body = $this->body('sendUnsignDocument', ['document' => base64_encode($document), 'language' => $this->soap['language'], 'signatureType' => $this->soap['signature_type']]);
         $fields = $this->call($call, 'send_unsign_document', self::BUCKET_SEND, 'sendUnsignDocument', $body);
         $refId = $fields['refId'] ?? '';
         return new EDeklaracjeReceipt($refId === '' ? null : $refId, self::status($fields), $fields['statusOpis'] ?? '');

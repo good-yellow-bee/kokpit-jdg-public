@@ -28,7 +28,7 @@ parameters:
   jpk.tls_ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256'
   jpk.mf_certificates: { test: '%kernel.project_dir%/var/jpk/mf-test.crt', prod: '%kernel.project_dir%/var/jpk/mf-prod.crt' }
   # Konektor `edeklaracje` (F5.5, D-66): bramka SOAP per cel; adres PROD do potwierdzenia z WSDL PROD przed go-live F5b,
-  # przestrzeń nazw i parametry `sendUnsignDocument` ze specyfikacji 2.4, do potwierdzenia nagraniami F5.6.
+  # przestrzeń nazw i parametry `sendUnsignDocument` potwierdzone z WSDL bramki testowej (D-67).
   edeklaracje.endpoints: { test: 'https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty', prod: 'https://bramka.e-deklaracje.mf.gov.pl/uslugi/dokumenty' }
   edeklaracje.soap: { namespace: 'https://bramka.e-deklaracje.mf.gov.pl/xsd', language: pl, signature_type: PIT }
   # Konektor `claude` (F6.2, D-60): jeden host, timeout z `chat.timeout_s`, bez ponowień SDK.

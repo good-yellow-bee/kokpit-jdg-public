@@ -39,8 +39,13 @@ final class EDeklaracjeSendAcceptedTest extends VatUeTestCase
         self::assertSame(0, $send->reconciler->poll());
         self::assertSame(1, $send->reconciler->poll());
         self::assertSame(0, $send->edeklaracje->recordings->remaining());
-        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocumentRequest'));
+        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocument'));
         self::assertSame(2, $send->edeklaracje->requests('requestUPO'));
+        // Ciała żądań zgodne z opublikowanym `GateService.xsd` bramki testowej (D-67).
+        $gateSchema = new XsdValidator(XsdCatalog::default());
+        foreach ($send->edeklaracje->soapBodies() as $soapBody) {
+            self::assertSame([], $gateSchema->validate($soapBody, 'GateService.xsd'));
+        }
 
         $filing = $send->filing('VAT_UE', VatUeTestTools::PERIOD);
         self::assertSame(['accepted', 'edeklaracje', 200, FakeEDeklaracjeGateway::REF_ID], [$filing['status'], $filing['submitted_via'], $filing['status_code'], $filing['reference_number']]);

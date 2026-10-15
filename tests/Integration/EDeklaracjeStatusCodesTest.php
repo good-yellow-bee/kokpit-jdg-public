@@ -41,7 +41,7 @@ final class EDeklaracjeStatusCodesTest extends VatUeTestCase
         self::assertSame(['rejected', (int) $code], [$filing['status'], $filing['status_code']]);
         self::assertSame(1, $send->pushes($approvalId));
         self::assertSame('open', $this->db()->fetchOne('SELECT status FROM obligation WHERE id=?', [$this->obligationId]));
-        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocumentRequest'));
+        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocument'));
         $this->line($code, $code . ': rejected' . ($decision === null ? '' : ', decision_required ' . $decision));
     }
 
@@ -53,7 +53,7 @@ final class EDeklaracjeStatusCodesTest extends VatUeTestCase
         self::assertSame('submitted', $send->approval($approvalId)['status']);
         self::assertSame(1, $send->reconciler->poll());
         self::assertSame('accepted', $send->approval($approvalId)['status']);
-        self::assertSame([1, 3], [$send->edeklaracje->requests('sendUnsignDocumentRequest'), $send->edeklaracje->requests('requestUPO')]);
+        self::assertSame([1, 3], [$send->edeklaracje->requests('sendUnsignDocument'), $send->edeklaracje->requests('requestUPO')]);
         $this->line('100', '100, 301: pending (tylko requestUPO), potem 200: accepted');
     }
 
@@ -73,7 +73,7 @@ final class EDeklaracjeStatusCodesTest extends VatUeTestCase
         self::assertSame(1, $send->reconciler->reconcile());
         self::assertSame('accepted', $send->approval($approvalId)['status']);
         self::assertSame('done', $this->db()->fetchOne('SELECT status FROM obligation WHERE id=?', [$this->obligationId]));
-        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocumentRequest'));
+        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocument'));
         $this->line('300', '300: unknown, rekoncyliacja requestUPO (300 bez zmian, 200 accepted), retry_allowed');
     }
 
@@ -91,7 +91,7 @@ final class EDeklaracjeStatusCodesTest extends VatUeTestCase
         $send->edeklaracje->load('soap-upo-200');
         self::assertSame(1, $send->reconciler->reconcile());
         self::assertSame('accepted', $send->approval($approvalId)['status']);
-        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocumentRequest'));
+        self::assertSame(1, $send->edeklaracje->requests('sendUnsignDocument'));
         $this->line('411', '411: unknown, bez ponowienia, rekoncyliacja requestUPO 200: accepted');
     }
 
