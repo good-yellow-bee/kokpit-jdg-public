@@ -14,6 +14,7 @@ use App\Time\BusinessDate;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
 use App\Xml\JpkTaxpayer;
+use App\Xml\JpkV7mBuilder;
 use App\Xml\XsdCatalog;
 use App\Xml\XsdDictionary;
 use App\Xml\XsdValidator;
@@ -82,6 +83,10 @@ final class JpkTestTools
     public static function stBuilder(Connection $db, MockClock $clock, SecretStore $secrets): JpkStBuilder
     {
         return new JpkStBuilder($db, $clock, self::taxpayer($db, $clock, $secrets), ConnectorTestTools::configuration(false), new XsdValidator(XsdCatalog::default()));
+    }
+    public static function v7mBuilder(Connection $db, MockClock $clock, SecretStore $secrets): JpkV7mBuilder
+    {
+        return new JpkV7mBuilder($db, $clock, self::taxpayer($db, $clock, $secrets), self::settings($db, $clock), ConnectorTestTools::configuration(false), new XsdValidator(XsdCatalog::default()));
     }
     public static function taxpayer(Connection $db, MockClock $clock, SecretStore $secrets): JpkTaxpayer
     {

@@ -19,3 +19,13 @@ criteria:
   - { key: jpk-storage-host, runner: ci, command: 'vendor/bin/phpunit --filter JpkStorageHost', junit: true }
   # F5.2 (bez sieci, FakeJpkGateway): JPK_ST(1) 1-2 tą samą ścieżką co JPK_EWP, prośba tylko przy jpk_st.enabled = true (D-64).
   - { key: jpk-st-request, runner: ci, command: 'vendor/bin/phpunit --filter JpkStRequest', junit: true }
+  # F5.4 (bez sieci, FakeJpkGateway): JPK_V7M(3), znaczniki, deklaracja, bramki, zamknięcie, korekta, jpk.replace_di, bilans otwarcia, kwoty WHT (D-65).
+  - { key: jpk-v7m-golden, runner: ci, command: 'vendor/bin/phpunit --filter JpkV7mGolden', junit: true }
+  - { key: jpk-v7m-markers, runner: ci, command: 'vendor/bin/phpunit --filter JpkV7mMarkers', junit: true }
+  - { key: jpk-v7m-declaration, runner: ci, command: 'vendor/bin/phpunit --filter JpkV7mDeclaration', junit: true }
+  - { key: jpk-v7m-gates, runner: ci, command: 'vendor/bin/phpunit --filter JpkV7mGates', junit: true }
+  - { key: jpk-v7m-send, runner: ci, command: 'vendor/bin/phpunit --filter JpkV7mSend', junit: true }
+  - { key: jpk-v7m-correction, runner: ci, command: 'vendor/bin/phpunit --filter JpkV7mCorrection', junit: true }
+  - { key: jpk-replace-di, runner: ci, command: 'vendor/bin/phpunit --filter JpkReplaceDi', junit: true }
+  - { key: opening-balance-confirm, runner: ci, command: 'vendor/bin/phpunit --filter OpeningBalanceConfirm', junit: true }
+  - { key: wht-obligation-amounts, runner: ci, command: 'vendor/bin/phpunit --filter WhtObligationAmounts', junit: true }

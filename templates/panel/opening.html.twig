@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Otwarcie – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Bilans otwarcia</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_filings') }}">Złożenia</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+    <p id="opening-state">{% if confirmed %}Bilans potwierdzony. Poprawka to nowe potwierdzenie z powodem, przed zamknięciem pierwszego okresu.{% else %}Bilans niepotwierdzony: pierwszy JPK_V7M z kokpitu czeka na potwierdzenie.{% endif %}</p>
+
+    <section id="opening-current">
+        <h2>Obowiązujące klucze</h2>
+        <table>
+            <thead><tr><th>Klucz</th><th>Od</th><th>Wartość</th></tr></thead>
+            <tbody>
+            {% for key, row in current %}
+                <tr><td>{{ key }}</td><td>{{ row ? row.valid_from : '–' }}</td><td>{{ row ? row.value|json_encode : '–' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <p>„Potwierdź” wymaga potwierdzenia passkeyem (ważne 5 minut).</p>
+    <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
+    <p id="passkey-result" role="status"></p>
+
+    <section id="opening-form">
+        <h2>Otwarcie</h2>
+        <form method="post" action="{{ path('panel_opening_confirm') }}" enctype="multipart/form-data">
+            <input type="hidden" name="_token" value="{{ csrf_token('opening') }}">
+            <p><label>1. Data przejścia (pierwszy dzień miesiąca) <input type="date" name="transition_date" required></label></p>
+            <p><label>2. Nadwyżka VAT do przeniesienia, P_62 ostatniego JPK_V7M spoza kokpitu (zł, np. 1250.00) <input name="vat_carry_forward_pln" required></label>
+                <label>UPO i plik tego JPK <input type="file" name="evidence_vat" required></label></p>
+            <p><label>3. Przychód narastająco per stawka (wiersz „12.00 = 84000.00”) <textarea name="revenue_ytd" required></textarea></label>
+                <label>Dowód <input type="file" name="evidence_revenue" required></label></p>
+            <p><label>4. Składki zapłacone w roku: społeczne <input name="zus_social_pln" required></label> <label>zdrowotna <input name="zus_health_pln" required></label>
+                <label>Zestawienie z eZUS <input type="file" name="evidence_zus" required></label></p>
+            <p><label>5. Ostatni numer faktury per seria (wiersz „FV = FV/2026/10/12”) <textarea name="last_invoice_numbers"></textarea></label>
+                <label>Lista z Aplikacji Podatnika KSeF <input type="file" name="evidence_invoices" required></label></p>
+            <p>6. Kursory startowe i obowiązki już zapłacone ustawiasz w kalendarzu i synchronizacji.</p>
+            <p><label>Powód (tylko poprawka) <input name="reason"></label></p>
+            <button type="submit">7. Potwierdź</button>
+        </form>
+    </section>
+{% endblock %}

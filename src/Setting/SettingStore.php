@@ -38,6 +38,29 @@ final readonly class SettingStore
     public function set(string $key, mixed $value, string $validFrom, ?string $userId, ?string $note = null, ?string $legalSource = null): string
     {
         SettingKeys::assertKnown($key);
+        if (in_array($key, SettingKeys::OPENING_KEYS, true) && $this->openingConfirmed()) {
+            throw new \DomainException(sprintf('Bilans otwarcia jest potwierdzony: %s zmienisz tylko nowym potwierdzeniem w formularzu „Otwarcie” ze step-up, z powodem.', $key));
+        }
+        return $this->write($key, $value, $validFrom, $userId, $note, $legalSource);
+    }
+    /** Wpis `opening_balance.confirmed` w środowisku wdrożenia: od niego zwykły zapis kluczy `opening.*` jest odrzucany. */
+    public function openingConfirmed(): bool
+    {
+        return $this->db->fetchOne("SELECT 1 FROM audit_log WHERE action='opening_balance.confirmed' AND environment=? LIMIT 1", [$this->configuration->environment()]) !== false;
+    }
+    /**
+     * Zapis klucza `opening.*` z potwierdzenia „Otwarcie” (`OpeningBalance`, step-up sprawdzony wcześniej); poza tą
+     * ścieżką klucze bilansu przechodzą przez `set`.
+     */
+    public function setOpening(string $key, mixed $value, string $validFrom, string $userId, ?string $note): string
+    {
+        if (!in_array($key, SettingKeys::OPENING_KEYS, true)) {
+            throw new \InvalidArgumentException(sprintf('%s nie jest kluczem bilansu otwarcia.', $key));
+        }
+        return $this->write($key, $value, $validFrom, $userId, $note, null);
+    }
+    private function write(string $key, mixed $value, string $validFrom, ?string $userId, ?string $note, ?string $legalSource): string
+    {
         $value = SettingKeys::normalize($key, $value);
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $validFrom);
         if ($date === false || $date->format('Y-m-d') !== $validFrom) {

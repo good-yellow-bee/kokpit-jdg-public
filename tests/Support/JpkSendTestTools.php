@@ -22,6 +22,10 @@ use App\Connector\Jpk\JpkWriter;
 use App\Ledger\FilingManualUpo;
 use App\Ledger\FilingRequest;
 use App\Ledger\FilingSubject;
+use App\Ledger\MonthChecklist;
+use App\Ledger\MonthClose;
+use App\Ledger\Periods;
+use App\Ledger\V7mGates;
 use App\Security\Redactor;
 use App\Security\SecretStore;
 use App\Storage\FileStore;
@@ -75,6 +79,8 @@ final class JpkSendTestTools
     public readonly FilingRequest $request;
     public readonly FilingManualUpo $manualUpo;
     public readonly MemoryLogger $logger;
+    public readonly Periods $periods;
+    public readonly V7mGates $v7mGates;
     public readonly string $userId;
 
     /** @param array<string,int> $limits */
@@ -86,7 +92,10 @@ final class JpkSendTestTools
         $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $this->audit, self::FILES);
         $configuration = ConnectorTestTools::configuration(limits: $limits);
         $this->fake = new FakeJpkGateway($db, $clock, $this->redactor, $limits);
-        $this->subjects = new ApprovalSubjects([new FilingSubject($db, JpkTestTools::builder($db, $clock, $secrets), JpkTestTools::stBuilder($db, $clock, $secrets), JpkTestTools::settings($db, $clock), $configuration, $clock)]);
+        $settings = JpkTestTools::settings($db, $clock);
+        $this->periods = new Periods($db, $clock, $this->audit, $configuration);
+        $this->v7mGates = new V7mGates($db, new MonthChecklist($db, $clock, $configuration), $settings, $configuration);
+        $this->subjects = new ApprovalSubjects([new FilingSubject($db, JpkTestTools::builder($db, $clock, $secrets), JpkTestTools::stBuilder($db, $clock, $secrets), JpkTestTools::v7mBuilder($db, $clock, $secrets), $this->v7mGates, new MonthClose($db, $clock, $this->audit, $this->periods), $this->periods, $settings, $configuration, $clock)]);
         $this->transitions = new ApprovalTransitions($db, $this->audit, $clock, $this->subjects);
         $this->notifications = new ApprovalNotifications($db, $clock);
         $owner = new ApprovalTestTools($db, $clock);
@@ -106,7 +115,7 @@ final class JpkSendTestTools
         $this->logger = new MemoryLogger($clock);
         $this->handler = new OfficialWritesHandler($db, $this->transitions, $this->subjects, $this->connectors, $this->gate, $this->files, $this->notifications, $this->guard, $clock, $this->logger);
         $this->reconciler = new SubmissionReconciler($db, $this->transitions, $this->connectors, $this->notifications, $clock, ['jpk' => 'P3D']);
-        $this->request = new FilingRequest($db, $this->gate, $configuration, $clock, JpkTestTools::settings($db, $clock));
+        $this->request = new FilingRequest($db, $this->gate, $configuration, $clock, $settings, $this->periods);
         $this->manualUpo = new FilingManualUpo($db, $this->gate, $owner->stepUp, $this->files, $this->audit, $clock);
     }
 
@@ -199,9 +208,9 @@ final class JpkSendTestTools
     }
 
     /** @return array<string,mixed> */
-    public function filing(string $type = 'JPK_EWP'): array
+    public function filing(string $type = 'JPK_EWP', ?string $periodStart = null, int $seq = 0): array
     {
-        $row = $this->db->fetchAssociative("SELECT * FROM filing WHERE environment='test' AND type=? AND period_start=?", [$type, sprintf('%04d-01-01', self::YEAR)]);
+        $row = $this->db->fetchAssociative("SELECT * FROM filing WHERE environment='test' AND type=? AND period_start=? AND seq=?", [$type, $periodStart ?? sprintf('%04d-01-01', self::YEAR), $seq]);
         return $row === false ? throw new \LogicException('Brak złożenia.') : $row;
     }
 

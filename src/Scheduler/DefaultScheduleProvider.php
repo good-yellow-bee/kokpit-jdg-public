@@ -54,6 +54,8 @@ final class DefaultScheduleProvider implements ScheduleProviderInterface
             ->add(RecurringMessage::cron('*/15 * * * *', new RedispatchMessage(new FreshBooksPollMessage('freshbooks.poll_invoices'), 'reads'), $timezone))
             ->add(RecurringMessage::cron('7 * * * *', new RedispatchMessage(new FreshBooksPollMessage('freshbooks.poll_payments'), 'reads'), $timezone))
             ->add(RecurringMessage::cron('0 8 15,20 * *', new RedispatchMessage(new LedgerTaskMessage('ledger.entry_check'), 'reads'), $timezone))
+            // Pozycje `DI` z numerem KSeF po przyjętym JPK_V7M → „korekta wymagana” (F5.4, D-65).
+            ->add(RecurringMessage::cron('0 9 * * *', new RedispatchMessage(new LedgerTaskMessage('jpk.replace_di'), 'reads'), $timezone))
             // Latarnia KSeF co 5 min (F3.3); przy `CONNECTORS_ENABLED=0` i celu `demo` handler kończy się bez wywołań.
             ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new LatarniaStatusMessage('latarnia.status'), 'reads'), $timezone));
     }

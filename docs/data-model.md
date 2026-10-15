@@ -758,7 +758,8 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | `zus.variant` | wariant składek społecznych | Q-16 |
 | `fx.art31a_2a_elected` | wybór art. 31a ust. 2a | Q-23, D-21 |
 | `pit.kasowy` | metoda kasowa PIT | Q-24 |
-| `vat.excess_policy` | zwrot albo przeniesienie nadwyżki VAT | Q-31, [modules/jpk.md](modules/jpk.md) |
+| `vat.excess_policy` | zwrot albo przeniesienie nadwyżki VAT; od F5.4 tylko `carry_forward`, brak wiersza = `carry_forward` (D-65) | Q-31, [modules/jpk.md](modules/jpk.md) |
+| `wht.rates` | stawki WHT: `standard` per kategoria (`license`, `services_21_2a`) i `treaty` per kod kraju ISO, wartości `"NN.NN"` w procentach (D-65) | Q-21, Q-29, [tax-rules.md](tax-rules.md) |
 | `jpk_st.enabled` | JPK_ST włączony | Q-25 |
 | `chat.law_snapshot` | wersjonowany zestaw stawek i progów dla czatu | [modules/czat.md](modules/czat.md) |
 | `freshbooks.sales_enabled` | brama F3 dla znacznika gotowości i wykrywania obejścia; `valid_from` = dzień go-live F3, wycofanie to nowy wiersz | [modules/freshbooks.md](modules/freshbooks.md) |

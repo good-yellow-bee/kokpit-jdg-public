@@ -152,6 +152,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-62 | założenia F6.4: prośba o szkic to `chat_message.draft_requested` ostatniej wiadomości `user` z blokiem `text`; odbiorca tylko `K-NN` z mapy i z `counterparty` tego środowiska; `flagged_values` dla IBAN, NRB, NIP z poprawną sumą i kwot z dwoma miejscami spoza bazy odbiorcy, potwierdzane w szkicu przed decyzją; prośba `draft` bez push (`requestByUser`); „Skopiowano” sprawdza termin i hash; Symfony Workflow `draft` bez nowej migracji | przyjęta 2026-10-14 | – |
 | D-63 | XSD JPK i e-Deklaracji w `resources/xsd` od 15.10.2026: JPK_V7M(3) 1-0E, JPK_ST(1) 1-2, VAT-UE(5) 2-0E, VAT-UEK(5) 2-1E, SIG-2008 2-0, `initupload.xsd` z plikami bazowymi; importy przez mapę pełnego adresu `schemaLocation` → plik (`locations` w manifeście); `AuthData` poza opublikowanym XSD `InitUpload`, sprawdzany osobno; link `/media/qord0r0j` nieużywany; zaślepki testowe usunięte, `jpk-init-upload` i `jpk-auth-data` odblokowane | przyjęta 2026-10-15 | – |
 | D-64 | założenia F5.2 JPK_ST(1): generator na XSD 1-2, węzeł `EWP` z `ZnacznikST` 1 i `Podmiot1` jak JPK_EWP; w pliku środki przyjęte do końca okresu i niewykreślone przed jego początkiem, F_1 od 1 w kolejności F_4; prośba tylko przy `jpk_st.enabled` = true na 31.12. roku, inaczej komunikat Q-25 bez wiersza `filing`; bez bramek JPK_EWP, pusty wykaz przy włączonej fladze to plik bez wierszy; wysyłka tym samym `JpkWriter` | przyjęta 2026-10-15 | Q-25 |
+| D-65 | założenia F5.4 JPK_V7M(3): generator `JpkV7mBuilder` z kwot w PLN po kursie VAT z `invoice`, znacznik `JpkMarker` liczony przy budowie (pusty tryb bez numeru blokuje jak `online`); deklaracja z sum K zaokrąglonych HALF_UP do pełnych złotych, P_39 z P_62 przyjętego JPK_V7M za M−1 albo z `opening.vat_carry_forward_pln` z `valid_from` = M, `vat.excess_policy` tylko `carry_forward`; bramki `V7mGates` blokują prośbę, wynik i lista `DI` w `period.checklist`; przyjęcie zamyka okres przez `MonthClose`; korekta `purpose` 2 tylko w okresie `reopened`; `jpk.replace_di` od chwili `xml_sent`; „Otwarcie” przez `OpeningBalance` ze step-up; kwota WHT z `wht.rates` i kursu NBP z bazy | przyjęta 2026-10-15 | Q-21, Q-29, Q-31 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1225,3 +1226,63 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Punkt D-63 o `JpkStBuilder::SCHEMA` = `v1-0` przestaje obowiązywać.
 - **Skutki:** `JpkStBuilder`, `JpkTaxpayer`, `FilingRequest::jpkSt`, `FilingSubject` (JPK_ST); wiersze `jpk-st-build` i `jpk-st-dry-run` w `tests/Acceptance/f2.yaml` (D-37) i `jpk-st-request` w `tests/Acceptance/f5.yaml`; fikcyjny wykaz `tests/Fixtures/Jpk/fixed-assets-2026.json`; nazwy w „Implementacji F5.2” w [naming.md](naming.md); F5.3 może wysłać JPK_ST (`jpk-te-st-upo`).
 - **Pytania:** Q-25.
+
+### D-65 Założenia F5.4: JPK_V7M(3) i zamknięcie miesiąca
+
+- **Status:** przyjęta 2026-10-15 (decyzja Claude w ramach pełnej odpowiedzialności za projekt; Q-21, Q-29 i Q-31 dalej otwarte, kokpit idzie na ich założeniach domyślnych).
+- **Kontekst:**
+  - D-63 dał `Schemat_JPK_V7M(3)_v1-0E.xsd` z importami. F5.4 buduje plik, deklarację, bramki, zamknięcie, korektę, `jpk.replace_di`, formularz „Otwarcie” i kwoty WHT bez sieci (D-56).
+  - Tabela znaczników nie mówi, co z fakturą bez numeru i bez `ksef_issue_mode`. Pusty tryb dopuszcza tylko faktura z numerem z importu KSeF.
+  - `setting` ma `UNIQUE (key, valid_from)`, a rola aplikacji nie ma `UPDATE` na `setting`. Formularz „Otwarcie” nie może więc nadpisać wiersza z tą samą datą przejścia.
+  - Sposób przeliczenia wypłaty WHT na złote czeka na przegląd doradcy (Q-29). Stawki WHT nie miały klucza `setting`.
+- **Decyzja:**
+  - **Generator.** `JpkV7mBuilder::build(periodStart, purpose, reason)` buduje JPK_V7M(3) 1-0E z `company.identity` (część JPK z wymaganym `email`) i `DataUrodzenia` z `auth_data` przez `JpkTaxpayer`.
+    - Sprzedaż: `accepted`, `corrected` i `superseded` z `vat_period_start` = M. KOR bierze scenariusz faktury korygowanej i kwoty różnicy ze znakiem.
+    - Koszty: `assigned` i `business` z `vat_period_start` = M. Import usług daje wiersz sprzedaży (K_27/K_28 dla `other`, K_29/K_30 dla `eu_28b`; podatek z `self_assessed_vat_pln`, przy `vat_exempt` 0,00). Wiersz zakupu (K_42/K_43, środek trwały K_40/K_41) powstaje tylko przy `deductible` bez `vat_exempt`.
+    - Koszt zagraniczny bez `import_services` i dokument bez `net_pln` albo `vat_pln` blokują budowę.
+    - `NrKontrahenta`: NIP dla PL, prefiks i numer VAT UE, kraj i `foreign_tax_id` spoza UE, „brak” bez identyfikatora. `DataSprzedazy` tylko przy dacie obowiązku innej niż wystawienie. `DataWplywu` z `received_on` albo dnia nadania numeru KSeF w Europe/Warsaw.
+    - Wiersze w kolejności daty, numeru i `id`. Bez GTU i procedur (Q-31).
+  - **Znacznik.** `JpkMarker::of` według tabeli od góry. Pusty `ksef_issue_mode` bez numeru blokuje budowę jak `online` bez numeru: znacznika nie da się ustalić. `TypDokumentu` i `DokumentZakupu` `WEW` z `jpk_doc_type`.
+  - **Deklaracja.** P_x to suma K_x zaokrąglona HALF_UP do pełnych złotych (art. 63 Ordynacji). P_37, P_38 i P_48 to sumy pól już zaokrąglonych.
+    - P_38 i P_51 zawsze, „0” przy braku. P_48 zawsze; P_39 tylko > 0.
+    - Przy P_48 > P_38: P_51 = 0, P_53 = P_62 = różnica.
+    - `vat.excess_policy` przyjmuje tylko `carry_forward` (Q-31); brak wiersza oznacza `carry_forward`. Inna polityka wymagałaby pól P_54–P_61, więc budowa odmawia.
+    - P_39 = P_62 z `filing.totals` najnowszego przyjętego (nie `superseded`) JPK_V7M za M−1, także `manual`. Bez niego `opening.vat_carry_forward_pln` z `valid_from` = M, w pełnych złotych z `.00`. Bez obu budowa odmawia.
+  - **Bramki.** `V7mGates` to cztery bramki `MonthChecklist` oraz:
+    - `eu_b2b_unidentified`: dowód ręczny i scenariusz w `ksef.fa3_review`;
+    - `opening_balance`: przyjęty JPK_V7M za M−1 albo bilans z `valid_from` = M potwierdzony wpisem `opening_balance.confirmed`.
+    - Od F5.4 niespełniona bramka blokuje prośbę o zatwierdzenie z listą bramek; złożenie `manual` tylko ją zapisuje (D-49).
+    - Przy udanej prośbie wynik i `di_items` trafiają do `period.checklist`. Odmowa wycofuje transakcję prośby, więc nie zostawia zapisu.
+  - **Zamknięcie i korekta.** Przyjęcie JPK_V7M (z bramki albo `manual_filing` z UPO) woła `MonthClose` w transakcji przejścia:
+    - poprzednie przyjęte złożenie okresu dostaje `superseded`;
+    - okres dostaje `closed` z `closed_by_filing_id`;
+    - obowiązek `vat_jpk_v7m` dostaje `done` z `filing_id` i `done_by` = zatwierdzający;
+    - `vat_ue` bez sprzedaży `eu_b2b` dostaje `not_applicable`.
+    - Pierwsze złożenie odmawia w okresie `closed` albo z przyjętym złożeniem. Korekta (`FilingRequest::jpkV7mCorrection`) wymaga okresu `reopened` i przyjętego złożenia. Dostaje `purpose` 2, `seq` = max + 1, `supersedes_id`, a P_ORDZU w `filing.totals.p_ordzu`. Szkic korekty bez wysyłki jest używany ponownie.
+  - **`jpk.replace_di`** (codziennie 09:00, `reads`). Chwila budowy to `created_at` pliku `xml_sent` przyjętego zatwierdzenia najnowszego przyjętego złożenia okresu. Zapasowo bierze ostatni `xml_sent` złożenia, a potem `accepted_at`.
+    - Faktura `offline24` albo `maintenance` bez `WEW`, z numerem nadanym później, ustawia `correction_required_at` przez `Periods::correctionRequired`.
+    - Wpis `period.correction_required` niesie `cause` = `jpk.replace_di` i `target_id`. Wpis po tej chwili wyklucza ponowne zgłoszenie.
+  - **„Otwarcie”.** `OpeningBalance::confirm` zapisuje cztery klucze `opening.*` w jednej transakcji, każdy z plikiem `evidence` (właściciel `setting`), oraz wpis `opening_balance.confirmed` z passkeyem step-up.
+    - Po wpisie `SettingStore::set` odrzuca klucze `opening.*`.
+    - Poprawka to nowe potwierdzenie z powodem, przed zamknięciem jakiegokolwiek okresu i z inną datą przejścia, bo wiersza z tą samą datą nie da się nadpisać.
+    - Kształty kluczy są w [naming.md](naming.md).
+  - **WHT.** Klucz `wht.rates` trzyma stawki `standard` i `treaty` per kraj dla `license` i `services_21_2a`.
+    - `amount_due` obowiązku `wht_payment` to suma `gross_total` faktur dostawcy zapłaconych w miesiącu. Każdą przelicza średni kurs NBP z ostatniej tabeli przed `paid_on`, tylko z bazy i do 10 dni wstecz, i mnoży przez stawkę na dzień `paid_on`.
+    - Stawka z umowy obowiązuje tylko przy `wht_cert_valid_until` ≥ `paid_on`. Wynik jest w pełnych złotych, HALF_UP.
+    - Brak stawki albo kursu daje pustą kwotę.
+    - `cit_10z` za rok obowiązuje, gdy suma > 0 albo któraś kwota jest pusta (ostrożnie). Wpłata, IFT-2R i CIT-10Z zostają ręczne.
+- **Skutki:**
+  - Kod: `JpkV7mBuilder`, `JpkV7mDocument`, `JpkMarker`, `V7mGates`, `MonthClose`, `JpkReplaceDi`, `OpeningBalance`, `OpeningController` (`/opening`).
+  - Zmiany w istniejącym kodzie:
+    - `FilingSubject`: JPK_V7M;
+    - `FilingRequest`: `jpkV7m`, `jpkV7mCorrection`;
+    - `SettingKeys` i `SettingStore`: `vat.excess_policy`, `wht.rates`, `opening.*` i blokada;
+    - `ObligationEngine`: kwota WHT i warunek `cit_10z`;
+    - zadanie `jpk.replace_di` w harmonogramie.
+  - Testy i dane: wiersze F5.4 w `tests/Acceptance/f5.yaml`; fikcyjny miesiąc `tests/Fixtures/Jpk/v7m-2026-11.json` i złoty plik `tests/Fixtures/Jpk/golden/jpk-v7m-golden.xml`.
+  - Nazwy: „Implementacja F5.4” w [naming.md](naming.md).
+  - Bez migracji. F5.5 (VAT-UE) i F5.6 (live) mogą ruszyć.
+- **Pytania:**
+  - Q-21: klasyfikacja WHT i stawki z umów.
+  - Q-29: przeliczenie wypłaty WHT na złote; potwierdzenie mapowania `eu_b2b_unidentified` i importu usług.
+  - Q-31: polityka nadwyżki i GTU.
