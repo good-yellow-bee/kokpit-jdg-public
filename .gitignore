@@ -35,3 +35,5 @@ compose.override.yaml
 /.phpstan.cache/
 *.crt
 *.cer
+/public/assets/
+/config/reference.php

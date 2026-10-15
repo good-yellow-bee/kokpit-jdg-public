@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-73 | JavaScript panelu (domknięcie D-61): `symfony/ux-chartjs` 2.36, wykres przez `render_chart()`; importmap z pakietami JS w `assets/vendor` w repo (npm z kontrolą `integrity`, bez CDN i bez polyfillu); Turbo tylko dla ramek (Drive wyłączony); kontroler wykresu leniwy; CSP z nonce na żądanie (`CspNonce`, `csp_nonce()`) w `script-src` i `style-src`, styl czatu z pliku | przyjęta 2026-10-15 | F6 |
 | D-72 | F1 poświadczenia KSeF na api-test: zapas certyfikatem typ 1 w `KsefAuthenticator` (`certificateAccessToken`, `KsefXades`, `ksef_auth_cert` = certyfikat i klucz w PEM; bez sekretu tokena `accessToken` idzie podpisem XAdES); dane TE samopodpisaną pieczęcią zamiast `/testdata/subject`; token `InvoiceRead` dostaje 403 przy otwarciu sesji; klucze MF bez kopii w konfiguracji, wybór certyfikatu ważnego teraz, bez zadania `mf_keys.refresh` dla KSeF; okna backfillu, 21165 i 429 na atrapie bramki | przyjęta 2026-10-15 | F1 |
 | D-71 | F1 eksport KSeF na api-test: `HttpKsefGateway::startExport` i `exportPackage` tokenem `ksef_token_read` (klucz AES na eksport w pamięci procesu, części z adresu ze statusu bez tokenu, `partHash`, ZIP z `_metadata.json`); kod 420 to pusta paczka z kursorem na `from`; `ksef-sync-te` z pomocnikiem `KsefTeIssuer` (faktury poza bramką, tylko w `tests/`); nagranie `te-sync-export` trzyma metadane, odtworzenie składa i szyfruje paczkę | przyjęta 2026-10-15 | F1 |
 
@@ -1181,7 +1182,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Limit czasu: żądanie panelu trwa najwyżej `chat.max_iterations` × `chat.timeout_s` (720 s) plus zapas, więc pula PHP-FPM ma `request_terminate_timeout = 780s`, a proxy `fastcgi_read_timeout 780s`.
   - Dowody: paczka przyjmuje podkatalog `screens/<klucz>.html` (ramka z testu WebTestCase bez wartości tokenu CSRF, po `Redactor`).
 - **Skutki:** `src/Controller/ChatController.php`, `src/Chat/ChatPanel.php` i klasy widoku; szablony `templates/panel/chat.html.twig` i `_chat_frame.html.twig`; parametr `chat.session_list_limit`; `docker/php/zz-kokpit-pool.conf` i `docker/proxy/*.conf`; wiersze F6.3 w `tests/Acceptance/f6.yaml`; nazwy w [naming.md](naming.md), „Implementacja F6.3 (D-61)”; zmiana założeń to nowy wpis tutaj.
-- **Pytania:** brak; otwarty krok instalacji `symfony/ux-chartjs` i JavaScriptu panelu (wyżej).
+- **Pytania:** brak; instalację `symfony/ux-chartjs` i JavaScriptu panelu domyka D-73.
 
 ### D-62 Założenia szkiców `draft_document` w F6.4
 
@@ -1390,6 +1391,18 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-73 JavaScript panelu i wykres czatu
+
+- **Status:** przyjęta 2026-10-15.
+- **Kontekst:** D-61 zostawił wykres jako znaczniki kontrolera Symfony UX Chart.js bez JavaScriptu panelu. Panel miał CSP `default-src 'self'`, więc importmap (skrypt inline) i styl inline czatu nie działały. Sandbox sesji ma Packagist, git z GitHub i registry.npmjs.org, ale nie ma jsDelivr, z którego `importmap:require` pobiera pakiety.
+- **Decyzja:**
+  - `symfony/ux-chartjs` 2.36 (MIT, jak `symfony/ux-turbo`), `ChartjsBundle`; `ChatChartData::chart()` daje model `Chart`, szablon woła `render_chart()`. Dane bez zmian (D-61).
+  - `importmap.php`: `app`, `@hotwired/stimulus` 3.2.2, `@hotwired/turbo` 8.0.23, `@symfony/stimulus-bundle`, `chart.js` 4.5.1 z fragmentem `chart.js/chunks/helpers.dataset.js`, `@kurkle/color` 0.3.4 (wersja z zależności Chart.js). Pliki leżą w `assets/vendor` w repo, pobrane z registry.npmjs.org ze sprawdzeniem `integrity` (sha512); licencje MIT. Jedyna zmiana względem npm: Chart.js importuje swój fragment nazwą zamiast ścieżki względnej, bo ładuje się leniwie. `importmap_polyfill: false`, więc żadnego CDN.
+  - `assets/app.js` startuje Stimulus i Turbo z `Turbo.session.drive = false`: działają ramki (`chat-turn`), a linki, formularze i passkey zachowują się jak bez JavaScriptu. Kontroler `@symfony/ux-chartjs/chart` jest leniwy, więc Chart.js ładuje się tylko przy wykresie.
+  - CSP: `CspNonce` daje nonce na żądanie (`csp_nonce()` w `base.html.twig` dla importmap i `meta csp-nonce` Turbo), a `SecurityHeadersSubscriber` dopisuje go do `script-src` i `style-src` tylko wtedy, gdy strona go użyła. Bez `unsafe-inline`. Styl stanu ładowania czatu przeniesiony do `assets/styles/chat.css`.
+  - Sprawdzenie: `PanelImportmapTest` (nonce w CSP i w skryptach, każdy wpis importmap to plik z repo, kontroler wykresu leniwy). Przebieg w Chromium bez sieci zewnętrznej na stronie `/chat` z wykresem `revenue_by_month`: wykres narysowany, zero błędów CSP i 404.
+- **Skutki:** `composer.json` (`symfony/ux-chartjs`), `config/bundles.php`, `config/packages/framework.yaml`, `importmap.php`, `assets/`, `src/Panel/CspNonce.php`, `SecurityHeadersSubscriber`, szablony czatu i `base.html.twig`; `.gitignore`: `/public/assets/` (wynik `asset-map:compile` w obrazie) i `/config/reference.php` (plik generowany przez Symfony 7.4).
 
 ### D-72 F1: poświadczenia KSeF, zapas certyfikatem i klucze MF
 
