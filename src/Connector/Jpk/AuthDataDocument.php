@@ -32,6 +32,20 @@ final readonly class AuthDataDocument
         return $this->catalog->has(self::SCHEMA);
     }
 
+    /**
+     * Sam element `podp:DaneAutoryzujace` (bez deklaracji XML) do wstawienia w deklarację e-Deklaracji przy wysyłce
+     * (VAT-UE, D-66); ta sama walidacja SIG-2008 co `build`, tylko w pamięci workera.
+     */
+    public function element(string $environment): string
+    {
+        $document = new \DOMDocument();
+        if (!$document->loadXML($this->build($environment), LIBXML_NONET) || $document->documentElement === null) {
+            throw JpkException::of(JpkError::AuthDataInvalid);
+        }
+        $element = $document->saveXML($document->documentElement);
+        return $element === false ? throw JpkException::of(JpkError::AuthDataInvalid) : $element;
+    }
+
     /** Jawny XML `AuthData`; tylko do szyfrowania kluczem pliku w tym samym przebiegu workera. */
     public function build(string $environment): string
     {

@@ -29,3 +29,10 @@ criteria:
   - { key: jpk-replace-di, runner: ci, command: 'vendor/bin/phpunit --filter JpkReplaceDi', junit: true }
   - { key: opening-balance-confirm, runner: ci, command: 'vendor/bin/phpunit --filter OpeningBalanceConfirm', junit: true }
   - { key: wht-obligation-amounts, runner: ci, command: 'vendor/bin/phpunit --filter WhtObligationAmounts', junit: true }
+  # F5.5 (bez sieci, FakeEDeklaracjeGateway): VAT-UE(5) i VAT-UEK(5), bramka K_12, trasa KOR, wysyłka przez edeklaracje z DaneAutoryzujace tylko w workerze (D-66).
+  - { key: vat-ue-golden, runner: ci, command: 'vendor/bin/phpunit --filter VatUeGolden', junit: true }
+  - { key: vat-ue-k12-gate, runner: ci, command: 'vendor/bin/phpunit --filter VatUeK12Gate', junit: true }
+  - { key: vat-ue-kor-routing, runner: ci, command: 'vendor/bin/phpunit --filter VatUeKorRouting', junit: true }
+  - { key: edeklaracje-send-accepted, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeSendAccepted', junit: true }
+  - { key: edeklaracje-status-codes, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeStatusCodes', junit: true }
+  - { key: edeklaracje-rate-limit, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeRateLimit', junit: true }

@@ -143,7 +143,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `stored_file.kind` | `xml_sent`, `upo`, `pdf`, `evidence`, `attachment`, `verification_raw`, `cost_document`, `outbound_payload` |
 | `credential_state.kind` | `ksef_token_read`, `ksef_token_write`, `ksef_auth_cert`, `ksef_offline_cert`, `ksef_jwt_read`, `ksef_jwt_write`, `auth_data`, `freshbooks_oauth`, `dummy_token` (tylko konektor `dummy`); `edoreczenia_qualified_cert` i `edoreczenia_access_token` odłożone (D-29) |
 | `sync_cursor.stream` | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments`; e-Doręczenia `inbox`, `outbox` odłożone (D-29) |
-| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
+| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
 | `ryczalt.advance_frequency` (`setting`) | `monthly`, `quarterly` (Q-17) |
 | `zus.variant` (`setting`) | `full`, `preferential`, `start_relief`; F0b implementuje `full` (Q-16) |
 | `environment` | `test`, `demo`, `prod`; `int` odłożone (D-29) |
@@ -567,6 +567,21 @@ Część b: sekcja niżej.
 | Audyt | `opening_balance.confirmed`; `period.correction_required` z `cause` = `jpk.replace_di` i `target_id` faktury |
 | Zadania | `jpk.replace_di` przez `LedgerTaskMessage` (transport `reads`, codziennie 09:00) |
 | Testy i odbiór | `JpkV7mGoldenTest`, `JpkV7mMarkersTest`, `JpkV7mDeclarationTest`, `JpkV7mGatesTest`, `JpkV7mSendTest`, `JpkV7mCorrectionTest`, `JpkReplaceDiTest`, `OpeningBalanceConfirmTest`, `WhtObligationAmountsTest`; `JpkV7mTestTools`, `JpkV7mTestCase`; fikcyjny miesiąc `tests/Fixtures/Jpk/v7m-2026-11.json`; złoty plik `tests/Fixtures/Jpk/golden/jpk-v7m-golden.xml` |
+
+### Implementacja F5.5 (D-66): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Generator (`src/Xml`) | `VatUeBuilder` (`build`, `buildCorrection`, `positions`; `SCHEMA_UE` = `VAT-UE(5)_v2-0E.xsd`, `SCHEMA_UEK` = `VAT-UEK(5)_v2-1E.xsd`, `SCHEMA_VERSION_UE` = `VAT-UE(5)`, `SCHEMA_VERSION_UEK` = `VAT-UEK(5)`), `VatUeDocument` (`valid`, `sha256`, `totals`; `positions`, `before`, `netPlnSum`, `pUcSum`) |
+| Bramka i zamknięcie (`src/Ledger`) | `VatUeK12Gate` (`check`; wynik `k12`, `net_pln_sum`, `p_uc_sum`, `difference`, `rounding_difference`, `tolerance`, `v7m_filing_id`), `FilingRequest::vatUe` (trasa KOR: `vat_ue`, `wait`, `vat_uek`), `FilingRequest::vatUeRoute`, `MonthClose::vatUeAccepted` |
+| Konektor `edeklaracje` (`src/Connector/EDeklaracje`) | `EDeklaracjeGateway` (`sendUnsignDocument`, `requestUpo`; stałe grup `BUCKET_SEND` = `edeklaracje.send`, `BUCKET_UPO` = `edeklaracje.request_upo`), `EDeklaracjeSoapClient` (podklasa `SoapClient` bez WSDL, `__doRequest` przez `ConnectorHttpClient`), `EDeklaracjeCall` (`dispatch`, `read`), `EDeklaracjeReceipt`, `EDeklaracjeStatus`, `EDeklaracjeDocument` (`authorize`: `DaneAutoryzujace` jako ostatni element `Deklaracja`, tylko w pamięci workera), `EDeklaracjeException`, `EDeklaracjeWriter` (`OfficialWriter` i `StatusReader` dla `edeklaracje`); `AuthDataDocument::element` |
+| `EDeklaracjeError` | statusy bramki `100`, `101`, `102`, `200`, `300`, `301`, `302`, `303`, `306`, `401`, `408`, `409`, `410`, `411`, `412`, `414`, `418`, `419`, `422`, `423`; kody kokpitu `invalid_response`, `document_invalid`, `auth_data_invalid`, `send_no_response`, `no_reference` |
+| `connector_call.operation` (`edeklaracje`) | `send_unsign_document`, `request_upo` |
+| Powody czekania (`OfficialWriter::waitingReason` dla `edeklaracje`) | `connectors_disabled`, `target_mismatch`, `credential_missing` (`auth_data`), `xsd_missing`, `rate_limited` |
+| Klucze `approval.external_refs` (`edeklaracje`) | `correlation_id`, `ref_id`, `send_status`, `sent_at`, `status_code`, `upo_file_id`, `accepted_at`, `decision_required` (`D-27` przy 410 i 418), `reconciled_by` (`own_filing`), `original_approval_id`, `original_filing_id` |
+| Klucze `filing.totals` (`VAT_UE`, `VAT_UEK`) | `positions` (`country`, `vat_number`, `net_pln`, `p_uc`, `invoices`), `before` (pozycje złożenia zastępowanego, tylko `VAT_UEK`), `net_pln_sum`, `p_uc_sum`, `buyers`, `invoices`, `excluded_unidentified`, `k12`, `v7m_filing_id`, `difference`, `rounding_difference`, `tolerance`, `xml_sha256` |
+| Parametry (`config/services_connectors.yaml`) | `edeklaracje.endpoints`, `edeklaracje.soap` (`namespace`, `language`, `signature_type`); limit `edeklaracje.send` w `connector.daily_limits` |
+| Testy i odbiór | `VatUeGoldenTest`, `VatUeK12GateTest`, `VatUeKorRoutingTest`, `EDeklaracjeSendAcceptedTest`, `EDeklaracjeStatusCodesTest`, `EDeklaracjeRateLimitTest`; `VatUeTestTools`, `VatUeTestCase`, `FakeEDeklaracjeGateway`; fikcyjne uzupełnienie miesiąca `tests/Fixtures/Jpk/vat-ue-2026-11.json`; złoty plik `tests/Fixtures/Jpk/golden/vat-ue-golden.xml`; nagrania SOAP `tests/Fixtures/EDeklaracje/soap-send*.json`, `soap-upo-*.json` (treść SOAP w `body_text`); artefakty `cmd/vat-ue-k12-gate.txt`, `golden/vat-ue-golden.diff`, `db/edeklaracje-send-accepted-connector_call.csv`, `db/edeklaracje-rate-limit-rate_counter.csv`, `cmd/edeklaracje-status-<kod>.txt`; `JpkSendTestTools` dostaje `edeklaracje`, `edeklaracjeWriter` i `vatUe` |
 
 ### Plan F6 (D-58): nazwy
 

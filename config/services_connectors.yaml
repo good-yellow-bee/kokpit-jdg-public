@@ -10,7 +10,7 @@ parameters:
   app.default_deployment: dev
   app.panel.default_origin: 'http://localhost'
   app.panel.default_certificate: '/run/kokpit/certificates/panel.crt'
-  connector.daily_limits: { jpk.init_upload: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, white_list.search: 80, white_list.check: 4000 }
+  connector.daily_limits: { jpk.init_upload: 10, edeklaracje.send: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, white_list.search: 80, white_list.check: 4000 }
   # Adresy rejestrów per środowisko (docs/modules/rejestry-kursy.md); poza PROD tylko usługi testowe.
   registry.vies_endpoints: { test: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service', prod: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number' }
   registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
@@ -27,6 +27,10 @@ parameters:
   # ustawia. Wynegocjowany zestaw sprawdza `jpk-te-tls` w F5.3 (D-57).
   jpk.tls_ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256'
   jpk.mf_certificates: { test: '%kernel.project_dir%/var/jpk/mf-test.crt', prod: '%kernel.project_dir%/var/jpk/mf-prod.crt' }
+  # Konektor `edeklaracje` (F5.5, D-66): bramka SOAP per cel; adres PROD do potwierdzenia z WSDL PROD przed go-live F5b,
+  # przestrzeń nazw i parametry `sendUnsignDocument` ze specyfikacji 2.4, do potwierdzenia nagraniami F5.6.
+  edeklaracje.endpoints: { test: 'https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty', prod: 'https://bramka.e-deklaracje.mf.gov.pl/uslugi/dokumenty' }
+  edeklaracje.soap: { namespace: 'https://bramka.e-deklaracje.mf.gov.pl/xsd', language: pl, signature_type: PIT }
   # Konektor `claude` (F6.2, D-60): jeden host, timeout z `chat.timeout_s`, bez ponowień SDK.
   claude.base_url: 'https://api.anthropic.com'
 services:
@@ -90,6 +94,11 @@ services:
     arguments: { $paths: '%jpk.mf_certificates%' }
   App\Connector\Jpk\AuthDataDocument: ~
   App\Connector\Jpk\JpkWriter: ~
+  # Konektor zapisu e-Deklaracji (F5.5): VAT-UE i VAT-UEK; wysyła tylko `OfficialWritesHandler`.
+  App\Connector\EDeklaracje\EDeklaracjeGateway:
+    arguments: { $endpoints: '%edeklaracje.endpoints%', $soap: '%edeklaracje.soap%' }
+  App\Connector\EDeklaracje\EDeklaracjeDocument: ~
+  App\Connector\EDeklaracje\EDeklaracjeWriter: ~
   App\Connector\Latarnia\LatarniaStatusStore:
     arguments: { $schedulerState: '@cache.scheduler' }
   App\Connector\Latarnia\LatarniaStatusHandler: ~

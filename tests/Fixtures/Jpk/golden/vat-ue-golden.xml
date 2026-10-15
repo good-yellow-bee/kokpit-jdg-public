@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Deklaracja xmlns="http://crd.gov.pl/wzor/2021/01/12/10293/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="VAT-UE (5)" wersjaSchemy="2-0E">VAT-UE</KodFormularza>
+    <WariantFormularza>5</WariantFormularza>
+    <Rok>2026</Rok>
+    <Miesiac>11</Miesiac>
+    <CelZlozenia>1</CelZlozenia>
+    <KodUrzedu>1471</KodUrzedu>
+  </Naglowek>
+  <Podmiot1 rola="Podatnik">
+    <etd:OsobaFizyczna>
+      <etd:NIP>1111111111</etd:NIP>
+      <etd:ImiePierwsze>Fictional</etd:ImiePierwsze>
+      <etd:Nazwisko>Podatnik</etd:Nazwisko>
+      <etd:DataUrodzenia>1980-01-01</etd:DataUrodzenia>
+    </etd:OsobaFizyczna>
+  </Podmiot1>
+  <PozycjeSzczegolowe>
+    <Grupa3>
+      <P_Ua>DE</P_Ua>
+      <P_Ub>999999999</P_Ub>
+      <P_Uc>3825</P_Uc>
+    </Grupa3>
+    <Grupa3>
+      <P_Ua>FR</P_Ua>
+      <P_Ub>99999999999</P_Ub>
+      <P_Uc>3393</P_Uc>
+    </Grupa3>
+  </PozycjeSzczegolowe>
+  <Pouczenie>1</Pouczenie>
+</Deklaracja>
