@@ -35,6 +35,7 @@ criteria:
   - { key: ksef-21165-retry, runner: ci, command: 'vendor/bin/phpunit --filter Ksef21165Retry', junit: true }
   - { key: ksef-429-blocked-until, runner: ci, command: 'vendor/bin/phpunit --filter KsefRateLimit429', junit: true }
   - { key: mf-keys-refresh, runner: ci, command: 'vendor/bin/phpunit --filter MfKeysRefresh', junit: true }
+  - { key: ksef-transition-report, runner: ci, command: 'vendor/bin/phpunit --filter "KsefTransitionReport|KsefTeSyncRecording"', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

@@ -7,6 +7,7 @@ namespace App\Tests\Integration;
 use App\Connector\Ksef\HttpKsefGateway;
 use App\Fixtures\FictionalIdentifiers;
 use App\Invoice\KsefSync;
+use App\Invoice\TransitionReport;
 use App\Tests\Support\ConnectorTestTools;
 use App\Tests\Support\EvidenceArtefacts;
 use App\Tests\Support\F1TestTools;
@@ -26,7 +27,8 @@ use Symfony\Component\Uid\UuidV7;
  * kluczem fikcyjnego certyfikatu MF, składa paczkę ZIP z metadanych nagrania (XML to złoty plik `pl_b2b` pomocnika)
  * i szyfruje ją tym kluczem, więc działa cała ścieżka: szyfrowanie klucza, status, pobranie części, `partHash`,
  * rozpakowanie i import. Wynik: 3 koszty `imported`, 2 sprzedaże `accepted` bez `approval`; drugi przebieg na tej samej
- * paczce nic nie dodaje, a kursor stoi. Dane fikcyjne.
+ * paczce nic nie dodaje, a kursor stoi. Raport przejścia (`ksef-transition-report`) liczy te dwie sprzedaże i ich serię P_2.
+ * Dane fikcyjne.
  */
 final class KsefTeSyncRecordingTest extends KsefSendTestCase
 {
@@ -86,6 +88,12 @@ final class KsefTeSyncRecordingTest extends KsefSendTestCase
         self::assertSame(['GET /v2/security/public-key-certificates', 'POST /v2/invoices/exports', 'GET /v2/invoices/exports/', 'GET /storage/'], array_values(array_unique($this->paths)));
         $operations = $this->db()->fetchFirstColumn("SELECT DISTINCT operation FROM connector_call WHERE connector='ksef' ORDER BY operation");
         self::assertSame(['export_part', 'export_start', 'export_status', 'public_keys'], $operations);
+
+        // Wariant `ksef-transition-report` na nagraniu TE: dwie sprzedaże Subject1 z serią P_2 przebiegu.
+        $report = (new TransitionReport($this->db(), ConnectorTestTools::configuration(false)))->build(2026);
+        self::assertSame(2, $report['count']);
+        self::assertSame([['kind' => 'VAT', 'series' => 'FS/TE/DCD198/', 'count' => 2, 'highest' => 2, 'last_number' => 'FS/TE/DCD198/2', 'last_issue_date' => '2026-10-15']], $report['series']);
+        EvidenceArtefacts::write('cmd/ksef-transition-report-te.txt', json_encode($report, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
 
         EvidenceArtefacts::write('cmd/ksef-sync-idempotent-te.txt', EvidenceArtefacts::csv(array_map(
             static fn(string $run, array $cursor): array => ['run' => $run, 'subject1_last_hwm' => $cursor['subject1'], 'subject2_last_hwm' => $cursor['subject2'], 'sha256' => hash('sha256', $cursor['subject1'] . $cursor['subject2']), 'invoices' => (string) $invoices],

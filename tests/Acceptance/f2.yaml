@@ -38,6 +38,7 @@ criteria:
   - { key: health-reconciliation, runner: ci, command: 'vendor/bin/phpunit --filter HealthReconciliation', junit: true }
   - { key: pit28-summary, runner: ci, command: 'vendor/bin/phpunit --filter Pit28Summary', junit: true }
   - { key: ryczalt-eligibility-metric, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltEligibilityMetric', junit: true }
+  - { key: opening-balance-keys, runner: ci, command: 'vendor/bin/phpunit --filter OpeningBalanceKeys', junit: true }
   - { key: ledger-entry-check, runner: ci, command: 'vendor/bin/phpunit --filter LedgerEntryCheck', junit: true }
   - { key: closed-period-cost, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodCost', junit: true }
   - { key: closed-period-revenue, runner: ci, command: 'vendor/bin/phpunit --filter ClosedPeriodRevenue', junit: true }
