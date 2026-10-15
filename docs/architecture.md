@@ -204,7 +204,7 @@ Ta sekcja to dom semantyki `rate_counter`. Kolumny są w [data-model.md](data-mo
 | `freshbooks` | `freshbooks.api`; 429 z backoffem i `Retry-After`; bez obsługi 409, bo kokpit nie tworzy faktur | [modules/freshbooks.md](modules/freshbooks.md) |
 | `claude` | `claude.messages` (D-34): 429 i `blocked_until`; budżety USD liczy kod z sum `chat_message.cost_usd` | [modules/czat.md](modules/czat.md) |
 | `jpk` | `jpk.init_upload` | [modules/jpk.md](modules/jpk.md) |
-| `edeklaracje` | `edeklaracje.send` | [modules/jpk.md](modules/jpk.md) |
+| `edeklaracje` | `edeklaracje.send` (limit dobowy); odczyt `edeklaracje.request_upo` bez limitu dobowego, tylko 429 i `blocked_until` (D-66) | [modules/jpk.md](modules/jpk.md) |
 | `push`, `mail` | `push.send`, `mail.send` | konfiguracja: limit odwiedzającego ntfy, dobowy limit dostawcy SMTP |
 | `deadman`, `dummy` | `deadman.ping`, `dummy.call` | konfiguracja |
 

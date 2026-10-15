@@ -11,6 +11,7 @@ use App\Xml\JpkBuildRefused;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
 use App\Xml\JpkV7mBuilder;
+use App\Xml\VatUeBuilder;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Uid\UuidV7;
@@ -21,7 +22,8 @@ use Symfony\Component\Uid\UuidV7;
  * szkic. Prośbę systemową tworzy bramka, a payload, bramki kompletności i stan złożenia daje `FilingSubject`. JPK_ST(1)
  * idzie tą samą ścieżką tylko przy `jpk_st.enabled` = true na 31.12. roku; inaczej komunikat Q-25 bez wiersza i prośby (D-64).
  * JPK_V7M(3) za miesiąc: pierwsze złożenie (`CelZlozenia` 1) albo korekta po ponownym otwarciu okresu: `purpose` 2,
- * kolejny `seq`, `supersedes_id` do przyjętego złożenia i uzasadnienie P_ORDZU w `filing.totals` (D-65).
+ * kolejny `seq`, `supersedes_id` do przyjętego złożenia i uzasadnienie P_ORDZU w `filing.totals` (D-65). VAT-UE(5) i
+ * VAT-UEK(5) za miesiąc trasą tabeli „KOR do faktury `eu_b2b`” (D-66).
  */
 final readonly class FilingRequest
 {
@@ -83,6 +85,74 @@ final readonly class FilingRequest
             $id = (string) UuidV7::generate($this->clock->now());
             $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'JPK_V7M', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 2, 'seq' => (is_numeric($seq) ? (int) $seq : 0) + 1, 'status' => 'draft',
                 'supersedes_id' => $accepted['id'], 'schema_version' => JpkV7mBuilder::SCHEMA_VERSION, 'totals' => $totals, 'created_at' => $now, 'updated_at' => $now]);
+            return $id;
+        });
+        return $this->gate->request('filing', $id);
+    }
+
+    /**
+     * Trasa złożenia VAT-UE za miesiąc według tabeli „KOR do faktury `eu_b2b`” (docs/modules/jpk.md, D-66): `vat_ue`
+     * (brak złożenia albo `draft`, `ready`, `approved`, `rejected`: plik się przebudowuje), `wait` (`submitted`,
+     * `unknown`: VAT-UEK dopiero po przyjęciu) albo `vat_uek` (przyjęty VAT-UE albo VAT-UEK okresu).
+     */
+    public function vatUeRoute(string $periodStart): string
+    {
+        $month = Periods::month($periodStart);
+        $states = array_map(static fn(mixed $state): string => is_string($state) ? $state : '', $this->db->fetchFirstColumn(
+            "SELECT status FROM filing WHERE environment=? AND type IN ('VAT_UE','VAT_UEK') AND period_start=? AND status NOT IN ('superseded')",
+            [$this->configuration->environment(), $month],
+        ));
+        return match (true) {
+            array_intersect($states, ['submitted', 'unknown']) !== [] => 'wait',
+            in_array('accepted', $states, true) => 'vat_uek',
+            default => 'vat_ue',
+        };
+    }
+
+    /**
+     * Prośba o VAT-UE za miesiąc trasą `vatUeRoute`: VAT-UE (pierwsze złożenie, przebudowa z KOR), odmowa przy złożeniu
+     * w toku albo VAT-UEK z `supersedes_id` do przyjętego złożenia okresu, `purpose` 2 i kolejnym `seq`. Zwraca id
+     * zatwierdzenia w `pending`.
+     */
+    public function vatUe(string $periodStart): string
+    {
+        $month = Periods::month($periodStart);
+        $route = $this->vatUeRoute($month);
+        if ($route === 'wait') {
+            throw new JpkBuildRefused(sprintf('VAT-UE za %s jest wysłany i czeka na wynik; KOR trafi do VAT-UEK po przyjęciu.', substr($month, 0, 7)));
+        }
+        $environment = $this->configuration->environment();
+        $id = $this->db->transactional(function () use ($environment, $month, $route): string {
+            $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
+            if ($route === 'vat_ue') {
+                $existing = $this->db->fetchAssociative("SELECT id, status FROM filing WHERE environment=? AND type='VAT_UE' AND period_start=? AND purpose=1 AND seq=0 FOR UPDATE", [$environment, $month]);
+                if ($existing === false) {
+                    $id = (string) UuidV7::generate($this->clock->now());
+                    $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'VAT_UE', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 1, 'seq' => 0, 'status' => 'draft', 'schema_version' => VatUeBuilder::SCHEMA_VERSION_UE, 'totals' => '{}', 'created_at' => $now, 'updated_at' => $now]);
+                    return $id;
+                }
+                $id = is_string($existing['id']) ? $existing['id'] : throw new \LogicException('Niepoprawne złożenie.');
+                if ($existing['status'] === 'rejected') {
+                    $this->db->update('filing', ['status' => 'draft', 'updated_at' => $now], ['id' => $id]);
+                }
+                return $id;
+            }
+            $accepted = $this->db->fetchAssociative("SELECT id FROM filing WHERE environment=? AND type IN ('VAT_UE','VAT_UEK') AND period_start=? AND status='accepted' ORDER BY seq DESC LIMIT 1 FOR UPDATE", [$environment, $month]);
+            if ($accepted === false) {
+                throw new \LogicException('Brak przyjętego VAT-UE do korekty.');
+            }
+            $draft = $this->db->fetchAssociative("SELECT id, status FROM filing WHERE environment=? AND type='VAT_UEK' AND period_start=? AND supersedes_id=? AND status IN ('draft','ready','approved','rejected') FOR UPDATE", [$environment, $month, $accepted['id']]);
+            if ($draft !== false) {
+                $id = is_string($draft['id']) ? $draft['id'] : throw new \LogicException('Niepoprawne złożenie.');
+                if ($draft['status'] === 'rejected') {
+                    $this->db->update('filing', ['status' => 'draft', 'updated_at' => $now], ['id' => $id]);
+                }
+                return $id;
+            }
+            $seq = $this->db->fetchOne("SELECT max(seq) FROM filing WHERE environment=? AND type IN ('VAT_UE','VAT_UEK') AND period_start=?", [$environment, $month]);
+            $id = (string) UuidV7::generate($this->clock->now());
+            $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'VAT_UEK', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 2, 'seq' => (is_numeric($seq) ? (int) $seq : 0) + 1, 'status' => 'draft',
+                'supersedes_id' => $accepted['id'], 'schema_version' => VatUeBuilder::SCHEMA_VERSION_UEK, 'totals' => '{}', 'created_at' => $now, 'updated_at' => $now]);
             return $id;
         });
         return $this->gate->request('filing', $id);

@@ -46,6 +46,29 @@ final readonly class MonthClose
         }
     }
 
+    /**
+     * Przyjęty VAT-UE albo VAT-UEK za M (D-66): poprzednie przyjęte złożenie VAT-UE okresu dostaje `superseded`,
+     * a otwarty obowiązek `vat_ue` za M `done` z `filing_id`. Okres VAT nie zmienia stanu: zamyka go JPK_V7M.
+     */
+    public function vatUeAccepted(string $filingId, ?string $userId): void
+    {
+        $filing = $this->db->fetchAssociative("SELECT environment, type, period_start FROM filing WHERE id=? AND type IN ('VAT_UE','VAT_UEK')", [$filingId]);
+        if ($filing === false) {
+            throw new \LogicException('Zamknięcie VAT-UE tylko po VAT_UE albo VAT_UEK.');
+        }
+        $environment = self::str($filing['environment']);
+        $periodStart = self::str($filing['period_start']);
+        $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
+        foreach ($this->db->fetchFirstColumn("SELECT id FROM filing WHERE environment=? AND type IN ('VAT_UE','VAT_UEK') AND period_start=? AND status='accepted' AND id<>?", [$environment, $periodStart, $filingId]) as $previous) {
+            $this->db->update('filing', ['status' => 'superseded', 'updated_at' => $now], ['id' => self::str($previous)]);
+        }
+        $obligation = $this->db->fetchOne("SELECT id FROM obligation WHERE environment=? AND type='vat_ue' AND period_start=? AND status='open'", [$environment, $periodStart]);
+        if (is_string($obligation)) {
+            $this->db->update('obligation', ['status' => 'done', 'done_at' => $now, 'done_by' => $userId, 'filing_id' => $filingId, 'updated_at' => $now], ['id' => $obligation]);
+            $this->audit->append('obligation.completed', ['type' => 'vat_ue', 'done_by' => $userId, 'source' => 'filing.accepted', 'filing_id' => $filingId, 'filing_type' => self::str($filing['type'])], $environment, 'obligation', $obligation, $userId);
+        }
+    }
+
     private static function str(mixed $value): string
     {
         return is_scalar($value) ? (string) $value : throw new \LogicException('Niepoprawna wartość złożenia.');

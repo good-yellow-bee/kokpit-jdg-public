@@ -1,0 +1,13 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie SOAP według specyfikacji we-wy e-Deklaracji 2.4 (https://podatki-arch.mf.gov.pl/media/3616/edek_specyfikacja_we-wy_2-4_test_www.pdf); przestrzeń nazw i kształt odpowiedzi założone w D-66, prawdziwe nagrania z test-bramka.edeklaracje.gov.pl zastąpią je w F5.6.",
+  "scenario": "sendUnsignDocument bez refId ze statusem 100: komunikat nieprzyjęty.",
+  "interactions": [
+    {
+      "method": "POST",
+      "path": "/uslugi/dokumenty",
+      "status": 200,
+      "body_text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body><sendUnsignDocumentResponse xmlns=\"https://bramka.e-deklaracje.mf.gov.pl/xsd\"><status>100</status><statusOpis>Błąd komunikatu (fictional).</statusOpis></sendUnsignDocumentResponse></soapenv:Body></soapenv:Envelope>"
+    }
+  ]
+}

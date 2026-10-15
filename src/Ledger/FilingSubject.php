@@ -14,6 +14,8 @@ use App\Xml\JpkDocument;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
 use App\Xml\JpkV7mBuilder;
+use App\Xml\VatUeBuilder;
+use App\Xml\VatUeDocument;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -26,14 +28,19 @@ use Symfony\Component\Clock\ClockInterface;
  * zatwierdzeń” w docs/data-model.md. W dev i test identyfikator bez wiersza `filing` obsługuje atrapa `dummy`
  * (`$fallback`, D-32); przy `APP_ENV=prod` atrapy nie ma. F5.4 dodaje JPK_V7M(3) za miesiąc (D-65): bramki kompletności
  * `V7mGates` przy prośbie (wynik w `period.checklist`, niespełniona bramka blokuje), payload z `JpkV7mBuilder`, lista
- * pozycji `DI` w `summary`, a przyjęcie zamyka okres przez `MonthClose`.
+ * pozycji `DI` w `summary`, a przyjęcie zamyka okres przez `MonthClose`. F5.5 dodaje VAT-UE(5) i VAT-UEK(5) za miesiąc
+ * (D-66): payload z `VatUeBuilder` bez `DaneAutoryzujace`, twarda bramka K_12 (`VatUeK12Gate`), konektor `edeklaracje`
+ * z celem `EDEKLARACJE_TARGET`; przyjęcie oznacza `vat_ue` jako `done`, a VAT-UEK zastępuje poprzednie złożenie okresu.
+ *
+ * @phpstan-import-type Position from VatUeDocument
  */
 final readonly class FilingSubject implements ApprovalSubject
 {
     /** Stan złożenia po `approval.status`; `cancelled`, `expired` i `superseded` zależą od kontekstu. */
     private const STATES = ['pending' => 'ready', 'approved' => 'approved', 'dispatching' => 'approved', 'submitted' => 'submitted', 'accepted' => 'accepted', 'rejected' => 'rejected', 'unknown' => 'unknown'];
-    /** Konektor wysyłki per typ złożenia; VAT-UE (F5.5) dochodzi w swojej części. */
-    private const CONNECTORS = ['JPK_EWP' => 'jpk', 'JPK_ST' => 'jpk', 'JPK_V7M' => 'jpk'];
+    /** Konektor wysyłki per typ złożenia. */
+    private const CONNECTORS = ['JPK_EWP' => 'jpk', 'JPK_ST' => 'jpk', 'JPK_V7M' => 'jpk', 'VAT_UE' => 'edeklaracje', 'VAT_UEK' => 'edeklaracje'];
+    private const VAT_UE_TYPES = ['VAT_UE', 'VAT_UEK'];
     private const FINAL_SALES = "('accepted','corrected','superseded','cancelled_before_send')";
     private const TIMESTAMP = 'Y-m-d\TH:i:s.uP';
 
@@ -48,6 +55,8 @@ final readonly class FilingSubject implements ApprovalSubject
         private SettingStore $settings,
         private ConnectorConfiguration $configuration,
         private ClockInterface $clock,
+        private VatUeBuilder $vatUe,
+        private VatUeK12Gate $vatUeGate,
         private ?ApprovalSubject $fallback = null,
     ) {}
 
@@ -76,9 +85,14 @@ final readonly class FilingSubject implements ApprovalSubject
             throw new JpkBuildRefused(sprintf('Wysyłka %s przez bramkę powstaje w kolejnej części F5.', $type));
         }
         $environment = self::string($filing, 'environment');
-        $this->assertTarget($environment);
-        if (!in_array($filing['status'], ['draft', 'ready'], true)) {
+        $this->assertTarget($environment, self::CONNECTORS[$type]);
+        // VAT-UE w `approved` przebudowuje się po KOR (tabela „KOR do faktury `eu_b2b`”); bramka zastępuje zatwierdzenie.
+        $vatUe = in_array($type, self::VAT_UE_TYPES, true);
+        if (!in_array($filing['status'], $vatUe ? ['draft', 'ready', 'approved'] : ['draft', 'ready'], true)) {
             throw new JpkBuildRefused(sprintf('Złożenie w stanie %s; prośba tylko ze szkicu albo gotowego złożenia.', self::string($filing, 'status')));
+        }
+        if ($vatUe) {
+            return $this->vatUeFiling($subjectId, $filing, $environment);
         }
         if ($type === 'JPK_V7M') {
             return $this->jpkV7m($subjectId, $filing, $environment);
@@ -131,6 +145,71 @@ final readonly class FilingSubject implements ApprovalSubject
         $preconditions = ['xsd' => 'ok (LIBXML_NONET)', 'connector_target' => $this->configuration->target('jpk'), 'environment' => $environment, 'gates' => 'ok', 'p39_source' => $document->p39Source];
         $this->db->update('filing', ['schema_version' => JpkV7mBuilder::SCHEMA_VERSION, 'totals' => json_encode($document->totals, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'updated_at' => $this->now()], ['id' => $subjectId]);
         return new ApprovalPayload($document->xml, 'application/xml', (int) self::string($filing, 'version'), $summary, $preconditions);
+    }
+
+    /**
+     * VAT-UE(5) albo VAT-UEK(5) za miesiąc (D-66): VAT-UE tylko bez przyjętego VAT-UE okresu; VAT-UEK z BYŁO
+     * z `filing.totals.positions` złożenia zastępowanego (`supersedes_id`, przyjęte). Budowa, XSD, bramka K_12.
+     *
+     * @param array<string,mixed> $filing
+     */
+    private function vatUeFiling(string $subjectId, array $filing, string $environment): ApprovalPayload
+    {
+        $type = self::string($filing, 'type');
+        $periodStart = self::string($filing, 'period_start');
+        $previous = null;
+        if ($type === 'VAT_UE') {
+            if ($this->db->fetchOne("SELECT 1 FROM filing WHERE environment=? AND type IN ('VAT_UE','VAT_UEK') AND period_start=? AND status='accepted' AND id<>?", [$environment, $periodStart, $subjectId]) !== false) {
+                throw new JpkBuildRefused(sprintf('VAT-UE za %s jest przyjęty; zmiana to VAT-UEK.', substr($periodStart, 0, 7)));
+            }
+            $document = $this->vatUe->build($periodStart);
+        } else {
+            $previous = $this->db->fetchAssociative("SELECT id, type, status, totals FROM filing WHERE id=? AND type IN ('VAT_UE','VAT_UEK')", [$filing['supersedes_id']]);
+            if ($previous === false || $previous['status'] !== 'accepted') {
+                throw new JpkBuildRefused(sprintf('VAT-UEK za %s wymaga przyjętego VAT-UE okresu (supersedes_id).', substr($periodStart, 0, 7)));
+            }
+            $before = self::positions(json_decode(self::string($previous, 'totals'), true, 8, JSON_THROW_ON_ERROR));
+            if ($before === null) {
+                throw new JpkBuildRefused(sprintf('Złożenie zastępowane za %s nie ma pozycji w filing.totals (np. złożenie manual); VAT-UEK złożysz w e-Deklaracjach.', substr($periodStart, 0, 7)));
+            }
+            $document = $this->vatUe->buildCorrection($periodStart, $before);
+        }
+        if (!$document->valid()) {
+            throw new JpkBuildRefused(sprintf('%s niezgodny z XSD: %s', $type, implode('; ', array_slice($document->xsdErrors, 0, 3))));
+        }
+        $gate = $this->vatUeGate->check($environment, $document);
+        $totals = $document->totals() + ['k12' => $gate['k12'], 'v7m_filing_id' => $gate['v7m_filing_id'], 'difference' => $gate['difference'], 'rounding_difference' => $gate['rounding_difference'], 'tolerance' => $gate['tolerance']];
+        $schemaVersion = $type === 'VAT_UE' ? VatUeBuilder::SCHEMA_VERSION_UE : VatUeBuilder::SCHEMA_VERSION_UEK;
+        $summary = ['type' => $type, 'period' => substr($periodStart, 0, 7), 'period_start' => $periodStart, 'period_end' => self::string($filing, 'period_end'), 'purpose' => (int) self::string($filing, 'purpose'), 'schema_version' => $schemaVersion]
+            + $totals + ['checklist' => ['k12' => ['ok' => true, 'count' => 0]]];
+        unset($summary['xml_sha256']);
+        if ($previous !== null) {
+            $summary['previous'] = ['filing_id' => self::string($previous, 'id'), 'type' => self::string($previous, 'type')];
+        }
+        $preconditions = ['xsd' => 'ok (LIBXML_NONET)', 'connector_target' => $this->configuration->target('edeklaracje'), 'environment' => $environment, 'k12_gate' => 'ok', 'auth_data' => 'DaneAutoryzujace przy wysyłce, poza xml_sent'];
+        $this->db->update('filing', ['schema_version' => $schemaVersion, 'totals' => json_encode($totals, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'updated_at' => $this->now()], ['id' => $subjectId]);
+        return new ApprovalPayload($document->xml, 'application/xml', (int) self::string($filing, 'version'), $summary, $preconditions);
+    }
+
+    /**
+     * Pozycje VAT-UE z `filing.totals`; NULL, gdy złożenie ich nie ma.
+     *
+     * @return list<Position>|null
+     */
+    private static function positions(mixed $totals): ?array
+    {
+        $list = is_array($totals) ? ($totals['positions'] ?? null) : null;
+        if (!is_array($list)) {
+            return null;
+        }
+        $positions = [];
+        foreach ($list as $item) {
+            if (!is_array($item) || !is_string($item['country'] ?? null) || !is_string($item['vat_number'] ?? null) || !is_string($item['net_pln'] ?? null) || !is_int($item['p_uc'] ?? null) || !is_int($item['invoices'] ?? null)) {
+                return null;
+            }
+            $positions[] = ['country' => $item['country'], 'vat_number' => $item['vat_number'], 'net_pln' => $item['net_pln'], 'p_uc' => $item['p_uc'], 'invoices' => $item['invoices']];
+        }
+        return $positions;
     }
 
     private function acceptedV7m(string $environment, string $periodStart, string $except): bool
@@ -198,13 +277,13 @@ final readonly class FilingSubject implements ApprovalSubject
 
     public function checkDecision(string $subjectId): void
     {
-        $filing = $this->db->fetchAssociative('SELECT environment FROM filing WHERE id=?', [$subjectId]);
+        $filing = $this->db->fetchAssociative('SELECT environment, type FROM filing WHERE id=?', [$subjectId]);
         if ($filing === false) {
             $this->fallback($subjectId)->checkDecision($subjectId);
             return;
         }
         $environment = self::string($filing, 'environment');
-        $this->assertTarget($environment);
+        $this->assertTarget($environment, self::CONNECTORS[self::string($filing, 'type')] ?? 'jpk');
         $credential = $this->db->fetchOne(
             "SELECT 1 FROM credential_state WHERE environment=? AND kind='auth_data' AND status IN ('valid','expiring') AND revoked_at IS NULL AND (valid_until IS NULL OR valid_until > ?)",
             [$environment, $this->now()],
@@ -255,6 +334,11 @@ final readonly class FilingSubject implements ApprovalSubject
             $decided = $this->db->fetchOne("SELECT decided_by FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
             $this->monthClose->accepted($subjectId, is_string($decided) ? $decided : null);
         }
+        // Przyjęty VAT-UE albo VAT-UEK (z bramki albo `manual` z UPO): `vat_ue` za M `done`, VAT-UEK zastępuje poprzednie.
+        if ($state === 'accepted' && in_array($current['type'], self::VAT_UE_TYPES, true) && $current['status'] !== 'accepted') {
+            $decided = $this->db->fetchOne("SELECT decided_by FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
+            $this->monthClose->vatUeAccepted($subjectId, is_string($decided) ? $decided : null);
+        }
     }
 
     /**
@@ -280,7 +364,7 @@ final readonly class FilingSubject implements ApprovalSubject
     /** @return array<string,scalar|null> numer referencyjny, kod statusu, kanał i przyjęcie z ostatniego zatwierdzenia */
     private function result(string $subjectId, string $status): array
     {
-        $approval = $this->db->fetchAssociative("SELECT connector, result_code, external_refs->>'reference_number' AS reference, external_refs->>'original_reference_number' AS original FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
+        $approval = $this->db->fetchAssociative("SELECT connector, result_code, coalesce(external_refs->>'reference_number', external_refs->>'ref_id') AS reference, external_refs->>'original_reference_number' AS original FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
         if ($approval === false) {
             return [];
         }
@@ -301,13 +385,13 @@ final readonly class FilingSubject implements ApprovalSubject
         return $fields;
     }
 
-    private function assertTarget(string $environment): void
+    private function assertTarget(string $environment, string $connector = 'jpk'): void
     {
         if (!$this->configuration->enabled) {
             throw new JpkBuildRefused('Konektory wyłączone (CONNECTORS_ENABLED=0); prośba o wysyłkę złożenia czeka.');
         }
-        if ($environment !== $this->configuration->target('jpk')) {
-            throw new JpkBuildRefused(sprintf('Złożenie ma environment %s, a JPK_TARGET to %s.', $environment, $this->configuration->target('jpk')));
+        if ($environment !== $this->configuration->target($connector)) {
+            throw new JpkBuildRefused(sprintf('Złożenie ma environment %s, a %s_TARGET to %s.', $environment, strtoupper($connector), $this->configuration->target($connector)));
         }
     }
 

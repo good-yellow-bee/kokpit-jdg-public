@@ -14,6 +14,8 @@ use App\Approval\DispatchGuard;
 use App\Approval\OfficialWritesHandler;
 use App\Approval\SubmissionReconciler;
 use App\Audit\AuditLog;
+use App\Connector\EDeklaracje\EDeklaracjeDocument;
+use App\Connector\EDeklaracje\EDeklaracjeWriter;
 use App\Connector\Jpk\AuthDataDocument;
 use App\Connector\Jpk\JpkEnvelope;
 use App\Connector\Jpk\JpkInitUpload;
@@ -26,9 +28,11 @@ use App\Ledger\MonthChecklist;
 use App\Ledger\MonthClose;
 use App\Ledger\Periods;
 use App\Ledger\V7mGates;
+use App\Ledger\VatUeK12Gate;
 use App\Security\Redactor;
 use App\Security\SecretStore;
 use App\Storage\FileStore;
+use App\Xml\VatUeBuilder;
 use App\Xml\XsdCatalog;
 use App\Xml\XsdValidator;
 use Doctrine\DBAL\Connection;
@@ -73,6 +77,9 @@ final class JpkSendTestTools
     public readonly JpkInitUpload $initUpload;
     public readonly AuthDataDocument $authData;
     public readonly JpkWriter $writer;
+    public readonly FakeEDeklaracjeGateway $edeklaracje;
+    public readonly EDeklaracjeWriter $edeklaracjeWriter;
+    public readonly VatUeBuilder $vatUe;
     public readonly ApprovalConnectors $connectors;
     public readonly OfficialWritesHandler $handler;
     public readonly SubmissionReconciler $reconciler;
@@ -95,7 +102,23 @@ final class JpkSendTestTools
         $settings = JpkTestTools::settings($db, $clock);
         $this->periods = new Periods($db, $clock, $this->audit, $configuration);
         $this->v7mGates = new V7mGates($db, new MonthChecklist($db, $clock, $configuration), $settings, $configuration);
-        $this->subjects = new ApprovalSubjects([new FilingSubject($db, JpkTestTools::builder($db, $clock, $secrets), JpkTestTools::stBuilder($db, $clock, $secrets), JpkTestTools::v7mBuilder($db, $clock, $secrets), $this->v7mGates, new MonthClose($db, $clock, $this->audit, $this->periods), $this->periods, $settings, $configuration, $clock)]);
+        $catalog ??= XsdCatalog::default();
+        $validator = new XsdValidator($catalog);
+        $this->vatUe = new VatUeBuilder($db, JpkTestTools::taxpayer($db, $clock, $secrets), $configuration, $validator);
+        $this->subjects = new ApprovalSubjects([new FilingSubject(
+            $db,
+            JpkTestTools::builder($db, $clock, $secrets),
+            JpkTestTools::stBuilder($db, $clock, $secrets),
+            JpkTestTools::v7mBuilder($db, $clock, $secrets),
+            $this->v7mGates,
+            new MonthClose($db, $clock, $this->audit, $this->periods),
+            $this->periods,
+            $settings,
+            $configuration,
+            $clock,
+            $this->vatUe,
+            new VatUeK12Gate($db),
+        )]);
         $this->transitions = new ApprovalTransitions($db, $this->audit, $clock, $this->subjects);
         $this->notifications = new ApprovalNotifications($db, $clock);
         $owner = new ApprovalTestTools($db, $clock);
@@ -103,18 +126,18 @@ final class JpkSendTestTools
         $this->bus = new CollectingBus();
         $this->gate = new ApprovalGate($db, $this->transitions, $this->subjects, $this->files, new ApprovalExpiry(ApprovalTestTools::EXPIRY), $this->notifications, $owner->stepUp, $this->bus, $clock, $configuration);
         $this->guard = new DispatchGuard();
-        $catalog ??= XsdCatalog::default();
-        $validator = new XsdValidator($catalog);
         $this->envelope = new JpkEnvelope($clock, self::PART_MAX_BYTES);
         $this->initUpload = new JpkInitUpload($catalog, $validator, self::INIT_UPLOAD);
         $this->authData = new AuthDataDocument(JpkTestTools::settings($db, $clock), $secrets, $catalog, $validator, $this->redactor);
         // Certyfikat z czasu rzeczywistego (`openssl_csr_sign`), więc jego ważność sprawdza zegar bieżącej chwili.
         $certificate = new JpkMfCertificate(['test' => self::certificateFile()], new MockClock());
         $this->writer = new JpkWriter($this->fake->gateway, $this->envelope, $this->initUpload, $this->authData, $certificate, $configuration, $this->fake->rates, $this->guard, $db, $this->files, $this->notifications, $clock);
-        $this->connectors = new ApprovalConnectors([$this->writer], [$this->writer]);
+        $this->edeklaracje = new FakeEDeklaracjeGateway($db, $clock, $this->redactor, $limits + ['edeklaracje.send' => 10]);
+        $this->edeklaracjeWriter = new EDeklaracjeWriter($this->edeklaracje->gateway, new EDeklaracjeDocument($validator), $this->authData, $catalog, $configuration, $this->edeklaracje->rates, $this->guard, $db, $this->files, $this->notifications, $clock);
+        $this->connectors = new ApprovalConnectors([$this->writer, $this->edeklaracjeWriter], [$this->writer, $this->edeklaracjeWriter]);
         $this->logger = new MemoryLogger($clock);
         $this->handler = new OfficialWritesHandler($db, $this->transitions, $this->subjects, $this->connectors, $this->gate, $this->files, $this->notifications, $this->guard, $clock, $this->logger);
-        $this->reconciler = new SubmissionReconciler($db, $this->transitions, $this->connectors, $this->notifications, $clock, ['jpk' => 'P3D']);
+        $this->reconciler = new SubmissionReconciler($db, $this->transitions, $this->connectors, $this->notifications, $clock, ['jpk' => 'P3D', 'edeklaracje' => 'P3D']);
         $this->request = new FilingRequest($db, $this->gate, $configuration, $clock, $settings, $this->periods);
         $this->manualUpo = new FilingManualUpo($db, $this->gate, $owner->stepUp, $this->files, $this->audit, $clock);
     }

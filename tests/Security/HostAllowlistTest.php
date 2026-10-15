@@ -58,6 +58,31 @@ final class HostAllowlistTest extends TestCase
         $this->expectException(ConnectorException::class);
         $this->guard(true, 'prod')->assertAllowed('dummy', 'default', 'https://dummy.invalid');
     }
+    /**
+     * `edeklaracje` per cel `EDEKLARACJE_TARGET` (F5.5, D-66): przy celu `test` tylko `test-bramka.edeklaracje.gov.pl`;
+     * host PROD bramki pada bez celu `prod`, także pod nazwą celu `test`. Konfiguracja z celem `prod` powstaje tu tylko
+     * w pamięci testu (wdrożenie `prod`), żeby pokazać odwrotny kierunek: host testowy pod celem `prod` też pada.
+     */
+    public function testEDeklaracjeHostFollowsTarget(): void
+    {
+        $guard = $this->guard();
+        $guard->assertAllowed('edeklaracje', 'test', 'https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty', 'POST');
+        self::addToAssertionCount(1);
+        foreach ([['prod', 'https://bramka.e-deklaracje.mf.gov.pl/uslugi/dokumenty'], ['test', 'https://bramka.e-deklaracje.mf.gov.pl/uslugi/dokumenty'], ['test', 'https://test-bramka.edeklaracje.gov.pl.evil.invalid/uslugi/dokumenty'], ['test', 'http://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty']] as [$target, $url]) {
+            try {
+                $guard->assertAllowed('edeklaracje', $target, $url, 'POST');
+                self::fail('Adres e-Deklaracji dopuszczony: ' . $target . ' ' . $url);
+            } catch (ConnectorException) {
+                self::addToAssertionCount(1);
+            }
+        }
+        $prod = new HostAllowlist(ConnectorHosts::HOSTS, new \App\Config\ConnectorConfiguration('prod', 'prod', true, 'test', 'test', 'prod', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', []), new MockHttpClient(new MockResponse('fictional')));
+        $prod->assertAllowed('edeklaracje', 'prod', 'https://bramka.e-deklaracje.mf.gov.pl/uslugi/dokumenty', 'POST');
+        self::addToAssertionCount(1);
+        $this->expectException(ConnectorException::class);
+        $prod->assertAllowed('edeklaracje', 'prod', 'https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty', 'POST');
+    }
+
     public function testRegistriesUseTestServicesOutsideProdAndOnlyCheckVatNumberOnProd(): void
     {
         $this->guard()->assertAllowed('white_list', 'test', 'https://wykazpodatnikowvat-test.mf.gov.pl/api/search/nip/1111111111?date=2026-11-04');

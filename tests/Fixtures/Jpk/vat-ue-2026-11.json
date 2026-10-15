@@ -1,0 +1,28 @@
+{
+  "_note": "Dane fikcyjne (fictional) F5.5, D-66: dodatki do v7m-2026-11.json dla VAT-UE(5) za 11.2026. Nabywcy, numery VAT UE, numery KSeF i kwoty są zmyślone.",
+  "counterparties": {
+    "client_fr": {"name": "Fictional Client SARL", "country": "FR", "eu_vat_prefix": "FR", "eu_vat_number": "99999999999", "is_client": true},
+    "client_at": {"name": "Fictional Kunde OG (bez numeru VAT UE)", "country": "AT", "is_client": true}
+  },
+  "verifications": [
+    {"counterparty": "client_fr", "source": "vies", "subject": "FR99999999999", "result": "valid", "checked_for_date": "2026-11-10"},
+    {"counterparty": "client_at", "source": null, "subject": "AT, dowód ręczny (fictional)", "result": "manual_evidence", "checked_for_date": "2026-11-20"}
+  ],
+  "sales": [
+    {"number": "FV/2026/11/4", "kind": "VAT", "counterparty": "client_fr", "scenario": "eu_b2b", "currency": "EUR", "net": "800.33", "vat": "0.00", "issue_date": "2026-11-10", "tax_point_date": "2026-11-10", "fx": "EUR-2026-11-09", "net_pln": "3393.40", "vat_pln": "0.00", "ksef_number": "1111111111-20261110-0A1B2C-3D4E5F-D4", "ksef_issue_mode": "online"},
+    {"number": "FV/2026/11/5", "kind": "VAT", "counterparty": "client_at", "scenario": "eu_b2b_unidentified", "currency": "PLN", "net": "1272.00", "vat": "0.00", "issue_date": "2026-11-20", "tax_point_date": "2026-11-20", "fx": null, "net_pln": "1272.00", "vat_pln": "0.00", "ksef_number": "1111111111-20261120-0A1B2C-3D4E5F-E5", "ksef_issue_mode": "online"},
+    {"number": "KOR/2026/11/1", "kind": "KOR", "counterparty": "client_eu", "scenario": null, "corrects": "FV/2026/11/1", "correction_type": 1, "currency": "EUR", "net": "-100.11", "vat": "0.00", "issue_date": "2026-12-02", "tax_point_date": "2026-11-30", "fx": "EUR-2026-11-27", "net_pln": "-425.47", "vat_pln": "0.00", "ksef_number": "1111111111-20261202-0A1B2C-3D4E5F-F6", "ksef_issue_mode": "online"}
+  ],
+  "late_kor": {"number": "KOR/2026/11/2", "kind": "KOR", "counterparty": "client_fr", "scenario": null, "corrects": "FV/2026/11/4", "correction_type": 1, "currency": "EUR", "net": "-50.00", "vat": "0.00", "issue_date": "2026-12-20", "tax_point_date": "2026-11-10", "fx": "EUR-2026-11-09", "net_pln": "-212.00", "vat_pln": "0.00", "ksef_number": "1111111111-20261220-0A1B2C-3D4E5F-A7", "ksef_issue_mode": "online"},
+  "expected": {
+    "positions": [
+      {"country": "DE", "vat_number": "999999999", "net_pln": "3824.53", "p_uc": 3825, "invoices": 2},
+      {"country": "FR", "vat_number": "99999999999", "net_pln": "3393.40", "p_uc": 3393, "invoices": 1}
+    ],
+    "net_pln_sum": "7217.93",
+    "p_uc_sum": 7218,
+    "k12": "7217.93",
+    "excluded_unidentified": 1,
+    "after_late_kor": {"FR": 3181, "net_pln_sum": "7005.93"}
+  }
+}

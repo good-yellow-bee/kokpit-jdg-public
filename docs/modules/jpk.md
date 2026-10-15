@@ -345,7 +345,9 @@ Do weryfikacji na bramce testowej w F5:
 - Worker wstawia `DaneAutoryzujace` jako ostatni element `Deklaracja` dopiero przy wysyłce. To ten sam model co metadane JPK z danymi autoryzującymi ([approval-gate.md](../approval-gate.md)).
 - `xml_sent` to deklaracja przed wstawieniem `DaneAutoryzujace`. Bajty z danymi istnieją tylko w pamięci workera.
 - W `connector_call` zostają tylko `request_sha256` i rozmiar faktycznego żądania, bez treści (tabela „Bajty zapisane a bajty wysłane”).
-- Po wstawieniu worker waliduje dokument XSD w pamięci. Czy XSD VAT-UE(5) dopuszcza dokument bez elementu przy prośbie, sprawdzasz w kroku 0 F5.
+- Krok 0 F5.5: XSD VAT-UE(5) i VAT-UEK(5) nie deklarują `DaneAutoryzujace` (korzeń kończy się na `Pouczenie`). Deklaracja bez elementu przechodzi XSD przy prośbie; po wstawieniu worker sprawdza w pamięci bajty `xml_sent` względem XSD deklaracji, element względem SIG-2008 i to, że jest jeden i ostatni w korzeniu (D-66). Wstawienie to wklejenie przed zamykającym `</Deklaracja>`, bez ponownej serializacji.
+- Klient: `EDeklaracjeSoapClient` (podklasa `SoapClient` bez WSDL, dokument literalny, `trace` = false) wysyła kopertę przez `ConnectorHttpClient`. Przestrzeń nazw `https://bramka.e-deklaracje.mf.gov.pl/xsd`, `SOAPAction` `urn:<operacja>` i adresy usług są w `edeklaracje.soap` i `edeklaracje.endpoints`; to założenie D-66 do potwierdzenia nagraniami F5.6.
+- Odpowiedź `sendUnsignDocument` z `refId` daje `submitted` (poza statusami 4xx spoza 300 i 411); bez `refId` ze statusem 4xx albo 100–102 → `rejected`; brak odpowiedzi → `unknown` (`send_no_response`). Ręczne ponowienie tylko bez `refId` albo po 300.
 - Kokpit zapisuje `xml_sent` i UPO. `VAT_UEK` ma `supersedes_id` wskazujące `VAT_UE` ([data-model.md](../data-model.md)).
 - Do go-live F5 składasz VAT-UE w e-Deklaracjach ([README.md](../README.md)).
 
@@ -392,6 +394,7 @@ Wszystkie schematy są w `resources/xsd`, z sumami kontrolnymi w `checksums.json
 
 - Importy wskazują adresy `crd.gov.pl`. Loader walidacji mapuje pełny adres `schemaLocation` z pola `locations` manifestu na plik lokalny; każdy inny adres odpada. Pliki bazowe mają te same nazwy w kilku wersjach (`StrukturyDanych` v6, v10, v12; `KodyKrajow` v6, v10, v13; `ElementarneTypyDanych` v6, v10; `KodyUrzedowSkarbowych` v6, v8), więc o pliku decyduje cały adres, a nazwa pliku w repo zawiera wersję. Adres wskazany przez dwa pliki to błąd manifestu.
 - Pliki zostają bajt w bajt jak u źródła. Test `XsdInventoryTest` (job `xsd`) sprawdza sumy, kompiluje każdy schemat główny offline i sprawdza, że każdy import trafia w jeden plik z właściwą przestrzenią nazw.
+- `VAT-UE(5)_v2-0E.xsd` i `VAT-UEK(5)_v2-1E.xsd` nie deklarują `DaneAutoryzujace`; walidacja deklaracji i elementu idzie osobno, jak przy `AuthData` (D-66, „Bramka e-Deklaracji (SOAP)”).
 - `initupload.xsd` nie deklaruje elementu `AuthData`, który specyfikacja 5.6.0 dodaje dla danych autoryzujących. Kokpit waliduje tym XSD metadane bez `AuthData`, a `AuthData` sprawdza osobno: jeden element, ostatni w `InitUpload`, sam tekst Base64 (D-63). Odpowiedź bramki testowej na `InitUploadSigned` potwierdza to w F5.3 (`jpk-te-fixtures`); kod 140 oznacza nowy rekord D-xx.
 - Link `/media/qord0r0j` na podatki.gov.pl ma błędny opis i kokpit go nie używa; schemat metadanych pochodzi z `/media/fmdjp0ri` (D-63).
 
