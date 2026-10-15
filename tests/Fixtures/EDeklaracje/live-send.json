@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z bramki testowej test-bramka.edeklaracje.gov.pl (F5.6, D-68), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "sendUnsignDocument fikcyjnego VAT-UE(5) z danymi autoryzującymi.",
+    "interactions": [
+        {
+            "method": "POST",
+            "path": "\/uslugi\/dokumenty",
+            "status": 200,
+            "body_text": "<?xml version='1.0' encoding='utf-8'?><soapenv:Envelope xmlns:soapenv=\"http:\/\/schemas.xmlsoap.org\/soap\/envelope\/\"><soapenv:Body><ns:sendUnsignDocumentResponse xmlns:ns=\"https:\/\/bramka.e-deklaracje.mf.gov.pl\/xsd\"><ns:refId>3f685acb3f1c63c43e10790ae4d39dee<\/ns:refId><ns:status>301<\/ns:status><ns:statusOpis>Dokument w trakcie przetwarzania, sprawdź wynik następnej weryfikacji dokumentu<\/ns:statusOpis><\/ns:sendUnsignDocumentResponse><\/soapenv:Body><\/soapenv:Envelope>"
+        }
+    ]
+}

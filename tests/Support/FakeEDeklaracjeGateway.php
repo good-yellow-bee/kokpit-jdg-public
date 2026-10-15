@@ -15,6 +15,7 @@ use App\Security\Redactor;
 use App\Time\BusinessDate;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\MockClock;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * `FakeEDeklaracjeGateway` F5.5 (docs/phases/f5-jpk.md): prawdziwy `EDeklaracjeGateway` z podklasą `SoapClient`
@@ -34,10 +35,13 @@ final class FakeEDeklaracjeGateway
     public readonly RateCounter $rates;
     public readonly EDeklaracjeGateway $gateway;
 
-    /** @param array<string,int> $limits limity dobowe `connector.daily_limits` */
-    public function __construct(Connection $db, MockClock $clock, Redactor $redactor, array $limits = ['edeklaracje.send' => 10])
+    /**
+     * @param array<string,int> $limits limity dobowe `connector.daily_limits`
+     * @param ?HttpClientInterface $live prawdziwy klient trybu live (`@group live`, F5.6); bez niego tylko nagrania
+     */
+    public function __construct(Connection $db, MockClock $clock, Redactor $redactor, array $limits = ['edeklaracje.send' => 10], ?HttpClientInterface $live = null)
     {
-        $this->recordings = new KsefRecordings();
+        $this->recordings = new KsefRecordings($live);
         $configuration = ConnectorTestTools::configuration(limits: $limits);
         $dates = new BusinessDate($clock);
         $allowlist = new HostAllowlist(ConnectorHosts::HOSTS, $configuration, $this->recordings->client());
