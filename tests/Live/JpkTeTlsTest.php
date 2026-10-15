@@ -25,13 +25,17 @@ final class JpkTeTlsTest extends TestCase
     {
         $config = Yaml::parseFile(dirname(__DIR__, 2) . '/config/services_connectors.yaml');
         self::assertIsArray($config);
-        $ciphers = $config['parameters']['jpk.tls_ciphers'] ?? null;
+        $parameters = $config['parameters'] ?? null;
+        self::assertIsArray($parameters);
+        $ciphers = $parameters['jpk.tls_ciphers'] ?? null;
         self::assertIsString($ciphers);
         $response = HttpClient::create(['timeout' => 60])->request('GET', 'https://test-e-dokumenty.mf.gov.pl/', ['crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT, 'ciphers' => $ciphers, 'max_redirects' => 0]);
         $status = $response->getStatusCode();
         $debug = $response->getInfo('debug');
         self::assertIsString($debug);
-        self::assertSame(1, preg_match('~SSL connection using (TLSv1\.[23]) / (\S+)~', $debug, $match), 'Brak wpisu o negocjacji TLS w debug.');
+        if (preg_match('~SSL connection using (TLSv1\.[23]) / (\S+)~', $debug, $match) !== 1) {
+            self::fail('Brak wpisu o negocjacji TLS w debug.');
+        }
         EvidenceArtefacts::write('cmd/jpk-te-tls.txt', sprintf("host test-e-dokumenty.mf.gov.pl, HTTP %d\nprotocol %s\ncipher %s\nciphers (jpk.tls_ciphers) %s\n", $status, $match[1], $match[2], $ciphers));
         fwrite(STDERR, $match[1] . ' ' . $match[2] . "\n");
         self::assertContains($match[2], self::ALLOWED);

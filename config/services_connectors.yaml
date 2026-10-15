@@ -16,8 +16,11 @@ parameters:
   registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
   # Odstępy ponowień VIES po przeciążeniu, w sekundach; po 24 h od pierwszej próby alert connector_failure.
   registry.vies_retry_delays: [900, 1800, 3600, 7200, 14400, 28800]
-  # Latarnia KSeF per cel (docs/modules/ksef.md, „Awarie KSeF i Latarnia”); DEMO nie ma Latarni.
-  latarnia.endpoints: { test: 'https://api-latarnia-test.ksef.mf.gov.pl', prod: 'https://api-latarnia.ksef.mf.gov.pl' }
+  # KSeF API 2.0 per cel (docs/modules/ksef.md, „Środowiska i hosty”, D-70); hosty w `ConnectorHosts`.
+  ksef.api_base: { test: 'https://api-test.ksef.mf.gov.pl/v2', demo: 'https://api-demo.ksef.mf.gov.pl/v2', prod: 'https://api.ksef.mf.gov.pl/v2' }
+  # Latarnia KSeF per cel (docs/modules/ksef.md, „Awarie KSeF i Latarnia”); DEMO nie ma Latarni. Latarnia TE podaje stałe dane
+  # przykładowe (TOTAL_FAILURE od 31.01.2026), więc warunkiem wysyłki jest tylko na PROD (D-70); host TE zostaje w allowliście do nagrań.
+  latarnia.endpoints: { prod: 'https://api-latarnia.ksef.mf.gov.pl' }
   # Konektor `jpk` (F5.1, docs/modules/jpk.md): API JPK 5.6.0 per cel, metadane `InitUpload`, części pliku, TLS i
   # certyfikat klucza publicznego MF per cel (plik poza repo, odświeża go `mf_keys.refresh`).
   jpk.endpoints: { test: 'https://test-e-dokumenty.mf.gov.pl/api/Storage/', prod: 'https://e-dokumenty.mf.gov.pl/api/Storage/' }
@@ -76,8 +79,13 @@ services:
   App\Connector\DeadMan\DeadManNotifier: ~
   App\Connector\Nbp\NbpConnector: ~
   App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
+  # Własny klient KSeF API 2.0 (D-70): uwierzytelnienie tokenem, szyfrowanie sesji i wysyłka; eksport F1 poza zakresem.
+  App\Connector\Ksef\KsefApi:
+    arguments: { $apiBase: '%ksef.api_base%' }
+  App\Connector\Ksef\KsefAuthenticator: ~
   App\Connector\Ksef\UnavailableKsefGateway: ~
-  App\Connector\Ksef\KsefGateway: '@App\Connector\Ksef\UnavailableKsefGateway'
+  App\Connector\Ksef\HttpKsefGateway: ~
+  App\Connector\Ksef\KsefGateway: '@App\Connector\Ksef\HttpKsefGateway'
   # Konektor zapisu KSeF (F3.3): `OfficialWriter` i `StatusReader`; wysyła tylko `OfficialWritesHandler`.
   App\Connector\Ksef\KsefWriter:
     arguments: { $formCode: '%ksef.form_code%' }

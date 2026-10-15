@@ -1,0 +1,19 @@
+{
+    "fictional": true,
+    "source": "Nagranie z KSeF TE (F3.5, D-70), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "Lista błędnych faktur sesji (pusta) i lista faktur sesji.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "\/v2\/sessions\/20261015-SO-2E64AB7000-D5C9BDCEA2-0B\/invoices\/failed",
+            "status": 200,
+            "body_text": "[]"
+        },
+        {
+            "method": "GET",
+            "path": "\/v2\/sessions\/20261015-SO-2E64AB7000-D5C9BDCEA2-0B\/invoices",
+            "status": 200,
+            "body_text": "{\n    \"invoices\": [\n        {\n            \"ordinalNumber\": 1,\n            \"invoiceNumber\": \"FB-TE-112660-PL\",\n            \"ksefNumber\": \"fikcyjne-c0bb9790cfab\",\n            \"referenceNumber\": \"20261015-EE-2E64BD3000-8DF3447F97-50\",\n            \"invoiceHash\": \"WfJ8Sd8AXEQFGci3P\\\/P\\\/prcvvnVgyjrmYGGuTVp4eDE=\",\n            \"acquisitionDate\": \"2026-10-15T13:30:47.2600618+00:00\",\n            \"invoicingDate\": \"2026-10-15T13:30:47.1234093+00:00\",\n            \"permanentStorageDate\": \"2026-10-15T13:30:48.492533+00:00\",\n            \"upoDownloadUrl\": \"https:\\\/\\\/api-test.ksef.mf.gov.pl\\\/storage\\\/09\\\/20261015-so-2e64ab7000-d5c9bdcea2-0b\\\/invoice-upo\\\/upo_1111111111-20261015-6D13E8800000-43.xml?skoid=fictional&sktid=fictional&skt=2026-10-15T11%3A16%3A35Z&ske=2026-10-22T11%3A16%3A35Z&sks=b&skv=2025-01-05&sv=2025-01-05&st=2026-10-15T13%3A25%3A50Z&se=2026-10-18T13%3A30%3A50Z&sr=b&sp=r&sig=fictional\",\n            \"upoDownloadUrlExpirationDate\": \"2026-10-18T13:30:50.5186854+00:00\",\n            \"invoicingMode\": \"Online\",\n            \"status\": {\n                \"code\": 200,\n                \"description\": \"Sukces\"\n            }\n        }\n    ]\n}"
+        }
+    ]
+}

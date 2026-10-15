@@ -18,8 +18,8 @@ Brak wejścia oznaczonego „stop” zatrzymuje część i kończy się pytaniem
 | --- | --- | --- | --- |
 | F0b, F1 i F2 odebrane (D-30) | wszystkie | [f0b-bramka-kalendarz.md](f0b-bramka-kalendarz.md), [f1-ksef-odczyt.md](f1-ksef-odczyt.md), [f2-ewidencja.md](f2-ewidencja.md) | stop dla odbioru F3; kod F3.1–F3.4 przed odbiorem według D-50 |
 | XSD FA(3) 1-0E z importami w `resources/xsd` z sumami w `checksums.json` | F3.1 | [../../.claude/rules/integrations.md](../../.claude/rules/integrations.md) | stop; pliki są w repo od F1 |
-| `KsefGateway` nad biblioteką przypiętą do dokładnej wersji, z klientem PSR-18 | F3.5 | D-14, Q-19, sesja 1 F1 | stop dla F3.5; F3.1–F3.4 rozszerzają interfejs i `FakeKsefGateway` |
-| dane TE z F1: testowa JDG, token z `InvoiceWrite`, drugi podmiot testowy jako nabywca `pl_b2b`; sejf testowy | F3.5 | Q-39, `ksef-te-provision` w [f1-ksef-odczyt.md](f1-ksef-odczyt.md) | stop dla F3.5 |
+| `KsefGateway` nad biblioteką przypiętą do dokładnej wersji, z klientem PSR-18 | F3.5 | D-14, Q-19, sesja 1 F1 | spełnione przez D-70: własny klient `HttpKsefGateway` zamiast biblioteki |
+| dane TE z F1: testowa JDG, token z `InvoiceWrite`, drugi podmiot testowy jako nabywca `pl_b2b`; sejf testowy | F3.5 | Q-39, `ksef-te-provision` w [f1-ksef-odczyt.md](f1-ksef-odczyt.md) | spełnione przez D-70: losowy NIP i token tworzone w teście pieczęcią XAdES |
 | tylko B2B; `eu_b2b_unidentified` zablokowany do przeglądu doradcy | wszystkie | D-05, Q-29 | – |
 | zakres i bramka przeglądu doradcy | F3.1, go-live | D-04, Q-29 | założenie domyślne: minimum FA(3) z P_18 i złotymi plikami oraz PKWiU→ryczałt; bez zapisu przeglądu F3 zostaje na api-test |
 | FreshBooks źródłem szkiców; znacznik gotowości; PDF dwujęzyczny z kokpitu | F3.2, F3.4 | Q-26, D-07 | założenie domyślne: znacznik `freshbooks.ready_marker` (`KSEF-GOTOWA`) w `po_number`; PDF PL i EN jako załącznik |
@@ -37,7 +37,7 @@ Brak wejścia oznaczonego „stop” zatrzymuje część i kończy się pytaniem
 | `company.identity` (część FA(3)) | wszystkie | [../modules/ksef.md](../modules/ksef.md) | na `kokpit-dev` i w testach wartości fikcyjne; na PROD przed go-live |
 | `ksef_token_write` PROD, SMTP PROD, FreshBooks PROD połączony | go-live | [../operations.md](../operations.md), [../security.md](../security.md) | go-live F3 czeka; odbioru F3.1–F3.5 nie blokuje |
 
-Nagrania KSeF dla F3.1–F3.4 piszesz ręcznie według [KSeF API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json), wyłącznie z danymi fikcyjnymi, przez skaner fixtures. F3.5 nagrywa je na TE komendą `app:fixtures:record` i zastępuje wersje ręczne ([../../.claude/rules/integrations.md](../../.claude/rules/integrations.md)).
+Nagrania KSeF dla F3.1–F3.4 piszesz ręcznie według [KSeF API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json), wyłącznie z danymi fikcyjnymi, przez skaner fixtures. F3.5 nagrywa odpowiedzi TE w testach live przez `LiveRecording` i dokłada nagrania `te-*` obok wersji ręcznych (D-70) ([../../.claude/rules/integrations.md](../../.claude/rules/integrations.md)).
 
 ## Ładuj tylko
 
@@ -140,7 +140,7 @@ Dom: „KSeF TE” w [../testing.md](../testing.md). Tylko `KSEF_TARGET=test`, t
 | uwierzytelnienie | token z `InvoiceWrite` z sejfu testowego, para `ksef_jwt_write` w `credential_state` |
 | scenariusze | `eu_b2b`, `non_eu_b2b`, `pl_b2b` i KOR przez bramkę na TE; numer KSeF i UPO przy każdym; P_1 = dziś przy szkicu z datą z przeszłości |
 | duplikat | ręczne ponowienie przyjętej faktury → 440 i `accepted` z numerem oryginału |
-| nagrania | `app:fixtures:record ksef <scenariusz>` dla endpointów wysyłki i statusu; `app:fixtures:record latarnia status`; skaner fixtures; testy kontraktowe F3.3 przechodzą na nowych nagraniach |
+| nagrania | testy live zapisują wysyłkę, status, listę sesji i faktury sesji przez `LiveRecording` oraz status Latarni TE; skaner fixtures; `KsefTeRecordingTest` odtwarza je w CI (D-70) |
 | KOD I | PDF z faktury z TE; kod QR otwiera stronę `qr-test.ksef.mf.gov.pl` |
 
 **Dowody.** Rejestr `tests/Acceptance/f3.yaml` dostaje wiersze części w jej sesji: klucz, komenda, asercja, artefakty, wykonawca ([../testing.md](../testing.md)).
@@ -166,7 +166,7 @@ Jedna część na sesję. Każda część ma osobną tabelę w „Kryteriach odb
 | F3.2 | znacznik, onboarding, przedmioty bramki, warunki prośby i decyzji, P_2, wygaśnięcie, `invoice_issue`, obejście, Subject1, szkic KOR | bez sieci; fixtures FreshBooks | F3.1 z pass |
 | F3.3 | `KsefGateway` zapisu, `OfficialWriter`, `StatusReader`, rekoncyliacja, 21184, 440, Latarnia, 429 | bez sieci; `FakeKsefGateway`, nagrania ręczne | F3.2 z pass |
 | F3.4 | KOD I, PDF, zapis zwrotny, „Doręcz klientowi”, `app:ksef:parallel-compare` | bez sieci; Mailer w pamięci | F3.3 z pass |
-| F3.5 | scenariusze na api-test, duplikat 440, nagrania, KOD I na qr-test | api-test, Latarnia test | F3.4 z pass; `KsefGateway` nad biblioteką z F1; dane TE z F1 |
+| F3.5 | scenariusze na api-test, duplikat 440, nagrania, KOD I na qr-test | api-test, Latarnia test | F3.4 z pass; `HttpKsefGateway` i dane TE według D-70 |
 
 F3.2 może iść równolegle z F3.1 na złotych plikach, bo bramka zna tylko bajty payloadu. F3.4 nie zależy od F3.3 poza stanem `accepted`, który testy ustawiają z fixtures.
 
@@ -257,7 +257,7 @@ Wiersze `live` wymagają `CONNECTORS_ENABLED=1` i sejfu testowego. W CI uruchami
 | `ksef-te-send-scenarios` (`live`): scenariusze na TE | `vendor/bin/phpunit --testsuite live --filter KsefTeSendScenarios`: szkice z fixtures FreshBooks z datą z przeszłości dla `eu_b2b`, `non_eu_b2b` i `pl_b2b`, zatwierdzenie ze step-up testowym | przy każdym numer KSeF i UPO; P_1 = dzień przebiegu; sha256 `xml_sent` równe `payload_sha256` i zdekodowanemu `invoiceHash` | `junit.xml`: `KsefTeSendScenarios*`; `ksef/ksef-te-send-scenarios-*.xml`: XML, UPO i numery KSeF z api-test |
 | `ksef-te-send-kor` (`live`): KOR na TE | `vendor/bin/phpunit --testsuite live --filter KsefTeSendKor`: KOR kwotowa do faktury `pl_b2b` z poprzedniego wiersza | numer KSeF i UPO; oryginał `corrected` | `junit.xml`: `KsefTeSendKor*`; `ksef/ksef-te-send-kor-*.xml` |
 | `ksef-te-duplicate-440` (`live`): duplikat na TE | `vendor/bin/phpunit --testsuite live --filter KsefTeDuplicate440`: wymuszony `unknown` po przyjęciu, ręczne ponowienie tego samego XML | KSeF zwraca 440 z `originalKsefNumber`; `accepted` z numerem oryginału; jedna faktura na TE | `junit.xml`: `KsefTeDuplicate440*`; `cmd/ksef-te-duplicate-440.txt`: kod 440, numer oryginału, porównanie hashy |
-| `ksef-te-fixtures` (`live`): nagrania wysyłki | `bin/console app:fixtures:record ksef <scenariusz>` dla sesji, wysyłki, statusu, zamknięcia, UPO, listy sesji i listy błędnych; `bin/console app:fixtures:record latarnia status` | nagrania przez scrubber; skaner bez trafień; testy F3.3 przechodzą na nowych nagraniach | `cmd/ksef-te-fixtures.txt`: lista nagrań z sha256 i wynik skanera; `junit.xml`: testy F3.3 na nagraniach |
+| `ksef-te-fixtures` (`ci`): nagrania wysyłki | nagrania z `KsefTeSendScenarios`, `KsefTeSendKor`, `KsefTeDuplicate440` i `KsefTeFixtures` (lista sesji, faktury sesji, status Latarni TE); `vendor/bin/phpunit --filter KsefTeRecordingTest` (D-70) | nagrania przez scrubber; skaner bez trafień; odtworzenie przechodzi scenariusze, KOR i 440 z prawdziwym szyfrowaniem | `cmd/ksef-te-fixtures.txt`: lista nagrań z sha256 i wynik skanera; `junit.xml`: testy F3.3 na nagraniach |
 | `kod-i-qr-test` `[manual]`: KOD I na qr-test | PDF z faktury z `ksef-te-send-scenarios`; skanujesz kod QR telefonem | strona `qr-test.ksef.mf.gov.pl` pokazuje fakturę z tym numerem KSeF | `manual/kod-i-qr-test.png`: zrzut strony qr-test; `manual/kod-i-qr-test.pdf` |
 
 ### Go-live w kryteriach

@@ -205,6 +205,10 @@ final readonly class SalesInvoiceSubject implements ApprovalSubject
             if ($this->subjectType === 'sales_invoice') {
                 $this->bus?->dispatch(new FreshBooksWriteBackMessage($subjectId));
             }
+            // Przyjęta KOR: oryginał `accepted` → `corrected` (docs/data-model.md, przejścia `invoice.status`; F3.5, D-70).
+            if ($this->subjectType === 'correction_invoice') {
+                $this->db->executeStatement("UPDATE invoice SET status='corrected', updated_at=? WHERE id=(SELECT corrects_invoice_id FROM invoice WHERE id=?) AND status='accepted'", [$now, $subjectId]);
+            }
         }
     }
 

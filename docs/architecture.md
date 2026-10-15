@@ -110,7 +110,7 @@ Wspólny kontrakt konektora jest w [../.claude/rules/integrations.md](../.claude
 - Adres pingu `deadman` jest tylko w sejfie `prod`. `kokpit-dev` i `kokpit-restore` nie pingują, więc nie maskują martwego PROD.
 - Rejestry, NBP i FreshBooks nie mają zmiennej `*_TARGET` (D-13). Biała lista i VIES mają usługi testowe; NBP nie, a FreshBooks nie ma firmy testowej (D-35). Testy automatyczne używają nagranych odpowiedzi.
 - Zapis zwrotny do FreshBooks nie jest zapisem w urzędzie. Działa automatycznie po przyjęciu faktury przez KSeF i jest idempotentny ([modules/freshbooks.md](modules/freshbooks.md)).
-- Latarnia nie ma środowiska DEMO ([scenariusze Latarni](https://raw.githubusercontent.com/CIRFMF/ksef-latarnia/main/scenariusze.md)). Przy `KSEF_TARGET=demo` kolejka KSeF nie jest wstrzymywana. Polityka awarii: [modules/ksef.md](modules/ksef.md) (D-15).
+- Latarnia nie ma środowiska DEMO ([scenariusze Latarni](https://raw.githubusercontent.com/CIRFMF/ksef-latarnia/main/scenariusze.md)). Latarnia TE zwraca stałe dane przykładowe, więc kolejkę KSeF wstrzymuje tylko Latarnia PROD (D-70). Polityka awarii: [modules/ksef.md](modules/ksef.md) (D-15).
 
 ## Środowiska i cele per konektor
 
@@ -216,7 +216,6 @@ Wersje przypina `composer.lock`. Zmiana linii biblioteki to decyzja w [decisions
 
 | Biblioteka | Użycie | Zasada wersji | Licencja i uwagi |
 | --- | --- | --- | --- |
-| `n1ebieski/ksef-php-client` | KSeF: uwierzytelnienie, sesje, FA(3), Latarnia | 1.10.x przypięta do dokładnej wersji, za `KsefGateway` (D-14, Q-19); obie linie celują w KSeF API 2.0 ([Packagist](https://packagist.org/packages/n1ebieski/ksef-php-client)) | szczegóły w [modules/ksef.md](modules/ksef.md) |
 | Symfony | framework, Messenger, Scheduler, Workflow, Lock, Clock, Security, HttpClient, Mailer, Uid, UX | linia LTS przypięta w F0a | MIT |
 | Doctrine ORM i Migrations | encje, migracje | przypięte | MIT |
 | `web-auth/webauthn-symfony-bundle` | passkey | przypięta | [security.md](security.md) |

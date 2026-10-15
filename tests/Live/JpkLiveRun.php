@@ -83,7 +83,8 @@ trait JpkLiveRun
         $refs = $send->refs($approvalId);
         if ($row['status'] === 'accepted') {
             self::assertSame(['accepted', 200], [$filing['status'], $filing['status_code']]);
-            self::assertStringContainsString((string) $filing['reference_number'], $send->files->read($refs['upo_file_id']));
+            self::assertIsString($filing['reference_number']);
+            self::assertStringContainsString($filing['reference_number'], $send->files->read($refs['upo_file_id']));
             return true;
         }
         self::assertSame(['rejected', '419', 'rejected', 419], [$row['status'], $row['result_code'], $filing['status'], $filing['status_code']]);

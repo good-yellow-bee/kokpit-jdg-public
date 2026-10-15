@@ -22,8 +22,9 @@ final class LiveRecording
             throw new \InvalidArgumentException('Niepoprawna nazwa nagrania.');
         }
         $content = (new Scrubber())->scrub(json_encode(['fictional' => true, 'source' => $source, 'scenario' => $description, 'interactions' => $interactions], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-        // Podpis SAS adresu Put Blob (F5.3) to poświadczenie magazynu, choć krótkotrwałe: nie trafia do nagrania.
-        $content = (string) preg_replace('/([?&](?:amp;)?sig=)[^&"\\\\]+/', '$1fictional', $content);
+        // Podpis SAS adresu Put Blob (F5.3) i adresu UPO KSeF (F3.5) to poświadczenie magazynu, choć krótkotrwałe; identyfikatory
+        // obiektu i dzierżawy klucza delegowanego SAS (`skoid`, `sktid`) też nie trafiają do nagrania.
+        $content = (string) preg_replace('/([?&](?:amp;)?(?:sig|skoid|sktid)=)[^&"\\\\]+/', '$1fictional', $content);
         $findings = (new FixtureScanner())->findings($content);
         if ($findings !== []) {
             throw new \RuntimeException('Nagranie live nie przeszło skanera: ' . implode(', ', $findings));
