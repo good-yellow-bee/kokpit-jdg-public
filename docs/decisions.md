@@ -151,6 +151,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-61 | założenia F6.3: formularz niesie `seq` następnej wiadomości, pytanie zapisane od tej `seq` → ramka z historii bez API, inna `seq` → komunikat; blokada `chat.turn.<id>`; ramka `chat-turn` sama przy nagłówku `Turbo-Frame`, inaczej cała strona; wykres tylko z `tool_result` executora, dane ponownie z `ChatQueryRunner`; znaczniki w formacie kontrolera Symfony UX Chart.js z tabelą, bez instalacji `symfony/ux-chartjs` i JS panelu w tej sesji; limit czasu żądania 780 s w PHP-FPM i proxy | przyjęta 2026-10-14 | – |
 | D-62 | założenia F6.4: prośba o szkic to `chat_message.draft_requested` ostatniej wiadomości `user` z blokiem `text`; odbiorca tylko `K-NN` z mapy i z `counterparty` tego środowiska; `flagged_values` dla IBAN, NRB, NIP z poprawną sumą i kwot z dwoma miejscami spoza bazy odbiorcy, potwierdzane w szkicu przed decyzją; prośba `draft` bez push (`requestByUser`); „Skopiowano” sprawdza termin i hash; Symfony Workflow `draft` bez nowej migracji | przyjęta 2026-10-14 | – |
 | D-63 | XSD JPK i e-Deklaracji w `resources/xsd` od 15.10.2026: JPK_V7M(3) 1-0E, JPK_ST(1) 1-2, VAT-UE(5) 2-0E, VAT-UEK(5) 2-1E, SIG-2008 2-0, `initupload.xsd` z plikami bazowymi; importy przez mapę pełnego adresu `schemaLocation` → plik (`locations` w manifeście); `AuthData` poza opublikowanym XSD `InitUpload`, sprawdzany osobno; link `/media/qord0r0j` nieużywany; zaślepki testowe usunięte, `jpk-init-upload` i `jpk-auth-data` odblokowane | przyjęta 2026-10-15 | – |
+| D-64 | założenia F5.2 JPK_ST(1): generator na XSD 1-2, węzeł `EWP` z `ZnacznikST` 1 i `Podmiot1` jak JPK_EWP; w pliku środki przyjęte do końca okresu i niewykreślone przed jego początkiem, F_1 od 1 w kolejności F_4; prośba tylko przy `jpk_st.enabled` = true na 31.12. roku, inaczej komunikat Q-25 bez wiersza `filing`; bez bramek JPK_EWP, pusty wykaz przy włączonej fladze to plik bez wierszy; wysyłka tym samym `JpkWriter` | przyjęta 2026-10-15 | Q-25 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1205,3 +1206,22 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - `JpkStBuilder::SCHEMA` wskazuje nadal `Schemat_JPK_ST(1)_v1-0.xsd` i rzuca `XsdMissingException`; przejście na `Schemat_JPK_ST(1)_v1-2.xsd` i generator robi F5.2.
 - **Skutki:** pliki i wpisy w `resources/xsd`; `XsdCatalog::locations()`, `JpkInitUpload` (`SCHEMA` = `initupload.xsd`, `check`); testy `XsdInventoryTest`, `JpkInitUploadTest`, `JpkAuthDataTest`, `JpkMetadataSchemaMissingTest`; „Pliki XSD” w [modules/jpk.md](modules/jpk.md); „Wejścia” w [phases/f5-jpk.md](phases/f5-jpk.md); nazwy wycofane w [naming.md](naming.md). F5.2, F5.4 i F5.5 mogą ruszyć offline.
 - **Pytania:** brak.
+
+### D-64 Założenia F5.2: JPK_ST(1) z `fixed_asset` przez bramkę
+
+- **Status:** przyjęta 2026-10-15 (decyzja Claude w ramach pełnej odpowiedzialności za projekt; Q-25 dalej otwarte).
+- **Kontekst:**
+  - D-63 dał `Schemat_JPK_ST(1)_v1-2.xsd` w `resources/xsd`; `JpkStBuilder` wskazywał jeszcze `v1-0` i rzucał `XsdMissingException`.
+  - Wersja 1-2 ma `wersjaSchemy` 1-2, `WariantFormularza` 1, `ZnacznikST` w `Podmiot1` i wybór węzła `EWP` albo `PKPIR`. Wiersz `EWP` wymaga F_1, F_2 albo F_3, F_4, F_6, F_7, F_9, F_10 i F_16; F_12–F_14 występują razem, węzeł `KSeF` z F_15 tylko przy nich.
+  - Tabela `fixed_asset` nie ma liczby porządkowej ani okresu. Q-25 („plik bez wierszy czy brak pliku”) jest otwarte; obowiązek `jpk_st` czyta flagę na ostatni dzień roku (D-39).
+- **Decyzja:**
+  - `JpkStBuilder` buduje JPK_ST(1) 1-2: nagłówek jak JPK_EWP(4) z `KodFormularza` `JPK_ST`, `kodSystemowy` `JPK_ST (1)`; `Podmiot1` z `company.identity` i `DataUrodzenia` z `auth_data` przez wspólny `JpkTaxpayer`; `ZnacznikST` = 1 i węzeł `EWP`. Mapowanie F_1–F_16 według „JPK_ST(1): węzeł `EWP`” w [modules/jpk.md](modules/jpk.md); `intangible` wybiera F_3 zamiast F_2, `reclassified` daje F_16 1 albo 2.
+  - Plik za rok obejmuje środki z `commissioning_date` nie późniejszą niż koniec okresu i bez wykreślenia przed 1.01. Wykreślenie po końcu okresu nie trafia do pliku. `--until` skraca koniec okresu wierszy (F_4 i F_12); nagłówek zawsze obejmuje cały rok, jak w JPK_EWP(4).
+  - F_1 numeruje wiersze pliku od 1 w kolejności `commissioning_date`, `acquisition_date`, `id`; bez nowej kolumny i migracji. `JpkDocument.sum` to suma F_10, `sumsByRate` jest pusta.
+  - Brak F_14 przy wykreśleniu daje plik niezgodny z XSD; dry run go odrzuca, prośba odmawia.
+  - Prośba o zatwierdzenie (`FilingRequest::jpkSt`) powstaje tylko przy `jpk_st.enabled` = true na 31.12. roku złożenia, jak warunek obowiązku `jpk_st`. Przy false odmowa z komunikatem Q-25 przed zapisem `filing`; `FilingSubject` sprawdza flagę ponownie przy budowie payloadu. Dry run F2.4 czyta flagę na dziś bez zmian.
+  - Bramki „przed budową JPK_EWP(4)” (okresy, kursy PIT, sprzedaż) nie dotyczą JPK_ST. Przy włączonej fladze pusty wykaz daje plik bez wierszy zgodny z XSD: włączenie flagi to Twoje rozstrzygnięcie Q-25.
+  - Wysyłka idzie tym samym `JpkWriter` i `official_writes` co JPK_EWP: `FormCode` z nagłówka, `FileName` `JPK_ST_<RRRRMMDD>_<sha256[0:12]>.xml`, UPO jako `upo` przy `filing`.
+  - Punkt D-63 o `JpkStBuilder::SCHEMA` = `v1-0` przestaje obowiązywać.
+- **Skutki:** `JpkStBuilder`, `JpkTaxpayer`, `FilingRequest::jpkSt`, `FilingSubject` (JPK_ST); wiersze `jpk-st-build` i `jpk-st-dry-run` w `tests/Acceptance/f2.yaml` (D-37) i `jpk-st-request` w `tests/Acceptance/f5.yaml`; fikcyjny wykaz `tests/Fixtures/Jpk/fixed-assets-2026.json`; nazwy w „Implementacji F5.2” w [naming.md](naming.md); F5.3 może wysłać JPK_ST (`jpk-te-st-upo`).
+- **Pytania:** Q-25.

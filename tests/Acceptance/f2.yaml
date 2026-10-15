@@ -1,5 +1,5 @@
 phase: f2
-# F2.1 i F2.4, a od D-44 także wiersze F2.2 części 1 (bez sieci). Wiersze jpk-st-* dochodzą ze schematem JPK_ST(1) (D-37).
+# F2.1 i F2.4, a od D-44 także wiersze F2.2 części 1 (bez sieci). Wiersze jpk-st-* doszły w F5.2 ze schematem JPK_ST(1) 1-2 (D-37, D-64).
 criteria:
   - { key: ledger-import-idempotent, runner: ci, command: 'php scripts/ledger-acceptance.php idempotent' }
   - { key: ledger-import-xml, runner: ci, command: 'php scripts/ledger-acceptance.php xml' }
@@ -13,6 +13,8 @@ criteria:
   - { key: jpk-ewp-build, runner: ci, command: 'php scripts/jpk-acceptance.php ewp-build && vendor/bin/phpunit --filter JpkEwpBuild', junit: true }
   - { key: jpk-ewp-podmiot1, runner: ci, command: 'vendor/bin/phpunit --filter JpkEwpPodmiot1', junit: true }
   - { key: jpk-ewp-dry-run, runner: ci, command: 'php scripts/jpk-acceptance.php ewp-dry-run' }
+  - { key: jpk-st-build, runner: ci, command: 'vendor/bin/phpunit --filter JpkStBuild', junit: true }
+  - { key: jpk-st-dry-run, runner: ci, command: 'php scripts/jpk-acceptance.php st-dry-run' }
   - { key: ryczalt-rate-missing, runner: ci, command: 'vendor/bin/phpunit --filter RyczaltServiceMapMissing', junit: true }
   - { key: ledger-two-rates, runner: ci, command: 'vendor/bin/phpunit --filter LedgerTwoRates', junit: true }
   - { key: ledger-subject1-fx, runner: ci, command: 'vendor/bin/phpunit --filter LedgerSubject1Fx', junit: true }

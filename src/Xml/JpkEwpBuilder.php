@@ -6,7 +6,6 @@ namespace App\Xml;
 
 use App\Config\ConnectorConfiguration;
 use App\Ledger\JpkEwpSchema;
-use App\Security\SecretStore;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
 use Brick\Math\BigDecimal;
@@ -22,7 +21,7 @@ final readonly class JpkEwpBuilder
     public const SCHEMA_VERSION = 'JPK_EWP(4)';
     private const TNS = 'http://jpk.mf.gov.pl/wzor/2024/10/30/10301/';
     private const ETD = 'http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/';
-    public function __construct(private Connection $db, private ClockInterface $clock, private SettingStore $settings, private SecretStore $secrets, private ConnectorConfiguration $configuration, private JpkEwpSchema $schema, private XsdValidator $validator) {}
+    public function __construct(private Connection $db, private ClockInterface $clock, private SettingStore $settings, private JpkTaxpayer $taxpayer, private ConnectorConfiguration $configuration, private JpkEwpSchema $schema, private XsdValidator $validator) {}
     public function build(int $year, ?string $until = null, int $purpose = 1): JpkDocument
     {
         if ($year < 2026 || $year > 2100) {
@@ -31,12 +30,12 @@ final readonly class JpkEwpBuilder
         if (!in_array($purpose, [1, 2], true)) {
             throw new JpkBuildRefused('CelZlozenia 1 albo 2.');
         }
-        if ($until !== null && (!self::isDate($until) || !str_starts_with($until, $year . '-'))) {
+        if ($until !== null && (!JpkTaxpayer::isDate($until) || !str_starts_with($until, $year . '-'))) {
             throw new JpkBuildRefused(sprintf('--until musi być datą RRRR-MM-DD w roku %d.', $year));
         }
         $environment = $this->configuration->environment();
-        $identity = $this->identity();
-        $birthDate = $this->birthDate($environment);
+        $identity = $this->taxpayer->identity();
+        $birthDate = $this->taxpayer->birthDate($environment);
         $document = new \DOMDocument('1.0', 'UTF-8');
         $document->formatOutput = true;
         $root = $document->createElementNS(self::TNS, 'JPK');
@@ -54,16 +53,7 @@ final readonly class JpkEwpBuilder
         self::child($header, 'KodUrzedu', $identity['tax_office_code']);
         $subject = self::child($root, 'Podmiot1');
         $subject->setAttribute('rola', 'Podatnik');
-        $person = self::child($subject, 'OsobaFizyczna');
-        foreach (['NIP' => $identity['nip'],'ImiePierwsze' => $identity['first_name'],'Nazwisko' => $identity['last_name'],'DataUrodzenia' => $birthDate] as $name => $value) {
-            $person->appendChild($document->createElementNS(self::ETD, 'etd:' . $name))->appendChild($document->createTextNode($value));
-        }
-        if (isset($identity['email'])) {
-            self::child($person, 'Email', $identity['email']);
-        }
-        if (isset($identity['phone'])) {
-            self::child($person, 'Telefon', $identity['phone']);
-        }
+        JpkTaxpayer::appendPerson($subject, self::TNS, self::ETD, $identity, $birthDate);
         if ($this->settings->value(SettingKeys::PIT_KASOWY) === true) {
             self::child($subject, 'Kasowy_PIT', '1');
         }
@@ -101,41 +91,6 @@ final readonly class JpkEwpBuilder
         }
         return new JpkDocument('JPK_EWP', self::SCHEMA_VERSION, $year, $until, $purpose, $xml, $count, (string) $sum->toScale(2), $lps, $sums, $this->validator->validate($xml, JpkEwpSchema::SCHEMA));
     }
-    /** @return array<string,string> część JPK `company.identity` */
-    private function identity(): array
-    {
-        $identity = $this->settings->value(SettingKeys::COMPANY_IDENTITY);
-        if (!is_array($identity)) {
-            throw new JpkBuildRefused('Brak company.identity (część JPK) w ustawieniach.');
-        }
-        $result = [];
-        foreach ($identity as $field => $value) {
-            if (is_string($field) && is_string($value)) {
-                $result[$field] = $value;
-            }
-        }
-        foreach (['nip','tax_office_code','first_name','last_name'] as $required) {
-            if (!isset($result[$required])) {
-                throw new JpkBuildRefused(sprintf('company.identity bez pola %s.', $required));
-            }
-        }
-        return $result;
-    }
-    /** `DataUrodzenia` z `auth_data` w `SecretStore`; wartość nie trafia do logów ani wyjątków. */
-    private function birthDate(string $environment): string
-    {
-        try {
-            $raw = $this->secrets->get('auth_data', $environment);
-        } catch (\RuntimeException) {
-            throw new JpkBuildRefused('Brak auth_data w sejfie; DataUrodzenia pochodzi tylko stamtąd.');
-        }
-        $data = json_decode($raw, true, 4);
-        $date = is_array($data) ? ($data['birth_date'] ?? null) : null;
-        if (!is_string($date) || !self::isDate($date)) {
-            throw new JpkBuildRefused('auth_data bez poprawnego birth_date (RRRR-MM-DD).');
-        }
-        return $date;
-    }
     private static function child(\DOMElement $parent, string $name, ?string $value = null): \DOMElement
     {
         $document = $parent->ownerDocument ?? throw new \LogicException('Element bez dokumentu.');
@@ -145,11 +100,6 @@ final readonly class JpkEwpBuilder
         }
         $parent->appendChild($element);
         return $element;
-    }
-    private static function isDate(string $value): bool
-    {
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-        return $date !== false && $date->format('Y-m-d') === $value;
     }
     private static function text(mixed $value): string
     {

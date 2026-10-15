@@ -256,6 +256,8 @@ Ryczałtowiec wypełnia węzeł `EWP` z polami F_1–F_16 ([broszura JPK_ST(1)](
 
 Typy kolumn są w [data-model.md](../data-model.md).
 
+- Plik za rok (`JpkStBuilder`, XSD 1-2, `ZnacznikST` 1) obejmuje środki przyjęte do używania do końca okresu i niewykreślone przed jego początkiem; wykreślenie po końcu okresu nie trafia do pliku. `--until` skraca okres wierszy, nagłówek obejmuje cały rok. F_1 numeruje wiersze pliku od 1 w kolejności F_4 (D-64).
+- Prośba o zatwierdzenie JPK_ST powstaje tylko przy `jpk_st.enabled` = true na 31.12. roku, jak obowiązek `jpk_st`; inaczej komunikat Q-25 bez złożenia. Bramki JPK_EWP(4) nie dotyczą JPK_ST; wysyłka idzie tym samym konektorem `jpk` (D-64).
 - JPK_ST działa za flagą `jpk_st.enabled`. Przy braku środków trwałych jest domyślnie wyłączona do rozstrzygnięcia, czy wymagany jest plik bez wierszy (Q-25, [facts.md](../facts.md), przed 15.12.2026). Po podpisaniu zwolnienia flaga zostaje wyłączona za 2026–2028.
 - Projekt zwolnienia zwalnia ryczałtowców z wykazu w programie i z JPK_ST za 2026–2028; wykaz papierowy zostaje. Na 08.10.2026 projekt jest otwarty, niepodpisany ([projekt](https://legislacja.gov.pl/projekt/12413609)). Obserwacja w [facts.md](../facts.md).
 - Zwolnienie z ewidencji 2027–2028 obejmuje tylko niebędących czynnymi podatnikami VAT, więc JPK_EWP zostaje obowiązkowy ([projekt](https://legislacja.gov.pl/projekt/12413609)).
