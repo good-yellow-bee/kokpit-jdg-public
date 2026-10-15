@@ -53,7 +53,13 @@ final class KsefTeDuplicate440Test extends KsefTeTestCase
         self::assertIsString($row['payload_sha256']);
         $this->artefact('cmd/ksef-te-duplicate-440.txt', sprintf(
             "pierwsza wysyłka: status %d, numer KSeF %s\nponowienie ręczne: status %d (%s), originalKsefNumber %s\nsha256 xml_sent (oba zatwierdzenia): %s\ninvoiceHash oryginału: %s\nwynik: approval accepted, result_code 440, numer oryginału; jedna faktura z tym numerem\n",
-            $original->code, $original->ksefNumber, $duplicate->code, $duplicate->description, $originalNumber, $row['payload_sha256'], $original->invoiceHash,
+            $original->code,
+            $original->ksefNumber,
+            $duplicate->code,
+            $duplicate->description,
+            $originalNumber,
+            $row['payload_sha256'],
+            $original->invoiceHash,
         ));
     }
 }
