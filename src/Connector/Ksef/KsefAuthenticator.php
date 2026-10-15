@@ -15,7 +15,8 @@ use Symfony\Component\Lock\LockFactory;
  * w `credential_state` (`ksef_jwt_write` albo `ksef_jwt_read`) i odświeża się pod lockiem: ważny accessToken wraca od
  * razu, potem `POST /auth/token/refresh`, a po wygaśnięciu refreshTokena pełny cykl: challenge, token
  * `{token}|{timestampMs}` zaszyfrowany RSA-OAEP-SHA256, `POST /auth/ksef-token`, `GET /auth/{referenceNumber}`
- * i `POST /auth/token/redeem`. Kontekst to NIP z `company.identity`. Token ani JWT nie trafiają do logów.
+ * i `POST /auth/token/redeem`. Kontekst to NIP z `company.identity`. Bez tokena zapasem jest certyfikat KSeF typ 1
+ * (`ksef_auth_cert`, podpis XAdES, D-72). Token, klucz ani JWT nie trafiają do logów.
  */
 final readonly class KsefAuthenticator
 {
@@ -54,10 +55,49 @@ final readonly class KsefAuthenticator
                 [$access, $accessUntil] = self::token($refreshed, 'accessToken');
                 return $this->save($jwtKind, $target, ['access' => $access, 'access_until' => $accessUntil] + $pair);
             }
-            return $this->authenticate($jwtKind, $target, $this->secrets->get($tokenKind, $target));
+            try {
+                $token = $this->secrets->get($tokenKind, $target);
+            } catch (\RuntimeException) {
+                // Bez tokena (np. po 31.12.2026, §13) zapasem jest certyfikat KSeF typ 1 (D-72).
+                return $this->authenticateCertificate($jwtKind, $target);
+            }
+            return $this->authenticate($jwtKind, $target, $token);
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Pełne uwierzytelnienie certyfikatem KSeF typ 1 (`ksef_auth_cert`: certyfikat i klucz prywatny w PEM) przez podpis
+     * XAdES na `POST /auth/xades-signature`; para JWT trafia do `ksef_jwt_write` (smoke `ksef_auth_cert`, D-72).
+     */
+    public function certificateAccessToken(): string
+    {
+        $target = $this->api->target();
+        $lock = $this->locks->createLock('ksef.auth.' . $target . '.write');
+        $lock->acquire(true);
+        try {
+            return $this->authenticateCertificate(self::KINDS['write'][1], $target);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function authenticateCertificate(string $jwtKind, string $target): string
+    {
+        $pem = $this->secrets->get('ksef_auth_cert', $target);
+        $certificate = openssl_x509_read($pem);
+        $key = openssl_pkey_get_private($pem);
+        if ($certificate === false || $key === false) {
+            throw new KsefException(KsefError::RequestRefused, 'auth_cert_invalid');
+        }
+        $challenge = $this->api->json(null, 'auth_challenge', 'ksef.challenge', 'POST', '/auth/challenge', []);
+        if (!is_string($challenge['challenge'] ?? null)) {
+            throw new KsefException(KsefError::RequestRefused, 'challenge_invalid');
+        }
+        $signed = KsefXades::authTokenRequest($challenge['challenge'], $this->contextNip(), $key, $certificate, \DateTimeImmutable::createFromInterface($this->clock->now()));
+        $started = json_decode($this->api->request(null, 'auth_xades', 'ksef.default', 'POST', '/auth/xades-signature', $signed)->getContent(false), true, 8, JSON_THROW_ON_ERROR);
+        return $this->finish($jwtKind, $target, is_array($started) ? $started : []);
     }
 
     private function authenticate(string $jwtKind, string $target, string $token): string
@@ -72,7 +112,16 @@ final readonly class KsefAuthenticator
         if ($key['id'] !== '') {
             $body['publicKeyId'] = $key['id'];
         }
-        $started = $this->api->json(null, 'auth_token', 'ksef.default', 'POST', '/auth/ksef-token', $body);
+        return $this->finish($jwtKind, $target, $this->api->json(null, 'auth_token', 'ksef.default', 'POST', '/auth/ksef-token', $body));
+    }
+
+    /**
+     * Status uwierzytelnienia do 200 i redeem; para JWT do `credential_state`.
+     *
+     * @param array<mixed> $started odpowiedź `POST /auth/ksef-token` albo `POST /auth/xades-signature`
+     */
+    private function finish(string $jwtKind, string $target, array $started): string
+    {
         [$operation] = self::token($started, 'authenticationToken');
         $reference = is_string($started['referenceNumber'] ?? null) ? $started['referenceNumber'] : throw new KsefException(KsefError::RequestRefused, 'auth_without_reference');
         for ($poll = 1;; ++$poll) {

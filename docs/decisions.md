@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-72 | F1 poświadczenia KSeF na api-test: zapas certyfikatem typ 1 w `KsefAuthenticator` (`certificateAccessToken`, `KsefXades`, `ksef_auth_cert` = certyfikat i klucz w PEM; bez sekretu tokena `accessToken` idzie podpisem XAdES); dane TE samopodpisaną pieczęcią zamiast `/testdata/subject`; token `InvoiceRead` dostaje 403 przy otwarciu sesji; klucze MF bez kopii w konfiguracji, wybór certyfikatu ważnego teraz, bez zadania `mf_keys.refresh` dla KSeF; okna backfillu, 21165 i 429 na atrapie bramki | przyjęta 2026-10-15 | F1 |
 | D-71 | F1 eksport KSeF na api-test: `HttpKsefGateway::startExport` i `exportPackage` tokenem `ksef_token_read` (klucz AES na eksport w pamięci procesu, części z adresu ze statusu bez tokenu, `partHash`, ZIP z `_metadata.json`); kod 420 to pusta paczka z kursorem na `from`; `ksef-sync-te` z pomocnikiem `KsefTeIssuer` (faktury poza bramką, tylko w `tests/`); nagranie `te-sync-export` trzyma metadane, odtworzenie składa i szyfruje paczkę | przyjęta 2026-10-15 | F1 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
@@ -1390,6 +1391,27 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
 
+### D-72 F1: poświadczenia KSeF, zapas certyfikatem i klucze MF
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live na `api-test.ksef.mf.gov.pl`; dane fikcyjne).
+- **Kontekst:**
+  - Plik fazy zakładał dane TE przez `/testdata/subject`. Ten endpoint zakłada tylko grupę VAT, JST i organ egzekucyjny; JDG to `/testdata/person` (NIP i PESEL). TE przyjmuje jednak samopodpisaną pieczęć `VATPL-<NIP>` dla dowolnego poprawnego NIP (D-70), więc osobne zakładanie podmiotu nie jest potrzebne.
+  - Zapas certyfikatem typ 1 był w dokumentacji, ale bez kodu: `KsefAuthenticator` znał tylko token.
+  - `mf-keys-refresh` zakładał kopię kluczy MF w konfiguracji celu. `KsefApi` (D-70) pobiera je raz na proces z `GET /security/public-key-certificates`, więc kopia byłaby drugim źródłem prawdy.
+- **Decyzja:**
+  - `KsefXades` (z pomocnika testów do `src/Connector/Ksef`) buduje i podpisuje `AuthTokenRequest` (XAdES-BES, RSA-SHA256). `KsefAuthenticator::certificateAccessToken()` uwierzytelnia certyfikatem z `ksef_auth_cert` (sekret `KSEF_<CEL>_AUTH_CERT`: certyfikat i klucz prywatny w PEM) przez `POST /auth/xades-signature` (operacja `auth_xades`), dalej ten sam status i redeem co token; para trafia do `ksef_jwt_write`. Gdy sejf nie ma sekretu tokena roli, `accessToken()` idzie tą drogą sam. `app:credential:smoke ksef_auth_cert` sprawdza zapas.
+  - Na TE certyfikat to samopodpisana pieczęć z przebiegu. Na PROD certyfikat typ 1 wnioskuje i wgrywa do sejfu `prod` tylko właściciel (Aplikacja Podatnika KSeF); sesja go nie wytwarza.
+  - `ksef-te-provision`: `KsefTeProvision` zakłada token `InvoiceRead` i token `InvoiceWrite` testowej JDG oraz token drugiego sprzedawcy; parametr uprawnień w `token()`.
+  - `ksef-read-token-scope`: accessToken z tokena `InvoiceRead` dostaje 403 na `POST /sessions/online`; zero faktur.
+  - `mf-keys-refresh`: bez kopii kluczy i bez zadania dla KSeF. `KsefApi::publicKey` bierze certyfikat ważny w tej chwili (`validFrom` ≤ teraz < `validTo`), przy kilku najnowszy; brak ważnego daje `mf_key_missing`. Kryterium sprawdza wybór na odpowiedzi w kształcie nagrania `te-public-keys`. Zadanie `mf_keys.refresh` zostaje tylko dla certyfikatu JPK (D-69).
+  - `ksef-backfill-windows`, `ksef-21165-retry`, `ksef-429-blocked-until` zostają na atrapie bramki (`KsefSyncTest`): TE nie daje na żądanie 21165, 429 ani historii od 1.02.2026.
+- **Wyniki 15.10.2026:** pięć testów `KsefTeCredentialsTest` zielonych na api-test (tokeny, rejestracja dat z obowiązkami `credential_expiry`, smoke tokenem do odczytu, smoke i zapas XAdES, odmowa 403).
+- **Skutki:**
+  - Kod: `KsefXades`, `KsefAuthenticator::certificateAccessToken`, `CredentialSmokeCommand` (`ksef_auth_cert`), `KsefApi` (zegar, okno ważności kluczy).
+  - Testy: `tests/Live/KsefTeCredentialsTest.php`, `tests/Integration/MfKeysRefreshTest.php`; `KsefTeProvision::token($nip, $permissions)`, `seal()`, `pem()`.
+  - Rejestr `tests/Acceptance/f1.yaml`: dziewięć wierszy KSeF sesji 1.
+  - Poprawka: `EvidenceArtefacts` i `EvidencePack` przyjmują katalog `ksef/` (XML, UPO i numery z api-test, F3.5); wcześniej zapis z `EVIDENCE_DIR` kończył test F3.5 błędem ścieżki.
+
 ### D-71 F1: eksport Subject1 i Subject2 na api-test
 
 - **Status:** przyjęta 2026-10-15 (przebiegi live z sesji z dostępem do `api-test.ksef.mf.gov.pl`; dane fikcyjne).
@@ -1405,5 +1427,5 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 - **Skutki:**
   - Kod: `HttpKsefGateway` (eksport), `KsefApi::exportPart`.
   - Testy: `tests/Live/KsefTeSyncTest.php`, `tests/Support/KsefTeIssuer.php`, `tests/Integration/KsefTeSyncRecordingTest.php`; `LiveRecording::writeData`; `KsefSendTestTools::fictionalJwt($kind)`.
-  - Rejestr `tests/Acceptance/f1.yaml`: `ksef-sync-te` i `ksef-sync-idempotent`. Pozostałe wiersze KSeF sesji 1 (`ksef-te-provision`, `ksef-token-auth`, `ksef-cert-fallback`, `ksef-read-token-scope`, okna backfillu, 21165, 429, `mf-keys-refresh`) czekają na kolejną sesję.
+  - Rejestr `tests/Acceptance/f1.yaml`: `ksef-sync-te` i `ksef-sync-idempotent`. Pozostałe wiersze KSeF sesji 1 domyka D-72.
 

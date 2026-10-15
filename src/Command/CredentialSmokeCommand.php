@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'app:credential:smoke', description: 'Sprawdza poświadczenie przez konektor testowy.')]
 final class CredentialSmokeCommand extends Command
 {
-    /** Tokeny KSeF: smoke to pełne uwierzytelnienie tokenem na celu `KSEF_TARGET` i nowa para JWT (D-70). */
+    /** Tokeny KSeF: smoke to pełne uwierzytelnienie tokenem na celu `KSEF_TARGET` i nowa para JWT (D-70); `ksef_auth_cert` podpisem XAdES (D-72). */
     private const KSEF_ROLES = ['ksef_token_write' => 'write', 'ksef_token_read' => 'read'];
 
     public function __construct(private readonly Connection $db, private readonly ClockInterface $clock, private readonly ?DummyConnector $dummy = null, private readonly ?KsefAuthenticator $ksef = null, private readonly ?ConnectorConfiguration $configuration = null)
@@ -31,8 +31,8 @@ final class CredentialSmokeCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $kind = $input->getArgument('kind');
-        if (is_string($kind) && isset(self::KSEF_ROLES[$kind]) && $this->ksef !== null && $this->configuration !== null) {
-            return $this->ksef($kind, self::KSEF_ROLES[$kind], $this->ksef, $this->configuration->target('ksef'), $output);
+        if (is_string($kind) && (isset(self::KSEF_ROLES[$kind]) || $kind === 'ksef_auth_cert') && $this->ksef !== null && $this->configuration !== null) {
+            return $this->ksef($kind, self::KSEF_ROLES[$kind] ?? 'write', $this->ksef, $this->configuration->target('ksef'), $output);
         }
         if ($kind !== 'dummy_token' || $this->dummy === null) {
             $output->writeln('Konektor tego rodzaju nie ma wywołania testowego.');
@@ -56,13 +56,14 @@ final class CredentialSmokeCommand extends Command
             return Command::FAILURE;
         }
         try {
-            $ksef->accessToken($role, true);
+            // Certyfikat typ 1: pełne uwierzytelnienie XAdES zamiast tokena (D-72).
+            $kind === 'ksef_auth_cert' ? $ksef->certificateAccessToken() : $ksef->accessToken($role, true);
         } catch (KsefException $exception) {
             $output->writeln('błąd: ' . $exception->getMessage() . ($exception->detail === null ? '' : ' (' . $exception->detail . ')'));
             return Command::FAILURE;
         }
         $this->smokeOk($exists);
-        $output->writeln(sprintf('ok; last_smoke_ok_at ustawione; para %s w credential_state; connector_call: ksef (%s).', KsefAuthenticator::KINDS[$role][1], $target));
+        $output->writeln(sprintf('ok; last_smoke_ok_at ustawione; para %s w credential_state; connector_call: ksef (%s)%s.', KsefAuthenticator::KINDS[$role][1], $target, $kind === 'ksef_auth_cert' ? '; uwierzytelnienie XAdES' : ''));
         return Command::SUCCESS;
     }
     private function registered(string $kind, string $environment): ?string

@@ -82,7 +82,7 @@ Kokpit loguje się tokenem KSeF; cykl obsługuje `KsefAuthenticator` (D-70) ([uw
 
 1. `POST /auth/challenge` zwraca challenge ważny 10 minut i znacznik czasu.
 2. Kokpit szyfruje `{token}|{timestampMs}` kluczem publicznym MF (RSA-OAEP, SHA-256) i wysyła na `POST /auth/ksef-token` z identyfikatorem kontekstu (NIP).
-3. `GET /auth/{referenceNumber}` odpytuje status. Zapasowa ścieżka certyfikatem typ 1 to podpis XAdES na `POST /auth/xades-signature`.
+3. `GET /auth/{referenceNumber}` odpytuje status. Zapasowa ścieżka certyfikatem typ 1 to podpis XAdES na `POST /auth/xades-signature` (`KsefXades`, `KsefAuthenticator::certificateAccessToken`, D-72): sekret `ksef_auth_cert` trzyma certyfikat i klucz prywatny w PEM, para trafia do `ksef_jwt_write`. Bez sekretu tokena roli `accessToken()` idzie tą drogą sam.
 4. `POST /auth/token/redeem` zwraca accessToken i refreshToken; drugi redeem tym samym tokenem daje błąd 400.
 5. accessToken żyje do swojego `exp`, refreshToken do 7 dni. `POST /auth/token/refresh` daje nowy accessToken; po wygaśnięciu refreshTokena pełne uwierzytelnienie od nowa.
 
@@ -99,7 +99,7 @@ Lista sesji, faktury sesji, lista błędnych i UPO przyjmują `InvoiceWrite` ([K
 
 - Tokeny i klucze prywatne certyfikatów są statyczne: Symfony Secrets przez `SecretStore`. Daty ważności są w `credential_state`.
 - Para JWT każdego tokena rotuje, więc leży zaszyfrowana w `credential_state` i odświeża się pod Symfony Lock. Dwa tokeny dają dwie pary JWT: rodzaje `ksef_jwt_read` i `ksef_jwt_write` ([../data-model.md](../data-model.md)).
-- Jeden klient KSeF na kontekst NIP, poświadczenia zapisane per NIP. `KsefApi` trzyma w pamięci tylko klucze publiczne MF, per cel.
+- Jeden klient KSeF na kontekst NIP, poświadczenia zapisane per NIP. `KsefApi` trzyma w pamięci tylko klucze publiczne MF, per cel: pobiera je raz na proces i na każde użycie bierze certyfikat ważny w tej chwili, przy kilku najnowszy, więc wymiana klucza przez MF nie wymaga zadania odświeżania (D-72).
 - Klucze MF wymagają RSA-OAEP z SHA-256; `KsefCrypto` liczy OAEP ręcznie nad surowym RSA, bo `openssl_public_encrypt` daje tylko SHA-1.
 
 ## Cykl życia tokenów i certyfikatów

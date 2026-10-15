@@ -87,7 +87,7 @@ final class KsefSendTestTools
             $locks = new LockFactory(new DoctrineDbalPostgreSqlStore($db));
             $this->vault = new MemoryVault();
             $this->secrets = new SecretStore(new Vault($this->vault, $redactor, 'test'), $db, $locks, $native, $redactor, new AuditLog($db, $native, $redactor), 'test');
-            $this->api = new KsefApi($this->http, $configuration, self::LIVE_API_BASE);
+            $this->api = new KsefApi($this->http, $configuration, self::LIVE_API_BASE, $clock);
             $this->auth = new KsefAuthenticator($this->api, $this->secrets, $sales->settings, $locks, $native);
             $gateway = new HttpKsefGateway($this->api, $this->auth);
         } else {

@@ -16,7 +16,7 @@ final class EvidenceArtefacts
         if (!is_string($base) || $base === '') {
             return;
         }
-        if (!preg_match('~^(cmd|db|golden|jpk|screens)/[a-z0-9]+(?:-[a-z0-9_]+)*\.(csv|diff|xml|txt|html)$~D', $relative)) {
+        if (!preg_match('~^(cmd|db|golden|jpk|ksef|screens)/[a-z0-9]+(?:-[a-z0-9_]+)*\.(csv|diff|xml|txt|html)$~D', $relative)) {
             throw new \InvalidArgumentException('Niepoprawna ścieżka artefaktu.');
         }
         $path = $base . '/' . $relative;

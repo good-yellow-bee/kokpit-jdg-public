@@ -8,6 +8,7 @@ use App\Config\ConnectorConfiguration;
 use App\Http\ConnectorHttpClient;
 use App\Http\ConnectorRequestContext;
 use App\Rate\RateLimitExceededException;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -15,7 +16,9 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  * Wywołanie KSeF API 2.0 przez `ConnectorHttpClient` (D-70): adres bazowy z `ksef.api_base` dla celu z `KSEF_TARGET`,
  * więc działają `HostAllowlist`, `rate_counter` i `connector_call`. 429 i blokada licznika dają `RateLimited`,
  * inna odmowa `RequestRefused` z `exceptionCode` (21184 to `SessionUnavailable`). Klucze publiczne MF trzyma
- * w pamięci procesu na cel (docs/modules/ksef.md, „Przechowywanie”).
+ * w pamięci procesu na cel, bez kopii w konfiguracji: na użycie bierze certyfikat ważny teraz (`validFrom`, `validTo`),
+ * przy kilku najnowszy, więc wymiana klucza przez MF nie wymaga zadania odświeżania (docs/modules/ksef.md,
+ * „Przechowywanie”; D-72).
  */
 final class KsefApi
 {
@@ -27,6 +30,7 @@ final class KsefApi
         private readonly ConnectorHttpClient $http,
         private readonly ConnectorConfiguration $configuration,
         private readonly array $apiBase,
+        private readonly ClockInterface $clock,
     ) {}
 
     public function target(): string
@@ -117,13 +121,22 @@ final class KsefApi
         $target = $this->target();
         if (!isset($this->keys[$target])) {
             $this->keys[$target] = [];
+            $now = $this->clock->now();
+            $chosen = [];
             foreach ($this->json(null, 'public_keys', 'ksef.default', 'GET', '/security/public-key-certificates') as $certificate) {
                 if (!is_array($certificate) || !is_string($certificate['certificate'] ?? null) || !is_array($certificate['usage'] ?? null)) {
                     continue;
                 }
+                $from = is_string($certificate['validFrom'] ?? null) ? new \DateTimeImmutable($certificate['validFrom']) : null;
+                $to = is_string($certificate['validTo'] ?? null) ? new \DateTimeImmutable($certificate['validTo']) : null;
+                if (($from !== null && $from > $now) || ($to !== null && $to <= $now)) {
+                    continue;
+                }
                 $pem = "-----BEGIN CERTIFICATE-----\n" . chunk_split($certificate['certificate'], 64, "\n") . "-----END CERTIFICATE-----\n";
+                $rank = $from === null ? 0 : $from->getTimestamp();
                 foreach ($certificate['usage'] as $use) {
-                    if (is_string($use)) {
+                    if (is_string($use) && (!isset($chosen[$use]) || $rank > $chosen[$use])) {
+                        $chosen[$use] = $rank;
                         $this->keys[$target][$use] = ['id' => is_string($certificate['publicKeyId'] ?? null) ? $certificate['publicKeyId'] : '', 'pem' => $pem];
                     }
                 }
