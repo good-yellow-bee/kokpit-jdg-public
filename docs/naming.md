@@ -542,7 +542,7 @@ Część b: sekcja niżej.
 | Parametry (`config/services_connectors.yaml`) | `jpk.endpoints`, `jpk.init_upload` (`document_type`, `version`, `max_bytes`), `jpk.part_max_bytes`, `jpk.tls_ciphers`, `jpk.mf_certificates`; limit `jpk.init_upload` w `connector.daily_limits` |
 | Przedmiot bramki (`src/Ledger`) | `FilingSubject` (usługa `filing.subject`; w dev i test z atrapą `dummy.subject.filing` dla identyfikatorów bez `filing`), `FilingRequest` (`jpkEwp`), `FilingManualUpo` (`record`); `ApprovalSubject::connector(string $subjectId)` |
 | Licznik | `RateCounter::exhausted` (odczyt bez zużycia: `blocked_until` albo wyczerpany limit dobowy) |
-| Testy | `FakeJpkGateway`, `JpkSendTestTools`, `JpkSendTestCase`; nagrania `tests/Fixtures/Jpk/api-init-upload*.json`, `api-put-blob.json`, `api-finish-upload*.json`, `api-status-*.json`; fikcyjne zaślepki testowe XSD `tests/Fixtures/Jpk/xsd-stub` (nie schematy MF); test `JpkMetadataSchemaMissingTest` |
+| Testy | `FakeJpkGateway`, `JpkSendTestTools`, `JpkSendTestCase`; nagrania `tests/Fixtures/Jpk/api-init-upload*.json`, `api-put-blob.json`, `api-finish-upload*.json`, `api-status-*.json`; schematy metadanych `initupload.xsd` i `SIG-2008_v2-0.xsd` z `resources/xsd` (D-63); test `JpkMetadataSchemaMissingTest` (pusty katalog schematów) |
 
 ### Plan F6 (D-58): nazwy
 
@@ -630,6 +630,8 @@ Część b: sekcja niżej.
 | wynik `manual_pending` | `pending` | D-33 |
 | opcja `--attach=<id>=<plik>` | plik w `var/evidence/<phase>/inbox/` z nazwą od klucza | D-33 |
 | `@group property`, `@group integration`, `@group security`, `@group xsd` | testsuite PHPUnit katalogu (`property`, `integration`, `security`, `xsd`) | [testing.md](testing.md) |
+| zaślepki `tests/Fixtures/Jpk/xsd-stub`, `JpkSendTestTools::catalog()` i `official()` | oficjalne `initupload.xsd` i `SIG-2008_v2-0.xsd` w `resources/xsd`, `XsdCatalog::default()` | D-63 |
+| plik schematu `InitUpload.xsd` (`JpkInitUpload::SCHEMA`) | `initupload.xsd`, nazwa pliku u źródła MF | D-63 |
 | zmienna repozytorium `KOKPIT_PHASE` | faza z prefiksu gałęzi albo z wejścia `phase` | [testing.md](testing.md) |
 | konektor `fake`, katalog `src/Connector/Fake`, host `fake.invalid` | `dummy`, `src/Connector/Dummy`, `dummy.invalid` | D-32 |
 | `rate_counter.bucket` = `claude.api` | `claude.messages` | D-34 |

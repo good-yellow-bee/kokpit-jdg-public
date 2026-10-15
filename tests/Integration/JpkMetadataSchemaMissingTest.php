@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Connector\Jpk\AuthDataDocument;
 use App\Connector\Jpk\JpkException;
+use App\Connector\Jpk\JpkInitUpload;
 use App\Tests\Support\JpkSendTestTools;
 
 /**
- * Bez oficjalnych XSD `InitUpload` i SIG-2008 (stan na F5.1, D-57) ścieżka wysyłki istnieje, ale metadane i `AuthData`
- * nie powstają: walidacja kończy się jasnym błędem `jpk_xsd_missing`, a zatwierdzenie czeka w `approved` z powodem
- * `xsd_missing`, bez żadnego wywołania `jpk`.
+ * Bez XSD `initupload.xsd` i SIG-2008 w katalogu schematów (tu: pusty manifest poza repo, bo `resources/xsd` ma oba
+ * od D-63) ścieżka wysyłki istnieje, ale metadane i `AuthData` nie powstają: walidacja kończy się jasnym błędem
+ * `jpk_xsd_missing`, a zatwierdzenie czeka w `approved` z powodem `xsd_missing`, bez żadnego wywołania `jpk`.
  */
 final class JpkMetadataSchemaMissingTest extends JpkSendTestCase
 {
@@ -20,7 +22,7 @@ final class JpkMetadataSchemaMissingTest extends JpkSendTestCase
         self::assertFalse($send->initUpload->schemaAvailable());
         self::assertFalse($send->authData->schemaAvailable());
 
-        foreach ([['InitUpload.xsd', static fn() => $send->initUpload->check('<InitUpload xmlns="http://e-dokumenty.mf.gov.pl"/>')], ['SIG-2008_v2-0.xsd', static fn() => $send->authData->build('test')]] as [$schema, $call]) {
+        foreach ([[JpkInitUpload::SCHEMA, static fn() => $send->initUpload->check('<InitUpload xmlns="http://e-dokumenty.mf.gov.pl"/>')], [AuthDataDocument::SCHEMA, static fn() => $send->authData->build('test')]] as [$schema, $call]) {
             try {
                 $call();
                 self::fail('Brak XSD nie zatrzymał ' . $schema);

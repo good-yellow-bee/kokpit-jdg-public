@@ -46,5 +46,104 @@
     "locations": [
       "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/KodyUrzedowSkarbowych/KodyUrzedowSkarbowych_v8-0E.xsd"
     ]
+  },
+  {
+    "file": "Schemat_JPK_V7M(3)_v1-0E.xsd",
+    "source": "http://crd.gov.pl/wzor/2025/12/19/14090/schemat.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "1870324001ba1318f0535841b963571e970b45ef32ba5ca3d433f0dc5da412df"
+  },
+  {
+    "file": "Schemat_JPK_ST(1)_v1-2.xsd",
+    "source": "https://www.gov.pl/attachment/aa2ea22c-afdf-42bb-a607-8907afd321a6",
+    "fetched_on": "2026-10-15",
+    "sha256": "e2f063617fb2c4ec5e477be992f9818a7f270939cb8d35915157d0a15f6fbe0d"
+  },
+  {
+    "file": "VAT-UE(5)_v2-0E.xsd",
+    "source": "http://crd.gov.pl/wzor/2021/01/12/10293/schemat.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "26ef2a26f17754f522531521d483a0a6644e6e97b58ab71a21d217ceaba5b2f7"
+  },
+  {
+    "file": "VAT-UEK(5)_v2-1E.xsd",
+    "source": "http://crd.gov.pl/wzor/2021/01/26/10316/schemat.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "6461c8b764cb206d77e362986b98d5ef32493eff8a9af7258e2a6be48a5e5a39"
+  },
+  {
+    "file": "SIG-2008_v2-0.xsd",
+    "source": "https://podatki-arch.mf.gov.pl/media/10553/sig-2008_v2-0.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "33f43c0031110b94ddb26e428f903a860cc55e630dc9f2edf4ce20f34a71b2ad"
+  },
+  {
+    "file": "initupload.xsd",
+    "source": "https://www.podatki.gov.pl/media/fmdjp0ri/initupload.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "ec52beffc70ef42daabe1796b279dd414c5e0213cddeefc619e1bc8b9985493a"
+  },
+  {
+    "file": "KodyKrajow_v13-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/KodyKrajow_v13-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "447efc6e1a84de71d433666c60635856b8e01f090e5eedb3410b1afe545f8117",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/KodyKrajow_v13-0E.xsd"
+    ]
+  },
+  {
+    "file": "StrukturyDanych_v12-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/StrukturyDanych_v12-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "01c45f7515f46cfa9bec843feef1409c126af3bee4d4e25f0325ae6323a9d512",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/StrukturyDanych_v12-0E.xsd"
+    ]
+  },
+  {
+    "file": "StrukturyDanych_v6-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/StrukturyDanych_v6-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "9102df97681d999091dcc2ae523497de9b65a6933078552192e92fd8d5ab2a08",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/StrukturyDanych_v6-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyKrajowUE_v3-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2021/01/04/eD/KodyUE/KodyKrajowUE_v3-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "443b082a889f9569beaef52219e8021366f86989b1b79ca57b5adc08a1d2fd25",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2021/01/04/eD/KodyUE/KodyKrajowUE_v3-0E.xsd"
+    ]
+  },
+  {
+    "file": "ElementarneTypyDanych_v6-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/ElementarneTypyDanych_v6-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "6dde449a89e2515d622ae23c0804d08d5e1c1fcd2b51ef5c342314744e7e9886",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/ElementarneTypyDanych_v6-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyUrzedowSkarbowych_v6-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/KodyUrzedowSkarbowych_v6-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "e6c8f205620ae9f84a468f5f61bd78c332e0a37f8af462d2bab6cf6eb06b8e48",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/KodyUrzedowSkarbowych_v6-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyKrajow_v6-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/KodyKrajow_v6-0E.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "ab0be78e7874d819e42ce2c28ac8c46f6eef68110dff3644bb0d8c3fae7d85f8",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/KodyKrajow_v6-0E.xsd"
+    ]
   }
 ]

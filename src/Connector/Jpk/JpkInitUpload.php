@@ -16,7 +16,7 @@ use App\Xml\XsdValidator;
  */
 final readonly class JpkInitUpload
 {
-    public const SCHEMA = 'InitUpload.xsd';
+    public const SCHEMA = 'initupload.xsd';
     public const NS = 'http://e-dokumenty.mf.gov.pl';
     public const FILE_NAME = '/^[a-zA-Z0-9_.-]{5,55}$/D';
     private const XMLDSIG = 'http://www.w3.org/2000/09/xmldsig#';
@@ -111,7 +111,13 @@ final readonly class JpkInitUpload
         return $xml;
     }
 
-    /** Kontrole lokalne metadanych: rozmiar, `AuthData` bez podpisu XAdES (kod 136) i XSD `InitUpload`. */
+    /**
+     * Kontrole lokalne metadanych: rozmiar, `AuthData` bez podpisu XAdES (kod 136) i XSD `InitUpload`.
+     *
+     * Opublikowany `initupload.xsd` (wersja 01.02.01.20160617) nie deklaruje elementu `AuthData`, który dodaje
+     * specyfikacja 5.6.0 dla danych autoryzujących (D-63). XSD waliduje więc metadane bez `AuthData`, a sam
+     * `AuthData` sprawdza kontrola lokalna: najwyżej jeden, ostatnie dziecko `InitUpload`, sam tekst Base64.
+     */
     public function check(string $xml): void
     {
         if (strlen($xml) > $this->settings['max_bytes']) {
@@ -121,11 +127,28 @@ final readonly class JpkInitUpload
         if (!@$dom->loadXML($xml, LIBXML_NONET)) {
             throw JpkException::of(JpkError::MetadataInvalid);
         }
-        if ($dom->getElementsByTagNameNS(self::NS, 'AuthData')->length === 1 && $dom->getElementsByTagNameNS(self::XMLDSIG, 'Signature')->length > 0) {
+        $authData = $dom->getElementsByTagNameNS(self::NS, 'AuthData');
+        if ($authData->length > 0 && $dom->getElementsByTagNameNS(self::XMLDSIG, 'Signature')->length > 0) {
             throw JpkException::of(JpkError::SignatureWithAuthData);
         }
         if (!$this->schemaAvailable()) {
             throw JpkException::schemaMissing(self::SCHEMA);
+        }
+        if ($authData->length > 1) {
+            throw JpkException::of(JpkError::MetadataInvalid);
+        }
+        $element = $authData->item(0);
+        if ($element !== null) {
+            $root = $dom->documentElement;
+            if ($root === null || $element->parentNode !== $root || $root->lastElementChild !== $element || $element->childElementCount !== 0 || $element->hasAttributes()
+                || preg_match('~^[A-Za-z0-9+/]+={0,2}$~D', $element->textContent) !== 1 || base64_decode($element->textContent, true) === false) {
+                throw JpkException::of(JpkError::MetadataInvalid);
+            }
+            $root->removeChild($element);
+            $xml = $dom->saveXML();
+            if ($xml === false) {
+                throw JpkException::of(JpkError::MetadataInvalid);
+            }
         }
         if ($this->validator->validate($xml, self::SCHEMA) !== []) {
             throw JpkException::of(JpkError::MetadataInvalid);

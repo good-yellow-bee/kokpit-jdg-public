@@ -62,16 +62,25 @@ final readonly class XsdCatalog
     {
         return in_array($file, array_column($this->entries(), 'file'), true);
     }
-    /** @return array<string,string> adres `schemaLocation` (http i https) → plik lokalny */
+    /**
+     * Mapa po pełnym adresie, nie po nazwie pliku: schematy bazowe MF mają te same nazwy w kilku wersjach
+     * (np. `StrukturyDanych` v6, v10, v12), więc o pliku decyduje cały adres `schemaLocation`. Adres wskazany przez dwa
+     * różne pliki to błąd manifestu.
+     *
+     * @return array<string,string> adres `schemaLocation` (http i https) → plik lokalny
+     */
     public function locations(): array
     {
         $map = [];
         foreach ($this->entries() as $entry) {
             foreach ($entry['locations'] ?? [] as $location) {
                 $path = $this->path($entry['file']);
-                $map[$location] = $path;
-                $map[(string) preg_replace('~^https?://~', 'http://', $location)] = $path;
-                $map[(string) preg_replace('~^https?://~', 'https://', $location)] = $path;
+                foreach ([$location, (string) preg_replace('~^https?://~', 'http://', $location), (string) preg_replace('~^https?://~', 'https://', $location)] as $key) {
+                    if (isset($map[$key]) && $map[$key] !== $path) {
+                        throw new \RuntimeException(sprintf('Adres schematu %s wskazuje w manifeście XSD dwa pliki.', $key));
+                    }
+                    $map[$key] = $path;
+                }
             }
         }
         return $map;

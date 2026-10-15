@@ -37,8 +37,8 @@ use Symfony\Component\Uid\UuidV7;
  * Wysyłka F5.1 na danych fikcyjnych: fikcyjny zbiór JPK_EWP(4) z F2.4 (`JpkTestTools`), 12 okresów z
  * `ledger_closed_at`, `FilingSubject` w bramce, `JpkWriter` na `FakeJpkGateway` i `OfficialWritesHandler`.
  * Para kluczy „MF” powstaje w czasie testu (`openssl_pkey_new`) i nigdy nie trafia do repo; certyfikat leży w
- * `var/test-files`. Bez oficjalnych XSD `InitUpload` i SIG-2008 metadane walidują się względem fikcyjnych zaślepek
- * z `tests/Fixtures/Jpk/xsd-stub` (D-57); żadne żądanie nie wychodzi do sieci.
+ * `var/test-files`. Metadane i `AuthData` walidują się offline względem oficjalnych XSD `initupload.xsd` i SIG-2008
+ * z `resources/xsd` (D-63); żadne żądanie nie wychodzi do sieci.
  */
 final class JpkSendTestTools
 {
@@ -94,7 +94,7 @@ final class JpkSendTestTools
         $this->bus = new CollectingBus();
         $this->gate = new ApprovalGate($db, $this->transitions, $this->subjects, $this->files, new ApprovalExpiry(ApprovalTestTools::EXPIRY), $this->notifications, $owner->stepUp, $this->bus, $clock, $configuration);
         $this->guard = new DispatchGuard();
-        $catalog ??= self::catalog();
+        $catalog ??= XsdCatalog::default();
         $validator = new XsdValidator($catalog);
         $this->envelope = new JpkEnvelope($clock, self::PART_MAX_BYTES);
         $this->initUpload = new JpkInitUpload($catalog, $validator, self::INIT_UPLOAD);
@@ -110,24 +110,8 @@ final class JpkSendTestTools
         $this->manualUpo = new FilingManualUpo($db, $this->gate, $owner->stepUp, $this->files, $this->audit, $clock);
     }
 
-    /**
-     * Katalog schematów metadanych: oficjalne `InitUpload` i SIG-2008 z `resources/xsd`, gdy oba tam są; inaczej
-     * fikcyjne zaślepki testowe (nie schematy MF).
-     */
-    public static function catalog(): XsdCatalog
-    {
-        $default = XsdCatalog::default();
-        return self::official() ? $default : new XsdCatalog(dirname(__DIR__) . '/Fixtures/Jpk/xsd-stub');
-    }
+    /** Katalog bez żadnego schematu (pusty manifest poza repo): stan „brak XSD” niezależnie od `resources/xsd`. */
 
-    /** Czy oficjalne schematy `InitUpload` i SIG-2008 są w `resources/xsd` (wiersze `jpk-init-upload`, `jpk-auth-data`). */
-    public static function official(): bool
-    {
-        $default = XsdCatalog::default();
-        return $default->has(JpkInitUpload::SCHEMA) && $default->has(AuthDataDocument::SCHEMA);
-    }
-
-    /** Katalog bez żadnego schematu: stan „brak XSD” niezależnie od `resources/xsd`. */
     public static function emptyCatalog(): XsdCatalog
     {
         $directory = '/app/var/test-files/xsd-empty';
