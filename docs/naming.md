@@ -360,7 +360,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Tabele | `filing`, `fixed_asset` (migracja F2.4) |
 | Akcje audytu | `jpk.dry_run` |
 | Sekret `auth_data` | JSON z kluczami `birth_date`, `revenue_n2` (D-37) |
-| Dowód działania | `scripts/jpk-acceptance.php <ewp-build\|ewp-dry-run>` |
+| Dowód działania | `scripts/jpk-acceptance.php <ewp-build\|ewp-dry-run\|st-dry-run>`; `st-dry-run` od F5.2 (D-64) |
 | Fixtures | `tests/Fixtures/Jpk/jpk-2026-dry-run.json`, `golden/jpk-ewp-dry-run.txt` |
 
 ### Implementacja F0b: nazwy techniczne
@@ -543,6 +543,16 @@ Część b: sekcja niżej.
 | Przedmiot bramki (`src/Ledger`) | `FilingSubject` (usługa `filing.subject`; w dev i test z atrapą `dummy.subject.filing` dla identyfikatorów bez `filing`), `FilingRequest` (`jpkEwp`), `FilingManualUpo` (`record`); `ApprovalSubject::connector(string $subjectId)` |
 | Licznik | `RateCounter::exhausted` (odczyt bez zużycia: `blocked_until` albo wyczerpany limit dobowy) |
 | Testy | `FakeJpkGateway`, `JpkSendTestTools`, `JpkSendTestCase`; nagrania `tests/Fixtures/Jpk/api-init-upload*.json`, `api-put-blob.json`, `api-finish-upload*.json`, `api-status-*.json`; schematy metadanych `initupload.xsd` i `SIG-2008_v2-0.xsd` z `resources/xsd` (D-63); test `JpkMetadataSchemaMissingTest` (pusty katalog schematów) |
+
+### Implementacja F5.2 (D-64): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Generator (`src/Xml`) | `JpkStBuilder` (`build`; `SCHEMA` = `Schemat_JPK_ST(1)_v1-2.xsd`, `SCHEMA_VERSION` = `JPK_ST(1)`), `JpkTaxpayer` (`identity`, `birthDate`, `appendPerson`, `isDate`; `Podmiot1` wspólny dla JPK_EWP(4) i JPK_ST(1)) |
+| Przedmiot bramki (`src/Ledger`) | `FilingRequest::jpkSt`; `FilingSubject::stEnabled` (flaga `jpk_st.enabled` na 31.12. roku), `FilingSubject::stDisabled` (komunikat Q-25); klucze `summary` JPK_ST: `rows`, `sum_f10`, `fixed_asset_count`, `checklist.jpk_st_enabled` |
+| Klucze kryteriów | F2 (D-37): `jpk-st-build`, `jpk-st-dry-run`; F5.2: `jpk-st-request` |
+| Testy i odbiór | `JpkStBuildTest`, `JpkStRequestTest`; `JpkTestTools` (`stBuilder`, `taxpayer`, `seedFixedAssets`, `stRows`, `stValue`), `JpkSendTestTools::filing(type)`; `scripts/jpk-acceptance.php st-dry-run`; artefakty `jpk/jpk-st-build.xml`, `cmd/jpk-st-build.txt`, `cmd/jpk-st-dry-run-off.txt`, `cmd/jpk-st-dry-run-on.txt`, `jpk/jpk-st-dry-run.xml`, `jpk/jpk-st-request.xml` |
+| Fixtures | `tests/Fixtures/Jpk/fixed-assets-2026.json` (fikcyjny wykaz `fixed_asset`) |
 
 ### Plan F6 (D-58): nazwy
 

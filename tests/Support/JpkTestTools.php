@@ -13,6 +13,7 @@ use App\Setting\SettingStore;
 use App\Time\BusinessDate;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
+use App\Xml\JpkTaxpayer;
 use App\Xml\XsdCatalog;
 use App\Xml\XsdDictionary;
 use App\Xml\XsdValidator;
@@ -20,11 +21,17 @@ use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\UuidV7;
 
-/** Fikcyjny zbiór dry runu F2.4: import `ledger-2026-jan-nov.csv`, wiersze z `jpk-2026-dry-run.json` i ustawienia firmy. */
+/**
+ * Fikcyjny zbiór dry runu F2.4: import `ledger-2026-jan-nov.csv`, wiersze z `jpk-2026-dry-run.json` i ustawienia firmy;
+ * wykaz środków trwałych JPK_ST(1) z `fixed-assets-2026.json` (F5.2).
+ */
 final class JpkTestTools
 {
     public const NS = 'http://jpk.mf.gov.pl/wzor/2024/10/30/10301/';
     public const ETD = 'http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/';
+    public const ST_NS = 'http://jpk.mf.gov.pl/wzor/2024/11/26/11262/';
+    /** Pola wiersza `EWP` JPK_ST(1) w kolejności XSD; `KSeF` to węzeł z F_15. */
+    public const ST_FIELDS = ['F_1','F_2','F_3','F_4','F_5','F_6','F_7','F_8','F_9','F_10','F_11','F_12','F_13','F_14','F_15','F_16'];
     /** @return array{company_identity:array<string,string>,auth_data_birth_date:string,entries:list<array<string,mixed>>} */
     public static function dataset(): array
     {
@@ -70,11 +77,76 @@ final class JpkTestTools
     public static function builder(Connection $db, MockClock $clock, SecretStore $secrets): JpkEwpBuilder
     {
         $catalog = XsdCatalog::default();
-        return new JpkEwpBuilder($db, $clock, self::settings($db, $clock), $secrets, ConnectorTestTools::configuration(false), new JpkEwpSchema(new XsdDictionary($catalog)), new XsdValidator($catalog));
+        return new JpkEwpBuilder($db, $clock, self::settings($db, $clock), self::taxpayer($db, $clock, $secrets), ConnectorTestTools::configuration(false), new JpkEwpSchema(new XsdDictionary($catalog)), new XsdValidator($catalog));
+    }
+    public static function stBuilder(Connection $db, MockClock $clock, SecretStore $secrets): JpkStBuilder
+    {
+        return new JpkStBuilder($db, $clock, self::taxpayer($db, $clock, $secrets), ConnectorTestTools::configuration(false), new XsdValidator(XsdCatalog::default()));
+    }
+    public static function taxpayer(Connection $db, MockClock $clock, SecretStore $secrets): JpkTaxpayer
+    {
+        return new JpkTaxpayer(self::settings($db, $clock), $secrets);
+    }
+    /** Fikcyjny wykaz `fixed-assets-2026.json` w środowisku `test`; zwraca liczbę wierszy `fixed_asset`. */
+    public static function seedFixedAssets(Connection $db, MockClock $clock): int
+    {
+        $data = json_decode(LedgerTestTools::fixture('fixed-assets-2026.json'), true, 16, JSON_THROW_ON_ERROR);
+        if (!is_array($data) || !is_array($data['fixed_assets'] ?? null)) {
+            throw new \RuntimeException('Niepoprawny fikcyjny wykaz środków trwałych.');
+        }
+        $stamp = $clock->now()->format('Y-m-d\TH:i:s.uP');
+        $count = 0;
+        foreach ($data['fixed_assets'] as $asset) {
+            if (!is_array($asset)) {
+                throw new \RuntimeException('Niepoprawny środek trwały w fikcyjnym wykazie.');
+            }
+            $numbers = $asset['disposal_ksef_numbers'] ?? null;
+            $db->insert('fixed_asset', [
+                'id' => (string) UuidV7::generate($clock->now()), 'environment' => 'test', 'name' => $asset['name'], 'kst_code' => $asset['kst_code'], 'intangible' => $asset['intangible'] === true ? 'true' : 'false',
+                'acquisition_date' => $asset['acquisition_date'], 'commissioning_date' => $asset['commissioning_date'], 'acquisition_document_number' => $asset['acquisition_document_number'],
+                'acquisition_document_type' => $asset['acquisition_document_type'], 'depreciation_rate_pct' => $asset['depreciation_rate_pct'], 'initial_value_pln' => $asset['initial_value_pln'],
+                'updated_value_pln' => $asset['updated_value_pln'], 'disposal_date' => $asset['disposal_date'], 'disposal_reason' => $asset['disposal_reason'], 'disposal_document_number' => $asset['disposal_document_number'],
+                'disposal_ksef_numbers' => is_array($numbers) ? json_encode($numbers, JSON_THROW_ON_ERROR) : null, 'reclassified' => $asset['reclassified'] === true ? 'true' : 'false', 'created_at' => $stamp, 'updated_at' => $stamp,
+            ]);
+            ++$count;
+        }
+        return $count;
+    }
+    /** Wartość XPath w JPK_ST(1); prefiks `s` to przestrzeń nazw JPK_ST, `etd` typy MF. */
+    public static function stValue(string $xml, string $path): string
+    {
+        $xpath = self::xpath($xml);
+        $xpath->registerNamespace('s', self::ST_NS);
+        $value = $xpath->evaluate('string(' . $path . ')');
+        return is_string($value) ? $value : '';
+    }
+    /** @return list<array<string,string>> wiersze `EWP/Wiersz` JPK_ST(1) jako F_1–F_16 (F_15 numery rozdzielone przecinkiem) */
+    public static function stRows(string $xml): array
+    {
+        $xpath = self::xpath($xml);
+        $xpath->registerNamespace('s', self::ST_NS);
+        $rows = [];
+        foreach ($xpath->query('/s:JPK/s:EWP/s:Wiersz') ?: [] as $node) {
+            if (!$node instanceof \DOMElement) {
+                continue;
+            }
+            $row = [];
+            foreach (self::ST_FIELDS as $field) {
+                $values = [];
+                foreach ($xpath->query('.//s:' . $field, $node) ?: [] as $value) {
+                    if ($value instanceof \DOMElement) {
+                        $values[] = $value->textContent;
+                    }
+                }
+                $row[$field] = implode(',', $values);
+            }
+            $rows[] = $row;
+        }
+        return $rows;
     }
     public static function dryRun(Connection $db, MockClock $clock, SecretStore $secrets): JpkDryRun
     {
-        return new JpkDryRun($db, $clock, self::builder($db, $clock, $secrets), new JpkStBuilder(XsdCatalog::default()), self::settings($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false));
+        return new JpkDryRun($db, $clock, self::builder($db, $clock, $secrets), self::stBuilder($db, $clock, $secrets), self::settings($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false));
     }
     /** @return list<array<string,string>> wiersze `EWPWiersz` pliku jako K_1–K_10 */
     public static function rows(string $xml): array

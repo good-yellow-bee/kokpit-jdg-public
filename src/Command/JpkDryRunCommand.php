@@ -28,7 +28,7 @@ final class JpkDryRunCommand extends Command
     {
         $this->addArgument('type', InputArgument::REQUIRED, 'JPK_EWP albo JPK_ST')
             ->addArgument('year', InputArgument::REQUIRED, 'rok ewidencji')
-            ->addOption('until', null, InputOption::VALUE_REQUIRED, 'ostatni dzień K_3 w pliku (RRRR-MM-DD); nagłówek zawsze obejmuje cały rok')
+            ->addOption('until', null, InputOption::VALUE_REQUIRED, 'ostatni dzień K_3 (JPK_EWP) albo F_4 i F_12 (JPK_ST) w pliku (RRRR-MM-DD); nagłówek zawsze obejmuje cały rok')
             ->addOption('output', null, InputOption::VALUE_REQUIRED, 'zapis XML do pliku; pliki z danych PROD zostają w kokpit-prod');
     }
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -54,8 +54,8 @@ final class JpkDryRunCommand extends Command
             $output->writeln('<error>' . $refused->getMessage() . '</error>');
             return Command::FAILURE;
         }
-        $output->writeln(sprintf('%s %s, CelZlozenia %d, DataOd %s-01-01, DataDo %s-12-31, K_3 do %s', $type, $document->schemaVersion, $document->purpose, $year, $year, $until ?? 'końca roku'));
-        $output->writeln(sprintf('Wiersze: %d; suma przychodów: %s', $document->rows, $document->sum));
+        $output->writeln(sprintf('%s %s, CelZlozenia %d, DataOd %s-01-01, DataDo %s-12-31, %s do %s', $type, $document->schemaVersion, $document->purpose, $year, $year, $type === 'JPK_EWP' ? 'K_3' : 'F_4 i F_12', $until ?? 'końca roku'));
+        $output->writeln(sprintf($type === 'JPK_EWP' ? 'Wiersze: %d; suma przychodów: %s' : 'Wiersze: %d; suma wartości początkowych F_10: %s', $document->rows, $document->sum));
         foreach ($document->sumsByRate as $rate => $sum) {
             $output->writeln(sprintf('Stawka %s: %s', $rate, $sum));
         }

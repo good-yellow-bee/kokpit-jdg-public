@@ -17,3 +17,5 @@ criteria:
   - { key: jpk-send-rejected, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendRejected', junit: true }
   - { key: jpk-rate-limit, runner: ci, command: 'vendor/bin/phpunit --filter JpkRateLimit', junit: true }
   - { key: jpk-storage-host, runner: ci, command: 'vendor/bin/phpunit --filter JpkStorageHost', junit: true }
+  # F5.2 (bez sieci, FakeJpkGateway): JPK_ST(1) 1-2 tą samą ścieżką co JPK_EWP, prośba tylko przy jpk_st.enabled = true (D-64).
+  - { key: jpk-st-request, runner: ci, command: 'vendor/bin/phpunit --filter JpkStRequest', junit: true }

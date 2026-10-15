@@ -86,7 +86,7 @@ final class JpkSendTestTools
         $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $this->audit, self::FILES);
         $configuration = ConnectorTestTools::configuration(limits: $limits);
         $this->fake = new FakeJpkGateway($db, $clock, $this->redactor, $limits);
-        $this->subjects = new ApprovalSubjects([new FilingSubject($db, JpkTestTools::builder($db, $clock, $secrets), $configuration, $clock)]);
+        $this->subjects = new ApprovalSubjects([new FilingSubject($db, JpkTestTools::builder($db, $clock, $secrets), JpkTestTools::stBuilder($db, $clock, $secrets), JpkTestTools::settings($db, $clock), $configuration, $clock)]);
         $this->transitions = new ApprovalTransitions($db, $this->audit, $clock, $this->subjects);
         $this->notifications = new ApprovalNotifications($db, $clock);
         $owner = new ApprovalTestTools($db, $clock);
@@ -106,7 +106,7 @@ final class JpkSendTestTools
         $this->logger = new MemoryLogger($clock);
         $this->handler = new OfficialWritesHandler($db, $this->transitions, $this->subjects, $this->connectors, $this->gate, $this->files, $this->notifications, $this->guard, $clock, $this->logger);
         $this->reconciler = new SubmissionReconciler($db, $this->transitions, $this->connectors, $this->notifications, $clock, ['jpk' => 'P3D']);
-        $this->request = new FilingRequest($db, $this->gate, $configuration, $clock);
+        $this->request = new FilingRequest($db, $this->gate, $configuration, $clock, JpkTestTools::settings($db, $clock));
         $this->manualUpo = new FilingManualUpo($db, $this->gate, $owner->stepUp, $this->files, $this->audit, $clock);
     }
 
@@ -199,9 +199,9 @@ final class JpkSendTestTools
     }
 
     /** @return array<string,mixed> */
-    public function filing(): array
+    public function filing(string $type = 'JPK_EWP'): array
     {
-        $row = $this->db->fetchAssociative("SELECT * FROM filing WHERE environment='test' AND type='JPK_EWP' AND period_start=?", [sprintf('%04d-01-01', self::YEAR)]);
+        $row = $this->db->fetchAssociative("SELECT * FROM filing WHERE environment='test' AND type=? AND period_start=?", [$type, sprintf('%04d-01-01', self::YEAR)]);
         return $row === false ? throw new \LogicException('Brak złożenia.') : $row;
     }
 
