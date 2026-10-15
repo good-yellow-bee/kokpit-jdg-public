@@ -12,7 +12,7 @@ enum JpkError: string
 {
     /** `InitUploadSigned`: podpis kwalifikowany i dane autoryzujące naraz. */
     case SignatureWithAuthData = '136';
-    /** `InitUploadSigned`: metadane niezgodne z `InitUpload.xsd`. */
+    /** `InitUploadSigned`: metadane niezgodne z `initupload.xsd`. */
     case MetadataSchema = '140';
     /** `InitUploadSigned`: niepoprawne wartości w metadanych. */
     case MetadataValues = '142';

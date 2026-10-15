@@ -1,6 +1,6 @@
 # F5 JPK
 
-Złożenia w urzędzie z kokpitu: JPK_EWP(4) i JPK_ST(1) przez API JPK 5.6.0, potem JPK_V7M(3) oraz VAT-UE i VAT-UEK przez bramkę e-Deklaracji. Każde złożenie idzie przez bramkę zatwierdzeń. Stan na 14 października 2026.
+Złożenia w urzędzie z kokpitu: JPK_EWP(4) i JPK_ST(1) przez API JPK 5.6.0, potem JPK_V7M(3) oraz VAT-UE i VAT-UEK przez bramkę e-Deklaracji. Każde złożenie idzie przez bramkę zatwierdzeń. Stan na 15 października 2026.
 
 ## Cel
 
@@ -18,10 +18,10 @@ Brak wejścia oznaczonego „stop” zatrzymuje część i kończy się pytaniem
 | --- | --- | --- | --- |
 | F0b, F1, F2 i F3 odebrane (D-30) | wszystkie | pliki faz w `docs/phases` | stop dla odbioru F5; kod F5.1, F5.2, F5.4 i F5.5 przed odbiorem według D-56 |
 | XSD JPK_EWP(4) w `resources/xsd` z sumą w `checksums.json` | F5.1, F5.3 | [../../.claude/rules/integrations.md](../../.claude/rules/integrations.md) | stop; plik jest w repo od F2.4 |
-| XSD JPK_ST(1) w `resources/xsd` | F5.2, wiersz `jpk-te-st-upo` w F5.3 | D-37 | stop tylko dla F5.2 i tego wiersza; dostarczasz Ty albo sesja pobiera jednorazowo według wyjątku GET; pozostałe części idą dalej |
-| XSD SIG-2008_v2-0 i metadanych `InitUpload` w `resources/xsd` | F5.1 (`jpk-init-upload`, `jpk-auth-data`) | [../modules/jpk.md](../modules/jpk.md), „Pliki XSD” | stop dla tych dwóch wierszy; reszta F5.1 idzie dalej |
-| XSD JPK_V7M(3) z importami w `resources/xsd` | F5.4 | [../modules/jpk.md](../modules/jpk.md), „Pliki XSD” | stop dla F5.4 |
-| XSD VAT-UE(5) i VAT-UEK(5) w `resources/xsd` | F5.5 | [../modules/jpk.md](../modules/jpk.md), „Pliki XSD” | stop dla F5.5 |
+| XSD JPK_ST(1) w `resources/xsd` | F5.2, wiersz `jpk-te-st-upo` w F5.3 | D-37, D-63 | jest od 15.10.2026: `Schemat_JPK_ST(1)_v1-2.xsd` z importami; bez pliku: stop tylko dla F5.2 i tego wiersza |
+| XSD SIG-2008_v2-0 i metadanych `InitUpload` w `resources/xsd` | F5.1 (`jpk-init-upload`, `jpk-auth-data`) | [../modules/jpk.md](../modules/jpk.md), „Pliki XSD”; D-63 | jest od 15.10.2026: `SIG-2008_v2-0.xsd` i `initupload.xsd`; bez pliku: stop dla tych dwóch wierszy |
+| XSD JPK_V7M(3) z importami w `resources/xsd` | F5.4 | [../modules/jpk.md](../modules/jpk.md), „Pliki XSD”; D-63 | jest od 15.10.2026: `Schemat_JPK_V7M(3)_v1-0E.xsd` z importami; bez pliku: stop dla F5.4 |
+| XSD VAT-UE(5) i VAT-UEK(5) w `resources/xsd` | F5.5 | [../modules/jpk.md](../modules/jpk.md), „Pliki XSD”; D-63 | jest od 15.10.2026: `VAT-UE(5)_v2-0E.xsd` i `VAT-UEK(5)_v2-1E.xsd` z importami; bez pliku: stop dla F5.5 |
 | dostęp sesji do `test-e-dokumenty.mf.gov.pl` i magazynu `taxdocumentstorageNNtst`; certyfikat klucza publicznego MF celu `test` | F5.3, F5.6 | [../architecture.md](../architecture.md), [../modules/jpk.md](../modules/jpk.md) | stop dla części live; offline testy używają fikcyjnej pary kluczy |
 | dostęp do `test-bramka.edeklaracje.gov.pl` i działanie bramki testowej | F5.6 | R-31 w [../facts.md](../facts.md) | bramka niedostępna: udokumentowany brak, nagrania ręczne zostają, pierwsze złożenie PROD jako `[manual]` |
 | fikcyjne `auth_data` w sejfie testowym | F5.3, F5.6 | D-37, [../security.md](../security.md) | stop dla części live |
@@ -190,7 +190,7 @@ Wiersze `live` wymagają `CONNECTORS_ENABLED=1` i sejfu testowego. W CI uruchami
 | Kryterium | Komenda / kroki | Oczekiwany wynik | Dowód |
 | --- | --- | --- | --- |
 | `jpk-envelope`: koperta pliku | `vendor/bin/phpunit --filter JpkEnvelope`: JPK_EWP(4) z fikcyjnego zbioru; wariant powyżej 62 914 560 bajtów po ZIP | odszyfrowanie fikcyjnym kluczem prywatnym i rozpakowanie daje bajty równe `xml_sent`; części do 62 914 560 bajtów; MD5 części w Base64 (24 znaki); `HashValue` = sha256 `xml_sent` w Base64 | `junit.xml`: `JpkEnvelope*`; `cmd/jpk-envelope.txt`: sha256 `xml_sent`, liczba części, MD5 |
-| `jpk-init-upload`: metadane | `vendor/bin/phpunit --filter JpkInitUpload` | metadane zgodne z XSD `InitUpload`, do 100 KB; `FormCode` z dokumentu; `FileName` zgodne ze wzorcem; `AuthData` bez XAdES | `junit.xml`: `JpkInitUpload*` |
+| `jpk-init-upload`: metadane | `vendor/bin/phpunit --filter JpkInitUpload` | metadane zgodne z XSD `initupload.xsd`, do 100 KB; `AuthData`, którego opublikowany XSD nie deklaruje (D-63), jest jedynym dodatkiem, ostatnim elementem, w Base64; `FormCode` z dokumentu; `FileName` zgodne ze wzorcem; `AuthData` bez XAdES | `junit.xml`: `JpkInitUpload*` |
 | `jpk-auth-data`: dane autoryzujące | `vendor/bin/phpunit --filter JpkAuthData`: fikcyjne `auth_data` z sejfu testowego | `AuthData` zgodne z XSD SIG-2008 i zaszyfrowane kluczem pliku; zero wystąpień kwoty N−2 w `xml_sent`, `connector_call`, logach i `messenger_messages`; data urodzenia tylko w `Podmiot1` dokumentu (wymóg XSD JPK_EWP(4), D-57), poza tym zero wystąpień | `junit.xml`: `JpkAuthData*`; `cmd/jpk-auth-data.txt`: liczba trafień 0 |
 | `jpk-ewp-request`: prośba o zatwierdzenie | `vendor/bin/phpunit --filter JpkEwpRequest`: rok z 12 okresami `ledger_closed_at`; warianty: okres otwarty, sprzedaż w walucie bez kursu PIT, faktura w `submitted` | `filing` `ready`, jeden `xml_sent`, `approval` `pending` z `payload_sha256` równym sha256 pliku i `summary`; suma K_8 równa sumie `revenue_entry` roku; każdy wariant odmawia przed prośbą | `junit.xml`: `JpkEwpRequest*`; `db/jpk-ewp-request-approval.csv` |
 | `jpk-send-accepted`: wysyłka do przyjęcia | `vendor/bin/phpunit --filter JpkSendAccepted`: `approved`, `FakeJpkGateway` i nagranie: `InitUploadSigned`, Put Blob, `FinishUpload`, `Status` 120, potem 200 | `dispatching` → `submitted` → `accepted`; numer referencyjny w `external_refs` po `InitUploadSigned`; UPO jako `upo`; `submitted_via` = `jpk`; `connector_call` z `approval_id` i `request_sha256` | `junit.xml`: `JpkSendAccepted*`; `db/jpk-send-accepted-filing.csv`; `db/jpk-send-accepted-connector_call.csv` |

@@ -4,8 +4,10 @@ criteria:
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }
-  # F5.1 (bez sieci, FakeJpkGateway). `jpk-init-upload` i `jpk-auth-data` czekają na oficjalne XSD InitUpload i SIG-2008 (stop, D-57).
+  # F5.1 (bez sieci, FakeJpkGateway). `jpk-init-upload` i `jpk-auth-data` na oficjalnych XSD initupload.xsd i SIG-2008 z resources/xsd (D-63).
   - { key: jpk-envelope, runner: ci, command: 'vendor/bin/phpunit --filter JpkEnvelope', junit: true }
+  - { key: jpk-init-upload, runner: ci, command: 'vendor/bin/phpunit --filter JpkInitUpload', junit: true }
+  - { key: jpk-auth-data, runner: ci, command: 'vendor/bin/phpunit --filter JpkAuthData', junit: true }
   - { key: jpk-ewp-request, runner: ci, command: 'vendor/bin/phpunit --filter JpkEwpRequest', junit: true }
   - { key: jpk-send-accepted, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendAccepted', junit: true }
   - { key: jpk-send-hash-mismatch, runner: ci, command: 'vendor/bin/phpunit --filter JpkSendHashMismatch', junit: true }

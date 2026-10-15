@@ -78,7 +78,7 @@ Zaszyfrowanych części kokpit nie przechowuje ([data-model.md](../data-model.md
 | Metoda | Kod | Znaczenie | Działanie kokpitu |
 | --- | --- | --- | --- |
 | `InitUploadSigned` (400) | 136 | podpis kwalifikowany i dane autoryzujące naraz | błąd kodu; poprawka i nowe zatwierdzenie |
-| `InitUploadSigned` (400) | 140 | metadane `InitUpload` niezgodne z XSD (`InitUpload.xsd`) | błąd kodu, bo lokalna walidacja metadanych schematem z `resources/xsd` powinna to złapać |
+| `InitUploadSigned` (400) | 140 | metadane `InitUpload` niezgodne z XSD (`initupload.xsd`) | błąd kodu, bo lokalna walidacja metadanych schematem z `resources/xsd` powinna to złapać |
 | `InitUploadSigned` (400) | 142 | niepoprawne wartości w metadanych | błąd kodu |
 | `InitUploadSigned` (400) | 158 | za dużo wywołań `InitUpload` | `rejected` z `result_code` 158; nic nie złożono (brak numeru referencyjnego); push; ponowienie tylko ręczne, nowym zatwierdzeniem po oknie limitu |
 | `InitUploadSigned` (400) | 170 | duplikat przetworzonego dokumentu; podany numer oryginału | pobranie UPO oryginału; złożenie `accepted` |
@@ -376,15 +376,22 @@ Zgodność sha256 `xml_sent` z `approval.payload_sha256` sprawdza worker przy wy
 
 ## Pliki XSD
 
-Wszystkie schematy są w `resources/xsd`, z sumami kontrolnymi, walidowane z `LIBXML_NONET`. Zasady są w [.claude/rules/integrations.md](../../.claude/rules/integrations.md).
+Wszystkie schematy są w `resources/xsd`, z sumami kontrolnymi w `checksums.json`, walidowane z `LIBXML_NONET`. Zasady są w [.claude/rules/integrations.md](../../.claude/rules/integrations.md). Komplet JPK i e-Deklaracji jest w repo od 15.10.2026 (D-63).
 
-| Schemat | Źródło |
-| --- | --- |
-| JPK_V7M(3) | [struktury JPK](https://www.gov.pl/web/kas/struktury-jpk) |
-| JPK_EWP(4), JPK_ST(1) | [struktury JPK w podatkach dochodowych](https://www.gov.pl/web/kas/struktury-jpk-w-podatkach-dochodowych) |
-| VAT-UE(5)_v2-0E, VAT-UEK(5)_v2-1E | [struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/) |
-| SIG-2008_v2-0 | [XSD SIG-2008](https://podatki-arch.mf.gov.pl/media/10553/sig-2008_v2-0.xsd) |
-| metadane `InitUpload` | [pliki do pobrania MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_vat-z-deklaracja/pliki-do-pobrania) |
+| Schemat | Plik w `resources/xsd` | Źródło | Importy (pliki bazowe MF) |
+| --- | --- | --- | --- |
+| JPK_V7M(3) 1-0E | `Schemat_JPK_V7M(3)_v1-0E.xsd` | [crd.gov.pl, wzór 14090](http://crd.gov.pl/wzor/2025/12/19/14090/schemat.xsd); [struktury JPK](https://www.gov.pl/web/kas/struktury-jpk) | `KodyKrajow_v13-0E`, `KodyUrzedowSkarbowych_v8-0E`, `StrukturyDanych_v12-0E` |
+| JPK_EWP(4) 1-0 | `Schemat_JPK_EWP(4)_v1-0.xsd` | [struktury JPK w podatkach dochodowych](https://www.gov.pl/web/kas/struktury-jpk-w-podatkach-dochodowych) | `StrukturyDanych_v10-0E` (z `ElementarneTypyDanych_v10-0E`, `KodyKrajow_v10-0E`), `KodyUrzedowSkarbowych_v8-0E` |
+| JPK_ST(1) 1-2 | `Schemat_JPK_ST(1)_v1-2.xsd` | [gov.pl, załącznik](https://www.gov.pl/attachment/aa2ea22c-afdf-42bb-a607-8907afd321a6); [struktury JPK w podatkach dochodowych](https://www.gov.pl/web/kas/struktury-jpk-w-podatkach-dochodowych) | jak JPK_EWP(4) |
+| VAT-UE(5) 2-0E | `VAT-UE(5)_v2-0E.xsd` | [crd.gov.pl, wzór 10293](http://crd.gov.pl/wzor/2021/01/12/10293/schemat.xsd) | `StrukturyDanych_v6-0E` (z `ElementarneTypyDanych_v6-0E`, `KodyUrzedowSkarbowych_v6-0E`, `KodyKrajow_v6-0E`), `KodyKrajowUE_v3-0E` |
+| VAT-UEK(5) 2-1E | `VAT-UEK(5)_v2-1E.xsd` | [crd.gov.pl, wzór 10316](http://crd.gov.pl/wzor/2021/01/26/10316/schemat.xsd) | jak VAT-UE(5) |
+| SIG-2008 2-0 | `SIG-2008_v2-0.xsd` | [XSD SIG-2008](https://podatki-arch.mf.gov.pl/media/10553/sig-2008_v2-0.xsd) | brak |
+| metadane `InitUpload` 01.02.01.20160617 | `initupload.xsd` | [podatki.gov.pl](https://www.podatki.gov.pl/media/fmdjp0ri/initupload.xsd), z [plików do pobrania MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_vat-z-deklaracja/pliki-do-pobrania) | brak |
+
+- Importy wskazują adresy `crd.gov.pl`. Loader walidacji mapuje pełny adres `schemaLocation` z pola `locations` manifestu na plik lokalny; każdy inny adres odpada. Pliki bazowe mają te same nazwy w kilku wersjach (`StrukturyDanych` v6, v10, v12; `KodyKrajow` v6, v10, v13; `ElementarneTypyDanych` v6, v10; `KodyUrzedowSkarbowych` v6, v8), więc o pliku decyduje cały adres, a nazwa pliku w repo zawiera wersję. Adres wskazany przez dwa pliki to błąd manifestu.
+- Pliki zostają bajt w bajt jak u źródła. Test `XsdInventoryTest` (job `xsd`) sprawdza sumy, kompiluje każdy schemat główny offline i sprawdza, że każdy import trafia w jeden plik z właściwą przestrzenią nazw.
+- `initupload.xsd` nie deklaruje elementu `AuthData`, który specyfikacja 5.6.0 dodaje dla danych autoryzujących. Kokpit waliduje tym XSD metadane bez `AuthData`, a `AuthData` sprawdza osobno: jeden element, ostatni w `InitUpload`, sam tekst Base64 (D-63). Odpowiedź bramki testowej na `InitUploadSigned` potwierdza to w F5.3 (`jpk-te-fixtures`); kod 140 oznacza nowy rekord D-xx.
+- Link `/media/qord0r0j` na podatki.gov.pl ma błędny opis i kokpit go nie używa; schemat metadanych pochodzi z `/media/fmdjp0ri` (D-63).
 
 `filing.schema_version` zapisuje wersję struktury każdego pliku.
 
