@@ -59,6 +59,8 @@ final class JpkSendTestTools
     public const PART_MAX_BYTES = 62914560;
     public const INIT_UPLOAD = ['document_type' => 'JPK', 'version' => '01.02.01.20160617', 'max_bytes' => 102400];
     private const FILES = '/app/var/test-files/jpk';
+    /** Certyfikat klucza publicznego MF celu `test` (podatki.gov.pl), ta sama ścieżka co `jpk.mf_certificates`. */
+    public const LIVE_CERTIFICATE = '/app/var/jpk/mf-test.crt';
 
     /** @var array{private:string,certificate:string}|null */
     private static ?array $keys = null;
@@ -99,7 +101,7 @@ final class JpkSendTestTools
         $this->audit = new AuditLog($db, $clock, $this->redactor);
         $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $this->audit, self::FILES);
         $configuration = ConnectorTestTools::configuration(limits: $limits);
-        $this->fake = new FakeJpkGateway($db, $clock, $this->redactor, $limits);
+        $this->fake = new FakeJpkGateway($db, $clock, $this->redactor, $limits, $live);
         $settings = JpkTestTools::settings($db, $clock);
         $this->periods = new Periods($db, $clock, $this->audit, $configuration);
         $this->v7mGates = new V7mGates($db, new MonthChecklist($db, $clock, $configuration), $settings, $configuration);
@@ -130,8 +132,9 @@ final class JpkSendTestTools
         $this->envelope = new JpkEnvelope($clock, self::PART_MAX_BYTES);
         $this->initUpload = new JpkInitUpload($catalog, $validator, self::INIT_UPLOAD);
         $this->authData = new AuthDataDocument(JpkTestTools::settings($db, $clock), $secrets, $catalog, $validator, $this->redactor);
-        // Certyfikat z czasu rzeczywistego (`openssl_csr_sign`), więc jego ważność sprawdza zegar bieżącej chwili.
-        $certificate = new JpkMfCertificate(['test' => self::certificateFile()], new MockClock());
+        // Certyfikat z czasu rzeczywistego (`openssl_csr_sign`), więc jego ważność sprawdza zegar bieżącej chwili. Tryb
+        // live (F5.3) szyfruje opublikowanym certyfikatem testowym MF z `jpk.mf_certificates` (plik poza repo).
+        $certificate = new JpkMfCertificate(['test' => $live === null ? self::certificateFile() : self::LIVE_CERTIFICATE], new MockClock());
         $this->writer = new JpkWriter($this->fake->gateway, $this->envelope, $this->initUpload, $this->authData, $certificate, $configuration, $this->fake->rates, $this->guard, $db, $this->files, $this->notifications, $clock);
         $this->edeklaracje = new FakeEDeklaracjeGateway($db, $clock, $this->redactor, $limits + ['edeklaracje.send' => 10], $live);
         $this->edeklaracjeWriter = new EDeklaracjeWriter($this->edeklaracje->gateway, new EDeklaracjeDocument($validator), $this->authData, $catalog, $configuration, $this->edeklaracje->rates, $this->guard, $db, $this->files, $this->notifications, $clock);

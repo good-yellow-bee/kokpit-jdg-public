@@ -1,0 +1,25 @@
+{
+    "fictional": true,
+    "source": "Nagranie z bramki testowej test-e-dokumenty.mf.gov.pl (F5.3, D-69), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "InitUploadSigned, Put Blob i FinishUpload fikcyjnego JPK_EWP.",
+    "interactions": [
+        {
+            "method": "POST",
+            "path": "\/api\/Storage\/InitUploadSigned",
+            "status": 200,
+            "body_text": "{\n    \"ReferenceNumber\": \"3fa9876c03e2d608000000be1c1c081b\",\n    \"TimeoutInSec\": 900,\n    \"RequestToUploadFileList\": [\n        {\n            \"BlobName\": \"fikcyjne-7ae131715f2d\",\n            \"FileName\": \"fikcyjne-1f1e0cde4d4b\",\n            \"Url\": \"https:\\\/\\\/taxdocumentstorage17tst.blob.core.windows.net\\\/3fa9876c03e2d608000000be1c1c081b\\\/577fd5d0-f804-4e28-9513-df1d5312e290?sv=2026-06-06&si=3fa9876c03e2d608000000be1c1c081b&sr=b&sig=fictional\",\n            \"Method\": \"PUT\",\n            \"HeaderList\": \"fikcyjne-f981215f2708\"\n        }\n    ]\n}"
+        },
+        {
+            "method": "PUT",
+            "path": "\/3fa9876c03e2d608000000be1c1c081b\/577fd5d0-f804-4e28-9513-df1d5312e290",
+            "status": 201,
+            "body_text": ""
+        },
+        {
+            "method": "POST",
+            "path": "\/api\/Storage\/FinishUpload",
+            "status": 200,
+            "body_text": "[]"
+        }
+    ]
+}

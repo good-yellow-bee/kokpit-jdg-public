@@ -156,6 +156,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-66 | założenia F5.5 VAT-UE(5) i VAT-UEK(5): `VatUeBuilder` grupuje sprzedaż `eu_b2b` miesiąca (z KOR ze znakiem różnicy) per kraj i numer VAT UE, P_Uc HALF_UP do pełnych złotych, `eu_b2b_unidentified` poza plikiem; twarda bramka K_12 (`VatUeK12Gate`); trasa KOR `vat_ue`/`wait`/`vat_uek`; własny cienki konektor `edeklaracje` (podklasa `SoapClient` na `ConnectorHttpClient`), `DaneAutoryzujace` wstawiane w pamięci workera jako ostatni element korzenia, walidacja deklaracji i SIG-2008 osobno, bo XSD VAT-UE(5) go nie deklaruje; mapowanie statusów `requestUPO` | przyjęta 2026-10-15 | Q-32 |
 | D-67 | kształt żądań bramki e-Deklaracji z opublikowanego WSDL bramki testowej: element `sendUnsignDocument` (nie `sendUnsignDocumentRequest`), przestrzeń nazw `https://bramka.e-deklaracje.mf.gov.pl/xsd` i `SOAPAction` `urn:<operacja>` potwierdzone; `GateService.xsd` w `resources/xsd`, ciała żądań walidowane nim w testach | przyjęta 2026-10-15 | F5.6 |
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
+| D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1345,3 +1346,23 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Kod testów: `tests/Live/EDeklaracjeLiveTestCase.php`, `EDeklaracjeTeVatUeTest`, `EDeklaracjeTeVatUekTest`, `tests/Support/LiveRecording.php`, tryb live w `KsefRecordings`, parametr `live` w `FakeEDeklaracjeGateway`, `JpkSendTestTools`, `VatUeTestCase`; kod aplikacji bez zmian.
   - Rejestr `tests/Acceptance/f5.yaml`: `edeklaracje-te-vat-ue`, `edeklaracje-te-vat-uek` (`live`), `edeklaracje-te-fixtures` (`ci`).
   - Otwarte w F5.6: `jpk-te-v7m-upo` (JPK_V7M na test-e-dokumenty) czeka na dostęp do magazynu `taxdocumentstorageNNtst` i klucza MF celu `test`.
+
+### D-69 F5.3: JPK na test-e-dokumenty, 419 z fikcyjnymi danymi autoryzującymi
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live z sesji z dostępem do `test-e-dokumenty.mf.gov.pl` i magazynu `taxdocumentstorageNNtst`, na Twoje polecenie; dane i dane autoryzujące fikcyjne).
+- **Kontekst:**
+  - F5.3 zakładał UPO dla JPK_EWP(4) i JPK_ST(1) na TE oraz duplikat po przyjęciu; F5.6 to samo dla JPK_V7M(3).
+  - Twarda zasada: na cele testowe tylko dane fikcyjne, także dane autoryzujące.
+  - Specyfikacja API JPK 5.6.0 nie mówi, jak TE traktuje dane autoryzujące; bramka e-Deklaracji testowa ich nie sprawdza (D-68).
+- **Decyzja:**
+  - Testy `tests/Live/JpkTe*` (wspólny przebieg w traicie `JpkLiveRun`) składają fikcyjne pliki przez bramkę zatwierdzeń, tak jak D-68. Klucz AES opakowuje certyfikat klucza publicznego MF celu `test` z „Plików do pobrania JPK_VAT” na podatki.gov.pl (od 9.07.2025, ważny do 7.07.2027, sha256 PEM `da570840d47308f8aa35f79ffda70fde340b0ec6c00ed01f26791d7c87bd5685`). Plik leży poza repo w `var/jpk/mf-test.crt` (ścieżka `jpk.mf_certificates`), bo zasady wykluczają `*.pem` z commitów.
+  - Wynik 15.10.2026: JPK_EWP(4), JPK_ST(1) i JPK_V7M(3) przechodzą `InitUploadSigned` 200, Put Blob 201 (magazyn `taxdocumentstorage19tst`), `FinishUpload` 200; `Status` zwraca 419 „Weryfikacja negatywna – błąd w danych autoryzujących”, „Dane niezgodne z prawdą”. MF odszyfrował plik i `AuthData` (bez 417 i 418), więc koperta, metadane i szyfrowanie są poprawne. TE porównuje dane autoryzujące z danymi podatnika, więc fikcyjne nie przejdą.
+  - Kryteria `jpk-te-ewp-upo`, `jpk-te-st-upo` i `jpk-te-v7m-upo` sprawdzają na TE stan końcowy: `accepted` z UPO albo `rejected` z 419 bez UPO (okres JPK_V7M bez zamknięcia). `jpk-te-duplicate`: po przyjętym oryginale kod duplikatu; po odrzuconym (419) MF nadaje nowy numer i zwraca ten sam kod, czyli nie uznaje odrzuconego pliku za oryginał.
+  - Przyjęcie z UPO z danymi autoryzującymi i duplikat po przyjęciu potwierdzają wiersze go-live `jpk-ewp-prod-first` i `jpk-v7m-prod-first` (pierwsze złożenie PROD przez bramkę). Prawdziwych danych autoryzujących na TE nie wysyłasz.
+  - `jpk-te-tls`: `JpkGateway` z `jpk.tls_ciphers` negocjuje TLS 1.3 `TLS_AES_256_GCM_SHA384`, z listy sześciu (D-57). Tryb live `KsefRecordings` przekazuje teraz `crypto_method` i `ciphers`.
+  - Nagrania: `LiveRecording` usuwa podpis SAS (`sig=`) z adresów Put Blob. `tests/Fixtures/Jpk/live-{ewp,st,v7m}-{upload,status}.json` odtwarza w CI `JpkLiveRecordingTest` (kryterium `jpk-te-fixtures`, wykonawca `ci`, jak w D-68).
+  - podatki.gov.pl stoi za ochroną przed botami (Imperva): zwykły `GET` dostaje stronę z wyzwaniem JavaScript, nie plik. Sesja pobrała certyfikat przeglądarką bez interfejsu. `mf_keys.refresh` nie może więc zakładać pobierania z serwera; zadanie pilnuje daty ważności, a nowy certyfikat dostarcza człowiek albo sesja.
+- **Skutki:**
+  - Kod testów: `tests/Live/JpkLiveRun.php`, `JpkLiveTestCase`, `JpkTeEwpUpoTest`, `JpkTeStUpoTest`, `JpkTeDuplicateTest`, `JpkTeTlsTest`, `JpkTeV7mUpoTest`, `tests/Integration/JpkLiveRecordingTest.php`; parametr `live` w `FakeJpkGateway`, `JpkSendTestCase` i `JpkV7mTestCase`; kod aplikacji bez zmian.
+  - Rejestr `tests/Acceptance/f5.yaml`: wiersze F5.3 i `jpk-te-v7m-upo`.
+  - Job `live` w CI potrzebuje pliku `var/jpk/mf-test.crt`; bez niego testy JPK live kończą się komunikatem o braku certyfikatu.
