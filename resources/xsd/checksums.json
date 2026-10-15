@@ -145,5 +145,11 @@
     "locations": [
       "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/KodyKrajow_v6-0E.xsd"
     ]
+  },
+  {
+    "file": "GateService.xsd",
+    "source": "https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty?xsd=GateService.xsd",
+    "fetched_on": "2026-10-15",
+    "sha256": "4d1a0747398d6a2e2e9c6a6f8d65838cb9e48984a52bdfcbdb28ece71037d676"
   }
 ]

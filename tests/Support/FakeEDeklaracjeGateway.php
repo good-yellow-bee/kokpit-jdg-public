@@ -60,11 +60,33 @@ final class FakeEDeklaracjeGateway
         return count(array_filter($this->recordings->requests, static fn(array $request): bool => str_contains($request['body'], '<' . $operation)));
     }
 
+    /**
+     * Elementy `soapenv:Body` wszystkich wysłanych żądań jako osobne dokumenty XML: test sprawdza je opublikowanym
+     * `GateService.xsd` bramki testowej (D-67), więc nazwa i kolejność pól żądania są zgodne z WSDL.
+     *
+     * @return list<string>
+     */
+    public function soapBodies(): array
+    {
+        $bodies = [];
+        foreach ($this->recordings->requests as $request) {
+            $envelope = new \DOMDocument();
+            if (!$envelope->loadXML($request['body'], LIBXML_NONET)) {
+                throw new \LogicException('Żądanie SOAP nie jest poprawnym XML.');
+            }
+            $body = $envelope->getElementsByTagNameNS('http://schemas.xmlsoap.org/soap/envelope/', 'Body')->item(0);
+            $element = $body instanceof \DOMElement ? $body->firstElementChild : null;
+            $xml = $element === null ? false : $envelope->saveXML($element);
+            $bodies[] = is_string($xml) ? '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml : throw new \LogicException('Puste ciało żądania SOAP.');
+        }
+        return $bodies;
+    }
+
     /** Dokument wysłany ostatnim `sendUnsignDocument`, zdekodowany z Base64 (tylko w pamięci testu). */
     public function sentDocument(): string
     {
         foreach (array_reverse($this->recordings->requests) as $request) {
-            if (str_contains($request['body'], '<sendUnsignDocumentRequest')) {
+            if (str_contains($request['body'], '<sendUnsignDocument xmlns')) {
                 $envelope = new \DOMDocument();
                 if (!$envelope->loadXML($request['body'], LIBXML_NONET)) {
                     break;
@@ -81,7 +103,7 @@ final class FakeEDeklaracjeGateway
     public function sentRequest(): string
     {
         foreach (array_reverse($this->recordings->requests) as $request) {
-            if (str_contains($request['body'], '<sendUnsignDocumentRequest')) {
+            if (str_contains($request['body'], '<sendUnsignDocument xmlns')) {
                 return $request['body'];
             }
         }
