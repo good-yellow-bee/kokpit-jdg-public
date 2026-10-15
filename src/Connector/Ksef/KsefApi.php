@@ -85,6 +85,29 @@ final class KsefApi
     }
 
     /**
+     * Pobranie części paczki eksportu spod adresu z `GET /invoices/exports/{referenceNumber}` (bez tokenu i poza limitami
+     * API według KSeF API). Adres też przechodzi przez `HostAllowlist` celu.
+     */
+    public function exportPart(string $url): string
+    {
+        $target = $this->target();
+        $context = new ConnectorRequestContext('ksef', $target, 'export_part', $this->configuration->environment(), null, null);
+        try {
+            $response = $this->http->connectorRequest($context, 'ksef.export_part', 'GET', $url, []);
+        } catch (RateLimitExceededException) {
+            throw new KsefException(KsefError::RateLimited);
+        }
+        $status = $response->getStatusCode();
+        if ($status === 429) {
+            throw new KsefException(KsefError::RateLimited);
+        }
+        if ($status >= 400) {
+            throw new KsefException(KsefError::ExportFailed, 'part_' . $status);
+        }
+        return $response->getContent(false);
+    }
+
+    /**
      * Certyfikat MF do szyfrowania: `KsefTokenEncryption` albo `SymmetricKeyEncryption` (`GET /security/public-key-certificates`).
      *
      * @return array{id:string,pem:string}

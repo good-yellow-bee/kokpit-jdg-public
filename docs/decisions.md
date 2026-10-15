@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-71 | F1 eksport KSeF na api-test: `HttpKsefGateway::startExport` i `exportPackage` tokenem `ksef_token_read` (klucz AES na eksport w pamięci procesu, części z adresu ze statusu bez tokenu, `partHash`, ZIP z `_metadata.json`); kod 420 to pusta paczka z kursorem na `from`; `ksef-sync-te` z pomocnikiem `KsefTeIssuer` (faktury poza bramką, tylko w `tests/`); nagranie `te-sync-export` trzyma metadane, odtworzenie składa i szyfruje paczkę | przyjęta 2026-10-15 | F1 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -1388,3 +1389,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-71 F1: eksport Subject1 i Subject2 na api-test
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live z sesji z dostępem do `api-test.ksef.mf.gov.pl`; dane fikcyjne).
+- **Kontekst:**
+  - `KsefSync` (F1, D-42) działał tylko na `FakeKsefGateway`; `HttpKsefGateway` z D-70 dawał przy eksporcie `GatewayUnavailable`.
+  - Eksport wymaga klucza AES zaszyfrowanego certyfikatem MF `SymmetricKeyEncryption`; paczkę dzieli KSeF na części szyfrowane tym kluczem ([KSeF API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json), [przyrostowe pobieranie](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md)).
+- **Decyzja:**
+  - `startExport`: `POST /invoices/exports` (grupa `ksef.export`) z `PermanentStorage`, `restrictToPermanentStorageHwmDate` = `true`, `compressionType` = `Zip`, losowym kluczem AES i IV; token `ksef_token_read` (`KsefAuthenticator::accessToken('read')`). Klucz żyje w pamięci procesu, więc `KsefSync` woła oba kroki w jednym przebiegu (tak już działa).
+  - `exportPackage`: `GET /invoices/exports/{referenceNumber}` (grupa `ksef.export_status`); 100 → `null`; 200 → części po `ordinalNumber` z adresu ze statusu (operacja `export_part`, grupa `ksef.export_part`, bez tokenu, przez `HostAllowlist`), odszyfrowanie, `partHash`, złączenie, ZIP: `{ksefNumber}.xml` i daty z `_metadata.json`; 420 (`from` po `PermanentStorageHwmDate`) → pusta paczka z kursorem na `from`; inny kod → `ExportFailed` z kodem.
+  - Na TE adres części to `https://api-test.ksef.mf.gov.pl/storage/...` z podpisem SAS w zapytaniu, więc nie trzeba nowego hosta. Host części PROD sprawdza go-live F1; inny host zatrzyma pobranie na `HostAllowlist`.
+  - `ksef-sync-te`: `tests/Live/KsefTeSyncTest` zakłada testową JDG i drugiego sprzedawcę z losowymi NIP (D-70), `KsefTeIssuer` w `tests/` wystawia 3 faktury dla JDG i 2 faktury JDG poza bramką (jak przewiduje plik fazy), potem `KsefSync` pobiera obie role. Wynik 15.10.2026: 3 koszty `imported`, 2 sprzedaże `accepted` bez `approval`; faktury pojawiają się w eksporcie po około 2 minutach (trwały zapis).
+  - Nagranie `tests/Fixtures/Ksef/te-sync-export.json` trzyma odpowiedzi startu i statusu oraz metadane faktur po `Scrubber`; NIP przebiegu zastępują przed tym dwa różne NIP z listy fikcyjnych. XML faktur to złoty plik `pl_b2b` pomocnika, więc `KsefTeSyncRecordingTest` składa go z metadanych, buduje ZIP i szyfruje kluczem odszyfrowanym z żądania (fikcyjny certyfikat MF). Ten test to wariant kryterium `ksef-sync-idempotent` na nagraniu TE.
+- **Skutki:**
+  - Kod: `HttpKsefGateway` (eksport), `KsefApi::exportPart`.
+  - Testy: `tests/Live/KsefTeSyncTest.php`, `tests/Support/KsefTeIssuer.php`, `tests/Integration/KsefTeSyncRecordingTest.php`; `LiveRecording::writeData`; `KsefSendTestTools::fictionalJwt($kind)`.
+  - Rejestr `tests/Acceptance/f1.yaml`: `ksef-sync-te` i `ksef-sync-idempotent`. Pozostałe wiersze KSeF sesji 1 (`ksef-te-provision`, `ksef-token-auth`, `ksef-cert-fallback`, `ksef-read-token-scope`, okna backfillu, 21165, 429, `mf-keys-refresh`) czekają na kolejną sesję.
+

@@ -22,6 +22,9 @@ criteria:
   - { key: manual-evidence-gb, runner: ci, command: 'vendor/bin/phpunit --filter ManualEvidence', junit: true }
   - { key: refresh-due-pl-client, runner: ci, command: 'vendor/bin/phpunit --filter RefreshDuePlClient', junit: true }
   - { key: connector-validity-panel, runner: ci, command: 'vendor/bin/phpunit --filter ConnectorValidityPanel', junit: true }
+  # Część 2 (KSeF, D-71): synchronizacja na api-test i odtworzenie nagrania eksportu.
+  - { key: ksef-sync-te, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter KsefTeSyncTest', junit: true }
+  - { key: ksef-sync-idempotent, runner: ci, command: 'vendor/bin/phpunit --filter "KsefSyncReplay|KsefTeSyncRecording"', junit: true }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

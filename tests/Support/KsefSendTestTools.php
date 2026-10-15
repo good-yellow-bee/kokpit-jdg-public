@@ -128,12 +128,12 @@ final class KsefSendTestTools
         return [json_encode([$entry('KsefTokenEncryption', 'token'), $entry('SymmetricKeyEncryption', 'symmetric')], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), $key];
     }
 
-    /** Fikcyjna para JWT `ksef_jwt_write` ważna godzinę: odtwarzanie nagrań TE bez kroków uwierzytelnienia. */
-    public function fictionalJwt(): void
+    /** Fikcyjna para JWT (`ksef_jwt_write` albo `ksef_jwt_read`) ważna godzinę: odtwarzanie nagrań TE bez kroków uwierzytelnienia. */
+    public function fictionalJwt(string $kind = 'ksef_jwt_write'): void
     {
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $pair = ['access' => 'fikcyjny-access-jwt', 'access_until' => $now->modify('+1 hour')->format(DATE_ATOM), 'refresh' => 'fikcyjny-refresh-jwt', 'refresh_until' => $now->modify('+1 day')->format(DATE_ATOM)];
-        ($this->secrets ?? throw new \LogicException('Brak HttpKsefGateway.'))->put('ksef_jwt_write', 'test', json_encode($pair, JSON_THROW_ON_ERROR), $now->modify('+1 day'));
+        ($this->secrets ?? throw new \LogicException('Brak HttpKsefGateway.'))->put($kind, 'test', json_encode($pair, JSON_THROW_ON_ERROR), $now->modify('+1 day'));
     }
 
     /** Nagrania z `tests/Fixtures`, np. `Latarnia/status-available.json`, `Ksef/send-accepted.json`. */

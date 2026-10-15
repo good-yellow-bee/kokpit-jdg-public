@@ -152,6 +152,8 @@ Podmiot 3 i podmiot upoważniony są poza zakresem.
 
 Okna są przyległe, bez nakładania. Inne typy dat (`Issue`, `Invoicing`) gubią faktury, np. przy późnej wysyłce offline.
 
+**Implementacja eksportu (D-71).** `HttpKsefGateway` szyfruje losowy klucz AES certyfikatem MF `SymmetricKeyEncryption` i trzyma go w pamięci procesu do pobrania paczki. Części pobiera z adresu ze statusu, bez tokenu (operacja `export_part`), sprawdza `partHash` i rozpakowuje ZIP. Status 420 (`from` po `PermanentStorageHwmDate`) to pusta paczka z kursorem na `from`. Na TE adres części to `api-test.ksef.mf.gov.pl/storage/...` z podpisem SAS; host części na PROD sprawdza go-live F1.
+
 **Ograniczenia API** ([KSeF API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json), [przyrostowe pobieranie](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md))
 
 | Ograniczenie | Wartość |
@@ -425,6 +427,7 @@ MF liczy limity na parę kontekst (NIP) i adres IP, w oknach przesuwnych sekundy
 | `ksef.export` | `POST /invoices/exports` | 8 | 16 | 20 |
 | `ksef.export_status` | `GET /invoices/exports/{referenceNumber}` | 10 | 60 | 600 |
 | `ksef.download` | `GET /invoices/ksef/{ksefNumber}` | 8 | 16 | 64 |
+| `ksef.export_part` | pobranie części paczki eksportu z adresu ze statusu; poza limitami API według MF | – | – | – |
 | `ksef.session_open` | `POST /sessions/online` | 10 | 30 | 120 |
 | `ksef.invoice_send` | `POST /sessions/online/{referenceNumber}/invoices` | 10 | 30 | 180 |
 | `ksef.session_close` | `POST /sessions/online/{referenceNumber}/close` | 20 | 60 | 240 |
@@ -459,7 +462,7 @@ API KSeF jest w wersji 2.8.1 (PROD od 23.09.2026); 2.8.0 dodało błąd 21184 i 
 | `KsefApi` | żądania przez `ConnectorHttpClient` (`HostAllowlist`, `connector_call`, `rate_counter`); 429 → `RateLimited`, 21184 → `SessionUnavailable`, inna odmowa → `RequestRefused`; klucze publiczne MF |
 | `KsefCrypto` | RSA-OAEP-SHA-256 i AES-256-CBC z PKCS#7 |
 | `KsefAuthenticator` | token → para JWT, odświeżanie pod lockiem `ksef.auth.<cel>.<rola>` |
-| `HttpKsefGateway` | sesja online, wysyłka, status, zamknięcie, UPO, lista sesji, faktury sesji, lista błędnych; eksport (F1) jeszcze `GatewayUnavailable` |
+| `HttpKsefGateway` | sesja online, wysyłka, status, zamknięcie, UPO, lista sesji, faktury sesji, lista błędnych; eksport Subject1 i Subject2 tokenem `ksef_token_read` (D-71) |
 
 - Kod domeny zna tylko interfejs `KsefGateway`. Wzorcem są oficjalne klienty MF w C# i Javie ([CIRFMF](https://github.com/CIRFMF/ksef-api)).
 - Adresy API per cel: parametr `ksef.api_base`.
