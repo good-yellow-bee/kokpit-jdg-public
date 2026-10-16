@@ -12,5 +12,7 @@ enum ConnectorError: string
     case NetworkError = 'network_error';
     case RateLimited = 'rate_limited';
     case HttpError = 'http_error';
+    /** Strona HTML z wyzwaniem WAF (Imperva) zamiast odpowiedzi API, np. biała lista z adresu IP spoza listy zaufanych. */
+    case WafChallenge = 'waf_challenge';
     case UnscopedRequest = 'unscoped_connector_request';
 }

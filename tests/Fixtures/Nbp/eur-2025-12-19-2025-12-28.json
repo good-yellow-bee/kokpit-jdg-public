@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.nbp.pl z 2026-10-16 (F1, D-74): publiczna tabela A, bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Tabela A EUR od 19.12 do 28.12.2025 (zapytanie FxRateProvider dla 29.12.2025): 246, 247 i 248/A/NBP/2025.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/api/exchangerates/rates/a/eur/2025-12-19/2025-12-28/",
+            "status": 200,
+            "body_text": "{\"table\":\"A\",\"currency\":\"euro\",\"code\":\"EUR\",\"rates\":[{\"no\":\"246/A/NBP/2025\",\"effectiveDate\":\"2025-12-19\",\"mid\":4.2094},{\"no\":\"247/A/NBP/2025\",\"effectiveDate\":\"2025-12-22\",\"mid\":4.2115},{\"no\":\"248/A/NBP/2025\",\"effectiveDate\":\"2025-12-23\",\"mid\":4.2274}]}"
+        }
+    ]
+}

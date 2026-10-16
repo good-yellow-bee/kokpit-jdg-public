@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.nbp.pl z 2026-10-16 (F1, D-74): publiczna tabela A, bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Waluta spoza tabeli A (XYZ) w zakresie zapytania FxRateProvider dla 29.12.2025: 404, pusty zakres.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/api/exchangerates/rates/a/xyz/2025-12-19/2025-12-28/",
+            "status": 404,
+            "body_text": "404 NotFound - Not Found - Brak danych"
+        }
+    ]
+}

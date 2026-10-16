@@ -22,7 +22,7 @@ final class ConnectorHosts
             'prod' => ['e-dokumenty.mf.gov.pl', 'www.podatki.gov.pl'],
         ],
         'edeklaracje' => ['test' => ['test-bramka.edeklaracje.gov.pl'], 'prod' => ['bramka.e-deklaracje.mf.gov.pl']],
-        // Nowy wykaz od 12.10.2026 (D-42); dawne hosty zostają, dopóki MF ich nie wyłączy.
+        // Nowy wykaz od 15.10.2026 (D-42, D-74); `wl-api.mf.gov.pl` działa do 1.12.2026, dawne hosty zostają do tej daty.
         'white_list' => ['test' => ['wykazpodatnikowvat-test.mf.gov.pl', 'wl-test.mf.gov.pl'], 'prod' => ['wykazpodatnikowvat.mf.gov.pl', 'wl-api.mf.gov.pl']],
         'vies' => ['test' => ['ec.europa.eu'], 'prod' => ['ec.europa.eu']],
         'nbp' => ['default' => ['api.nbp.pl']],

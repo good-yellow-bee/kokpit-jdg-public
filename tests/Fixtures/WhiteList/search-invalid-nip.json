@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z hosta testowego wykazpodatnikowvat-test.mf.gov.pl/api z 2026-10-16 (F1, D-74), zapytanie z datą 2026-10-15; NIP i rachunki fikcyjne (fictional), rachunek w ścieżce jako {{account:N}} z FictionalIdentifiers::account(N). Odpowiedzi przez przeglądarkę, bo Imperva odrzuca klienta HTTP z IP chmury.",
+    "scenario": "search na NIP 1234567890 z błędną sumą kontrolną: 400 WL-115.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/api/search/nip/1234567890",
+            "status": 400,
+            "body_text": "{\"message\":\"Nieprawidłowy NIP.\",\"code\":\"WL-115\"}"
+        }
+    ]
+}

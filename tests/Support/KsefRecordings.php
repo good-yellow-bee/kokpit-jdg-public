@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Support;
 
+use App\Fixtures\FictionalIdentifiers;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Odtwarzanie ręcznie pisanych, fikcyjnych nagrań KSeF i Latarni (docs/testing.md, „Nagrania i odtwarzanie”):
+ * Odtwarzanie fikcyjnych nagrań KSeF, Latarni i rejestrów (docs/testing.md, „Nagrania i odtwarzanie”):
  * kolejka odpowiedzi per metoda i ścieżka, nigdy po treści. Żądanie spoza nagrania kończy test błędem, więc nic nie
  * wychodzi do sieci. Treść odpowiedzi może mieć zmienne `{{nazwa}}`; `sent_hash` to `invoiceHash` ostatniej wysyłki.
  *
@@ -44,7 +45,9 @@ final class KsefRecordings
             if (!is_array($interaction) || !is_string($interaction['method'] ?? null) || !is_string($interaction['path'] ?? null)) {
                 throw new \LogicException('Niepoprawna interakcja w ' . $file);
             }
-            $this->queues[$interaction['method'] . ' ' . $interaction['path']][] = array_filter($interaction, static fn(mixed $key): bool => is_string($key), ARRAY_FILTER_USE_KEY);
+            // Rachunek w ścieżce (biała lista, `check`) jest w nagraniu jako `{{account:N}}`, bo skaner fixtures pada na 26 cyfrach.
+            $path = (string) preg_replace_callback('/\{\{account:(\d+)\}\}/', static fn(array $match): string => FictionalIdentifiers::account((int) $match[1]), $interaction['path']);
+            $this->queues[$interaction['method'] . ' ' . $path][] = array_filter($interaction, static fn(mixed $key): bool => is_string($key), ARRAY_FILTER_USE_KEY);
         }
         return $this;
     }

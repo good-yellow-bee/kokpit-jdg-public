@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Fx;
 
 use App\Calendar\PolishCalendar;
+use App\Config\ConnectorConfiguration;
+use App\Counterparty\RegistryAlerts;
 use App\Time\BusinessDate;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
@@ -13,11 +15,12 @@ use Symfony\Component\Uid\UuidV7;
 
 /**
  * `getRate(currency, date)`: kurs średni z ostatniej tabeli A NBP opublikowanej przed `date`
- * (docs/modules/rejestry-kursy.md, kroki 1–5). Cache to niezmienne wiersze `fx_rate`.
+ * (docs/modules/rejestry-kursy.md, kroki 1–5). Cache to niezmienne wiersze `fx_rate`. Pusty zakres (krok 5) to błąd
+ * i alert `connector_failure`, bez sięgania po starszy kurs.
  */
 final readonly class FxRateProvider
 {
-    public function __construct(private Connection $db, private PolishCalendar $calendar, private BusinessDate $businessDate, private ClockInterface $clock, private NbpRateSource $source) {}
+    public function __construct(private Connection $db, private PolishCalendar $calendar, private BusinessDate $businessDate, private ClockInterface $clock, private NbpRateSource $source, private ?RegistryAlerts $alerts = null, private ?ConnectorConfiguration $configuration = null) {}
 
     public function getRate(string $currency, string $date): FxRate
     {
@@ -46,6 +49,7 @@ final readonly class FxRateProvider
         }
         $latest = $this->db->fetchOne("SELECT max(effective_date) FROM fx_rate WHERE source='nbp' AND currency=? AND effective_date<? AND effective_date>=?", [$currency, $date, self::shift($date, '-10 days')]);
         if (!is_string($latest)) {
+            $this->alerts?->connectorFailure($this->configuration?->environment() ?? 'test', 'nbp', 'empty_range', $currency . ':' . $date);
             throw new FxRateUnavailable(sprintf('Brak tabeli A %s w 10 dniach przed %s.', $currency, $date));
         }
         return $this->row($currency, $latest) ?? throw new \LogicException('Kurs zniknął.');

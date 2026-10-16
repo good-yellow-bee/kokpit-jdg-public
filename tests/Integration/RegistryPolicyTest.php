@@ -15,7 +15,8 @@ use Symfony\Component\Uid\UuidV7;
 
 /**
  * Polityka weryfikacji, sprawdzenie przed przelewem, dowód ręczny i samosprawdzenie (docs/phases/f1-ksef-odczyt.md,
- * „Sesja 2 Rejestry”). Odpowiedzi rejestrów mają kształt z dokumentacji API i fikcyjne dane, do zamiany na nagrania (D-42).
+ * „Sesja 2 Rejestry”). Kryteria `pre-payment-*`, `refresh-due-eu-supplier` i `self-check` idą na nagraniach z hostów
+ * testowych (tests/Fixtures/WhiteList, tests/Fixtures/Vies; D-74); pozostałe odpowiedzi mają kształt z dokumentacji API.
  */
 final class RegistryPolicyTest extends DatabaseTestCase
 {
@@ -25,8 +26,9 @@ final class RegistryPolicyTest extends DatabaseTestCase
         $owner = F1TestTools::owner($this->db(), $tools->clock);
         $account = FictionalIdentifiers::account(31);
         $cost = $this->polishCost($tools, '20000.00');
-        $tools->responses = [RegistryTestTools::check(false, 'FIKC-0101')];
+        $tools->play('WhiteList/check-supplier-account-31-nie.json');
         $check = $tools->prePayment()->check($cost, $account, '2026-11-04');
+        self::assertSame(['/api/check/nip/5555555555/bank-account/' . $account, 'date=2026-11-04'], [$tools->recordings?->requests[0]['path'], $tools->recordings?->requests[0]['query']]);
         self::assertSame(['invalid', true, true, ['change_account', 'split_payment', 'notify_tax_office'], '20000.00'], [$check['result'], $check['warning'], $check['above_threshold'], $check['exits'], $check['value_pln']]);
         $notice = $tools->prePayment()->chooseNotice($cost, '2026-11-04', $owner);
         // 4.11.2026 + 7 dni = 11.11.2026, święto, więc termin przesuwa się na 12.11.2026 (art. 12 § 5 Ordynacji podatkowej).
@@ -37,7 +39,7 @@ final class RegistryPolicyTest extends DatabaseTestCase
         self::assertSame(['wl_notice', 'wl_notice.manual', '2026-11-11', '2026-11-12', 'open', $cost], [$row['type'], $row['rule_key'], $row['nominal_due_date'], $row['due_date'], $row['status'], $row['invoice_id']]);
         self::assertSame('2026-11-04', $this->db()->fetchOne('SELECT paid_on FROM invoice WHERE id=?', [$cost]));
         $verification = $this->db()->fetchAssociative('SELECT source, result, bank_account, checked_for_date, request_identifier FROM verification WHERE id=?', [$check['verification_id']]);
-        self::assertSame(['white_list', 'invalid', $account, '2026-11-04', 'FIKC-0101'], array_values((array) $verification));
+        self::assertSame(['white_list', 'invalid', $account, '2026-11-04', 'L4SGh-991f744'], array_values((array) $verification));
         EvidenceArtefacts::write('cmd/pre-payment-above-threshold.txt', EvidenceArtefacts::csv([$row]));
     }
 
@@ -45,9 +47,10 @@ final class RegistryPolicyTest extends DatabaseTestCase
     {
         $tools = new RegistryTestTools($this->db(), new MockClock('2026-11-04T09:00:00Z'));
         $cost = $this->polishCost($tools, '10000.00');
-        $tools->responses = [RegistryTestTools::check(false, 'FIKC-0102')];
+        $tools->play('WhiteList/check-supplier-account-32-nie.json');
         $check = $tools->prePayment()->check($cost, FictionalIdentifiers::account(32), '2026-11-04');
-        self::assertSame([true, false, []], [$check['warning'], $check['above_threshold'], $check['exits']]);
+        self::assertSame(['invalid', true, false, []], [$check['result'], $check['warning'], $check['above_threshold'], $check['exits']]);
+        self::assertSame(0, $tools->recordings?->remaining());
         self::assertSame(0, F1TestTools::count($this->db(), "SELECT count(*) FROM obligation WHERE type='wl_notice'"));
     }
 
@@ -94,10 +97,12 @@ final class RegistryPolicyTest extends DatabaseTestCase
         $old = $this->verificationRow($supplier, 'vies', 'DE100', '2025-11-03');
         $this->verificationRow($fresh, 'vies', 'DE101', '2026-02-01');
         $this->selfRows($tools, '2026-10-20');
-        $tools->responses = [RegistryTestTools::viesValid('DE', '100', 'WAPIFIKCYJNY11')];
+        $tools->play('Vies/test-valid.json');
         self::assertSame(['suppliers' => 1, 'self' => false], $tools->refreshDue()->run());
-        $rows = $this->db()->fetchAllAssociative("SELECT id, checked_for_date, result, request_identifier FROM verification WHERE counterparty_id=? ORDER BY checked_at, id", [$supplier]);
-        self::assertSame([[$old, '2025-11-03', 'valid', null], [$rows[1]['id'], '2026-11-04', 'valid', 'WAPIFIKCYJNY11']], array_map(static fn(array $row): array => array_values($row), $rows));
+        self::assertSame('{"countryCode":"DE","vatNumber":"100","requesterMemberStateCode":"PL","requesterNumber":"1111111111"}', $tools->recordings?->requests[0]['body']);
+        $rows = $this->db()->fetchAllAssociative("SELECT id, checked_for_date, result, request_identifier, source_datetime FROM verification WHERE counterparty_id=? ORDER BY checked_at, id", [$supplier]);
+        // Usługa testowa VIES zwraca pusty `requestIdentifier` także z numerem pytającego (D-74); na PROD pole jest wypełnione.
+        self::assertSame([[$old, '2025-11-03', 'valid', null, null], [$rows[1]['id'], '2026-11-04', 'valid', null, '2026-10-16 06:54:29.294+00']], array_map(static fn(array $row): array => array_values($row), $rows));
         self::assertSame(1, F1TestTools::count($this->db(), "SELECT count(*) FROM stored_file WHERE owner_table='verification' AND owner_id=? AND kind='verification_raw'", [$rows[1]['id']]));
         EvidenceArtefacts::write('cmd/refresh-due-eu-supplier.txt', EvidenceArtefacts::csv($rows));
     }
@@ -131,7 +136,23 @@ final class RegistryPolicyTest extends DatabaseTestCase
         $tools->responses = [RegistryTestTools::search(F1TestTools::OWN_NIP, 'Zwolniony', [], 'FIKC-0202'), RegistryTestTools::viesValid('PL', F1TestTools::OWN_NIP, 'WAPIFIKCYJNY22', false)];
         $tools->selfCheck()->run();
         self::assertSame(['status_not_active', 'account_not_listed', 'vat_eu_invalid'], array_column($tools->selfCheck()->alerts(), 'code'));
-        EvidenceArtefacts::write('cmd/self-check.txt', EvidenceArtefacts::csv($this->db()->fetchAllAssociative('SELECT source, checked_for_date, result, request_identifier FROM verification WHERE counterparty_id IS NULL ORDER BY checked_at, id')));
+    }
+
+    public function testSelfCheckOnRecordingsAlertsWhenOwnNumberIsMissing(): void
+    {
+        $tools = new RegistryTestTools($this->db(), new MockClock('2026-11-04T07:00:00Z'));
+        $tools->identity();
+        // Fikcyjny NIP nie istnieje w wykazie testowym, a fikcyjny numer VAT UE spoza numerów testowych VIES daje SERVICE_UNAVAILABLE.
+        $tools->play('WhiteList/search-own-not-found.json', 'Vies/own-pl-service-unavailable.json');
+        $bus = new CollectingBus();
+        $tools->selfCheck($bus)->run();
+        self::assertSame(0, $tools->recordings?->remaining());
+        self::assertSame(['white_list:status_not_active', 'white_list:account_not_listed', 'vies:vat_eu_unverified_retry'], array_map(static fn(array $alert): string => $alert['source'] . ':' . $alert['code'], $tools->selfCheck()->alerts()));
+        self::assertInstanceOf(ViesRetryMessage::class, $bus->messages[0] ?? null);
+        $rows = $this->db()->fetchAllAssociative('SELECT source, subject, checked_for_date, result, request_identifier FROM verification WHERE counterparty_id IS NULL ORDER BY checked_at, id');
+        self::assertSame([['white_list', F1TestTools::OWN_NIP, '2026-11-04', 'invalid', 'NclO6-991f743'], ['vies', 'PL' . F1TestTools::OWN_NIP, '2026-11-04', 'unverified_retry', null]], array_map(static fn(array $row): array => array_values($row), $rows));
+        self::assertSame(2, F1TestTools::count($this->db(), "SELECT count(*) FROM stored_file WHERE owner_table='verification' AND kind='verification_raw'"));
+        EvidenceArtefacts::write('cmd/self-check.txt', EvidenceArtefacts::csv($rows));
     }
 
     public function testViesRetryBacksOffThenAlertsAfter24Hours(): void

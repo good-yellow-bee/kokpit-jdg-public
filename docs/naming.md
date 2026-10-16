@@ -713,7 +713,7 @@ W F0a klucze główne siedmiu tabel aplikacyjnych są UUIDv7; tabele techniczne 
 | Transporty i schemat | `messenger_messages`, `doctrine_migration_versions`, `cache_items` (tabele techniczne Symfony/Doctrine), `prevent_audit_mutation` (funkcja ochrony audytu) |
 | Zmienne backupu | `RESTIC_REPOSITORY_FILE`, `AWS_SHARED_CREDENTIALS_FILE`, `BACKUP_DEADMAN_URL_FILE`, `BACKUP_DATABASE`, `BACKUP_HOST` |
 
-`ConnectorError`: `connectors_disabled`, `host_not_allowed`, `invalid_url`, `network_error`, `rate_limited`, `unscoped_connector_request`, `http_error`. Wiadomość `FailureNotificationMessage.id` wskazuje wiersz transportu `failed`; handler używa potwierdzenia tego wiersza jako klucza idempotencji, bez tabeli `notification`.
+`ConnectorError`: `connectors_disabled`, `host_not_allowed`, `invalid_url`, `network_error`, `rate_limited`, `unscoped_connector_request`, `http_error`, `waf_challenge` (strona HTML z wyzwaniem Imperva zamiast odpowiedzi API, D-74). Wiadomość `FailureNotificationMessage.id` wskazuje wiersz transportu `failed`; handler używa potwierdzenia tego wiersza jako klucza idempotencji, bez tabeli `notification`.
 
 Nagłówek `X-Kokpit-Notified` w `messenger_messages.headers` oznacza dostarczony alert F0a.
 

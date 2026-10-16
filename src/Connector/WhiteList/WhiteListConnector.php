@@ -108,6 +108,10 @@ final readonly class WhiteListConnector
         if ($raw['status'] === 429) {
             throw new ConnectorException(ConnectorError::RateLimited);
         }
+        if (str_contains($raw['body'], '_Incapsula_Resource')) {
+            // Imperva przed wykazem odsyła z części adresów IP stronę HTML z wyzwaniem JS, nawet z HTTP 200 (D-74).
+            throw new ConnectorException(ConnectorError::WafChallenge);
+        }
         if ($raw['status'] !== 200) {
             // 400 z kodem `WL-…` to błąd zapytania, nie wynik; wiersz `verification` nie powstaje.
             throw new ConnectorException(ConnectorError::HttpError);

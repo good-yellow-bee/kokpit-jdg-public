@@ -31,8 +31,8 @@ use Symfony\Component\Uid\UuidV7;
 
 /**
  * Usługi rejestrów (VIES, biała lista) nad `MockHttpClient`. Odpowiedzi w testach mechaniki mają kształt z dokumentacji
- * API i fikcyjne dane; kontrakt z prawdziwą usługą sprawdzą nagrania w tests/Fixtures/Vies i tests/Fixtures/WhiteList
- * (D-42, część 3). Każde żądanie trafia do `$requests` jako `METODA url`.
+ * API i fikcyjne dane; kontrakt z prawdziwą usługą sprawdzają nagrania w tests/Fixtures/Vies i tests/Fixtures/WhiteList
+ * (`play`, D-74). Każde żądanie kolejki trafia do `$requests` jako `METODA url`, a żądanie nagrania do `$recordings->requests`.
  */
 final class RegistryTestTools
 {
@@ -46,14 +46,27 @@ final class RegistryTestTools
     /** @var list<string> kolejne odpowiedzi JSON; pusta kolejka kończy test błędem */
     public array $responses = [];
 
+    /** Nagrania z prawdziwych usług testowych (`play`) albo tryb live; zastępują kolejkę `$responses`. */
+    public ?KsefRecordings $recordings = null;
+
     /** @param array<string,int> $limits */
     public function __construct(private Connection $db, public MockClock $clock, private array $limits = self::LIMITS) {}
+
+    /** Dokłada nagrania `tests/Fixtures/<Connector>/<scenariusz>.json`; żądanie spoza nagrań kończy test błędem. */
+    public function play(string ...$files): self
+    {
+        $this->recordings ??= new KsefRecordings();
+        foreach ($files as $file) {
+            $this->recordings->load($file);
+        }
+        return $this;
+    }
 
     public function http(): ConnectorHttpClient
     {
         $configuration = ConnectorTestTools::configuration();
         $dates = new BusinessDate($this->clock);
-        $mock = new MockHttpClient(function (string $method, string $url, array $options): MockResponse {
+        $mock = $this->recordings?->client() ?? new MockHttpClient(function (string $method, string $url, array $options): MockResponse {
             $this->requests[] = $method . ' ' . $url . (is_string($options['body'] ?? null) && $options['body'] !== '' ? ' ' . $options['body'] : '');
             $next = array_shift($this->responses) ?? throw new \LogicException('Żądanie spoza scenariusza: ' . $url);
             return new MockResponse($next, ['http_code' => 200]);
