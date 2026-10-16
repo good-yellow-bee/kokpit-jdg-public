@@ -209,6 +209,7 @@ Warunki powrotu F4 (INT, certyfikat kwalifikowany, bramki 3–4) i rejestrów KR
 | [modules/ewidencja.md](modules/ewidencja.md) | `revenue_entry`, mapowanie JPK_EWP(4), import 2026, uzgodnienia | F2, F5 |
 | [modules/jpk.md](modules/jpk.md) | API JPK 5.6.0, JPK_V7M(3), JPK_EWP(4), JPK_ST(1), VAT-UE, korekty | F2.4 (dry run), F5 |
 | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) | VIES, biała lista (dwa liczniki), API NBP | F1 |
+| [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) | automatyczna obserwacja aktów i procesów w API Sejmu, szkic wierszy do [facts.md](facts.md) | po F6 (D-75) |
 | [modules/e-doreczenia.md](modules/e-doreczenia.md) | kanały doręczeń, procedura ręczna; API odłożone | F0b (kanały) |
 | [modules/czat.md](modules/czat.md) | narzędzia, dane do modelu, profil Haiku 5.5, budżety | F6 |
 | [modules/basal.md](modules/basal.md) | uruchomienie i kalibracja basal; odłożone (D-29) | nigdy do powrotu modułu |

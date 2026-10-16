@@ -55,6 +55,7 @@ Odłożone testy F4 są w [modules/e-doreczenia.md](modules/e-doreczenia.md); ni
 | `vies` | usługa testowa; błędy wracają jako HTTP 200 z `actionSucceed:false` ([VIES test](https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service)) | nagrania, także MS_UNAVAILABLE i TIMEOUT | usługa testowa | numery testowe usługi |
 | `white_list` | `wykazpodatnikowvat-test.mf.gov.pl`, dawny `wl-test.mf.gov.pl` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat)) | nagrania; liczniki `white_list.search` i `white_list.check` osobno | host testowy | – |
 | `nbp` | brak; PROD tylko do odczytu | nagrania | PROD przez licznik, ręcznie | kursy publiczne |
+| `eli` | brak; jeden publiczny host, tylko odczyt | nagrania `tests/Fixtures/Eli` i ręcznie zmienione warianty fikcyjne | `app:legal-watch check` ręcznie, nigdy z testów | dane publiczne, bez danych osobowych (D-75) |
 | `freshbooks` | brak sandboxu i firmy testowej (D-35, [FreshBooks API, 8.10.2026](https://www.freshbooks.com/api/start)) | ręcznie pisane fixtures i nagrania oczyszczone | brak; prawdziwa firma tylko odczytem, ręcznie przez `app:fixtures:record` | fikcyjni klienci i faktury |
 | `claude` | brak | nagrane odpowiedzi Messages API | tak, z budżetem przebiegu | tylko dane fikcyjne |
 | `push`, `mail`, `deadman` | brak | transport i Symfony Mailer w pamięci; ping przez `MockHttpClient` | `[manual]` push na telefon, mail, alert dead-man | – |

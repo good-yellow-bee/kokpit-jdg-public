@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Ręcznie pisane, fikcyjne (fictional) nagranie (D-75); kształt błędu jak w api.sejm.gov.pl.",
+    "scenario": "Ręcznie pisane, fikcyjne (fictional): akt spoza ELI daje 404.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/eli/acts/DU/2099/3/references",
+            "status": 404,
+            "body_text": "Not Found"
+        }
+    ]
+}

@@ -47,7 +47,7 @@ final class HostAllowlistTest extends TestCase
                 self::addToAssertionCount(1);
             }
         }
-        foreach ([['ksef','prod','https://api.ksef.mf.gov.pl','GET'],['vies','test','https://ec.europa.eu/production','POST'],['nbp','default','https://api.nbp.pl','POST'],['jpk','test','https://www.podatki.gov.pl','POST']] as [$connector,$target,$url,$method]) {
+        foreach ([['ksef','prod','https://api.ksef.mf.gov.pl','GET'],['vies','test','https://ec.europa.eu/production','POST'],['nbp','default','https://api.nbp.pl','POST'],['eli','default','https://api.sejm.gov.pl/eli/acts/DU/2025/1815/references','POST'],['eli','default','https://api.sejm.gov.pl.evil.invalid/eli','GET'],['jpk','test','https://www.podatki.gov.pl','POST']] as [$connector,$target,$url,$method]) {
             try {
                 $this->guard()->assertAllowed($connector, $target, $url, $method);
                 self::fail('Wywołanie dopuszczone.');

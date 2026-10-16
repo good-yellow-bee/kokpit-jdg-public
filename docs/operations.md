@@ -147,6 +147,7 @@ Jeden harmonogram `default` z `stateful(cache)`, `processOnlyLastMissedRun(true)
 | `ledger.entry_check` | 15. i 20. dnia miesiąca 08:00 | `reads` | obowiązek `ledger_entry` | – | F2, po F0b | [modules/ewidencja.md](modules/ewidencja.md) |
 | `latarnia.status` | co 5 min | `reads` | ostatni status | – | F3 | [modules/ksef.md](modules/ksef.md) |
 | `jpk.replace_di` | codziennie 09:00 | `reads` | idempotentne przypisanie numeru KSeF | – | F5 | [modules/jpk.md](modules/jpk.md) |
+| `legal_watch.check` | poniedziałek 06:30 | `reads` | `legal_watch.snapshot_sha256` i klucz push ze stanem | – | po F6 (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
 
 - Przypomnienia o ręcznym przeglądzie kanałów doręczeń tworzy `obligations.recompute` jako obowiązek `manual_channel_check` ([compliance-calendar.md](compliance-calendar.md), [modules/e-doreczenia.md](modules/e-doreczenia.md)).
 - Polling skrzynki e-Doręczeń jest odłożony razem z F4 (D-29). Skrzynkę ADE firmy sprawdzasz w aplikacji e-Doręczeń.

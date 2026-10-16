@@ -98,6 +98,7 @@ Wspólny kontrakt konektora jest w [../.claude/rules/integrations.md](../.claude
 | `vies` | `Vies` | VIES REST | brak, tylko odczyt | bez klucza | weryfikacja numerów VAT UE | F1 |
 | `white_list` | `WhiteList` | API wykazu podatników VAT | brak, tylko odczyt | bez klucza | weryfikacja NIP i rachunków | F1 |
 | `nbp` | `Nbp` | API NBP, tabela A | brak, tylko odczyt | bez klucza | kursy średnie | F1 |
+| `eli` | `Eli` | API Sejmu: ELI i procesy legislacyjne | brak, tylko odczyt | bez klucza | obserwacja prawa ([modules/obserwacja-prawa.md](modules/obserwacja-prawa.md)) | po F6 (D-75) |
 | `freshbooks` | `FreshBooks` | FreshBooks API | brak; bez firmy testowej (D-35) | OAuth, aplikacja per wdrożenie | polling faktur i płatności tylko do odczytu; od F3 zapis zwrotny numeru KSeF, pierwszy raz na PROD (D-35) | F2.2/F2.3, F3 |
 | `claude` | `Claude` | Claude API (Messages) | brak | klucz osobnego workspace z limitem wydatków | tylko odczyt danych przez narzędzia; synchronicznie w żądaniu panelu | F6 |
 | `push` | `Push` | ntfy (D-19, Q-15) | brak | token tematu | powiadomienia | F0a |
@@ -140,6 +141,7 @@ Nazwy zmiennych i wartości domyślne są w [naming.md](naming.md). Decyzje: D-1
 | `white_list` | `wykazpodatnikowvat-test.mf.gov.pl` (dawny `wl-test.mf.gov.pl`) | – | `wykazpodatnikowvat.mf.gov.pl` (dawny `wl-api.mf.gov.pl`) | [API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) |
 | `vies` | `ec.europa.eu`, ścieżka `…/rest-api/check-vat-test-service` | – | `ec.europa.eu`, ścieżka `…/rest-api/check-vat-number` | [VIES test](https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service) |
 | `nbp` | – | – | `api.nbp.pl` | [API NBP](https://api.nbp.pl/en.html) |
+| `eli` | – | – | `api.sejm.gov.pl` | [API Sejmu](https://api.sejm.gov.pl/) |
 
 - Hosty e-Doręczeń (UA API, SE API, INT i PROD) wracają z F4 (D-29), według [modules/e-doreczenia.md](modules/e-doreczenia.md).
 - `freshbooks`, `claude`, `push`, `mail` i `deadman` mają po jednym hoście z konfiguracji. `dummy` ma tylko `dummy.invalid` w `MockHttpClient`.
@@ -171,10 +173,11 @@ Allowlista w kodzie jest prawdziwą ochroną przed przypadkowym wywołaniem PROD
 - Usługa testowa VIES leży na hoście PROD, więc dla `vies` sprawdzana jest też ścieżka.
 - NBP ma tylko host PROD `api.nbp.pl`. `kokpit-dev` dopuszcza go tylko dla konektora `nbp`, tylko `GET` i przez licznik `nbp.rates`.
 - Testy automatyczne NBP zostają na nagraniach przy `CONNECTORS_ENABLED=0` ([testing.md](testing.md)).
+- API Sejmu ma jeden publiczny host `api.sejm.gov.pl`. Dopuszcza go tylko konektor `eli`, tylko `GET` i przez licznik `eli.read`; testy automatyczne idą na nagraniach (D-75).
 - `CONNECTORS_ENABLED=0` blokuje wszystkie konektory, także `push`, `mail`, `claude` i `deadman`.
 - Test jednostkowy przechodzi przez każdy konektor z celem innym niż `prod` i pada, jeśli host PROD jest osiągalny. Przy `JPK_TARGET=test` sprawdza też, że host magazynu PROD jest odrzucany.
 - Ten sam test sprawdza rejestry przy `APP_ENV` `dev` i `test`. Pada, jeśli adres PROD białej listy albo VIES jest osiągalny.
-- Sprawdza też, że żaden konektor poza `nbp` nie dosięga `api.nbp.pl`, a `dummy` nie ma hostów przy `APP_ENV=prod`.
+- Sprawdza też, że żaden konektor poza `nbp` nie dosięga `api.nbp.pl`, `eli` nie wysyła do `api.sejm.gov.pl` niczego poza `GET`, a `dummy` nie ma hostów przy `APP_ENV=prod`.
 - `www.podatki.gov.pl` jest wspólny dla obu celów `jpk`, jak `ec.europa.eu` dla VIES. Test dopuszcza go tylko dla pobrania klucza MF metodą `GET`.
 - Odrzucone żądanie zostaje w `connector_call` z kodem błędu i wywołuje alert.
 
@@ -201,6 +204,7 @@ Ta sekcja to dom semantyki `rate_counter`. Kolumny są w [data-model.md](data-mo
 | `latarnia` | `latarnia.status` | [modules/ksef.md](modules/ksef.md) |
 | `white_list` | dwa liczniki: `white_list.search` i `white_list.check` | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) |
 | `vies`, `nbp` | `vies.check`, `nbp.rates` | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) |
+| `eli` | `eli.read` (100 na dobę) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
 | `freshbooks` | `freshbooks.api`; 429 z backoffem i `Retry-After`; bez obsługi 409, bo kokpit nie tworzy faktur | [modules/freshbooks.md](modules/freshbooks.md) |
 | `claude` | `claude.messages` (D-34): 429 i `blocked_until`; budżety USD liczy kod z sum `chat_message.cost_usd` | [modules/czat.md](modules/czat.md) |
 | `jpk` | `jpk.init_upload` | [modules/jpk.md](modules/jpk.md) |

@@ -1,0 +1,67 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.sejm.gov.pl z 2026-10-16 (D-75): publiczne dane ELI i procesu legislacyjnego, bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Powiązania rozporządzenia o korzystaniu z KSeF: jedna zmiana (Dz.U. 2026 poz. 169).",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/eli/acts/DU/2025/1815/references",
+            "status": 200,
+            "body": {
+                "Akty zmieniające": [
+                    {
+                        "act": {
+                            "ELI": "DU/2026/169",
+                            "publisher": "DU",
+                            "year": 2026,
+                            "pos": 169,
+                            "type": "Rozporządzenie",
+                            "title": "Rozporządzenie Ministra Finansów i Gospodarki z dnia 13 lutego 2026 r. zmieniające rozporządzenie w sprawie korzystania z Krajowego Systemu e-Faktur",
+                            "status": "obowiązujący",
+                            "displayAddress": "Dz.U. 2026 poz. 169",
+                            "promulgation": "2026-02-13",
+                            "announcementDate": "2026-02-13",
+                            "changeDate": "2026-02-16 10:19"
+                        },
+                        "date": "2026-02-13"
+                    }
+                ],
+                "Podstawa prawna": [
+                    {
+                        "act": {
+                            "ELI": "DU/2004/535",
+                            "publisher": "DU",
+                            "year": 2004,
+                            "pos": 535,
+                            "type": "Ustawa",
+                            "title": "Ustawa z dnia 11 marca 2004 r. o podatku od towarów i usług",
+                            "status": "akt posiada tekst jednolity",
+                            "displayAddress": "Dz.U. 2004 nr 54 poz. 535",
+                            "promulgation": "2004-04-05",
+                            "announcementDate": "2004-03-11",
+                            "changeDate": "2026-10-02 12:00"
+                        }
+                    }
+                ],
+                "Podstawa prawna z art.": [
+                    {
+                        "act": {
+                            "ELI": "DU/2004/535",
+                            "publisher": "DU",
+                            "year": 2004,
+                            "pos": 535,
+                            "type": "Ustawa",
+                            "title": "Ustawa z dnia 11 marca 2004 r. o podatku od towarów i usług",
+                            "status": "akt posiada tekst jednolity",
+                            "displayAddress": "Dz.U. 2004 nr 54 poz. 535",
+                            "promulgation": "2004-04-05",
+                            "announcementDate": "2004-03-11",
+                            "changeDate": "2026-10-02 12:00"
+                        },
+                        "art": "art. 106r"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -35,4 +35,5 @@ framework:
       'App\Messenger\Message\ViesRetryMessage': reads
       'App\Messenger\Message\LedgerTaskMessage': reads
       'App\Messenger\Message\LatarniaStatusMessage': reads
+      'App\Messenger\Message\LegalWatchMessage': reads
       'App\Messenger\Message\FreshBooksWriteBackMessage': reads
