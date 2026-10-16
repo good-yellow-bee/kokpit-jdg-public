@@ -40,6 +40,7 @@ use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore;
 use Symfony\Component\Uid\UuidV7;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Wysyłka F5.1 na danych fikcyjnych: fikcyjny zbiór JPK_EWP(4) z F2.4 (`JpkTestTools`), 12 okresów z
@@ -91,7 +92,7 @@ final class JpkSendTestTools
     public readonly string $userId;
 
     /** @param array<string,int> $limits */
-    public function __construct(private readonly Connection $db, SecretStore $secrets, string $now = self::NOW, array $limits = ['jpk.init_upload' => 10], ?XsdCatalog $catalog = null)
+    public function __construct(private readonly Connection $db, SecretStore $secrets, string $now = self::NOW, array $limits = ['jpk.init_upload' => 10], ?XsdCatalog $catalog = null, ?HttpClientInterface $live = null)
     {
         $clock = $this->clock = new MockClock($now);
         $this->redactor = new Redactor();
@@ -132,7 +133,7 @@ final class JpkSendTestTools
         // Certyfikat z czasu rzeczywistego (`openssl_csr_sign`), więc jego ważność sprawdza zegar bieżącej chwili.
         $certificate = new JpkMfCertificate(['test' => self::certificateFile()], new MockClock());
         $this->writer = new JpkWriter($this->fake->gateway, $this->envelope, $this->initUpload, $this->authData, $certificate, $configuration, $this->fake->rates, $this->guard, $db, $this->files, $this->notifications, $clock);
-        $this->edeklaracje = new FakeEDeklaracjeGateway($db, $clock, $this->redactor, $limits + ['edeklaracje.send' => 10]);
+        $this->edeklaracje = new FakeEDeklaracjeGateway($db, $clock, $this->redactor, $limits + ['edeklaracje.send' => 10], $live);
         $this->edeklaracjeWriter = new EDeklaracjeWriter($this->edeklaracje->gateway, new EDeklaracjeDocument($validator), $this->authData, $catalog, $configuration, $this->edeklaracje->rates, $this->guard, $db, $this->files, $this->notifications, $clock);
         $this->connectors = new ApprovalConnectors([$this->writer, $this->edeklaracjeWriter], [$this->writer, $this->edeklaracjeWriter]);
         $this->logger = new MemoryLogger($clock);

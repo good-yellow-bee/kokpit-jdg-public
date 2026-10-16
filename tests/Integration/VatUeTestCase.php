@@ -7,6 +7,7 @@ namespace App\Tests\Integration;
 use App\Tests\Support\JpkSendTestTools;
 use App\Tests\Support\JpkV7mTestTools;
 use App\Tests\Support\VatUeTestTools;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Baza testów F5.5 (D-66): fikcyjny miesiąc VAT-UE 11.2026 (`VatUeTestTools`), `MockClock` 10.12.2026, poświadczenie
@@ -21,10 +22,11 @@ abstract class VatUeTestCase extends JpkV7mTestCase
     /**
      * @param array<string,int> $limits
      * @param ?string $v7mStatus stan złożenia JPK_V7M z K_12; NULL bez złożenia
+     * @param ?HttpClientInterface $live prawdziwy klient testu live (F5.6); bez niego nagrania
      */
-    protected function vatUe(?string $v7mStatus = 'accepted', array $limits = ['jpk.init_upload' => 10, 'edeklaracje.send' => 10]): JpkSendTestTools
+    protected function vatUe(?string $v7mStatus = 'accepted', array $limits = ['jpk.init_upload' => 10, 'edeklaracje.send' => 10], ?HttpClientInterface $live = null): JpkSendTestTools
     {
-        $tools = new JpkSendTestTools($this->db(), $this->secrets(), JpkV7mTestTools::NOW, $limits);
+        $tools = new JpkSendTestTools($this->db(), $this->secrets(), JpkV7mTestTools::NOW, $limits, live: $live);
         JpkV7mTestTools::credential($this->db(), $tools->clock);
         $this->seeded = VatUeTestTools::seed($this->db(), $tools->clock);
         $this->obligationId = VatUeTestTools::obligation($this->db(), $tools->clock);

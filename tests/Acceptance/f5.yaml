@@ -36,3 +36,6 @@ criteria:
   - { key: edeklaracje-send-accepted, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeSendAccepted', junit: true }
   - { key: edeklaracje-status-codes, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeStatusCodes', junit: true }
   - { key: edeklaracje-rate-limit, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeRateLimit', junit: true }
+  - { key: edeklaracje-te-vat-ue, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUeTest', junit: true }
+  - { key: edeklaracje-te-vat-uek, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUekTest', junit: true }
+  - { key: edeklaracje-te-fixtures, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeLiveRecording', junit: true }

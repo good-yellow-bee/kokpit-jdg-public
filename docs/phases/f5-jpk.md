@@ -248,9 +248,9 @@ Wiersze `live` wymagają `CONNECTORS_ENABLED=1` i sejfu testowego. W CI uruchami
 | Kryterium | Komenda / kroki | Oczekiwany wynik | Dowód |
 | --- | --- | --- | --- |
 | `jpk-te-v7m-upo` (`live`): JPK_V7M na test-e-dokumenty | `vendor/bin/phpunit --testsuite live --filter JpkTeV7mUpo`: fikcyjny miesiąc z F5.4 | UPO przy `filing`; `accepted`; okres testowy `closed` | `junit.xml`: `JpkTeV7mUpo*`; `jpk/jpk-te-v7m-upo-*.xml` |
-| `edeklaracje-te-vat-ue` (`live`): VAT-UE na bramce testowej | `vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUe` | UPO i `accepted`; brak 418; przy niedziałającej bramce test kończy się wynikiem „bramka niedostępna” i wpisem R-31 | `junit.xml`: `EDeklaracjeTeVatUe*`; `jpk/edeklaracje-te-vat-ue-*.xml` albo `cmd/edeklaracje-te-vat-ue.txt` z odpowiedzią bramki |
-| `edeklaracje-te-vat-uek` (`live`): VAT-UEK z danymi autoryzującymi | `vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUek` | UPO bez 410 i 418; inaczej `rejected` i nowy rekord D-xx zastępujący D-27 | `junit.xml`: `EDeklaracjeTeVatUek*`; `cmd/edeklaracje-te-vat-uek.txt` |
-| `edeklaracje-te-fixtures` (`live`): nagrania | `bin/console app:fixtures:record jpk <scenariusz>` dla JPK_V7M; `bin/console app:fixtures:record edeklaracje <scenariusz>` | nagrania przez scrubber; skaner bez trafień; testy F5.4 i F5.5 przechodzą na nowych nagraniach | `cmd/edeklaracje-te-fixtures.txt` |
+| `edeklaracje-te-vat-ue` (`live`): VAT-UE na bramce testowej | `vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUeTest` | UPO i `accepted`; brak 418; przy niedziałającej bramce test kończy się wynikiem „bramka niedostępna” i wpisem R-31 | `junit.xml`: `EDeklaracjeTeVatUe*`; `cmd/edeklaracje-te-vat-ue.txt` z odpowiedzią bramki |
+| `edeklaracje-te-vat-uek` (`live`): VAT-UEK z danymi autoryzującymi | `vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUekTest` | UPO bez 410 i 418; inaczej `rejected` i nowy rekord D-xx zastępujący D-27 | `junit.xml`: `EDeklaracjeTeVatUek*`; `cmd/edeklaracje-te-vat-uek.txt` |
+| `edeklaracje-te-fixtures`: nagrania | przebieg live zapisuje nagrania przez `Scrubber` i skaner do `var/live-recordings/EDeklaracje` (D-68); `vendor/bin/phpunit --filter EDeklaracjeLiveRecording` odtwarza `live-send`, `live-upo`, `live-uek-send`, `live-uek-upo` przez bramkę | VAT-UE i VAT-UEK `accepted` z UPO systemu testowego; skaner bez trafień; testy F5.5 przechodzą | `junit.xml`: `EDeklaracjeLiveRecording*` |
 
 ### Go-live w kryteriach
 

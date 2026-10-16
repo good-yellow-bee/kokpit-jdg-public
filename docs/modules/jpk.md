@@ -313,11 +313,13 @@ Do weryfikacji na bramce testowej w F5:
 - czy VAT-UEK z danymi autoryzującymi nie dostaje kodu 410 („dokument bez podpisu nie może być korektą”);
 - czy bramka testowa z adresu w specyfikacji z 2019 r. działa.
 
+**Wynik F5.6 (15.10.2026, D-68).** Bramka testowa działa. Fikcyjny VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` dopisanymi na końcu korzenia przeszły przez `sendUnsignDocument` (301, potem `requestUPO` 302 i 200) z UPO „e-Deklaracje - system testowy”, `Przyjeto` = true. Bez 418 i 410, więc D-27 zostaje. Bramka testowa nie sprawdza danych autoryzujących z rejestrem (fikcyjne przeszły), więc 410 za niezgodne dane sprawdza dopiero pierwsze złożenie PROD.
+
 ### Bramka e-Deklaracji (SOAP)
 
 | `EDEKLARACJE_TARGET` | Adres usługi |
 | --- | --- |
-| `test` | `https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty` (WSDL z `?wsdl`); działanie do sprawdzenia |
+| `test` | `https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty` (WSDL z `?wsdl`); działa, sprawdzone w F5.6 (D-67, D-68) |
 | `prod` | host `bramka.e-deklaracje.mf.gov.pl`; pełny adres z produkcyjnego WSDL w konfiguracji |
 
 | Operacja | Wejście | Wyjście |
