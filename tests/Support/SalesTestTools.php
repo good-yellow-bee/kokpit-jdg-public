@@ -83,10 +83,10 @@ final class SalesTestTools
     }
 
     /** Mapa usług, dzień przejścia, `company.identity`, połączenie FreshBooks, `freshbooks.sales_enabled` i poświadczenie zapisu KSeF. */
-    public function prepare(bool $salesEnabled = true): void
+    public function prepare(bool $salesEnabled = true, string $nip = Fa3TestTools::OWN_NIP): void
     {
         FreshBooksTestTools::settings($this->db, $this->clock);
-        Fa3TestTools::identity($this->db, $this->clock);
+        Fa3TestTools::identity($this->db, $this->clock, $nip);
         FreshBooksTestTools::connect($this->db, $this->clock, $this->vault);
         $this->settings->set(SettingKeys::FRESHBOOKS_SALES_ENABLED, $salesEnabled, '2026-01-01', null, 'fictional');
         $stamp = $this->clock->now()->format('Y-m-d\TH:i:s.uP');

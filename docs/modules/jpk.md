@@ -41,8 +41,8 @@ Daty milowe i bramka 31.03.2027 są w [README.md](../README.md), narzędzia zapa
 - `HostAllowlist` dopuszcza magazyn tylko dla bieżącego `JPK_TARGET` ([specyfikacja 5.6.0](https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf)):
   - `test`: `taxdocumentstorage[0-9]{2}tst\.blob\.core\.windows\.net`;
   - `prod`: `taxdocumentstorage[0-9]{2}\.blob\.core\.windows\.net`.
-- TLS 1.2 albo 1.3 i tylko sześć zestawów szyfrów: `TLS_AES_256_GCM_SHA384`, `TLS_AES_128_GCM_SHA256`, `TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384`, `TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256`, `TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384`, `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`. Test konektora sprawdza negocjowany zestaw.
-- Certyfikat klucza publicznego MF do szyfrowania klucza jest inny dla testu i produkcji i bywa wymieniany. Leży w konfiguracji per cel, z datą ważności monitorowaną w panelu ([pliki do pobrania MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_vat-z-deklaracja/pliki-do-pobrania)). Odświeża go zadanie `mf_keys.refresh` ([operations.md](../operations.md)).
+- TLS 1.2 albo 1.3 i tylko sześć zestawów szyfrów: `TLS_AES_256_GCM_SHA384`, `TLS_AES_128_GCM_SHA256`, `TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384`, `TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256`, `TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384`, `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`. Test konektora sprawdza negocjowany zestaw; TE negocjuje TLS 1.3 `TLS_AES_256_GCM_SHA384` (D-69).
+- Certyfikat klucza publicznego MF do szyfrowania klucza jest inny dla testu i produkcji i bywa wymieniany. Leży w konfiguracji per cel, z datą ważności monitorowaną w panelu ([pliki do pobrania MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_vat-z-deklaracja/pliki-do-pobrania)). Odświeża go zadanie `mf_keys.refresh` ([operations.md](../operations.md)). Serwis podatki.gov.pl odpowiada na zwykły `GET` wyzwaniem JavaScript (ochrona przed botami), więc nowy certyfikat dostarcza człowiek albo sesja z przeglądarką (D-69). Certyfikat celu `test` od 9.07.2025 jest ważny do 7.07.2027.
 - Certyfikatów TLS serwera nie przypinasz.
 - Adresy i wersje API są w konfiguracji, nie w kodzie (D-25 w [decisions.md](../decisions.md)).
 
@@ -133,6 +133,8 @@ Licznik w `rate_counter` sprawdza krok 3 wysyłki w bramce, przed pierwszym wywo
 - Na `test-e-dokumenty` wysyłasz wyłącznie dane fikcyjne: fikcyjny zbiór faktur, ewidencji i fikcyjne dane autoryzujące ([testing.md](../testing.md)).
 - Fikcyjny zbiór przechodzi tę samą ścieżkę kodu co produkcja.
 - Parametr `enableValidateQualifiedSignature=true` działa tylko na środowisku testowym.
+- TE weryfikuje dane autoryzujące z danymi podatnika: fikcyjne `AuthData` dają 419 („błąd w danych autoryzujących”) po pełnym przyjęciu i odszyfrowaniu pliku. Wynik F5.3 15.10.2026 dla JPK_EWP(4), JPK_ST(1) i JPK_V7M(3) w D-69; przyjęcie z UPO potwierdza pierwsze złożenie PROD.
+- Ponowna wysyłka bajtów pliku odrzuconego kodem 419 dostaje nowy numer referencyjny i ten sam kod, bez duplikatu.
 
 ## JPK_V7M(3)
 

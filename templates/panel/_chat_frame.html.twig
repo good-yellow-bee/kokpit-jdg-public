@@ -11,7 +11,7 @@
                 {% endif %}
                 {% for chart in turn.charts %}
                     <figure class="chat-chart" data-chart-query="{{ chart.query }}" data-chart-type="{{ chart.chartType }}" data-chart-labels="{{ chart.labels|json_encode }}" data-chart-values="{{ chart.values|json_encode }}">
-                        <canvas data-controller="symfony--ux-chartjs--chart" data-symfony--ux-chartjs--chart-view-value="{{ chart.view|json_encode }}"></canvas>
+                        {{ render_chart(chart.chart) }}
                         <figcaption>Wykres z bazy: {{ chart.query }} ({{ chart.parameters|map((value, key) => key ~ ' ' ~ value)|join(', ') }}){% if chart.truncated %}; wynik obcięty do limitu wierszy{% endif %}</figcaption>
                         <table>
                             <thead><tr><th>Etykieta</th><th>{{ chart.datasetLabel }}</th></tr></thead>

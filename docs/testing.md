@@ -49,7 +49,7 @@ Odłożone testy F4 są w [modules/e-doreczenia.md](modules/e-doreczenia.md); ni
 | `connector` | Środowisko testowe | CI | `@group live` | Dane |
 | --- | --- | --- | --- | --- |
 | `ksef` | TE `api-test.ksef.mf.gov.pl` ([środowiska](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/srodowiska.md)) | nagrania | TE | losowe NIP z poprawną sumą kontrolną |
-| `latarnia` | `api-latarnia-test.ksef.mf.gov.pl` | nagrania stanów AVAILABLE, MAINTENANCE, FAILURE, TOTAL_FAILURE | host testowy | – |
+| `latarnia` | `api-latarnia-test.ksef.mf.gov.pl` | nagrania stanów AVAILABLE, MAINTENANCE, FAILURE, TOTAL_FAILURE; TE zwraca stałe dane (`te-status.json`, D-70) | host testowy | – |
 | `jpk` | `test-e-dokumenty.mf.gov.pl` | nagrania | bramka testowa | fikcyjny zbiór JPK, fikcyjne dane autoryzujące |
 | `edeklaracje` | bramka testowa, działanie do sprawdzenia | nagrania przez podklasę `SoapClient` | jeśli bramka działa | fikcyjna deklaracja VAT-UE |
 | `vies` | usługa testowa; błędy wracają jako HTTP 200 z `actionSucceed:false` ([VIES test](https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service)) | nagrania, także MS_UNAVAILABLE i TIMEOUT | usługa testowa | numery testowe usługi |

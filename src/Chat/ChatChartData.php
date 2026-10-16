@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use Symfony\UX\Chartjs\Model\Chart;
+
 /**
  * Dane wykresu panelu (F6.3, D-61): etykiety i wartości z wyniku nazwanego zapytania `ChartSpec`, nigdy z tekstu
- * modelu. Wartości to napisy dziesiętne z `BigDecimal`, bez `float`; `view` ma format kontrolera Symfony UX Chart.js.
+ * modelu. Wartości to napisy dziesiętne z `BigDecimal`, bez `float`; `chart()` to model Symfony UX Chart.js dla
+ * `render_chart()` (D-73).
  */
 final readonly class ChatChartData
 {
@@ -25,9 +28,11 @@ final readonly class ChatChartData
         public bool $truncated,
     ) {}
 
-    /** @return array{type:string,data:array{labels:list<string>,datasets:list<array{label:string,data:list<?string>}>},options:\stdClass} `options` jako obiekt JSON (`{}`), jak oczekuje Chart.js */
-    public function view(): array
+    /** Model wykresu dla `render_chart()`: typ `bar` albo `line`, jeden zbiór danych z wyniku zapytania. */
+    public function chart(): Chart
     {
-        return ['type' => $this->chartType, 'data' => ['labels' => $this->labels, 'datasets' => [['label' => $this->datasetLabel, 'data' => $this->values]]], 'options' => new \stdClass()];
+        $chart = new Chart($this->chartType);
+        $chart->setData(['labels' => $this->labels, 'datasets' => [['label' => $this->datasetLabel, 'data' => $this->values]]]);
+        return $chart;
     }
 }

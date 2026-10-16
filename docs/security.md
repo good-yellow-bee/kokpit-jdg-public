@@ -154,7 +154,7 @@ Panel działa tylko w Tailscale, bez publicznego portu. Uwierzytelnienie nie ufa
 | Drugi passkey | co najmniej 2 passkeye na różnych urządzeniach; panel ostrzega, gdy jest jeden; dodanie i unieważnienie ze step-up w `/passkeys`; ostatniego aktywnego panel nie unieważnia (D-40) | F0b |
 | Sesja | bezczynność 30 minut, limit bezwzględny 12 godzin; ciasteczko `Secure`, `HttpOnly`, `SameSite=Strict` | F0a |
 | CSRF | token Symfony w każdym formularzu zmieniającym stan, także w formularzach Turbo | F0a |
-| Nagłówki | CSP bez zewnętrznych skryptów, HSTS na nazwie panelu | F0a |
+| Nagłówki | CSP bez zewnętrznych skryptów, HSTS na nazwie panelu; skrypty i style inline tylko z nonce żądania (`CspNonce`, D-73), bez `unsafe-inline` | F0a, F6 |
 
 **Step-up** (od F0b, D-28). Akcje niżej wymagają świeżej asercji WebAuthn z `userVerification=required`, nie starszej niż 5 minut. Sprawdza ją `StepUpVerifier`; w `when@test` działa wersja z wirtualnym authenticatorem. Użyty passkey trafia do `approval.step_up_credential_id` albo do szczegółów wpisu `audit_log`.
 

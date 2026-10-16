@@ -1,0 +1,4 @@
+/* Stan ładowania ramki czatu (F6.3, D-61); plik zamiast stylu inline, bo CSP nie dopuszcza stylów inline (D-73). */
+.chat-working { display: none; }
+turbo-frame[busy] .chat-working, turbo-frame[aria-busy="true"] .chat-working { display: block; }
+turbo-frame[busy] #chat-form button { pointer-events: none; opacity: .5; }

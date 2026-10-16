@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api-latarnia-test.ksef.mf.gov.pl (F3.5, D-70): stałe dane przykładowe TE, fictional.",
+    "scenario": "GET \/status Latarni TE.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "\/status",
+            "status": 200,
+            "body_text": "{\n    \"status\": \"TOTAL_FAILURE\",\n    \"messages\": [\n        {\n            \"id\": \"K\\\/2026\\\/AWR\\\/02\",\n            \"category\": \"TOTAL_FAILURE\",\n            \"type\": \"FAILURE_START\",\n            \"title\": \"Wystąpiła całkowita awaria\",\n            \"text\": \"Od godziny 13:27 31 stycznia trwa całkowita awaria...\",\n            \"start\": \"2026-01-31T11:27:00+00:00\",\n            \"published\": \"2026-01-31T11:35:00+00:00\",\n            \"eventId\": 1003,\n            \"version\": 1\n        },\n        {\n            \"id\": \"K\\\/2026\\\/AWR\\\/01\",\n            \"category\": \"FAILURE\",\n            \"type\": \"FAILURE_START\",\n            \"title\": \"Wystąpiła awaria\",\n            \"text\": \"Od godziny 12:13 31 stycznia trwa awaria...\",\n            \"start\": \"2026-01-31T10:13:00+00:00\",\n            \"published\": \"2026-01-31T10:13:00+00:00\",\n            \"eventId\": 1002,\n            \"version\": 1\n        }\n    ]\n}"
+        }
+    ]
+}

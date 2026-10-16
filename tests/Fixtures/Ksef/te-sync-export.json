@@ -1,0 +1,247 @@
+{
+    "fictional": true,
+    "source": "Nagranie z KSeF TE api-test.ksef.mf.gov.pl (F1, D-71), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "Eksport Subject2 (3 faktury) i Subject1 (2 faktury): odpowiedź startu, status 200 i metadane faktur z paczki ZIP; XML to złoty plik pl_b2b z NIP, numerem i datą z metadanych.",
+    "exports": {
+        "subject2": {
+            "started": {
+                "referenceNumber": "20261015-EH-365467B000-39AF8CEADC-14"
+            },
+            "status": {
+                "status": {
+                    "code": 200,
+                    "description": "Eksport faktur zakończony sukcesem"
+                },
+                "completedDate": "2026-10-15T15:49:28.8999821+00:00",
+                "packageExpirationDate": "2026-10-22T15:49:28.8999821+00:00",
+                "package": {
+                    "invoiceCount": 3,
+                    "size": 3551,
+                    "parts": [
+                        {
+                            "ordinalNumber": 1,
+                            "partName": "fikcyjne-20a42d8ef99e",
+                            "method": "GET",
+                            "url": "https:\/\/api-test.ksef.mf.gov.pl\/storage\/09\/invoice-export\/20261015-EH-365467B000-39AF8CEADC-14\/invoice-package\/90e0b05f-3bf7-41f9-97ce-769cc3ca55d2\/20261015-EH-365467B000-39AF8CEADC-14-001.zip.aes?skoid=fictional&sktid=fictional&skt=2026-10-15T11%3A04%3A00Z&ske=2026-10-22T11%3A04%3A00Z&sks=b&skv=2025-01-05&sv=2025-01-05&st=2026-10-15T15%3A44%3A29Z&se=2026-10-15T16%3A49%3A29Z&sr=b&sp=r&sig=fictional",
+                            "partSize": 3551,
+                            "partHash": "nIOx6lCd8+OVIk7QIToDmOmhYBLBQdNakH7GPQ3TAJk=",
+                            "encryptedPartSize": 3552,
+                            "encryptedPartHash": "wvyy+Hz+E3bXTg2tZ3ew6oEhve4L3pTFXH9y6Hw2NwI=",
+                            "expirationDate": "2026-10-15T16:49:29.0322734+00:00"
+                        }
+                    ],
+                    "isTruncated": false,
+                    "permanentStorageHwmDate": "2026-10-15T15:47:28.823705+00:00",
+                    "compressionType": "Zip"
+                }
+            },
+            "invoices": [
+                {
+                    "issueDate": "2026-10-15",
+                    "permanentStorageDate": "2026-10-15T15:47:16.055182+00:00",
+                    "invoicingDate": "2026-10-15T15:47:15.203009+00:00",
+                    "acquisitionDate": "2026-10-15T15:47:15.368293+00:00",
+                    "ksefNumber": "fikcyjne-82305675f405",
+                    "invoiceNumber": "FK\/TE\/DCD198\/1",
+                    "seller": {
+                        "nip": "5555555555",
+                        "name": "fikcyjne-fa26c03320ea"
+                    },
+                    "buyer": {
+                        "identifier": {
+                            "type": "Nip",
+                            "value": "1111111111"
+                        },
+                        "name": "fikcyjne-4fa7d9120f1d"
+                    },
+                    "netAmount": 666.66,
+                    "grossAmount": 819.99,
+                    "vatAmount": 153.33,
+                    "currency": "PLN",
+                    "invoicingMode": "Online",
+                    "invoiceType": "Vat",
+                    "formCode": {
+                        "systemCode": "FA (3)",
+                        "schemaVersion": "1-0E",
+                        "value": "FA"
+                    },
+                    "isSelfInvoicing": false,
+                    "hasAttachment": false,
+                    "invoiceHash": "obI0\/rohejHD78JnhdgzQ+TmNt0K1Gwbf1sFOdDITqc=",
+                    "thirdSubjects": []
+                },
+                {
+                    "issueDate": "2026-10-15",
+                    "permanentStorageDate": "2026-10-15T15:47:17.038048+00:00",
+                    "invoicingDate": "2026-10-15T15:47:16.003546+00:00",
+                    "acquisitionDate": "2026-10-15T15:47:16.16437+00:00",
+                    "ksefNumber": "fikcyjne-f40535e56020",
+                    "invoiceNumber": "FK\/TE\/DCD198\/2",
+                    "seller": {
+                        "nip": "5555555555",
+                        "name": "fikcyjne-fa26c03320ea"
+                    },
+                    "buyer": {
+                        "identifier": {
+                            "type": "Nip",
+                            "value": "1111111111"
+                        },
+                        "name": "fikcyjne-4fa7d9120f1d"
+                    },
+                    "netAmount": 666.66,
+                    "grossAmount": 819.99,
+                    "vatAmount": 153.33,
+                    "currency": "PLN",
+                    "invoicingMode": "Online",
+                    "invoiceType": "Vat",
+                    "formCode": {
+                        "systemCode": "FA (3)",
+                        "schemaVersion": "1-0E",
+                        "value": "FA"
+                    },
+                    "isSelfInvoicing": false,
+                    "hasAttachment": false,
+                    "invoiceHash": "zZEsbVI12oacAJJGJeOVFaXuuR19Ky9FG4rSQ5pipXE=",
+                    "thirdSubjects": []
+                },
+                {
+                    "issueDate": "2026-10-15",
+                    "permanentStorageDate": "2026-10-15T15:47:18.474966+00:00",
+                    "invoicingDate": "2026-10-15T15:47:16.327889+00:00",
+                    "acquisitionDate": "2026-10-15T15:47:16.453893+00:00",
+                    "ksefNumber": "fikcyjne-6372cd5d4101",
+                    "invoiceNumber": "FK\/TE\/DCD198\/3",
+                    "seller": {
+                        "nip": "5555555555",
+                        "name": "fikcyjne-fa26c03320ea"
+                    },
+                    "buyer": {
+                        "identifier": {
+                            "type": "Nip",
+                            "value": "1111111111"
+                        },
+                        "name": "fikcyjne-4fa7d9120f1d"
+                    },
+                    "netAmount": 666.66,
+                    "grossAmount": 819.99,
+                    "vatAmount": 153.33,
+                    "currency": "PLN",
+                    "invoicingMode": "Online",
+                    "invoiceType": "Vat",
+                    "formCode": {
+                        "systemCode": "FA (3)",
+                        "schemaVersion": "1-0E",
+                        "value": "FA"
+                    },
+                    "isSelfInvoicing": false,
+                    "hasAttachment": false,
+                    "invoiceHash": "K\/HpmJ7Bo7j0vDU3Xi\/i59Z1Q\/hKzAnCAHpXBWYmc8c=",
+                    "thirdSubjects": []
+                }
+            ]
+        },
+        "subject1": {
+            "started": {
+                "referenceNumber": "20261015-EH-1111111111-8DFB760C05-CB"
+            },
+            "status": {
+                "status": {
+                    "code": 200,
+                    "description": "Eksport faktur zakończony sukcesem"
+                },
+                "completedDate": "2026-10-15T15:49:29.6286755+00:00",
+                "packageExpirationDate": "2026-10-22T15:49:29.6286755+00:00",
+                "package": {
+                    "invoiceCount": 2,
+                    "size": 2546,
+                    "parts": [
+                        {
+                            "ordinalNumber": 1,
+                            "partName": "fikcyjne-d9530acafe74",
+                            "method": "GET",
+                            "url": "https:\/\/api-test.ksef.mf.gov.pl\/storage\/06\/invoice-export\/20261015-EH-1111111111-8DFB760C05-CB\/invoice-package\/96d09260-6102-46c2-a833-40a90e79b2be\/20261015-EH-1111111111-8DFB760C05-CB-001.zip.aes?skoid=fictional&sktid=fictional&skt=2026-10-15T07%3A25%3A47Z&ske=2026-10-22T07%3A25%3A47Z&sks=b&skv=2025-01-05&sv=2025-01-05&st=2026-10-15T15%3A44%3A29Z&se=2026-10-15T16%3A49%3A29Z&sr=b&sp=r&sig=fictional",
+                            "partSize": 2546,
+                            "partHash": "L18734SRsWGg55lHP8bcMukGIs6P3RgG12MQ6yJJgms=",
+                            "encryptedPartSize": 2560,
+                            "encryptedPartHash": "yxMbuwH3YRDep0nk9NOZMTl9YPhMDSAh8lNKVF+hEac=",
+                            "expirationDate": "2026-10-15T16:49:29.7480808+00:00"
+                        }
+                    ],
+                    "isTruncated": false,
+                    "permanentStorageHwmDate": "2026-10-15T15:47:29.532827+00:00",
+                    "compressionType": "Zip"
+                }
+            },
+            "invoices": [
+                {
+                    "issueDate": "2026-10-15",
+                    "permanentStorageDate": "2026-10-15T15:47:19.332695+00:00",
+                    "invoicingDate": "2026-10-15T15:47:18.823149+00:00",
+                    "acquisitionDate": "2026-10-15T15:47:18.919253+00:00",
+                    "ksefNumber": "fikcyjne-c988c056be60",
+                    "invoiceNumber": "FS\/TE\/DCD198\/1",
+                    "seller": {
+                        "nip": "1111111111",
+                        "name": "fikcyjne-fa26c03320ea"
+                    },
+                    "buyer": {
+                        "identifier": {
+                            "type": "Nip",
+                            "value": "5555555555"
+                        },
+                        "name": "fikcyjne-4fa7d9120f1d"
+                    },
+                    "netAmount": 666.66,
+                    "grossAmount": 819.99,
+                    "vatAmount": 153.33,
+                    "currency": "PLN",
+                    "invoicingMode": "Online",
+                    "invoiceType": "Vat",
+                    "formCode": {
+                        "systemCode": "FA (3)",
+                        "schemaVersion": "1-0E",
+                        "value": "FA"
+                    },
+                    "isSelfInvoicing": false,
+                    "hasAttachment": false,
+                    "invoiceHash": "A7YEwcGD6h6qob5siWo4gSCR0KEquUVcKVzcXsjUQIg=",
+                    "thirdSubjects": []
+                },
+                {
+                    "issueDate": "2026-10-15",
+                    "permanentStorageDate": "2026-10-15T15:47:20.086092+00:00",
+                    "invoicingDate": "2026-10-15T15:47:19.182804+00:00",
+                    "acquisitionDate": "2026-10-15T15:47:19.319418+00:00",
+                    "ksefNumber": "fikcyjne-8db9a0cd909e",
+                    "invoiceNumber": "FS\/TE\/DCD198\/2",
+                    "seller": {
+                        "nip": "1111111111",
+                        "name": "fikcyjne-fa26c03320ea"
+                    },
+                    "buyer": {
+                        "identifier": {
+                            "type": "Nip",
+                            "value": "5555555555"
+                        },
+                        "name": "fikcyjne-4fa7d9120f1d"
+                    },
+                    "netAmount": 666.66,
+                    "grossAmount": 819.99,
+                    "vatAmount": 153.33,
+                    "currency": "PLN",
+                    "invoicingMode": "Online",
+                    "invoiceType": "Vat",
+                    "formCode": {
+                        "systemCode": "FA (3)",
+                        "schemaVersion": "1-0E",
+                        "value": "FA"
+                    },
+                    "isSelfInvoicing": false,
+                    "hasAttachment": false,
+                    "invoiceHash": "gsTh+qfiOAG3Ok056CQKJqTreW2lVdsxAiPv8HqCREg=",
+                    "thirdSubjects": []
+                }
+            ]
+        }
+    }
+}

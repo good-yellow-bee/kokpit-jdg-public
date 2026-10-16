@@ -139,7 +139,7 @@ Jeden harmonogram `default` z `stateful(cache)`, `processOnlyLastMissedRun(true)
 | `approval.dispatch_waiting` | co 5 min | `official_writes` | ponownie kolejkuje każde `approved` ze spełnionymi warunkami wysyłki; duplikat nie szkodzi, bo handler blokuje wiersz i wymaga `approved`; nigdy po pierwszym wywołaniu API | – | F0b | [approval-gate.md](approval-gate.md) |
 | `ksef.sync` | co godzinę dla każdej roli, Subject1 i Subject2 przesunięte o 30 min | `reads` | `sync_cursor` | tak | F1 | [modules/ksef.md](modules/ksef.md) |
 | `ksef.backfill` | każdej nocy 01:00 kolejne okna, do ustawienia `backfill_done_at` | `reads` | `sync_cursor.backfill_from`, `backfill_done_at` | – | F1 | [modules/ksef.md](modules/ksef.md) |
-| `mf_keys.refresh` | poniedziałek 05:00 | `reads` | odcisk sha256 certyfikatu i `validTo` | – | F1 | ten plik |
+| `mf_keys.refresh` | poniedziałek 05:00 | `reads` | odcisk sha256 certyfikatu JPK i `validTo`; KSeF bez zadania (D-72) | – | F5 | ten plik |
 | `nbp.fetch_rates` | dni robocze 12:20; przy 404 ponowienie co 15 min do publikacji; tabela A wychodzi między 11:45 a 12:15 ([NBP](https://nbp.pl/statystyka-i-sprawozdawczosc/kursy/informacja-o-terminach-publikacji-kursow-walut/)) | `reads` | `UNIQUE` w `fx_rate`; tylko rozgrzewa cache, kurs przy dokumencie zawsze z `FxRateProvider::getRate` | – | F1 | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) |
 | `counterparty.refresh_due` | codziennie 08:00 | `reads` | nowy wiersz `verification` | – | F1 | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) |
 | `freshbooks.poll_invoices` | co 15 min | `reads` | `sync_cursor`, `source_hash` | – | F2.2/F2.3, F3 | [modules/freshbooks.md](modules/freshbooks.md) |
@@ -242,7 +242,7 @@ Inwentarz i stany są w [security.md](security.md). Zakończenie rotacji zależy
 | klucz Claude API | po incydencie albo raz w roku | nowy klucz w workspace kokpitu → sejf → wywołanie testowe → usunięcie starego |
 | token ntfy, SMTP | po incydencie | nowa wartość → sejf → testowe powiadomienie (`app:push:test`) |
 | klucz restic, klucz sejfu PROD | po incydencie | `restic key add` i usunięcie starego; `secrets:generate-keys --rotate`; aktualizacja menedżera haseł i papieru |
-| klucze publiczne MF (KSeF, JPK) | `mf_keys.refresh` co tydzień | KSeF: `GET /security/public-key-certificates` ([open-api](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json)) nadpisuje wpis w puli PSR-16 celu (adapter `cache.adapter.doctrine_dbal`), z której korzysta biblioteka KSeF. JPK: certyfikat w konfiguracji per cel jako plik na wolumenie wdrożenia, nie w obrazie ([modules/jpk.md](modules/jpk.md)). Nowy plik tylko ze stałego adresu MF z konfiguracji, inaczej wymiana ręczna. Panel pokazuje `validTo` obu i przypomina 30 dni wcześniej; bez przypinania certyfikatów TLS |
+| klucze publiczne MF (KSeF, JPK) | `mf_keys.refresh` co tydzień | KSeF: bez kopii i bez zadania; `KsefApi` pobiera `GET /security/public-key-certificates` ([open-api](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json)) raz na proces i bierze certyfikat ważny w tej chwili (D-72). JPK: certyfikat w konfiguracji per cel jako plik na wolumenie wdrożenia, nie w obrazie ([modules/jpk.md](modules/jpk.md)). Nowy plik tylko ze stałego adresu MF z konfiguracji, inaczej wymiana ręczna. Panel pokazuje `validTo` obu i przypomina 30 dni wcześniej; bez przypinania certyfikatów TLS |
 
 Rotacje poświadczeń e-Doręczeń wracają z F4 (D-29), według [modules/e-doreczenia.md](modules/e-doreczenia.md).
 

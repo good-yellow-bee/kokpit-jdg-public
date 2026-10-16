@@ -8,8 +8,8 @@ use App\Fixtures\FixtureScanner;
 use App\Fixtures\Scrubber;
 
 /**
- * Zapis nagrań z przebiegu live (F5.3, F5.6, F3.5; D-68): interakcje `KsefRecordings::$recorded` po `Scrubber`
- * i `FixtureScanner` trafiają do `var/live-recordings/<Connector>/<scenariusz>.json` (poza repo). Do
+ * Zapis nagrań z przebiegu live (F5.3, F5.6, F3.5; D-68): interakcje `KsefRecordings::$recorded` po `Scrubber`,
+ * bez podpisu SAS (`sig`) i po `FixtureScanner` trafiają do `var/live-recordings/<Connector>/<scenariusz>.json` (poza repo). Do
  * `tests/Fixtures/<Connector>` przenosi je człowiek albo sesja po przeglądzie, bo zapis wysyłki idzie tylko przez
  * bramkę zatwierdzeń, a nie przez `app:fixtures:record`.
  */
@@ -18,10 +18,19 @@ final class LiveRecording
     /** @param list<array<string,int|string>> $interactions */
     public static function write(string $connector, string $scenario, string $source, string $description, array $interactions): string
     {
+        return self::writeData($connector, $scenario, $source, $description, ['interactions' => $interactions]);
+    }
+
+    /** @param array<string,mixed> $data treść nagrania obok `fictional`, `source` i `scenario` */
+    public static function writeData(string $connector, string $scenario, string $source, string $description, array $data): string
+    {
         if (!preg_match('/^[A-Z][A-Za-z]+$/D', $connector) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', $scenario)) {
             throw new \InvalidArgumentException('Niepoprawna nazwa nagrania.');
         }
-        $content = (new Scrubber())->scrub(json_encode(['fictional' => true, 'source' => $source, 'scenario' => $description, 'interactions' => $interactions], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $content = (new Scrubber())->scrub(json_encode(['fictional' => true, 'source' => $source, 'scenario' => $description] + $data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        // Podpis SAS adresu Put Blob (F5.3) i adresu UPO KSeF (F3.5) to poświadczenie magazynu, choć krótkotrwałe; identyfikatory
+        // obiektu i dzierżawy klucza delegowanego SAS (`skoid`, `sktid`) też nie trafiają do nagrania.
+        $content = (string) preg_replace('/([?&](?:amp;)?(?:sig|skoid|sktid)=)[^&"\\\\]+/', '$1fictional', $content);
         $findings = (new FixtureScanner())->findings($content);
         if ($findings !== []) {
             throw new \RuntimeException('Nagranie live nie przeszło skanera: ' . implode(', ', $findings));

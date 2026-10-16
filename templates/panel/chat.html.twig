@@ -2,12 +2,9 @@
 
 {% block title %}Czat · Kokpit JDG{% endblock %}
 
+{% block stylesheets %}<link rel="stylesheet" href="{{ asset('styles/chat.css') }}">{% endblock %}
+
 {% block body %}
-    <style>
-        .chat-working { display: none; }
-        turbo-frame[busy] .chat-working, turbo-frame[aria-busy="true"] .chat-working { display: block; }
-        turbo-frame[busy] #chat-form button { pointer-events: none; opacity: .5; }
-    </style>
     <h1>Czat</h1>
     <p><a href="{{ path('panel_dashboard') }}">Kokpit</a></p>
     {% for message in app.flashes('error') %}<p role="alert" class="flash-error">{{ message }}</p>{% endfor %}

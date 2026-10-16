@@ -1,0 +1,25 @@
+{
+    "fictional": true,
+    "source": "Nagranie z KSeF TE api-test.ksef.mf.gov.pl (F3.5, D-70), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "Sesja interaktywna, wysyłka fikcyjnej faktury FA(3).",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "\/v2\/security\/public-key-certificates",
+            "status": 200,
+            "body_text": "{{mf_certificates}}"
+        },
+        {
+            "method": "POST",
+            "path": "\/v2\/sessions\/online",
+            "status": 201,
+            "body_text": "{\n    \"referenceNumber\": \"20261015-SO-2E6B8E9000-39A5E3A50E-CB\",\n    \"validUntil\": \"2026-10-16T01:31:15.0492454+00:00\"\n}"
+        },
+        {
+            "method": "POST",
+            "path": "\/v2\/sessions\/online\/20261015-SO-2E6B8E9000-39A5E3A50E-CB\/invoices",
+            "status": 202,
+            "body_text": "{\n    \"referenceNumber\": \"20261015-EE-2E6BA38000-39AAD577E5-5A\"\n}"
+        }
+    ]
+}

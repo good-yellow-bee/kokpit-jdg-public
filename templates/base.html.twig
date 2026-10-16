@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Kokpit JDG{% endblock %}</title>
+    {# Nonce CSP także dla stylu paska postępu Turbo (D-73). #}
+    <meta name="csp-nonce" content="{{ csp_nonce() }}">
+    {% block stylesheets %}{% endblock %}
+    {# Importmap z nonce CSP (D-73): Stimulus, Turbo dla ramek, Chart.js ładowany leniwie przy wykresie. #}
+    {% block javascripts %}{{ importmap('app', {nonce: csp_nonce()}) }}{% endblock %}
 </head>
 <body>
 <main>{% block body %}{% endblock %}</main>

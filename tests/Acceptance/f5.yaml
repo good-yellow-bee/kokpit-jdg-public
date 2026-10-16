@@ -39,3 +39,9 @@ criteria:
   - { key: edeklaracje-te-vat-ue, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUeTest', junit: true }
   - { key: edeklaracje-te-vat-uek, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUekTest', junit: true }
   - { key: edeklaracje-te-fixtures, runner: ci, command: 'vendor/bin/phpunit --filter EDeklaracjeLiveRecording', junit: true }
+  - { key: jpk-te-ewp-upo, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeEwpUpoTest', junit: true }
+  - { key: jpk-te-duplicate, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeDuplicateTest', junit: true }
+  - { key: jpk-te-st-upo, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeStUpoTest', junit: true }
+  - { key: jpk-te-tls, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeTlsTest', junit: true }
+  - { key: jpk-te-fixtures, runner: ci, command: 'vendor/bin/phpunit --filter JpkLiveRecording', junit: true }
+  - { key: jpk-te-v7m-upo, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeV7mUpoTest', junit: true }

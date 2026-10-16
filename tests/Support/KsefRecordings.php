@@ -100,7 +100,7 @@ final class KsefRecordings
      */
     private function passThrough(HttpClientInterface $live, string $method, string $url, array $options, string $path): MockResponse
     {
-        $forward = array_intersect_key($options, array_flip(['headers', 'body', 'timeout', 'max_duration']));
+        $forward = array_intersect_key($options, array_flip(['headers', 'body', 'timeout', 'max_duration', 'crypto_method', 'ciphers']));
         $headers = [];
         foreach (is_array($options['headers'] ?? null) ? $options['headers'] : [] as $name => $value) {
             if (is_string($value)) {

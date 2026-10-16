@@ -78,11 +78,11 @@ Wystawianie w KSeF obowiązuje od 1.04.2026 (art. 145m, [Dz.U. 2025 poz. 1203](h
 
 ## Uwierzytelnienie
 
-Kokpit loguje się tokenem KSeF; biblioteka obsługuje cały cykl ([uwierzytelnianie KSeF](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/uwierzytelnianie.md)).
+Kokpit loguje się tokenem KSeF; cykl obsługuje `KsefAuthenticator` (D-70) ([uwierzytelnianie KSeF](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/uwierzytelnianie.md)).
 
 1. `POST /auth/challenge` zwraca challenge ważny 10 minut i znacznik czasu.
 2. Kokpit szyfruje `{token}|{timestampMs}` kluczem publicznym MF (RSA-OAEP, SHA-256) i wysyła na `POST /auth/ksef-token` z identyfikatorem kontekstu (NIP).
-3. `GET /auth/{referenceNumber}` odpytuje status. Zapasowa ścieżka certyfikatem typ 1 to podpis XAdES na `POST /auth/xades-signature`.
+3. `GET /auth/{referenceNumber}` odpytuje status. Zapasowa ścieżka certyfikatem typ 1 to podpis XAdES na `POST /auth/xades-signature` (`KsefXades`, `KsefAuthenticator::certificateAccessToken`, D-72): sekret `ksef_auth_cert` trzyma certyfikat i klucz prywatny w PEM, para trafia do `ksef_jwt_write`. Bez sekretu tokena roli `accessToken()` idzie tą drogą sam.
 4. `POST /auth/token/redeem` zwraca accessToken i refreshToken; drugi redeem tym samym tokenem daje błąd 400.
 5. accessToken żyje do swojego `exp`, refreshToken do 7 dni. `POST /auth/token/refresh` daje nowy accessToken; po wygaśnięciu refreshTokena pełne uwierzytelnienie od nowa.
 
@@ -99,7 +99,8 @@ Lista sesji, faktury sesji, lista błędnych i UPO przyjmują `InvoiceWrite` ([K
 
 - Tokeny i klucze prywatne certyfikatów są statyczne: Symfony Secrets przez `SecretStore`. Daty ważności są w `credential_state`.
 - Para JWT każdego tokena rotuje, więc leży zaszyfrowana w `credential_state` i odświeża się pod Symfony Lock. Dwa tokeny dają dwie pary JWT: rodzaje `ksef_jwt_read` i `ksef_jwt_write` ([../data-model.md](../data-model.md)).
-- Jeden klient KSeF na kontekst NIP, poświadczenia zapisane per NIP. Wspólny cache PSR-16 trzyma tylko klucze publiczne MF.
+- Jeden klient KSeF na kontekst NIP, poświadczenia zapisane per NIP. `KsefApi` trzyma w pamięci tylko klucze publiczne MF, per cel: pobiera je raz na proces i na każde użycie bierze certyfikat ważny w tej chwili, przy kilku najnowszy, więc wymiana klucza przez MF nie wymaga zadania odświeżania (D-72).
+- Klucze MF wymagają RSA-OAEP z SHA-256; `KsefCrypto` liczy OAEP ręcznie nad surowym RSA, bo `openssl_public_encrypt` daje tylko SHA-1.
 
 ## Cykl życia tokenów i certyfikatów
 
@@ -150,6 +151,8 @@ Podmiot 3 i podmiot upoważniony są poza zakresem.
 5. Zapis faktur i nowego kursora w jednej transakcji. Gdy `IsTruncated` = `true`, kolejne okno startuje od `LastPermanentStorageDate`; w przeciwnym razie od `PermanentStorageHwmDate`.
 
 Okna są przyległe, bez nakładania. Inne typy dat (`Issue`, `Invoicing`) gubią faktury, np. przy późnej wysyłce offline.
+
+**Implementacja eksportu (D-71).** `HttpKsefGateway` szyfruje losowy klucz AES certyfikatem MF `SymmetricKeyEncryption` i trzyma go w pamięci procesu do pobrania paczki. Części pobiera z adresu ze statusu, bez tokenu (operacja `export_part`), sprawdza `partHash` i rozpakowuje ZIP. Status 420 (`from` po `PermanentStorageHwmDate`) to pusta paczka z kursorem na `from`. Na TE adres części to `api-test.ksef.mf.gov.pl/storage/...` z podpisem SAS; host części na PROD sprawdza go-live F1.
 
 **Ograniczenia API** ([KSeF API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json), [przyrostowe pobieranie](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md))
 
@@ -369,7 +372,7 @@ Latarnia jest osobnym konektorem `latarnia`, niezależnie od wyboru polityki awa
 - Statusy: `AVAILABLE`, `MAINTENANCE`, `FAILURE`, `TOTAL_FAILURE`.
 - Kokpit pyta `/status` co 5 minut i przed każdą wysyłką; zadanie jest w katalogu w [../operations.md](../operations.md).
 - Status inny niż `AVAILABLE` wstrzymuje wysyłki KSeF. Panel pokazuje status i komunikat.
-- Latarnia nieosiągalna też wstrzymuje wysyłkę (`latarnia_unreachable`); cel `demo` pomija warunek, bo Latarnia nie ma DEMO. Ostatni status trzyma pula `cache.scheduler` (D-54).
+- Latarnia nieosiągalna też wstrzymuje wysyłkę (`latarnia_unreachable`). Warunek działa tylko przy celu `prod`: Latarnia nie ma DEMO, a TE zwraca stałe dane przykładowe z `TOTAL_FAILURE` (D-70). Ostatni status trzyma pula `cache.scheduler` (D-54).
 
 **Polityka domyślna (D-15, Q-28): czekasz.** Kolejka stoi, zatwierdzenia wygasają z końcem dnia P_1, a po awarii zatwierdzasz faktury z nową P_1. Bez trybu offline i bez certyfikatu typ 2. Obowiązek `invoice_issue` pilnuje terminu z art. 106i.
 
@@ -424,6 +427,7 @@ MF liczy limity na parę kontekst (NIP) i adres IP, w oknach przesuwnych sekundy
 | `ksef.export` | `POST /invoices/exports` | 8 | 16 | 20 |
 | `ksef.export_status` | `GET /invoices/exports/{referenceNumber}` | 10 | 60 | 600 |
 | `ksef.download` | `GET /invoices/ksef/{ksefNumber}` | 8 | 16 | 64 |
+| `ksef.export_part` | pobranie części paczki eksportu z adresu ze statusu; poza limitami API według MF | – | – | – |
 | `ksef.session_open` | `POST /sessions/online` | 10 | 30 | 120 |
 | `ksef.invoice_send` | `POST /sessions/online/{referenceNumber}/invoices` | 10 | 30 | 180 |
 | `ksef.session_close` | `POST /sessions/online/{referenceNumber}/close` | 20 | 60 | 240 |
@@ -447,23 +451,22 @@ MF liczy limity na parę kontekst (NIP) i adres IP, w oknach przesuwnych sekundy
 - Wszystkie wywołania KSeF wychodzą z jednego IP serwera. `rate_counter` w PostgreSQL jest wspólny dla `worker_reads` i `worker_official_writes` ([../architecture.md](../architecture.md)).
 - Okna przesuwne wracają dopiero po pierwszych odpowiedziach 429 na PROD; wtedy bieżące limity daje `GET /rate-limits` (D-29, [../roadmap.md](../roadmap.md)).
 
-## Biblioteka i `KsefGateway`
+## Klient KSeF i `KsefGateway`
 
-Klient PHP `n1ebieski/ksef-php-client` ma dwie linie, obie dla KSeF API 2.0 ([Packagist](https://packagist.org/packages/n1ebieski/ksef-php-client), [UPGRADE.md](https://github.com/N1ebieski/ksef-php-client/blob/main/UPGRADE.md)).
-
-| Linia | Stan | Uwagi |
-| --- | --- | --- |
-| 1.10.x | stabilna, od PHP 8.1, tylko poprawki i krytyczne zmiany KSeF | token, `.p12`, certyfikaty KSeF, FA(3), QR, offline, Latarnia; ostatnie podbicie API 2.7.1 w v1.9.0 |
-| 2.0.0-rc.1 (20.09.2026) | release candidate, PHP ^8.4 | phpseclib4, interfejs generatora QR, `endroid` opcjonalny (≥6.1), usunięte fabryki |
+Kokpit ma własny cienki klient KSeF API 2.0 w `src/Connector/Ksef`, bez biblioteki (D-70 zastępuje D-14).
 
 API KSeF jest w wersji 2.8.1 (PROD od 23.09.2026); 2.8.0 dodało błąd 21184 i osobne limity zamknięcia sesji ([changelog API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/api-changelog.md)).
 
-**Decyzja domyślna (D-14, Q-19):** 1.10.x przypięta do dokładnej wersji, migracja po wydaniu stabilnej 2.0.
+| Klasa | Rola |
+| --- | --- |
+| `KsefApi` | żądania przez `ConnectorHttpClient` (`HostAllowlist`, `connector_call`, `rate_counter`); 429 → `RateLimited`, 21184 → `SessionUnavailable`, inna odmowa → `RequestRefused`; klucze publiczne MF |
+| `KsefCrypto` | RSA-OAEP-SHA-256 i AES-256-CBC z PKCS#7 |
+| `KsefAuthenticator` | token → para JWT, odświeżanie pod lockiem `ksef.auth.<cel>.<rola>` |
+| `HttpKsefGateway` | sesja online, wysyłka, status, zamknięcie, UPO, lista sesji, faktury sesji, lista błędnych; eksport Subject1 i Subject2 tokenem `ksef_token_read` (D-71) |
 
-- Kod domeny zna tylko interfejs `KsefGateway`: uwierzytelnienie, sesja, wysyłka, status, UPO, eksport, pobranie, 429 z `Retry-After`.
-- Zmianę API nowszą niż biblioteka obsługuje `KsefGateway`. Wzorcem są oficjalne klienty MF w C# i Javie ([CIRFMF](https://github.com/CIRFMF/ksef-api)).
-- Kod QR i certyfikatów piszesz pod wybraną linię.
-- Biblioteka dostaje wstrzyknięty klient PSR-18, więc testy odtwarzają nagrane odpowiedzi ([../testing.md](../testing.md)).
+- Kod domeny zna tylko interfejs `KsefGateway`. Wzorcem są oficjalne klienty MF w C# i Javie ([CIRFMF](https://github.com/CIRFMF/ksef-api)).
+- Adresy API per cel: parametr `ksef.api_base`.
+- Testy odtwarzają nagrane odpowiedzi przez `MockHttpClient` ([../testing.md](../testing.md)).
 - Kody błędów KSeF (21165, 21184, 440 i inne) są wyliczeniem w konektorze, nie literałami.
 
 ## Dane własne sprzedawcy

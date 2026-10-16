@@ -36,10 +36,11 @@ final class ChatRenderChartTest extends ChatWebTestCase
         self::assertSame('bar', $chart->attr('data-chart-type'));
         self::assertSame($labels, ClaudeTestTools::decodeList((string) $chart->attr('data-chart-labels')));
         self::assertSame($values, ClaudeTestTools::decodeList((string) $chart->attr('data-chart-values')));
-        // Widok kontrolera Symfony UX Chart.js niesie te same liczby.
+        // `render_chart()` (D-73): widok kontrolera Symfony UX Chart.js niesie te same liczby; puste `options` kontroler
+        // zamienia na obiekt.
         $view = ClaudeTestTools::decode((string) $chart->filter('canvas')->attr('data-symfony--ux-chartjs--chart-view-value'));
         self::assertSame('symfony--ux-chartjs--chart', $chart->filter('canvas')->attr('data-controller'));
-        self::assertStringEndsWith('"options":{}}', (string) $chart->filter('canvas')->attr('data-symfony--ux-chartjs--chart-view-value'));
+        self::assertStringEndsWith('"options":[]}', (string) $chart->filter('canvas')->attr('data-symfony--ux-chartjs--chart-view-value'));
         self::assertSame(['type' => 'bar', 'data' => ['labels' => $labels, 'datasets' => [['label' => 'Przychód (PLN)', 'data' => $values]]], 'options' => []], $view);
 
         // Tekst modelu ma inne liczby: zostają w odpowiedzi, nie w wykresie.

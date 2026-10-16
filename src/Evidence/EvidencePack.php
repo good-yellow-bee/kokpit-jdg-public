@@ -83,8 +83,8 @@ final readonly class EvidencePack
                 file_put_contents($artifact, ($written !== '' ? $this->redactor->text($written) . "\n--- wyjście komendy ---\n" : '') . $text);
                 $artefacts[] = $this->metadata($artifact, $base);
                 $result = $status === ($criterion['expected_exit'] ?? 0) ? 'pass' : 'fail';
-                // Artefakty zapisane przez test albo skrypt kryterium: db/, golden/, jpk/, screens/ (ramka panelu, D-61) z nazwą od klucza.
-                foreach (['db','golden','jpk','screens'] as $kind) {
+                // Artefakty zapisane przez test albo skrypt kryterium: db/, golden/, jpk/, ksef/ (XML i UPO z api-test, D-70), screens/ (ramka panelu, D-61) z nazwą od klucza.
+                foreach (['db','golden','jpk','ksef','screens'] as $kind) {
                     foreach (glob($base . '/' . $kind . '/' . $criterion['key'] . '[.-]*') ?: [] as $written) {
                         $bytes = file_get_contents($written);
                         if ($bytes === false) {

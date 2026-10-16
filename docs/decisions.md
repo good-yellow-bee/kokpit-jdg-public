@@ -47,7 +47,7 @@ Otwarte pytania z założeniami domyślnymi oraz rejestr decyzji (ADR) kokpitu. 
 | Q-16 | ZUS: wariant składek społecznych albo okres preferencyjny? Próg składki zdrowotnej z przychodu bieżącego czy poprzedniego roku (art. 81 ust. 2h [ustawy o świadczeniach, Dz.U. 2025 poz. 1461](https://eli.gov.pl/api/acts/DU/2025/1461/text/T/D20251461L.pdf))? Czy potrzebna miesięczna DRA? | Ty | kwoty w kalendarzu i odliczenia od zaliczki | F0b, F2 | pełne składki społeczne; próg zdrowotnej z przychodu bieżącego roku; DRA do sprawdzenia | | |
 | Q-17 | Zaliczka na ryczałt co miesiąc czy co kwartał? | Ty | terminy w kalendarzu i wyliczenie zaliczki | F0b, F2 | co miesiąc; wpłata co kwartał tylko przy przychodzie z poprzedniego roku do 200 tys. EUR (art. 21 ust. 1a i 1b [ustawy o ryczałcie, Dz.U. 2025 poz. 843](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)) | | |
 | Q-18 | Kto Cię zastępuje przy terminie, gdy Cię nie ma? Kogo wyznaczasz administratorem skrzynki ADE? Czy ustanawiasz UPL-1 albo inne pełnomocnictwo? | Ty | jedna osoba oznacza przerwę w składaniu i odbiorze pism; administrator skrzynki obsługuje korespondencję w imieniu przedsiębiorcy ([gov.pl, 16.09.2026](https://www.gov.pl/web/e-doreczenia/e-doreczenia-1-pazdziernika-2026-r-wazny-termin-dla-przedsiebiorcow-z-ceidg)) | F0a, F0b, przed go-live F3 | administrator skrzynki ADE jako zastępca przy odbiorze pism (przegląd S9); poza skrzynką zastępcy brak; procedura break-glass w [operations.md](operations.md); UPL-1 do rozważenia | | |
-| Q-19 | Biblioteka KSeF PHP: 1.10.x czy 2.0.0-rc.1? | Ty | API QR i kryptografii różni się między liniami ([Packagist](https://packagist.org/packages/n1ebieski/ksef-php-client)) | F1 | 1.10.x przypięta do dokładnej wersji, za interfejsem `KsefGateway`; migracja po wydaniu stabilnej 2.0 | | |
+| Q-19 | Biblioteka KSeF PHP: 1.10.x czy 2.0.0-rc.1? | Ty | API QR i kryptografii różni się między liniami ([Packagist](https://packagist.org/packages/n1ebieski/ksef-php-client)) | F1 | 1.10.x przypięta do dokładnej wersji, za interfejsem `KsefGateway`; migracja po wydaniu stabilnej 2.0 | Żadna: własny cienki klient KSeF API 2.0 w `src/Connector/Ksef` (D-70, zastępuje D-14) | 2026-10-15 |
 | Q-20 | Rejestry: KRS, CEIDG i GUS zostają czy tylko VIES, biała lista i NBP? | Ty | koszt onboardingu (JWT CEIDG, klucz BIR) wobec wartości przy kontrahentach głównie zagranicznych | F1 | tylko VIES, biała lista i NBP; wiersze KRS, CEIDG i GUS wypadają z tabel konektorów i trafiają do [roadmap.md](roadmap.md) (D-29) | | |
 | Q-21 | Zagraniczni dostawcy: traktowanie VAT (K_27–K_30, opłaty Stripe opodatkowane czy zwolnione) i klasyfikacja WHT (licencja, przetwarzanie danych, brak)? Czy masz certyfikaty rezydencji? Jaki moment podatkowy ma przedpłata (kredyty Anthropic)? Czy płacisz zagranicznym osobom fizycznym? | Ty z doradcą | JPK po stronie zakupów, pobór WHT i IFT-2R ([Dz.U. 2026 poz. 554](https://api.sejm.gov.pl/eli/acts/DU/2026/554/text.pdf)); przy przedpłacie obowiązek powstaje z dniem zapłaty (art. 19a ust. 8 [ustawy o VAT, Dz.U. 2026 poz. 1263](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf)), a koszt bierze dziś datę z P_6, OkresFa albo P_1 | F0b, F1, F5 | import usług dla Anthropic, FreshBooks i hostingu; klasyfikacja WHT w przeglądzie doradcy (Q-29); certyfikaty rezydencji zbierasz co roku. Przedpłata: ręczna zmiana `tax_point_date` z powodem na wierszu kosztu (przegląd S4). Zagraniczna osoba fizyczna: WHT z art. 29 [ustawy o PIT, Dz.U. 2026 poz. 592](https://api.sejm.gov.pl/eli/acts/DU/2026/592/text.pdf), nie z ustawy o CIT; uwaga przy `counterparty.is_natural_person`; do weryfikacji (przegląd S5) | | |
 | Q-22 | Jakie usługi fakturujesz i jaki mają kod PKWiU 2015 oraz stawkę ryczałtu? Czy coś rozliczasz okresowo (abonament)? | Ty z doradcą | stawka per pozycja, K_9, podział odliczeń, daty przychodu | F2, F3 | jeden rodzaj usług; stawka do potwierdzenia w przeglądzie doradcy; brak rozliczeń okresowych | | |
@@ -101,7 +101,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-11 | Messages API i PHP tool runner; Managed Agents odrzucone | przyjęta 2026-10-08 | Q-06 |
 | D-12 | sekrety dwupoziomowe przez `SecretStore` | przyjęta 2026-10-08 | – |
 | D-13 | cele per konektor niezależne od `APP_ENV` | przyjęta 2026-10-08 | – |
-| D-14 | biblioteka KSeF 1.10.x przypięta, za `KsefGateway` | proponowana | Q-19 |
+| D-14 | biblioteka KSeF 1.10.x przypięta, za `KsefGateway` | zastąpiona przez D-70 | Q-19 |
 | D-15 | przy awarii KSeF czekasz; bez trybu offline | proponowana | Q-28 |
 | D-16 | P_1 to dzień wysyłki w Europe/Warsaw | przyjęta 2026-10-08 (plan) | – |
 | D-17 | własny dwujęzyczny szablon PDF z KOD I, bez zależności tylko na GPL | proponowana | Q-26 |
@@ -156,6 +156,11 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-66 | założenia F5.5 VAT-UE(5) i VAT-UEK(5): `VatUeBuilder` grupuje sprzedaż `eu_b2b` miesiąca (z KOR ze znakiem różnicy) per kraj i numer VAT UE, P_Uc HALF_UP do pełnych złotych, `eu_b2b_unidentified` poza plikiem; twarda bramka K_12 (`VatUeK12Gate`); trasa KOR `vat_ue`/`wait`/`vat_uek`; własny cienki konektor `edeklaracje` (podklasa `SoapClient` na `ConnectorHttpClient`), `DaneAutoryzujace` wstawiane w pamięci workera jako ostatni element korzenia, walidacja deklaracji i SIG-2008 osobno, bo XSD VAT-UE(5) go nie deklaruje; mapowanie statusów `requestUPO` | przyjęta 2026-10-15 | Q-32 |
 | D-67 | kształt żądań bramki e-Deklaracji z opublikowanego WSDL bramki testowej: element `sendUnsignDocument` (nie `sendUnsignDocumentRequest`), przestrzeń nazw `https://bramka.e-deklaracje.mf.gov.pl/xsd` i `SOAPAction` `urn:<operacja>` potwierdzone; `GateService.xsd` w `resources/xsd`, ciała żądań walidowane nim w testach | przyjęta 2026-10-15 | F5.6 |
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
+| D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
+| D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-73 | JavaScript panelu (domknięcie D-61): `symfony/ux-chartjs` 2.36, wykres przez `render_chart()`; importmap z pakietami JS w `assets/vendor` w repo (npm z kontrolą `integrity`, bez CDN i bez polyfillu); Turbo tylko dla ramek (Drive wyłączony); kontroler wykresu leniwy; CSP z nonce na żądanie (`CspNonce`, `csp_nonce()`) w `script-src` i `style-src`, styl czatu z pliku | przyjęta 2026-10-15 | F6 |
+| D-72 | F1 poświadczenia KSeF na api-test: zapas certyfikatem typ 1 w `KsefAuthenticator` (`certificateAccessToken`, `KsefXades`, `ksef_auth_cert` = certyfikat i klucz w PEM; bez sekretu tokena `accessToken` idzie podpisem XAdES); dane TE samopodpisaną pieczęcią zamiast `/testdata/subject`; token `InvoiceRead` dostaje 403 przy otwarciu sesji; klucze MF bez kopii w konfiguracji, wybór certyfikatu ważnego teraz, bez zadania `mf_keys.refresh` dla KSeF; okna backfillu, 21165 i 429 na atrapie bramki | przyjęta 2026-10-15 | F1 |
+| D-71 | F1 eksport KSeF na api-test: `HttpKsefGateway::startExport` i `exportPackage` tokenem `ksef_token_read` (klucz AES na eksport w pamięci procesu, części z adresu ze statusu bez tokenu, `partHash`, ZIP z `_metadata.json`); kod 420 to pusta paczka z kursorem na `from`; `ksef-sync-te` z pomocnikiem `KsefTeIssuer` (faktury poza bramką, tylko w `tests/`); nagranie `te-sync-export` trzyma metadane, odtworzenie składa i szyfruje paczkę | przyjęta 2026-10-15 | F1 |
 
 ### D-01 Źródło prawdy: repo `docs/`, dokument w claude.ai zamrożony
 
@@ -390,7 +395,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 
 ### D-14 Biblioteka KSeF: linia i przypięta wersja
 
-- **Status:** proponowana (Q-19).
+- **Status:** zastąpiona przez D-70 (15.10.2026): biblioteki nie ma w `composer.json`, kokpit ma własnego klienta.
 - **Kontekst:** `n1ebieski/ksef-php-client` ma dwie linie, obie dla KSeF API 2.0 ([Packagist](https://packagist.org/packages/n1ebieski/ksef-php-client)). 1.10.x działa od PHP 8.1 i dostaje tylko poprawki oraz krytyczne zmiany KSeF. 2.0.0-rc.1 z 20.09.2026 wymaga PHP ^8.4 i zmienia QR, kryptografię oraz fabryki ([UPGRADE.md](https://github.com/N1ebieski/ksef-php-client/blob/main/UPGRADE.md)).
 - **Decyzja (domyślna):** 1.10.x przypięta do dokładnej wersji, za własnym interfejsem `KsefGateway`. Migracja po wydaniu stabilnej 2.0.
 - **Skutki:**
@@ -1177,7 +1182,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Limit czasu: żądanie panelu trwa najwyżej `chat.max_iterations` × `chat.timeout_s` (720 s) plus zapas, więc pula PHP-FPM ma `request_terminate_timeout = 780s`, a proxy `fastcgi_read_timeout 780s`.
   - Dowody: paczka przyjmuje podkatalog `screens/<klucz>.html` (ramka z testu WebTestCase bez wartości tokenu CSRF, po `Redactor`).
 - **Skutki:** `src/Controller/ChatController.php`, `src/Chat/ChatPanel.php` i klasy widoku; szablony `templates/panel/chat.html.twig` i `_chat_frame.html.twig`; parametr `chat.session_list_limit`; `docker/php/zz-kokpit-pool.conf` i `docker/proxy/*.conf`; wiersze F6.3 w `tests/Acceptance/f6.yaml`; nazwy w [naming.md](naming.md), „Implementacja F6.3 (D-61)”; zmiana założeń to nowy wpis tutaj.
-- **Pytania:** brak; otwarty krok instalacji `symfony/ux-chartjs` i JavaScriptu panelu (wyżej).
+- **Pytania:** brak; instalację `symfony/ux-chartjs` i JavaScriptu panelu domyka D-73.
 
 ### D-62 Założenia szkiców `draft_document` w F6.4
 
@@ -1345,3 +1350,95 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Kod testów: `tests/Live/EDeklaracjeLiveTestCase.php`, `EDeklaracjeTeVatUeTest`, `EDeklaracjeTeVatUekTest`, `tests/Support/LiveRecording.php`, tryb live w `KsefRecordings`, parametr `live` w `FakeEDeklaracjeGateway`, `JpkSendTestTools`, `VatUeTestCase`; kod aplikacji bez zmian.
   - Rejestr `tests/Acceptance/f5.yaml`: `edeklaracje-te-vat-ue`, `edeklaracje-te-vat-uek` (`live`), `edeklaracje-te-fixtures` (`ci`).
   - Otwarte w F5.6: `jpk-te-v7m-upo` (JPK_V7M na test-e-dokumenty) czeka na dostęp do magazynu `taxdocumentstorageNNtst` i klucza MF celu `test`.
+
+### D-69 F5.3: JPK na test-e-dokumenty, 419 z fikcyjnymi danymi autoryzującymi
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live z sesji z dostępem do `test-e-dokumenty.mf.gov.pl` i magazynu `taxdocumentstorageNNtst`, na Twoje polecenie; dane i dane autoryzujące fikcyjne).
+- **Kontekst:**
+  - F5.3 zakładał UPO dla JPK_EWP(4) i JPK_ST(1) na TE oraz duplikat po przyjęciu; F5.6 to samo dla JPK_V7M(3).
+  - Twarda zasada: na cele testowe tylko dane fikcyjne, także dane autoryzujące.
+  - Specyfikacja API JPK 5.6.0 nie mówi, jak TE traktuje dane autoryzujące; bramka e-Deklaracji testowa ich nie sprawdza (D-68).
+- **Decyzja:**
+  - Testy `tests/Live/JpkTe*` (wspólny przebieg w traicie `JpkLiveRun`) składają fikcyjne pliki przez bramkę zatwierdzeń, tak jak D-68. Klucz AES opakowuje certyfikat klucza publicznego MF celu `test` z „Plików do pobrania JPK_VAT” na podatki.gov.pl (od 9.07.2025, ważny do 7.07.2027, sha256 PEM `da570840d47308f8aa35f79ffda70fde340b0ec6c00ed01f26791d7c87bd5685`). Plik leży poza repo w `var/jpk/mf-test.crt` (ścieżka `jpk.mf_certificates`), bo zasady wykluczają `*.pem` z commitów.
+  - Wynik 15.10.2026: JPK_EWP(4), JPK_ST(1) i JPK_V7M(3) przechodzą `InitUploadSigned` 200, Put Blob 201 (magazyn `taxdocumentstorage19tst`), `FinishUpload` 200; `Status` zwraca 419 „Weryfikacja negatywna – błąd w danych autoryzujących”, „Dane niezgodne z prawdą”. MF odszyfrował plik i `AuthData` (bez 417 i 418), więc koperta, metadane i szyfrowanie są poprawne. TE porównuje dane autoryzujące z danymi podatnika, więc fikcyjne nie przejdą.
+  - Kryteria `jpk-te-ewp-upo`, `jpk-te-st-upo` i `jpk-te-v7m-upo` sprawdzają na TE stan końcowy: `accepted` z UPO albo `rejected` z 419 bez UPO (okres JPK_V7M bez zamknięcia). `jpk-te-duplicate`: po przyjętym oryginale kod duplikatu; po odrzuconym (419) MF nadaje nowy numer i zwraca ten sam kod, czyli nie uznaje odrzuconego pliku za oryginał.
+  - Przyjęcie z UPO z danymi autoryzującymi i duplikat po przyjęciu potwierdzają wiersze go-live `jpk-ewp-prod-first` i `jpk-v7m-prod-first` (pierwsze złożenie PROD przez bramkę). Prawdziwych danych autoryzujących na TE nie wysyłasz.
+  - `jpk-te-tls`: `JpkGateway` z `jpk.tls_ciphers` negocjuje TLS 1.3 `TLS_AES_256_GCM_SHA384`, z listy sześciu (D-57). Tryb live `KsefRecordings` przekazuje teraz `crypto_method` i `ciphers`.
+  - Nagrania: `LiveRecording` usuwa podpis SAS (`sig=`) z adresów Put Blob. `tests/Fixtures/Jpk/live-{ewp,st,v7m}-{upload,status}.json` odtwarza w CI `JpkLiveRecordingTest` (kryterium `jpk-te-fixtures`, wykonawca `ci`, jak w D-68).
+  - podatki.gov.pl stoi za ochroną przed botami (Imperva): zwykły `GET` dostaje stronę z wyzwaniem JavaScript, nie plik. Sesja pobrała certyfikat przeglądarką bez interfejsu. `mf_keys.refresh` nie może więc zakładać pobierania z serwera; zadanie pilnuje daty ważności, a nowy certyfikat dostarcza człowiek albo sesja.
+- **Skutki:**
+  - Kod testów: `tests/Live/JpkLiveRun.php`, `JpkLiveTestCase`, `JpkTeEwpUpoTest`, `JpkTeStUpoTest`, `JpkTeDuplicateTest`, `JpkTeTlsTest`, `JpkTeV7mUpoTest`, `tests/Integration/JpkLiveRecordingTest.php`; parametr `live` w `FakeJpkGateway`, `JpkSendTestCase` i `JpkV7mTestCase`; kod aplikacji bez zmian.
+  - Rejestr `tests/Acceptance/f5.yaml`: wiersze F5.3 i `jpk-te-v7m-upo`.
+  - Job `live` w CI potrzebuje pliku `var/jpk/mf-test.crt`; bez niego testy JPK live kończą się komunikatem o braku certyfikatu.
+
+### D-70 F3.5: KSeF na api-test, własny klient zamiast biblioteki
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live z sesji z dostępem do `api-test.ksef.mf.gov.pl`, na Twoje polecenie; dane fikcyjne).
+- **Kontekst:**
+  - F3.1–F3.4 działały na `FakeKsefGateway`; `KsefGateway` wskazywał `UnavailableKsefGateway`. Biblioteka z D-14 nie weszła do `composer.json`.
+  - F3.5 miał wejścia „stop”: `KsefGateway` nad biblioteką i dane TE z F1 (testowa JDG, token z `InvoiceWrite`).
+  - Klucze publiczne MF wymagają RSA-OAEP z SHA-256 i MGF1-SHA-256; `openssl_public_encrypt` w PHP daje tylko OAEP z SHA-1.
+- **Decyzja:**
+  - Własny cienki klient KSeF API 2.0 w `src/Connector/Ksef`: `KsefApi` (żądania przez `ConnectorHttpClient`, czyli `HostAllowlist`, `connector_call` i `rate_counter`; klucze publiczne MF z `/security/public-key-certificates`), `KsefCrypto` (OAEP-SHA-256 ręcznie nad surowym RSA, AES-256-CBC z PKCS#7), `KsefAuthenticator` (challenge, token zaszyfrowany kluczem `KsefTokenEncryption`, status, redeem, refresh; para JWT pod Symfony Lock w `credential_state` przez `SecretStore`) i `HttpKsefGateway` (sesja online, wysyłka, status, zamknięcie, UPO, lista sesji, faktury sesji, lista błędnych). Adresy w parametrze `ksef.api_base` per cel. Eksport (F1) zostaje niezaimplementowany: `GatewayUnavailable`. D-14 i Q-19 są zastąpione.
+  - Dane TE powstają w teście, nie w F1: TE przyjmuje samopodpisaną pieczęć z `organizationIdentifier` = `VATPL-<NIP>`. `KsefTeProvision` losuje NIP z poprawną sumą kontrolną na każdy przebieg (bez kolizji P_2 z innymi użytkownikami TE), loguje się podpisem XAdES-BES i tworzy token z `InvoiceWrite` i `InvoiceRead`. Token trafia do sejfu w pamięci (`MemoryVault`), nie do repo. Dowody maskują NIP jako `[NIP-TE]`.
+  - `app:credential:smoke ksef_token_write` i `ksef_token_read` wykonują pełne uwierzytelnienie (`KsefAuthenticator::accessToken($role, true)`).
+  - Latarnia TE zwraca stałe dane przykładowe (`TOTAL_FAILURE` od 31.01.2026), więc `latarnia.endpoints` ma tylko cel `prod`; przy celu `test` i `demo` Latarnia nie wstrzymuje wysyłki. Nagranie `tests/Fixtures/Latarnia/te-status.json` to dowód.
+  - Przyjęta KOR zmienia oryginał z `accepted` na `corrected` (`SalesInvoiceSubject`), zgodnie z [data-model.md](data-model.md); wcześniej tego przejścia nie było.
+  - Wynik 15.10.2026: `pl_b2b`, `eu_b2b`, `non_eu_b2b` i KOR przyjęte z numerem KSeF i UPO; ponowienie przyjętej faktury dało 440 „Duplikat faktury” z `originalKsefNumber` i stan `accepted` z kodem 440.
+  - Nagrania: testy live zapisują odpowiedzi przez `LiveRecording` (`Scrubber`, skaner fixtures, podpis SAS usuwany także z `skoid` i `sktid`); `app:fixtures:record` nie wysyła zapisów urzędowych (jak D-68). Kroki uwierzytelnienia nie są nagrywane; odtworzenie dostaje fikcyjną parę JWT, a klucze MF zastępuje fikcyjny certyfikat (`te-public-keys.json`), więc test odtwarza też szyfrowanie. `KsefTeRecordingTest` (kryterium `ksef-te-fixtures`, wykonawca `ci`) odtwarza wszystkie scenariusze w CI.
+- **Skutki:**
+  - Kod: `src/Connector/Ksef/{KsefApi,KsefAuthenticator,KsefCrypto,HttpKsefGateway}.php`, `CredentialSmokeCommand`, `SalesInvoiceSubject`, `config/services_connectors.yaml` (alias `KsefGateway` → `HttpKsefGateway`).
+  - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
+  - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
+  - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-73 JavaScript panelu i wykres czatu
+
+- **Status:** przyjęta 2026-10-15.
+- **Kontekst:** D-61 zostawił wykres jako znaczniki kontrolera Symfony UX Chart.js bez JavaScriptu panelu. Panel miał CSP `default-src 'self'`, więc importmap (skrypt inline) i styl inline czatu nie działały. Sandbox sesji ma Packagist, git z GitHub i registry.npmjs.org, ale nie ma jsDelivr, z którego `importmap:require` pobiera pakiety.
+- **Decyzja:**
+  - `symfony/ux-chartjs` 2.36 (MIT, jak `symfony/ux-turbo`), `ChartjsBundle`; `ChatChartData::chart()` daje model `Chart`, szablon woła `render_chart()`. Dane bez zmian (D-61).
+  - `importmap.php`: `app`, `@hotwired/stimulus` 3.2.2, `@hotwired/turbo` 8.0.23, `@symfony/stimulus-bundle`, `chart.js` 4.5.1 z fragmentem `chart.js/chunks/helpers.dataset.js`, `@kurkle/color` 0.3.4 (wersja z zależności Chart.js). Pliki leżą w `assets/vendor` w repo, pobrane z registry.npmjs.org ze sprawdzeniem `integrity` (sha512); licencje MIT. Jedyna zmiana względem npm: Chart.js importuje swój fragment nazwą zamiast ścieżki względnej, bo ładuje się leniwie. `importmap_polyfill: false`, więc żadnego CDN.
+  - `assets/app.js` startuje Stimulus i Turbo z `Turbo.session.drive = false`: działają ramki (`chat-turn`), a linki, formularze i passkey zachowują się jak bez JavaScriptu. Kontroler `@symfony/ux-chartjs/chart` jest leniwy, więc Chart.js ładuje się tylko przy wykresie.
+  - CSP: `CspNonce` daje nonce na żądanie (`csp_nonce()` w `base.html.twig` dla importmap i `meta csp-nonce` Turbo), a `SecurityHeadersSubscriber` dopisuje go do `script-src` i `style-src` tylko wtedy, gdy strona go użyła. Bez `unsafe-inline`. Styl stanu ładowania czatu przeniesiony do `assets/styles/chat.css`.
+  - Sprawdzenie: `PanelImportmapTest` (nonce w CSP i w skryptach, każdy wpis importmap to plik z repo, kontroler wykresu leniwy). Przebieg w Chromium bez sieci zewnętrznej na stronie `/chat` z wykresem `revenue_by_month`: wykres narysowany, zero błędów CSP i 404.
+- **Skutki:** `composer.json` (`symfony/ux-chartjs`), `config/bundles.php`, `config/packages/framework.yaml`, `importmap.php`, `assets/`, `src/Panel/CspNonce.php`, `SecurityHeadersSubscriber`, szablony czatu i `base.html.twig`; `.gitignore`: `/public/assets/` (wynik `asset-map:compile` w obrazie) i `/config/reference.php` (plik generowany przez Symfony 7.4).
+
+### D-72 F1: poświadczenia KSeF, zapas certyfikatem i klucze MF
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live na `api-test.ksef.mf.gov.pl`; dane fikcyjne).
+- **Kontekst:**
+  - Plik fazy zakładał dane TE przez `/testdata/subject`. Ten endpoint zakłada tylko grupę VAT, JST i organ egzekucyjny; JDG to `/testdata/person` (NIP i PESEL). TE przyjmuje jednak samopodpisaną pieczęć `VATPL-<NIP>` dla dowolnego poprawnego NIP (D-70), więc osobne zakładanie podmiotu nie jest potrzebne.
+  - Zapas certyfikatem typ 1 był w dokumentacji, ale bez kodu: `KsefAuthenticator` znał tylko token.
+  - `mf-keys-refresh` zakładał kopię kluczy MF w konfiguracji celu. `KsefApi` (D-70) pobiera je raz na proces z `GET /security/public-key-certificates`, więc kopia byłaby drugim źródłem prawdy.
+- **Decyzja:**
+  - `KsefXades` (z pomocnika testów do `src/Connector/Ksef`) buduje i podpisuje `AuthTokenRequest` (XAdES-BES, RSA-SHA256). `KsefAuthenticator::certificateAccessToken()` uwierzytelnia certyfikatem z `ksef_auth_cert` (sekret `KSEF_<CEL>_AUTH_CERT`: certyfikat i klucz prywatny w PEM) przez `POST /auth/xades-signature` (operacja `auth_xades`), dalej ten sam status i redeem co token; para trafia do `ksef_jwt_write`. Gdy sejf nie ma sekretu tokena roli, `accessToken()` idzie tą drogą sam. `app:credential:smoke ksef_auth_cert` sprawdza zapas.
+  - Na TE certyfikat to samopodpisana pieczęć z przebiegu. Na PROD certyfikat typ 1 wnioskuje i wgrywa do sejfu `prod` tylko właściciel (Aplikacja Podatnika KSeF); sesja go nie wytwarza.
+  - `ksef-te-provision`: `KsefTeProvision` zakłada token `InvoiceRead` i token `InvoiceWrite` testowej JDG oraz token drugiego sprzedawcy; parametr uprawnień w `token()`.
+  - `ksef-read-token-scope`: accessToken z tokena `InvoiceRead` dostaje 403 na `POST /sessions/online`; zero faktur.
+  - `mf-keys-refresh`: bez kopii kluczy i bez zadania dla KSeF. `KsefApi::publicKey` bierze certyfikat ważny w tej chwili (`validFrom` ≤ teraz < `validTo`), przy kilku najnowszy; brak ważnego daje `mf_key_missing`. Kryterium sprawdza wybór na odpowiedzi w kształcie nagrania `te-public-keys`. Zadanie `mf_keys.refresh` zostaje tylko dla certyfikatu JPK (D-69).
+  - `ksef-backfill-windows`, `ksef-21165-retry`, `ksef-429-blocked-until` zostają na atrapie bramki (`KsefSyncTest`): TE nie daje na żądanie 21165, 429 ani historii od 1.02.2026.
+- **Wyniki 15.10.2026:** pięć testów `KsefTeCredentialsTest` zielonych na api-test (tokeny, rejestracja dat z obowiązkami `credential_expiry`, smoke tokenem do odczytu, smoke i zapas XAdES, odmowa 403).
+- **Skutki:**
+  - Kod: `KsefXades`, `KsefAuthenticator::certificateAccessToken`, `CredentialSmokeCommand` (`ksef_auth_cert`), `KsefApi` (zegar, okno ważności kluczy).
+  - Testy: `tests/Live/KsefTeCredentialsTest.php`, `tests/Integration/MfKeysRefreshTest.php`; `KsefTeProvision::token($nip, $permissions)`, `seal()`, `pem()`.
+  - Rejestr `tests/Acceptance/f1.yaml`: dziewięć wierszy KSeF sesji 1.
+  - Poprawka: `EvidenceArtefacts` i `EvidencePack` przyjmują katalog `ksef/` (XML, UPO i numery z api-test, F3.5); wcześniej zapis z `EVIDENCE_DIR` kończył test F3.5 błędem ścieżki.
+
+### D-71 F1: eksport Subject1 i Subject2 na api-test
+
+- **Status:** przyjęta 2026-10-15 (przebiegi live z sesji z dostępem do `api-test.ksef.mf.gov.pl`; dane fikcyjne).
+- **Kontekst:**
+  - `KsefSync` (F1, D-42) działał tylko na `FakeKsefGateway`; `HttpKsefGateway` z D-70 dawał przy eksporcie `GatewayUnavailable`.
+  - Eksport wymaga klucza AES zaszyfrowanego certyfikatem MF `SymmetricKeyEncryption`; paczkę dzieli KSeF na części szyfrowane tym kluczem ([KSeF API](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/open-api.json), [przyrostowe pobieranie](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/pobieranie-faktur/przyrostowe-pobieranie-faktur.md)).
+- **Decyzja:**
+  - `startExport`: `POST /invoices/exports` (grupa `ksef.export`) z `PermanentStorage`, `restrictToPermanentStorageHwmDate` = `true`, `compressionType` = `Zip`, losowym kluczem AES i IV; token `ksef_token_read` (`KsefAuthenticator::accessToken('read')`). Klucz żyje w pamięci procesu, więc `KsefSync` woła oba kroki w jednym przebiegu (tak już działa).
+  - `exportPackage`: `GET /invoices/exports/{referenceNumber}` (grupa `ksef.export_status`); 100 → `null`; 200 → części po `ordinalNumber` z adresu ze statusu (operacja `export_part`, grupa `ksef.export_part`, bez tokenu, przez `HostAllowlist`), odszyfrowanie, `partHash`, złączenie, ZIP: `{ksefNumber}.xml` i daty z `_metadata.json`; 420 (`from` po `PermanentStorageHwmDate`) → pusta paczka z kursorem na `from`; inny kod → `ExportFailed` z kodem.
+  - Na TE adres części to `https://api-test.ksef.mf.gov.pl/storage/...` z podpisem SAS w zapytaniu, więc nie trzeba nowego hosta. Host części PROD sprawdza go-live F1; inny host zatrzyma pobranie na `HostAllowlist`.
+  - `ksef-sync-te`: `tests/Live/KsefTeSyncTest` zakłada testową JDG i drugiego sprzedawcę z losowymi NIP (D-70), `KsefTeIssuer` w `tests/` wystawia 3 faktury dla JDG i 2 faktury JDG poza bramką (jak przewiduje plik fazy), potem `KsefSync` pobiera obie role. Wynik 15.10.2026: 3 koszty `imported`, 2 sprzedaże `accepted` bez `approval`; faktury pojawiają się w eksporcie po około 2 minutach (trwały zapis).
+  - Nagranie `tests/Fixtures/Ksef/te-sync-export.json` trzyma odpowiedzi startu i statusu oraz metadane faktur po `Scrubber`; NIP przebiegu zastępują przed tym dwa różne NIP z listy fikcyjnych. XML faktur to złoty plik `pl_b2b` pomocnika, więc `KsefTeSyncRecordingTest` składa go z metadanych, buduje ZIP i szyfruje kluczem odszyfrowanym z żądania (fikcyjny certyfikat MF). Ten test to wariant kryterium `ksef-sync-idempotent` na nagraniu TE.
+- **Skutki:**
+  - Kod: `HttpKsefGateway` (eksport), `KsefApi::exportPart`.
+  - Testy: `tests/Live/KsefTeSyncTest.php`, `tests/Support/KsefTeIssuer.php`, `tests/Integration/KsefTeSyncRecordingTest.php`; `LiveRecording::writeData`; `KsefSendTestTools::fictionalJwt($kind)`.
+  - Rejestr `tests/Acceptance/f1.yaml`: `ksef-sync-te` i `ksef-sync-idempotent`. Pozostałe wiersze KSeF sesji 1 domyka D-72.
+

@@ -5,6 +5,8 @@ framework:
   http_client: ~
   asset_mapper:
     paths: { '%kernel.project_dir%/assets/': '' }
+    # Bez polyfillu es-module-shims z CDN (D-73): przeglądarki panelu znają importmap.
+    importmap_polyfill: false
   property_info: { with_constructor_extractor: true }
   serializer: { enabled: true }
   csrf_protection: true

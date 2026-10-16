@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z bramki testowej test-e-dokumenty.mf.gov.pl (F5.3, D-69), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "Status JPK_EWP po numerze referencyjnym do stanu końcowego.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "\/api\/Storage\/Status\/3fa9876c03e2d608000000be1c1c081b",
+            "status": 200,
+            "body_text": "{\n    \"Code\": 419,\n    \"Description\": \"Weryfikacja negatywna – błąd w danych autoryzujących\",\n    \"Details\": \"Dane niezgodne z prawdą\",\n    \"Timestamp\": \"2026-10-15T13:03:58.998817+00:00\",\n    \"Upo\": \"\"\n}"
+        }
+    ]
+}

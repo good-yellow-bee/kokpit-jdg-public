@@ -1,0 +1,13 @@
+{
+  "fictional": true,
+  "source": "Ręcznie pisane, fikcyjne (fictional) nagranie według KSeF API 2.0 (open-api.json); treść certyfikatów podaje test jako {{mf_certificates}} (F3.5, D-70).",
+  "scenario": "GET /security/public-key-certificates przed pierwszą sesją w procesie.",
+  "interactions": [
+    {
+      "method": "GET",
+      "path": "/v2/security/public-key-certificates",
+      "status": 200,
+      "body_text": "{{mf_certificates}}"
+    }
+  ]
+}

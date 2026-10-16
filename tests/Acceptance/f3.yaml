@@ -1,5 +1,5 @@
 phase: f3
-# F3 powstaje częściami (D-50). Wiersze F3.1 bez sieci; F3.2–F3.4 dochodzą z kodem swoich części.
+# F3 powstaje częściami (D-50). Wiersze F3.1 bez sieci; F3.2–F3.4 dochodzą z kodem swoich części; F3.5 na api-test (D-70).
 criteria:
   - { key: fa3-golden-eu-b2b, runner: ci, command: 'php scripts/fa3-acceptance.php fa3-eu-b2b && vendor/bin/phpunit --filter Fa3GoldenEuB2b', junit: true }
   - { key: fa3-golden-non-eu-b2b, runner: ci, command: 'vendor/bin/phpunit --filter Fa3GoldenNonEuB2b', junit: true }
@@ -42,6 +42,12 @@ criteria:
   - { key: deliver-to-client-error, runner: ci, command: 'vendor/bin/phpunit --filter DeliverToClientErrorTest', junit: true }
   - { key: freshbooks-write-back, runner: ci, command: 'vendor/bin/phpunit --filter FreshBooksWriteBackTest', junit: true }
   - { key: ksef-parallel-compare, runner: ci, command: 'vendor/bin/phpunit --filter KsefParallelCompareTest', junit: true }
+  - { key: ksef-te-write-auth, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter KsefTeWriteAuthTest', junit: true }
+  - { key: ksef-te-send-scenarios, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter KsefTeSendScenariosTest', junit: true }
+  - { key: ksef-te-send-kor, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter KsefTeSendKorTest', junit: true }
+  - { key: ksef-te-duplicate-440, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter KsefTeDuplicate440Test', junit: true }
+  - { key: ksef-te-fixtures, runner: ci, command: 'vendor/bin/phpunit --filter KsefTeRecordingTest', junit: true }
+  - { key: kod-i-qr-test, runner: manual }
   - { key: cc-11, runner: ci, command: 'composer fixtures:scan && vendor/bin/phpunit --filter Scanner', junit: true }
   - { key: cc-25, runner: ci, command: 'vendor/bin/phpunit --testsuite xsd', junit: true }
   - { key: cc-26, runner: ci, command: 'vendor/bin/phpunit --filter EnvironmentSeparation', junit: true }

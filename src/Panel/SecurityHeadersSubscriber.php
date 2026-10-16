@@ -18,7 +18,11 @@ final class SecurityHeadersSubscriber implements EventSubscriberInterface
     public function onResponse(ResponseEvent $event): void
     {
         $response = $event->getResponse();
-        $response->headers->set('Content-Security-Policy', "default-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'");
+        // Skrypty inline (importmap) i styl paska postępu Turbo tylko z nonce tego żądania (D-73); bez nonce `script-src`
+        // i `style-src` dziedziczą `default-src 'self'`.
+        $nonce = $event->getRequest()->attributes->get(CspNonce::ATTRIBUTE);
+        $scripts = is_string($nonce) ? "; script-src 'self' 'nonce-" . $nonce . "'; style-src 'self' 'nonce-" . $nonce . "'" : '';
+        $response->headers->set('Content-Security-Policy', "default-src 'self'" . $scripts . "; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; object-src 'none'");
         $response->headers->set('Referrer-Policy', 'no-referrer');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         if ($event->getRequest()->isSecure()) {

@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z KSeF TE (F3.5, D-70), dane fikcyjne (fictional), oczyszczone Scrubber.",
+    "scenario": "Lista sesji interaktywnych z dnia wysyłki.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "\/v2\/sessions",
+            "status": 200,
+            "body_text": "{\n    \"sessions\": [\n        {\n            \"referenceNumber\": \"20261015-SO-2E64AB7000-D5C9BDCEA2-0B\",\n            \"status\": {\n                \"code\": 200,\n                \"description\": \"Sesja interaktywna przetworzona pomyślnie\"\n            },\n            \"dateCreated\": \"2026-10-15T13:30:46.8396806+00:00\",\n            \"dateUpdated\": \"2026-10-15T13:30:49+00:00\",\n            \"validUntil\": \"2026-10-16T01:30:46.8396806+00:00\",\n            \"totalInvoiceCount\": 1,\n            \"successfulInvoiceCount\": 1,\n            \"failedInvoiceCount\": 0\n        }\n    ]\n}"
+        }
+    ]
+}
