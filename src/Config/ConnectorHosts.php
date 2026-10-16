@@ -26,6 +26,8 @@ final class ConnectorHosts
         'white_list' => ['test' => ['wykazpodatnikowvat-test.mf.gov.pl', 'wl-test.mf.gov.pl'], 'prod' => ['wykazpodatnikowvat.mf.gov.pl', 'wl-api.mf.gov.pl']],
         'vies' => ['test' => ['ec.europa.eu'], 'prod' => ['ec.europa.eu']],
         'nbp' => ['default' => ['api.nbp.pl']],
+        // API Sejmu (ELI i procesy legislacyjne) dla obserwacji prawa, tylko `GET` (D-75).
+        'eli' => ['default' => ['api.sejm.gov.pl']],
         'freshbooks' => ['default' => ['api.freshbooks.com']],
         'claude' => ['default' => ['api.anthropic.com']],
         'mail' => ['default' => []],

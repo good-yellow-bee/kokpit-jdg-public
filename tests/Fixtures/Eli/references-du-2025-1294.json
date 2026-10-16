@@ -1,0 +1,67 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.sejm.gov.pl z 2026-10-16 (D-75): publiczne dane ELI i procesu legislacyjnego, bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Powiązania rozporządzenia o ewidencji: tylko podstawa prawna i akt uchylony, bez zmian.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/eli/acts/DU/2025/1294/references",
+            "status": 200,
+            "body": {
+                "Akty uchylone": [
+                    {
+                        "act": {
+                            "ELI": "DU/2021/2414",
+                            "publisher": "DU",
+                            "year": 2021,
+                            "pos": 2414,
+                            "type": "Rozporządzenie",
+                            "title": "Rozporządzenie Ministra Finansów z dnia 17 grudnia 2021 r. w sprawie prowadzenia ewidencji przychodów i wykazu środków trwałych oraz wartości niematerialnych i prawnych",
+                            "status": "uchylony",
+                            "displayAddress": "Dz.U. 2021 poz. 2414",
+                            "promulgation": "2021-12-27",
+                            "announcementDate": "2021-12-17",
+                            "changeDate": "2026-01-02 11:21"
+                        },
+                        "date": "2026-01-01"
+                    }
+                ],
+                "Podstawa prawna": [
+                    {
+                        "act": {
+                            "ELI": "DU/1998/930",
+                            "publisher": "DU",
+                            "year": 1998,
+                            "pos": 930,
+                            "type": "Ustawa",
+                            "title": "Ustawa z dnia 20 listopada 1998 r. o zryczałtowanym podatku dochodowym od niektórych przychodów osiąganych przez osoby fizyczne.",
+                            "status": "akt posiada tekst jednolity",
+                            "displayAddress": "Dz.U. 1998 nr 144 poz. 930",
+                            "promulgation": "1998-11-27",
+                            "announcementDate": "1998-11-20",
+                            "changeDate": "2026-08-26 02:58"
+                        }
+                    }
+                ],
+                "Podstawa prawna z art.": [
+                    {
+                        "act": {
+                            "ELI": "DU/1998/930",
+                            "publisher": "DU",
+                            "year": 1998,
+                            "pos": 930,
+                            "type": "Ustawa",
+                            "title": "Ustawa z dnia 20 listopada 1998 r. o zryczałtowanym podatku dochodowym od niektórych przychodów osiąganych przez osoby fizyczne.",
+                            "status": "akt posiada tekst jednolity",
+                            "displayAddress": "Dz.U. 1998 nr 144 poz. 930",
+                            "promulgation": "1998-11-27",
+                            "announcementDate": "1998-11-20",
+                            "changeDate": "2026-08-26 02:58"
+                        },
+                        "art": "art. 16"
+                    }
+                ]
+            }
+        }
+    ]
+}

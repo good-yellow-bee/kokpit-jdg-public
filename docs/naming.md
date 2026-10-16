@@ -89,6 +89,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | Operacje | `connector_call`, `audit_log`, `rate_counter`, `sync_cursor`, `credential_state`, `notification`, `setting` | [data-model.md](data-model.md) |
 | Panel | `app_user`, `webauthn_credential` | [data-model.md](data-model.md) |
 | Czat | `chat_session`, `chat_message` | [data-model.md](data-model.md) |
+| Obserwacja prawa | `legal_watch`, `legal_watch_hit` (D-75) | [data-model.md](data-model.md) |
 | basal | `classification`: odłożone (D-29), poza schematem F0a | [modules/basal.md](modules/basal.md) |
 
 - `app_user` i `edelivery_case` zamiast `user` i `case`, bo to słowa zastrzeżone w PostgreSQL.
@@ -125,7 +126,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `approval.subject_type` | `sales_invoice`, `correction_invoice`, `filing`, `draft`; `edelivery_outbound` odłożone (D-29) |
 | `approval.cancel_reason` | `user`, `hash_mismatch`, `manual_filing`, `manual_invoice` |
 | `obligation.type` | `zus`, `ryczalt_advance`, `vat_jpk_v7m`, `vat_ue`, `jpk_ewp`, `jpk_st`, `pit_28`, `invoice_issue`, `ledger_entry`, `wht_payment`, `wht_certificate`, `ift_2r`, `cit_10z`, `health_reconciliation`, `tax_form_choice`, `edelivery_deemed`, `edelivery_reply_due`, `credential_expiry`, `manual_channel_check`, `wl_notice`; `edelivery_deemed` z API F4 odłożony (D-29); `edelivery_reply_due` do powrotu F4 wpisywany ręcznie z pisma (D-29) |
-| `notification.category` | wartości `obligation.type` przy przypomnieniu oraz `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`; `edelivery_new` odłożone (D-29) |
+| `notification.category` | wartości `obligation.type` przy przypomnieniu oraz `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `legal_change` (D-75); `edelivery_new` odłożone (D-29) |
 | `invoice.direction` | `sale`, `cost` |
 | `invoice.kind` | `RodzajFaktury` z FA(3): `VAT`, `KOR`, `ZAL`, `ROZ`, `UPR`, `KOR_ZAL`, `KOR_ROZ` |
 | `invoice.tax_scenario` | `eu_b2b`, `eu_b2b_unidentified` (do potwierdzenia przez doradcę, Q-29), `non_eu_b2b`, `pl_b2b` |
@@ -143,7 +144,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `stored_file.kind` | `xml_sent`, `upo`, `pdf`, `evidence`, `attachment`, `verification_raw`, `cost_document`, `outbound_payload` |
 | `credential_state.kind` | `ksef_token_read`, `ksef_token_write`, `ksef_auth_cert`, `ksef_offline_cert`, `ksef_jwt_read`, `ksef_jwt_write`, `auth_data`, `freshbooks_oauth`, `dummy_token` (tylko konektor `dummy`); `edoreczenia_qualified_cert` i `edoreczenia_access_token` odłożone (D-29) |
 | `sync_cursor.stream` | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments`; e-Doręczenia `inbox`, `outbox` odłożone (D-29) |
-| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md) (w tym `ksef.export_part`, D-71), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
+| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md) (w tym `ksef.export_part`, D-71), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `eli.read`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
 | `ryczalt.advance_frequency` (`setting`) | `monthly`, `quarterly` (Q-17) |
 | `zus.variant` (`setting`) | `full`, `preferential`, `start_relief`; F0b implementuje `full` (Q-16) |
 | `environment` | `test`, `demo`, `prod`; `int` odłożone (D-29) |
@@ -178,6 +179,7 @@ Nazwy przyjęte 8.10.2026 z plików-domów i z przeglądu. Pełna tabela kluczy 
 | `edoreczenia` | `EDoreczenia`; odłożone (D-29) |
 | `jpk`, `edeklaracje` | `Jpk`, `EDeklaracje` |
 | `vies`, `white_list`, `nbp` | `Vies`, `WhiteList`, `Nbp` |
+| `eli` | `Eli`; API Sejmu dla obserwacji prawa, tylko odczyt (D-75) |
 | `freshbooks` | `FreshBooks` |
 | `claude` | `Claude` |
 | `basal` | `Basal`; odłożone (D-29) |
@@ -256,6 +258,7 @@ Cele są niezależne od `APP_ENV`, mają osobne zestawy poświadczeń i osobną 
 | `app:ledger:import <źródło> <rok> [--file=<plik>]` | idempotentny import ewidencji ze źródła `import`, `freshbooks` albo `ksef_subject1`; `import` wymaga `--file` z eksportem narzędzia (XML JPK_EWP(4) albo CSV); `freshbooks` i `ksef_subject1` od F2.2 | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) |
 | `app:jpk:dry-run <typ> <rok> --until=<data>` | JPK bez zatwierdzenia i bez konektora `jpk` | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) |
 | `app:ksef:parallel-compare <rok-miesiąc>` | okres równoległy F3: mapuje fakturę FreshBooks połączoną z fakturą Subject1 na FA(3) i porównuje; bez zatwierdzenia i wysyłki | [modules/ksef.md](modules/ksef.md) |
+| `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` | obserwacja prawa teraz; szkic wierszy do tabeli „Obserwacja prawa” w [facts.md](facts.md) z niesprawdzonych trafień (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
 | `kokpit:evidence <phase>` | uruchamia komendy kryteriów `ci` albo `live` fazy i zbiera artefakty z `manifest.json`, zamaskowane przez `Redactor`; powstaje w F0a | [testing.md](testing.md) |
 
 Sposób uruchamiania komend: [../.claude/rules/zasady-twarde.md](../.claude/rules/zasady-twarde.md).
@@ -657,6 +660,20 @@ Część b: sekcja niżej.
 | Payload `outbound_payload` | kanoniczny JSON: `body`, `kind`, `recipient` (`country`, `name`, `nip`), `subject` |
 | Panel | trasa `panel_draft_action` (`POST /approvals/{id}/draft/{action}`, akcje `confirm`, `edit`, `discard`; pola `confirm[]`, `subject`, `body`; token CSRF `approvals`); klasy `.draft-preview`, `.draft-body`, `mark.draft-flagged`, `.draft-sources`, `.draft-confirm`, `.draft-edit`, `.chat-draft-link` |
 | Testy | `DraftTestTools`, `ClaudeTestTools::responseWith` (znaczniki `{{NAZWA}}` w fixture, np. `FICTIONAL_IBAN`), `ApprovalTestTools::owner` (publiczna); testy `DraftRequestedOnlyTest`, `DraftRecipientDbTest`, `DraftFlaggedValuesTest`, `DraftApprovalCopyTest`, `DraftApprovalCopyPanelTest`; fixtures `tests/Fixtures/Claude/messages-draft-document.json`, `messages-draft-recipients.json`, `messages-draft-flagged.json`; dowody `cmd/draft-requested-only.txt`, `db/draft-approval-copy-approval.csv`, `screens/draft-approval-copy.html` |
+
+### Obserwacja prawa (D-75): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Konektor (`src/Connector/Eli`) | `eli`, `EliConnector` (`references`, `process`, `fetch`, `isEli`, `isProcess`, `referencesUrl`, `processUrl`, `parseReferences`, `parseProcess`); operacje `connector_call` `references` i `process`; licznik `eli.read`; host `api.sejm.gov.pl` |
+| Obserwacja (`src/LegalWatch`) | `LegalWatch` (`run`, wynik `checked`, `hits`, `failed`; link `/`), `LegalWatchReport` (`draftRows`, `markReviewed`, `NEXT_CHECK_DAYS`) |
+| Tabele | `legal_watch` (`kind`: `act`, `process`; `ref`, `label`, `snapshot`, `snapshot_sha256`, `checked_at`, `changed_at`), `legal_watch_hit` (`legal_watch_id`, `snapshot_sha256`, `changes`, `detected_at`, `reviewed_at`); indeks `legal_watch_hit_open` |
+| Pozycja `legal_watch_hit.changes` | akt: `category`, `eli`, `displayAddress`, `title`, `date`; proces: `stage`, `title` |
+| Konfiguracja | `eli.base_url`, `legal_watch.items` (`kind`, `ref`, `label`), `legal_watch.act_categories` |
+| Messenger | `LegalWatchMessage` (`legal_watch.check`, transport `reads`), handler `LegalWatchHandler` |
+| Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
+| Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
+| Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
 ## Nazwy wycofane
 

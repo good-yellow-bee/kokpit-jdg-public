@@ -1,0 +1,68 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.sejm.gov.pl z 2026-10-16 (D-75): publiczne dane ELI i procesu legislacyjnego, bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Proces druku 2453: trzy etapy do I czytania 15.05.2026, nieuchwalony.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes/2453",
+            "status": 200,
+            "body": {
+                "UE": "NO",
+                "changeDate": "2026-05-15T15:31:16",
+                "description": "projekt dotyczy umożliwienia dołączania nowych członków do istniejącej grupy VAT, doprecyzowana zasad ustalania podstawy opodatkowania poprzez jednoznaczne wyłącznie kaucji pobieranej za opakowania objęte systemem kaucyjnym z podstawy opodatkowania VAT, niezależnie od dalszych losów tych opakowań, uproszczenia warunków korzystania z procedury rozliczania VAT od importu towarów w deklaracji podatkowej poprzez rezygnację z części wymogów formalnych, rozszerzenia  katalogu dowodów potwierdzających dokonanie eksportu towarów o dokumenty przewozowe, handlowe i logistyczne, o ile potwierdzają one faktyczny wywóz towarów poza UE oraz likwidacji obowiązku składania informacji VAT-UE i VAT-UEK",
+                "documentDate": "2026-01-08",
+                "documentType": "projekt ustawy",
+                "documentTypeEnum": "BILL",
+                "legislativeCommittee": false,
+                "links": [],
+                "number": "2453",
+                "passed": false,
+                "principleOfSubsidiarity": false,
+                "processStartDate": "2026-01-08",
+                "shortenProcedure": false,
+                "stages": [
+                    {
+                        "date": "2026-01-08",
+                        "stageName": "Projekt wpłynął do Sejmu",
+                        "printNumber": "2453",
+                        "stageType": "Start"
+                    },
+                    {
+                        "children": [
+                            {
+                                "date": "2026-04-17",
+                                "stageName": "Skierowanie",
+                                "committeeCode": "Sejm",
+                                "stageType": "Referral",
+                                "type": "NORMAL"
+                            }
+                        ],
+                        "date": "2026-04-17",
+                        "stageName": "Skierowano do I czytania na posiedzeniu Sejmu",
+                        "stageType": "ReadingReferral"
+                    },
+                    {
+                        "children": [
+                            {
+                                "date": "2026-05-15",
+                                "stageName": "Skierowanie",
+                                "committeeCode": "FPB",
+                                "stageType": "Referral",
+                                "type": "NORMAL"
+                            }
+                        ],
+                        "date": "2026-05-15",
+                        "stageName": "I czytanie na posiedzeniu Sejmu",
+                        "sittingNum": 57,
+                        "stageType": "SejmReading"
+                    }
+                ],
+                "term": 10,
+                "title": "Poselski projekt ustawy o zmianie ustawy o podatku od towarów i usług",
+                "urgencyStatus": "NORMAL",
+                "webGeneratedDate": "2026-05-15T15:31:28"
+            }
+        }
+    ]
+}

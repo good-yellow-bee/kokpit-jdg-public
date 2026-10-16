@@ -78,12 +78,12 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | --- | --- |
 | Kolumna | `environment text NOT NULL CHECK (environment IN ('test','demo','prod'))`; `int` wraca z F4 osobną migracją (sekcja „Odłożone”) |
 | Tabele z kolumną | `invoice`, `ksef_session`, `counterparty`, `verification`, `payment`, `revenue_entry`, `fixed_asset`, `zus_payment`, `period`, `filing`, `obligation`, `approval`, `draft`, `stored_file`, `connector_call`, `rate_counter`, `sync_cursor`, `credential_state`; w `audit_log` kolumna wskazuje cel akcji i może być pusta |
-| Tabele bez kolumny | `invoice_line` (dziedziczy po `invoice`), `fx_rate`, `setting`, `notification`, `app_user`, `webauthn_credential`, `chat_session`, `chat_message` |
+| Tabele bez kolumny | `invoice_line` (dziedziczy po `invoice`), `fx_rate`, `setting`, `notification`, `app_user`, `webauthn_credential`, `chat_session`, `chat_message`, `legal_watch`, `legal_watch_hit` (stan prawa jest ten sam dla każdego środowiska) |
 | Środowisko wdrożenia | `prod` przy `APP_ENV=prod` (`kokpit-prod`, `kokpit-restore`), w innym wypadku `test` (`kokpit-dev`, testy); ten sam przełącznik wybiera hosty rejestrów ([modules/rejestry-kursy.md](modules/rejestry-kursy.md)) |
 | Dane prawdziwe | tylko w `kokpit-prod` i w jego kopii w `kokpit-restore`; `kokpit-dev` i testy działają wyłącznie na danych fikcyjnych |
 | Wiersz z konektora z celem | cel konektora w chwili zapisu (`KSEF_TARGET`, `JPK_TARGET`, `EDEKLARACJE_TARGET`) |
 | Wiersz z FreshBooks: dane (`invoice`, `payment`, `counterparty`, `revenue_entry`) i techniczne (`connector_call`, `rate_counter`, `sync_cursor`, `credential_state`) | na `kokpit-prod`: `prod`, z prawdziwej firmy, tylko odczyt do pierwszego zapisu zwrotnego w F3; w `kokpit-dev` i testach: tylko fixtures, `KSEF_TARGET` w chwili zapisu (`test` albo `demo`); firmy testowej nie ma (D-35, [modules/freshbooks.md](modules/freshbooks.md)) |
-| Konektor bez celu: `vies`, `white_list`, `nbp`, `claude`, `push`, `mail`, `deadman`, `dummy` | środowisko wdrożenia; dotyczy `connector_call`, `rate_counter` i `credential_state`, np. `dummy_token` |
+| Konektor bez celu: `vies`, `white_list`, `nbp`, `eli`, `claude`, `push`, `mail`, `deadman`, `dummy` | środowisko wdrożenia; dotyczy `connector_call`, `rate_counter` i `credential_state`, np. `dummy_token` |
 | Wiersz `verification` z rejestru (VIES, biała lista) | `environment` kontrahenta, którego dotyczy; samosprawdzenie z pustym `counterparty_id`: środowisko wdrożenia |
 | Wiersz `obligation` | obowiązek z encją (`credential_state`, `counterparty`, `invoice`) dziedziczy jej `environment`; obowiązek bez encji (`zus`, `vat_jpk_v7m`, `manual_channel_check`, wpisany ręcznie `edelivery_reply_due` i inne): środowisko wdrożenia |
 | `draft` | `environment` odbiorcy (`counterparty`) |
@@ -121,6 +121,7 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | `period` | miesiąc, zamknięcie i blokada | F2.2/F2.3 | [compliance-calendar.md](compliance-calendar.md) |
 | `ksef_session` | sesje wysyłki do KSeF | F3 | [modules/ksef.md](modules/ksef.md) |
 | `chat_session`, `chat_message`, `draft` | historia czatu i szkice | F6 | [modules/czat.md](modules/czat.md) |
+| `legal_watch`, `legal_watch_hit` | obserwowane akty i procesy legislacyjne, wykryte zmiany | po F6 (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
 
 - Kolejność wierszy idzie za kolejnością realizacji z D-30: F0a → F2.1 → F2.4 → F0b → F1 → F2.2/F2.3 → F3 → F5 → F6. Dokładny podział F2 jest w [phases/f2-ewidencja.md](phases/f2-ewidencja.md).
 - F2.1 i F2.4 działają przed F0b i F1. `revenue_entry.invoice_id`, `payment_id`, `fx_rate_id` oraz `fixed_asset.invoice_id` powstają bez kluczy obcych. Klucz obcy dodaje migracja fazy, która tworzy tabelę docelową: F1 (`invoice`, `fx_rate`), F2.2/F2.3 (`payment`).
@@ -848,6 +849,31 @@ Zmiana `chat.model`, listy narzędzi albo promptu systemowego w konfiguracji otw
 - `UNIQUE (chat_session_id, seq)`.
 - Tylko dopisywanie. Zapisanej historii nie przycina się ani nie maskuje ponownie po zmianie reguł.
 - Budżety dzienne i miesięczne liczą się z sum `cost_usd` ([modules/czat.md](modules/czat.md)).
+
+### Obserwacja prawa
+
+#### `legal_watch`
+
+| Pole | Typ | Opis |
+| --- | --- | --- |
+| `kind` | text | `act` (akt w ELI) albo `process` (proces legislacyjny Sejmu) |
+| `ref` | text | `DU/2004/535` albo `term10/2453`; `UNIQUE (kind, ref)` |
+| `label` | text | nazwa z `legal_watch.items` |
+| `snapshot` | jsonb | posortowana lista: `kategoria\|ELI` powiązań z obserwowanych kategorii albo etapy procesu (`passed` po uchwaleniu) |
+| `snapshot_sha256` | char(64) | hash `snapshot` |
+| `checked_at`, `changed_at` | timestamptz | ostatni odczyt; ostatnia zmiana stanu (pusty do pierwszej zmiany) |
+
+#### `legal_watch_hit`
+
+| Pole | Typ | Opis |
+| --- | --- | --- |
+| `legal_watch_id` | uuid FK | pozycja |
+| `snapshot_sha256` | char(64) | stan, w którym pojawiły się zmiany; `UNIQUE (legal_watch_id, snapshot_sha256)` |
+| `changes` | jsonb | niepusta lista nowych pozycji: akt (`category`, `eli`, `displayAddress`, `title`, `date`) albo etap (`stage`, `title`) |
+| `detected_at` | timestamptz | wykrycie |
+| `reviewed_at` | timestamptz null | przeniesienie do [facts.md](facts.md) (`app:legal-watch report --mark-reviewed`) |
+
+- Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`. Tabele nie mają danych osobowych ani kwot.
 
 ## Stany encji
 

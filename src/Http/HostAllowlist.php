@@ -54,7 +54,7 @@ final readonly class HostAllowlist implements HttpClientInterface
             throw new ConnectorException(ConnectorError::HostNotAllowed);
         }
         $path = $parts['path'] ?? '/';
-        if (($connector === 'vies' && $path !== ($this->configuration->appEnvironment === 'prod' ? '/taxation_customs/vies/rest-api/check-vat-number' : '/taxation_customs/vies/rest-api/check-vat-test-service')) || ($host === 'api.nbp.pl' && ($connector !== 'nbp' || $method !== 'GET')) || ($host === 'www.podatki.gov.pl' && ($connector !== 'jpk' || $method !== 'GET'))) {
+        if (($connector === 'vies' && $path !== ($this->configuration->appEnvironment === 'prod' ? '/taxation_customs/vies/rest-api/check-vat-number' : '/taxation_customs/vies/rest-api/check-vat-test-service')) || ($host === 'api.nbp.pl' && ($connector !== 'nbp' || $method !== 'GET')) || ($host === 'api.sejm.gov.pl' && ($connector !== 'eli' || $method !== 'GET')) || ($host === 'www.podatki.gov.pl' && ($connector !== 'jpk' || $method !== 'GET'))) {
             throw new ConnectorException(ConnectorError::HostNotAllowed);
         }
     }

@@ -14,7 +14,7 @@ Fakty prawne i techniczne z datą weryfikacji, obserwacja zmian prawa, rejestr r
 
 ## Akty prawne
 
-Stan każdego aktu sprawdzony w API ELI Sejmu 8.10.2026. Przed użyciem przepisu w fazie sprawdzasz, czy nowszy tekst jednolity nie zastąpił publikatora. Sprawdzasz też akty zmieniające ogłoszone po tekście jednolitym (ELI „Akty zmieniające”). Kolumna „Uwagi” wymienia te akty i ich wpływ na przepisy cytowane w tym pliku.
+Stan każdego aktu sprawdzony w API ELI Sejmu 8.10.2026. Przed użyciem przepisu w fazie sprawdzasz, czy nowszy tekst jednolity nie zastąpił publikatora. Sprawdzasz też akty zmieniające ogłoszone po tekście jednolitym (ELI „Akty zmieniające”). Kolumna „Uwagi” wymienia te akty i ich wpływ na przepisy cytowane w tym pliku. Od 16.10.2026 zadanie `legal_watch.check` sprawdza akty z tej tabeli i procesy z „Obserwacji prawa” raz w tygodniu, z push przy nowym akcie zmieniającym albo etapie ([modules/obserwacja-prawa.md](modules/obserwacja-prawa.md), D-75). Nowy wiersz tej tabeli dodajesz też do `legal_watch.items`.
 
 | Akt | Publikator | Stan na 2026-10-08 | Uwagi |
 | --- | --- | --- | --- |

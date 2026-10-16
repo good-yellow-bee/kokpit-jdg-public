@@ -13,6 +13,7 @@ use App\Messenger\Message\FreshBooksPollMessage;
 use App\Messenger\Message\LatarniaStatusMessage;
 use App\Messenger\Message\CredentialExpiryMessage;
 use App\Messenger\Message\LedgerTaskMessage;
+use App\Messenger\Message\LegalWatchMessage;
 use App\Messenger\Message\NotificationDispatchMessage;
 use App\Messenger\Message\ObligationRecomputeMessage;
 use App\Messenger\Message\RegistryTaskMessage;
@@ -57,6 +58,8 @@ final class DefaultScheduleProvider implements ScheduleProviderInterface
             // Pozycje `DI` z numerem KSeF po przyjętym JPK_V7M → „korekta wymagana” (F5.4, D-65).
             ->add(RecurringMessage::cron('0 9 * * *', new RedispatchMessage(new LedgerTaskMessage('jpk.replace_di'), 'reads'), $timezone))
             // Latarnia KSeF co 5 min (F3.3); przy `CONNECTORS_ENABLED=0` i celu `demo` handler kończy się bez wywołań.
-            ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new LatarniaStatusMessage('latarnia.status'), 'reads'), $timezone));
+            ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new LatarniaStatusMessage('latarnia.status'), 'reads'), $timezone))
+            // Obserwacja prawa raz w tygodniu, w poniedziałek rano (D-75); API Sejmu bez okna przerw.
+            ->add(RecurringMessage::cron('30 6 * * 1', new RedispatchMessage(new LegalWatchMessage('legal_watch.check'), 'reads'), $timezone));
     }
 }
