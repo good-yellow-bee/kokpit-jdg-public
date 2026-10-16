@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z hosta testowego wykazpodatnikowvat-test.mf.gov.pl/api z 2026-10-16 (F1, D-74), zapytanie z datą 2026-10-15; NIP i rachunki fikcyjne (fictional), rachunek w ścieżce jako {{account:N}} z FictionalIdentifiers::account(N). Odpowiedzi przez przeglądarkę, bo Imperva odrzuca klienta HTTP z IP chmury.",
+    "scenario": "check fikcyjnego NIP 5555555555 z fikcyjnym rachunkiem account(32): NIE.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/api/check/nip/5555555555/bank-account/{{account:32}}",
+            "status": 200,
+            "body_text": "{\"result\":{\"accountAssigned\":\"NIE\",\"requestDateTime\":\"16-10-2026 08:54:28\",\"requestId\":\"3nRzA-991f744\"}}"
+        }
+    ]
+}

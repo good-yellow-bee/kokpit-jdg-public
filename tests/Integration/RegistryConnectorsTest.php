@@ -7,6 +7,7 @@ namespace App\Tests\Integration;
 use App\Connector\Vies\ViesConnector;
 use App\Connector\WhiteList\WhiteListConnector;
 use App\Fixtures\FictionalIdentifiers;
+use App\Http\ConnectorError;
 use App\Http\ConnectorException;
 use App\Rate\RateLimitExceededException;
 use App\Tests\Support\EvidenceArtefacts;
@@ -60,6 +61,19 @@ final class RegistryConnectorsTest extends DatabaseTestCase
         self::assertSame(sprintf('GET https://wykazpodatnikowvat-test.mf.gov.pl/api/check/nip/5555555555/bank-account/%s?date=2026-11-04', $account), $tools->requests[3]);
         // Ścieżka w `connector_call` nie ma NIP ani rachunku.
         self::assertSame(['/api/search/nip/:id', '/api/check/nip/:id/bank-account/:id'], $this->db()->fetchFirstColumn("SELECT DISTINCT path FROM connector_call WHERE connector='white_list' ORDER BY path DESC"));
+    }
+
+    public function testWhiteListImpervaChallengeIsWafChallenge(): void
+    {
+        $tools = new RegistryTestTools($this->db(), new MockClock('2026-11-04T09:00:00Z'));
+        // Skrót strony z wyzwaniem Imperva z hosta testowego (16.10.2026, D-74): HTTP 200 i HTML zamiast JSON.
+        $tools->responses = ['<html style="height:100%"><head><script type="text/javascript" src="/_Incapsula_Resource?SWJIYLWA=fictional"></script></head><body>Request unsuccessful.</body></html>'];
+        try {
+            $tools->whiteList()->search(F1TestTools::SUPPLIER_NIP, '2026-11-04');
+            self::fail('Strona WAF dała wynik.');
+        } catch (ConnectorException $exception) {
+            self::assertSame(ConnectorError::WafChallenge, $exception->error);
+        }
     }
 
     public function testWhiteListRefusesBadRequestAndQuietHours(): void

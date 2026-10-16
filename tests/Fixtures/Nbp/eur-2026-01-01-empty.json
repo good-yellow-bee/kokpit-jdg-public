@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.nbp.pl z 2026-10-16 (F1, D-74): publiczna tabela A, bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Dzień bez tabeli (1.01.2026, święto): 404 z treścią tekstową.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/api/exchangerates/rates/a/eur/2026-01-01/2026-01-01/",
+            "status": 404,
+            "body_text": "404 NotFound - Not Found - Brak danych"
+        }
+    ]
+}

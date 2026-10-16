@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z usługi testowej VIES ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service z 2026-10-16 (F1, D-74); numery testowe usługi i fikcyjny numer pytającego 1111111111 (fictional). Usługa testowa zwraca pusty requestIdentifier.",
+    "scenario": "DE 200: invalid. Żądanie: {\"countryCode\":\"DE\",\"vatNumber\":\"200\",\"requesterMemberStateCode\":\"PL\",\"requesterNumber\":\"1111111111\"}",
+    "interactions": [
+        {
+            "method": "POST",
+            "path": "/taxation_customs/vies/rest-api/check-vat-test-service",
+            "status": 200,
+            "body_text": "{\n  \"countryCode\" : \"DE\",\n  \"vatNumber\" : \"200\",\n  \"requestDate\" : \"2026-10-16T06:54:29.951Z\",\n  \"valid\" : false,\n  \"requestIdentifier\" : \"\",\n  \"name\" : \"---\",\n  \"address\" : \"---\"\n}"
+        }
+    ]
+}

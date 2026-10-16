@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z hosta testowego wykazpodatnikowvat-test.mf.gov.pl/api z 2026-10-16 (F1, D-74), zapytanie z datą 2026-10-15; NIP i rachunki fikcyjne (fictional), rachunek w ścieżce jako {{account:N}} z FictionalIdentifiers::account(N). Odpowiedzi przez przeglądarkę, bo Imperva odrzuca klienta HTTP z IP chmury.",
+    "scenario": "search na fikcyjny NIP 5555555555: brak podmiotu (subject null).",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/api/search/nip/5555555555",
+            "status": 200,
+            "body_text": "{\"result\":{\"subject\":null,\"requestDateTime\":\"16-10-2026 08:54:27\",\"requestId\":\"1W6uT-991f743\"}}"
+        }
+    ]
+}

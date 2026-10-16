@@ -67,9 +67,9 @@ Dawny jeden konektor „kontrahent” to teraz osobne konektory z [../naming.md]
 
 ## Biała lista
 
-**Hosty:** od 12.10.2026 produkcja `wykazpodatnikowvat.mf.gov.pl/api`, test `wykazpodatnikowvat-test.mf.gov.pl/api` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat), D-42). Adresy są w `registry.white_list_endpoints`. Dawne hosty `wl-api.mf.gov.pl` i `wl-test.mf.gov.pl` zostają na liście `HostAllowlist`, dopóki MF ich nie wyłączy.
+**Hosty:** od 15.10.2026 produkcja `wykazpodatnikowvat.mf.gov.pl/api`, test `wykazpodatnikowvat-test.mf.gov.pl/api` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat), D-42). Adresy są w `registry.white_list_endpoints`. Dawne hosty `wl-api.mf.gov.pl` (przekierowany, działa do 1.12.2026) i `wl-test.mf.gov.pl` zostają na liście `HostAllowlist` do tej daty. Imperva przed wykazem może odesłać klientowi HTTP stronę HTML z wyzwaniem JS zamiast JSON; konektor zgłasza wtedy `waf_challenge` (D-74).
 
-**Metody** ([specyfikacja API 1.6.0](https://www.gov.pl/attachment/64f1f32b-b979-4b4d-8ace-57e54c6f1082))
+**Metody** ([specyfikacja API 1.6.1](https://www.gov.pl/attachment/cb5cf50e-9c50-4c5e-b316-cf33de2e8c06))
 
 | Metoda | Zwraca | Użycie |
 | --- | --- | --- |
