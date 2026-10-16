@@ -175,12 +175,13 @@
     {% set eligibility = current['ryczalt.eligibility'] %}
     <section id="ryczalt-eligibility">
         <h2>Limit ryczałtu (ryczalt.eligibility)</h2>
-        <p>Kwoty w euro z groszami. Limit obserwowany to próg z projektu ustawy (Q-38), pokazywany na panelu.</p>
+        <p>Kwoty w euro z groszami. Limit obserwowany to próg z projektu ustawy (Q-38), pokazywany na panelu. Limit wpłaty co kwartał (art. 21 ust. 1b) liczy prognoza progów.</p>
         <p>Obowiązuje od: {{ eligibility ? eligibility.valid_from : 'brak' }}</p>
         <form method="post" action="{{ path('panel_setting_change', {key: 'ryczalt.eligibility'}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
             <label>Limit prawa do ryczałtu <input name="limit_eur" required value="{{ eligibility.value.limit_eur ?? '' }}"></label>
             <label>Limit obserwowany <input name="watch_limit_eur" value="{{ eligibility.value.watch_limit_eur ?? '' }}"></label>
+            <label>Limit wpłaty co kwartał <input name="quarterly_limit_eur" value="{{ eligibility.value.quarterly_limit_eur ?? '' }}"></label>
             <label>Źródło <input name="legal_source" type="url"></label>
             <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
             <label>Uwaga <input name="note"></label>

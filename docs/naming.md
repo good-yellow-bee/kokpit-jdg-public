@@ -343,9 +343,9 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Rodzaj | Nazwy |
 | --- | --- |
 | Tabela | `zus_payment` (migracja F2.3 część 1) |
-| Podatki (`src/Tax`) | `RyczaltAdvance` (`compute`; pola `shares`, `deductions`, `bases`, `taxes`, `advance`, `carryover`), `HealthContribution` (`bracket`, `amount`), `TaxCalculator` (`advance`, `zusAmount`, `healthReconciliation`, `pit28`, `eligibility`, `revenueAfterSocial`, `revenueByRate`), `ZusPayments` (`record`) |
-| Ustawienia | `ryczalt.eligibility`: `{limit_eur, watch_limit_eur}` (D-47), w `SettingKeys` i w panelu `/settings` |
-| Panel | `TaxController`: `/taxes?year=<rok>` (sekcje `ryczalt-eligibility-metric`, `ryczalt-advances`, `zus-payments`, `health-reconciliation`, `pit28-summary`), `POST /taxes/zus-payment` (token CSRF `taxes`) |
+| Podatki (`src/Tax`) | `RyczaltAdvance` (`compute`; pola `shares`, `deductions`, `bases`, `taxes`, `advance`, `carryover`), `HealthContribution` (`bracket`, `amount`), `TaxCalculator` (`advance`, `zusAmount`, `healthReconciliation`, `pit28`, `eligibility`, `eurThresholdRate`, `zusParameters`, `revenueAfterSocial`, `revenueByRate`), `ZusPayments` (`record`), `ThresholdForecast` (D-76) |
+| Ustawienia | `ryczalt.eligibility`: `{limit_eur, watch_limit_eur, quarterly_limit_eur}` (D-47, `quarterly_limit_eur` z D-76), w `SettingKeys` i w panelu `/settings` |
+| Panel | `TaxController`: `/taxes?year=<rok>` (sekcje `ryczalt-eligibility-metric`, `threshold-forecast` z `tax-reserve` (D-76), `ryczalt-advances`, `zus-payments`, `health-reconciliation`, `pit28-summary`), `POST /taxes/zus-payment` (token CSRF `taxes`) |
 | Akcje audytu | `zus.payment_recorded`, `period.correction_required`, `period.ledger_closed`, `period.closed` |
 | Tabela (część 2) | `period` (migracja F2.3 część 2, D-48) |
 | Okres (`src/Ledger`) | `Periods` (`ensure`, `closed`, `earliestOpen`, `assertOpen`, `correctionRequired`, `markLedgerClosed`, `close`, `corrections`, `month`), wyjątek `ClosedPeriod` (`period`, `proposed`), `LedgerEntryCheck` (`run`, `check`, `missing`, `closeIfComplete`), `LedgerEntryCheckResult` |
@@ -674,6 +674,16 @@ Część b: sekcja niżej.
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+
+### Prognoza progów i rezerwa (D-76): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Podatki (`src/Tax`) | `ThresholdForecast` (`forecast`, `runRate`, `cumulative`, `crossMonth`); `TaxCalculator::eurThresholdRate` (wynik `rate`, `day`, `estimated`); pola metryki `eligibility` `rate_day`, `rate_estimated`, `quarterly_limit_eur` |
+| Wynik `forecast` | `basis_months`, `basis_end`, `ytd_end`, `revenue_ytd`, `revenue_basis`, `run_rate_monthly`, `projected_revenue`; `eur` (`rate`, `rate_table`, `rate_date`, `rate_day`, `rate_estimated`, `limits[]` z `key`: `eligibility`, `eligibility_watch`, `quarterly`; `limit_eur`, `limit_pln`, `crossed`, `projected_cross`, `cross_month`); `health` (`revenue_after_social_ytd`, `projected_revenue_after_social`, `bracket_now`, `bracket_projected`, `next_limit_pln`, `next_cross_month`, `months_paid`, `health_paid`, `surcharge`); `reserve` (`period_start`, `ryczalt_open_period`, `health_surcharge`, `total`) |
+| Ustawienie | pole `quarterly_limit_eur` w `ryczalt.eligibility`; wiersz domyślny z migracji `Version20261023000100` |
+| Panel | `/taxes` sekcja `threshold-forecast`, akapit `tax-reserve`; `/settings` pole `quarterly_limit_eur` |
+| Testy | `ThresholdForecastTest` (Unit i Integration), `TaxCalculatorTest::testRyczaltEligibilityMetricEstimatesRateBeforeFirstWorkingDayOfOctober` |
 
 ## Nazwy wycofane
 

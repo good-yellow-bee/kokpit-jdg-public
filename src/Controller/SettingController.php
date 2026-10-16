@@ -60,7 +60,8 @@ final class SettingController extends AbstractController
                 }
             } elseif ($key === SettingKeys::RYCZALT_ELIGIBILITY) {
                 $watch = trim($request->request->getString('watch_limit_eur'));
-                $value = ['limit_eur' => trim($request->request->getString('limit_eur')),'watch_limit_eur' => $watch === '' ? null : $watch];
+                $quarterly = trim($request->request->getString('quarterly_limit_eur'));
+                $value = ['limit_eur' => trim($request->request->getString('limit_eur')),'watch_limit_eur' => $watch === '' ? null : $watch,'quarterly_limit_eur' => $quarterly === '' ? null : $quarterly];
             } elseif ($key === SettingKeys::ZUS_PARAMETERS) {
                 $brackets = [];
                 for ($i = 1; $i <= 3; $i++) {

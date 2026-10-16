@@ -6,10 +6,12 @@ namespace App\Tax;
 
 use App\Calendar\PolishCalendar;
 use App\Config\ConnectorConfiguration;
+use App\Fx\FxRate;
 use App\Fx\FxRateProvider;
 use App\Fx\FxRateUnavailable;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
+use App\Time\BusinessDate;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Doctrine\DBAL\Connection;
@@ -21,7 +23,7 @@ use Doctrine\DBAL\Connection;
  */
 final readonly class TaxCalculator
 {
-    public function __construct(private Connection $db, private SettingStore $settings, private FxRateProvider $rates, private PolishCalendar $calendar, private ConnectorConfiguration $configuration) {}
+    public function __construct(private Connection $db, private SettingStore $settings, private FxRateProvider $rates, private PolishCalendar $calendar, private ConnectorConfiguration $configuration, private BusinessDate $date) {}
 
     /**
      * Zaliczki roku od stycznia do okresu z `$periodStart`, z nadwyżką odliczeń przenoszoną między okresami.
@@ -108,18 +110,15 @@ final readonly class TaxCalculator
 
     /**
      * Metryka limitu ryczałtu (Q-38): przychód roku w euro po średnim kursie NBP z pierwszego dnia roboczego października
-     * roku poprzedniego (docs/tax-rules.md, wiersz „progi w euro”) wobec limitów z `ryczalt.eligibility`.
+     * tego roku, czyli roku poprzedzającego rok podatkowy, w którym limit działa (art. 4 ust. 2 ustawy o ryczałcie,
+     * docs/tax-rules.md, wiersz „progi w euro”, D-76), wobec limitów z `ryczalt.eligibility`.
      *
-     * @return array{year:int,revenue_pln:string,rate:string,rate_table:string,rate_date:string,revenue_eur:string,limit_eur:?string,watch_limit_eur:?string,watch_used_pct:?string}
+     * @return array{year:int,revenue_pln:string,rate:string,rate_table:string,rate_date:string,rate_day:string,rate_estimated:bool,revenue_eur:string,limit_eur:?string,watch_limit_eur:?string,quarterly_limit_eur:?string,watch_used_pct:?string}
      */
     public function eligibility(int $year): array
     {
-        $firstWorkingDay = $this->calendar->workingDayOnOrAfter(sprintf('%04d-10-01', $year - 1));
-        $rate = $this->rates->getRate('EUR', (new \DateTimeImmutable($firstWorkingDay))->modify('+1 day')->format('Y-m-d'));
-        if ($rate->effectiveDate !== $firstWorkingDay) {
-            // Tabela z innego dnia niż D to błąd, nie zamiennik (docs/modules/rejestry-kursy.md).
-            throw new FxRateUnavailable(sprintf('Brak tabeli A EUR z %s.', $firstWorkingDay));
-        }
+        $threshold = $this->eurThresholdRate($year);
+        $rate = $threshold['rate'];
         $revenue = BigDecimal::zero();
         foreach ($this->revenueByRate(sprintf('%04d-01-01', $year), sprintf('%04d-12-31', $year)) as $amount) {
             $revenue = $revenue->plus($amount);
@@ -128,8 +127,39 @@ final readonly class TaxCalculator
         $limits = $this->settings->value(SettingKeys::RYCZALT_ELIGIBILITY, sprintf('%04d-12-31', $year));
         $limit = is_array($limits) && is_string($limits['limit_eur'] ?? null) ? $limits['limit_eur'] : null;
         $watch = is_array($limits) && is_string($limits['watch_limit_eur'] ?? null) ? $limits['watch_limit_eur'] : null;
-        return ['year' => $year,'revenue_pln' => (string) $revenue->toScale(2),'rate' => $rate->mid,'rate_table' => $rate->tableNo,'rate_date' => $rate->effectiveDate,'revenue_eur' => (string) $eur,
-            'limit_eur' => $limit,'watch_limit_eur' => $watch,'watch_used_pct' => $watch === null ? null : (string) $eur->multipliedBy(100)->dividedBy($watch, 2, RoundingMode::HALF_UP)];
+        $quarterly = is_array($limits) && is_string($limits['quarterly_limit_eur'] ?? null) ? $limits['quarterly_limit_eur'] : null;
+        return ['year' => $year,'revenue_pln' => (string) $revenue->toScale(2),'rate' => $rate->mid,'rate_table' => $rate->tableNo,'rate_date' => $rate->effectiveDate,'rate_day' => $threshold['day'],
+            'rate_estimated' => $threshold['estimated'],'revenue_eur' => (string) $eur,'limit_eur' => $limit,'watch_limit_eur' => $watch,'quarterly_limit_eur' => $quarterly,
+            'watch_used_pct' => $watch === null ? null : (string) $eur->multipliedBy(100)->dividedBy($watch, 2, RoundingMode::HALF_UP)];
+    }
+
+    /**
+     * Kurs EUR progów w euro dla przychodu roku `$year` (art. 4 ust. 2: pierwszy dzień roboczy października roku
+     * poprzedzającego rok podatkowy). Po tym dniu tylko tabela z tego dnia; tabela z innego dnia to błąd, nie zamiennik.
+     * Przed nim kursu jeszcze nie ma, więc metryka i prognoza biorą ostatnią tabelę A przed dniem dzisiejszym
+     * z flagą `estimated` (D-76).
+     *
+     * @return array{rate:FxRate,day:string,estimated:bool}
+     */
+    public function eurThresholdRate(int $year): array
+    {
+        $day = $this->calendar->workingDayOnOrAfter(sprintf('%04d-10-01', $year));
+        $today = $this->date->today();
+        if ($day <= $today) {
+            try {
+                $rate = $this->rates->getRate('EUR', (new \DateTimeImmutable($day))->modify('+1 day')->format('Y-m-d'));
+                if ($rate->effectiveDate !== $day) {
+                    throw new FxRateUnavailable(sprintf('Brak tabeli A EUR z %s.', $day));
+                }
+                return ['rate' => $rate,'day' => $day,'estimated' => false];
+            } catch (FxRateUnavailable $exception) {
+                // Tylko w sam dzień kursu, przed publikacją tabeli, zostaje szacunek; później brak tabeli to błąd.
+                if ($day !== $today) {
+                    throw $exception;
+                }
+            }
+        }
+        return ['rate' => $this->rates->getRate('EUR', $today),'day' => $day,'estimated' => true];
     }
 
     /** Przychód po odliczeniu zapłaconych składek społecznych w przedziale, nie mniej niż zero. */
@@ -170,7 +200,7 @@ final readonly class TaxCalculator
      *
      * @return array{social_base_pln:string,social_pln:string,other_pln:string,health_brackets:list<array{revenue_up_to_pln:?string,base_pln:string,amount_pln:string}>,health_bracket_manual:int}|null
      */
-    private function zusParameters(string $periodStart): ?array
+    public function zusParameters(string $periodStart): ?array
     {
         $row = $this->settings->current(SettingKeys::ZUS_PARAMETERS, $periodStart);
         if ($row === null || substr($row['valid_from'], 0, 4) !== substr($periodStart, 0, 4)) {

@@ -29,13 +29,16 @@ final class TaxPanelTest extends WebTestCase
             $db->insert('app_user', ['id' => $id,'username' => 'fictional-owner','display_name' => 'Fikcyjny właściciel','created_at' => $now,'updated_at' => $now]);
             $db->insert('webauthn_credential', ['id' => (string) Uuid::v7(),'app_user_id' => $id,'credential_id' => 'fictional-credential-id','public_key' => 'fictional-public-key','label' => 'Fikcyjny passkey','created_at' => $now,'updated_at' => $now]);
             $year = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Warsaw')))->format('Y');
-            // Fikcyjny kurs EUR z pierwszego dnia roboczego października roku poprzedniego (tabela w bazie zamiast NBP).
+            // Fikcyjny kurs EUR z pierwszego dnia roboczego października roku przychodu (art. 4 ust. 2, D-76) i z ostatniej
+            // tabeli przed dniem dzisiejszym na szacunek przed tym dniem (tabele w bazie zamiast NBP).
             $calendar = new \App\Calendar\PolishCalendar();
-            $rateDay = $calendar->workingDayOnOrAfter(sprintf('%04d-10-01', $year - 1));
-            $db->insert('fx_rate', ['id' => (string) Uuid::v7(),'source' => 'nbp','table_no' => '190/A/NBP/' . ($year - 1),'currency' => 'EUR','effective_date' => $rateDay,'mid' => '4.000000','fetched_at' => $now]);
+            $today = (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Warsaw')))->format('Y-m-d');
+            foreach (array_unique([$calendar->workingDayOnOrAfter(sprintf('%04d-10-01', $year)), $calendar->previousWorkingDay($today)]) as $i => $rateDay) {
+                $db->insert('fx_rate', ['id' => (string) Uuid::v7(),'source' => 'nbp','table_no' => sprintf('%d/A/NBP/%d', 190 + $i, $year),'currency' => 'EUR','effective_date' => $rateDay,'mid' => '4.000000','fetched_at' => $now]);
+            }
             $settings = self::getContainer()->get(SettingStore::class);
             self::assertInstanceOf(SettingStore::class, $settings);
-            $settings->set(SettingKeys::RYCZALT_ELIGIBILITY, ['limit_eur' => '2000000.00','watch_limit_eur' => '250000.00'], sprintf('%04d-01-01', $year), $id, 'fictional');
+            $settings->set(SettingKeys::RYCZALT_ELIGIBILITY, ['limit_eur' => '2000000.00','watch_limit_eur' => '250000.00','quarterly_limit_eur' => '200000.00'], sprintf('%04d-01-02', $year), $id, 'fictional');
             $writer = self::getContainer()->get(RevenueEntryWriter::class);
             self::assertInstanceOf(RevenueEntryWriter::class, $writer);
             $writer->write(new RevenueDocument('manual', null, 'FIKCYJNA/1/' . $year, null, null, null, sprintf('%04d-01-31', $year), 'PLN', null, ['12.00' => '100000.00']), $id);
@@ -47,6 +50,12 @@ final class TaxPanelTest extends WebTestCase
             self::assertSelectorTextContains('#ryczalt-eligibility-metric', '100000.00 zł = 25000.00 EUR');
             self::assertSelectorTextContains('#ryczalt-eligibility-metric', 'Wobec 250000.00 EUR z projektu ustawy (Q-38): 10.00%.');
             self::assertSelectorTextContains('#ryczalt-eligibility-metric', 'Limit obowiązujący: 2000000.00 EUR.');
+            // Prognoza progów (D-76): od lutego średnia z zakończonych miesięcy; 200 000 EUR × 4,0000 = 800 000,00 zł.
+            self::assertSelectorTextContains('#threshold-forecast', substr($today, 5, 2) === '01' ? 'Prognoza startuje po pierwszym zakończonym miesiącu roku.' : 'Prognoza, nie porada');
+            if (substr($today, 5, 2) !== '01') {
+                self::assertSelectorTextContains('#threshold-forecast', '800000.00');
+                self::assertSelectorTextContains('#tax-reserve', 'Do odłożenia dziś');
+            }
             self::assertSelectorTextContains('#pit28-summary', '100000.00');
             $client->submitForm('Zapisz składki', ['month' => sprintf('%04d-01', $year),'social_pln' => '1600.00','health_pln' => '498.35','other_pln' => '0.00','paid_on' => sprintf('%04d-02-10', $year)]);
             self::assertResponseRedirects('/taxes');

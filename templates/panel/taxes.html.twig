@@ -10,10 +10,39 @@
 
     <section id="ryczalt-eligibility-metric">
         <h2>Limit ryczałtu</h2>
-        {% if eligibility is null %}<p>Czeka na kurs EUR z pierwszego dnia roboczego października {{ year - 1 }}.</p>{% else %}
+        {% if eligibility is null %}<p>Czeka na tabelę A NBP z kursem EUR (pierwszy dzień roboczy października {{ year }}).</p>{% else %}
         <p>Przychód {{ year }}: <strong>{{ eligibility.revenue_pln }} zł</strong> = <strong>{{ eligibility.revenue_eur }} EUR</strong> (kurs {{ eligibility.rate }}, tabela {{ eligibility.rate_table }} z {{ eligibility.rate_date }}).</p>
+        {% if eligibility.rate_estimated %}<p>Kurs szacunkowy: ustawa bierze kurs z {{ eligibility.rate_day }}, do tego dnia liczę po ostatniej tabeli.</p>{% endif %}
         {% if eligibility.watch_limit_eur %}<p>Wobec {{ eligibility.watch_limit_eur }} EUR z projektu ustawy (Q-38): {{ eligibility.watch_used_pct }}%.</p>{% endif %}
         {% if eligibility.limit_eur %}<p>Limit obowiązujący: {{ eligibility.limit_eur }} EUR.</p>{% else %}<p>Brak ustawienia ryczalt.eligibility.</p>{% endif %}
+        {% endif %}
+    </section>
+
+    {% set limit_labels = {eligibility: 'limit prawa do ryczałtu w ' ~ (year + 1), eligibility_watch: 'limit z projektu ustawy (Q-38)', quarterly: 'wpłata co kwartał w ' ~ (year + 1)} %}
+    <section id="threshold-forecast">
+        <h2>Prognoza progów {{ year }}</h2>
+        {% if forecast is null %}<p>Prognoza startuje po pierwszym zakończonym miesiącu roku.</p>{% else %}
+        <p>Prognoza, nie porada: średnia z {{ forecast.basis_months }} zakończonych mies. (do {{ forecast.basis_end }}) to {{ forecast.run_rate_monthly }} zł miesięcznie.
+            Przychód do {{ forecast.ytd_end }}: {{ forecast.revenue_ytd }} zł; prognoza roku: <strong>{{ forecast.projected_revenue }} zł</strong>.</p>
+        {% if forecast.eur is null %}<p>Progi w euro czekają na tabelę A NBP.</p>{% else %}
+        <table>
+            <thead><tr><th>Próg</th><th>EUR</th><th>zł po kursie {{ forecast.eur.rate }}{% if forecast.eur.rate_estimated %} (szacunek){% endif %}</th><th>Stan</th></tr></thead>
+            <tbody>
+            {% for limit in forecast.eur.limits %}
+                <tr><td>{{ limit_labels[limit.key] }}</td><td>{{ limit.limit_eur }}</td><td>{{ limit.limit_pln }}</td>
+                    <td>{% if limit.crossed %}przekroczony w {{ limit.cross_month }}{% elseif limit.projected_cross %}prognoza: przekroczenie w {{ limit.cross_month }}{% else %}prognoza: bez przekroczenia{% endif %}</td></tr>
+            {% else %}
+                <tr><td colspan="4">Brak limitów w ryczalt.eligibility.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if forecast.health %}
+        <p>Zdrowotna: przychód po składkach społecznych {{ forecast.health.revenue_after_social_ytd }} zł (próg {{ forecast.health.bracket_now }}), prognoza roku {{ forecast.health.projected_revenue_after_social }} zł (próg {{ forecast.health.bracket_projected }}).
+            {% if forecast.health.next_limit_pln %}Granica progu {{ forecast.health.next_limit_pln }} zł: {% if forecast.health.next_cross_month %}przekroczenie w {{ forecast.health.next_cross_month }}{% else %}bez przekroczenia w roku{% endif %}.{% endif %}</p>
+        {% else %}<p>Brak zus.parameters na ten rok: bez prognozy zdrowotnej.</p>{% endif %}
+        <p id="tax-reserve">Do odłożenia dziś: <strong>{{ forecast.reserve.total }} zł</strong>
+            {% if forecast.reserve.period_start %}(ryczałt narosły od {{ forecast.reserve.period_start }}: {{ forecast.reserve.ryczalt_open_period }} zł; {% else %}({% endif %}dopłata zdrowotnej za {{ forecast.health.months_paid ?? 0 }} zapłacone mies. przy progu z prognozy: {{ forecast.reserve.health_surcharge }} zł).</p>
         {% endif %}
     </section>
 

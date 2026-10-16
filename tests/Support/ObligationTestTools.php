@@ -41,7 +41,7 @@ final class ObligationTestTools
     /** @param array<string,array<string,string>> $rates */
     public static function tax(Connection $db, ClockInterface $clock, array $rates = []): \App\Tax\TaxCalculator
     {
-        return new \App\Tax\TaxCalculator($db, self::settings($db, $clock), new \App\Fx\FxRateProvider($db, new PolishCalendar(), new BusinessDate($clock), $clock, F1TestTools::rates($rates)), new PolishCalendar(), ConnectorTestTools::configuration(false));
+        return new \App\Tax\TaxCalculator($db, self::settings($db, $clock), new \App\Fx\FxRateProvider($db, new PolishCalendar(), new BusinessDate($clock), $clock, F1TestTools::rates($rates)), new PolishCalendar(), ConnectorTestTools::configuration(false), new BusinessDate($clock));
     }
     public static function actions(Connection $db, ClockInterface $clock): ObligationActions
     {

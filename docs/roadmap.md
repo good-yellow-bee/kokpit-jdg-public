@@ -12,7 +12,7 @@ Skala: wartość dla właściciela H, M, L. Wysiłek jednej osoby po godzinach: 
 2. Stripe: opłaty i wypłaty: zamyka luki Q-24 (`fee_*`, `payout_*`, `actual_rate`) i comiesięczny dokument DI/WEW ręcznie liczony dziś z raportu.
 3. Automatyczna obserwacja prawa: zrobiona dla aktów w ELI i procesów Sejmu (D-75, [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md)). Projekty RCL, komunikaty MF i changelog ksef-docs zostają ręczne.
 4. Import wyciągu bankowego i dopasowanie płatności: różnice kursowe, zamykanie obowiązków po wpłacie, podzielona płatność; zero ruchu pieniędzy.
-5. Prognoza progów i rezerwa podatkowa: rozszerza istniejącą metrykę 250 tys. EUR o run-rate, progi zdrowotnej i kwotę do odłożenia.
+5. Prognoza progów i rezerwa podatkowa: zrobiona na panelu „Podatki” (D-76): run-rate wobec limitów w euro i progów zdrowotnej oraz kwota do odłożenia. Pełny cash-flow z należnościami zostaje w wierszu „Cash-flow i rezerwa podatkowa”.
 
 ## Odłożone z planu faz (D-29)
 
@@ -63,7 +63,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 
 | Propozycja | Co i po co | Wartość | Wysiłek | Ryzyko | Wymaga | Najwcześniej |
 | --- | --- | --- | --- | --- | --- | --- |
-| Prognoza progów | Run-rate przychodu do końca roku wobec 250 tys. EUR (UD458, Q-38), 200 tys. EUR (zaliczki kwartalne, Q-17) i progów zdrowotnej 60 i 300 tys. zł; kurs z pierwszego dnia roboczego października. Rozszerza metrykę z [tax-rules.md](tax-rules.md) | H | S | L: prognoza, nie porada; etykieta w panelu | F2.1 (`revenue_entry`) | po F2.1 |
+| Prognoza progów | Zrobione (D-76, [tax-rules.md](tax-rules.md), „Prognoza progów i rezerwa”). Run-rate przychodu do końca roku wobec 250 tys. EUR (UD458, Q-38), 200 tys. EUR (zaliczki kwartalne, Q-17) i progów zdrowotnej 60 i 300 tys. zł; kurs z pierwszego dnia roboczego października. Rozszerza metrykę z [tax-rules.md](tax-rules.md) | H | S | L: prognoza, nie porada; etykieta w panelu | F2.1 (`revenue_entry`) | po F2.1 |
 | Cash-flow i rezerwa podatkowa | Otwarte `obligation` z kwotami na 90 dni (zaliczka, P_51, ZUS, WHT) wobec należności z `payment` i FreshBooks; „do odłożenia dziś”. Saldo z wyciągu, gdy jest import | H | M | L | F0b (kwoty), F2.2/F2.3 (`payment`), F5 (VAT) | po F2.2/F2.3, pełne po F5 |
 | Raporty rok do roku | Przychód, VAT, koszty, kursy per miesiąc 2026 wobec 2027; eksport CSV; nowe `query` dla `render_chart` (nowy `tool_set`) | M | S | L | F2.1 i drugi rok danych | 2028 |
 | Kreator pierwszego uruchomienia | Jeden przebieg: `company.identity`, mikrorachunek, rachunek ZUS, wariant ZUS, `ryczalt.service_map`, rejestracja poświadczeń, test push. Zastępuje ręczne wpisy `setting`; wspólny z instalatorem planów płatnych | M | M | L | F2.1 (tabela `setting`, [data-model.md](data-model.md)), F0b (klucze kalendarza), F1 (poświadczenia) | po F1 |

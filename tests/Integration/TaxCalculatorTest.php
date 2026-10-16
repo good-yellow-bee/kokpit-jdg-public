@@ -122,10 +122,11 @@ final class TaxCalculatorTest extends DatabaseTestCase
     {
         $clock = new MockClock('2026-12-05T08:00:00Z');
         $this->seed($clock);
-        ObligationTestTools::settings($this->db(), $clock)->set(SettingKeys::RYCZALT_ELIGIBILITY, ['limit_eur' => '2000000.00','watch_limit_eur' => '250000.00'], '2026-01-01', null, 'fictional');
-        // 1.10.2025 to środa: kurs fikcyjny 4,2500 z tabeli tego dnia; 25 000,00 zł / 4,25 = 5 882,35 EUR.
-        $metric = ObligationTestTools::tax($this->db(), $clock, ['EUR' => ['2025-09-30' => '4.3000','2025-10-01' => '4.2500']])->eligibility(2026);
-        self::assertSame(['25000.00', '4.250000', '2025-10-01', '5882.35', '2000000.00', '250000.00', '2.35'], [$metric['revenue_pln'], $metric['rate'], $metric['rate_date'], $metric['revenue_eur'], $metric['limit_eur'], $metric['watch_limit_eur'], $metric['watch_used_pct']]);
+        ObligationTestTools::settings($this->db(), $clock)->set(SettingKeys::RYCZALT_ELIGIBILITY, ['limit_eur' => '2000000.00','watch_limit_eur' => '250000.00'], '2026-02-01', null, 'fictional');
+        // Przychód 2026 liczy się do limitu na 2027, więc kurs z 1.10.2026 (czwartek), roku poprzedzającego rok podatkowy
+        // (art. 4 ust. 2, D-76): fikcyjne 4,2500 z tabeli tego dnia; 25 000,00 zł / 4,25 = 5 882,35 EUR.
+        $metric = ObligationTestTools::tax($this->db(), $clock, ['EUR' => ['2025-10-01' => '4.1000','2026-09-30' => '4.3000','2026-10-01' => '4.2500']])->eligibility(2026);
+        self::assertSame(['25000.00', '4.250000', '2026-10-01', '2026-10-01', false, '5882.35', '2000000.00', '250000.00', '2.35'], [$metric['revenue_pln'], $metric['rate'], $metric['rate_date'], $metric['rate_day'], $metric['rate_estimated'], $metric['revenue_eur'], $metric['limit_eur'], $metric['watch_limit_eur'], $metric['watch_used_pct']]);
     }
 
     public function testRyczaltEligibilityMetricRefusesRateFromAnotherDay(): void
@@ -133,7 +134,16 @@ final class TaxCalculatorTest extends DatabaseTestCase
         $clock = new MockClock('2026-12-05T08:00:00Z');
         $this->seed($clock);
         $this->expectException(FxRateUnavailable::class);
-        ObligationTestTools::tax($this->db(), $clock, ['EUR' => ['2025-09-30' => '4.3000']])->eligibility(2026);
+        ObligationTestTools::tax($this->db(), $clock, ['EUR' => ['2026-09-30' => '4.3000']])->eligibility(2026);
+    }
+
+    public function testRyczaltEligibilityMetricEstimatesRateBeforeFirstWorkingDayOfOctober(): void
+    {
+        $clock = new MockClock('2026-06-15T08:00:00Z');
+        $this->seed($clock);
+        // Kursu z 1.10.2026 jeszcze nie ma: szacunek po ostatniej tabeli przed 15.06.2026 (piątek 12.06), z flagą.
+        $metric = ObligationTestTools::tax($this->db(), $clock, ['EUR' => ['2026-06-12' => '4.0000']])->eligibility(2026);
+        self::assertSame(['4.000000', '2026-06-12', '2026-10-01', true, '6250.00'], [$metric['rate'], $metric['rate_date'], $metric['rate_day'], $metric['rate_estimated'], $metric['revenue_eur']]);
     }
 
     public function testZusPaymentUpsertsMonthLinksObligationAndAudits(): void
