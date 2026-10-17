@@ -68,6 +68,8 @@ services:
     arguments: { $projectDir: '%kernel.project_dir%' }
   App\Command\FixturesRecordCommand:
     arguments: { $projectDir: '%kernel.project_dir%' }
+  App\Command\DiagnosticsCommand:
+    arguments: { $projectDir: '%kernel.project_dir%' }
   App\Command\CredentialRegisterCommand:
     arguments: { $appEnvironment: '%kernel.environment%' }
   Symfony\Component\Clock\NativeClock: ~

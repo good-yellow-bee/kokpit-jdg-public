@@ -25,6 +25,8 @@ services:
   App\Health\NativeHealthResources:
     arguments: { $projectDir: '%kernel.project_dir%', $certificatePath: '%env(default:app.panel.default_certificate:PANEL_CERTIFICATE_PATH)%' }
   App\Health\HealthResources: '@App\Health\NativeHealthResources'
+  App\Health\Diagnostics:
+    arguments: { $projectDir: '%kernel.project_dir%' }
   App\Health\HealthChecker:
     arguments:
       $appEnvironment: '%kernel.environment%'
