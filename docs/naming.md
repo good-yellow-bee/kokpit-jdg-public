@@ -677,6 +677,13 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Widżet „Najbliższe terminy” (D-81): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Panel | sekcja `#upcoming-deadlines` na pulpicie (`panel_dashboard`), stała `PanelController::UPCOMING_LIMIT`, zmienne widoku `upcoming`, `open_obligations` |
+| Testy | `UpcomingDeadlinesPanelTest` |
+
 ### Paczka diagnostyczna (D-80): nazwy
 
 | Rodzaj | Nazwy |

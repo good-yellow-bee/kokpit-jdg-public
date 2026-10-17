@@ -22,6 +22,19 @@
             </ul>
         </section>
     {% endif %}
+    <section id="upcoming-deadlines">
+        <h2>Najbliższe terminy</h2>
+        {% if upcoming %}
+            <ol>
+                {% for item in upcoming %}
+                    <li><a href="{{ path('panel_calendar') }}#obligation-{{ item.id }}">{{ item.due_date }}</a>{% if item.overdue %} <strong>zaległy</strong>{% endif %}: {{ item.type }}{% if item.period_start %} ({{ item.period_start }}){% endif %}{% if item.note %}: {{ item.note }}{% endif %}{% if item.amount_due is not null %}, {{ item.amount_due }} zł{% elseif item.missing %}, {{ item.missing }}{% endif %}</li>
+                {% endfor %}
+            </ol>
+            <p>Otwartych obowiązków: {{ open_obligations }}. <a href="{{ path('panel_calendar') }}">Cały kalendarz</a></p>
+        {% else %}
+            <p>Brak otwartych obowiązków. <a href="{{ path('panel_calendar') }}">Kalendarz</a></p>
+        {% endif %}
+    </section>
     <section id="connector-validity">
         <h2>Ważność poświadczeń</h2>
         {% if credentials %}

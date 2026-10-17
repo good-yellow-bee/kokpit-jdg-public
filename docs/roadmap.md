@@ -114,7 +114,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - `cache_control` na stałym prefiksie czatu od pierwszej wersji F6.
 - Paczka diagnostyczna `kokpit:diagnostics`: zrobione (D-80).
 - Klucz FIDO2 jako drugi passkey, gdy F0b doda drugi passkey (D-28).
-- Widżet „najbliższe 3 terminy” na stronie startowej panelu.
+- Widżet „najbliższe 3 terminy” na stronie startowej panelu: zrobione (D-81).
 - Poniedziałkowy przegląd mailem: liczby otwartych obowiązków, zatwierdzeń i poświadczeń `expiring`, bez kwot (D-19).
 - Eksport CSV każdej listy panelu: ewidencja, obowiązki, faktury sprzedaży i złożenia zrobione (D-78); koszty i płatności razem z ich listami w panelu.
 
