@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-81 | widżet „Najbliższe terminy” na pulpicie panelu: trzy najbliższe otwarte obowiązki środowiska z kalendarza (zaległe na początku), liczba otwartych i link do kalendarza; bez nowej tabeli i ustawienia | przyjęta 2026-10-17 | po F0b |
 | D-80 | paczka diagnostyczna `kokpit:diagnostics`: jeden plik JSON w `var/diagnostics` (wersje, migracje, `/health`, kolejki, poświadczenia bez sekretów, blokady, `connector_call`, logi z wejścia), maskowanie `Redactor` i NIP, skaner fixtures blokuje zapis | przyjęta 2026-10-17 | po F0a |
 | D-79 | kotwica łańcucha `audit_log` poza serwerem: `backup.run` zapisuje głowę łańcucha przed zrzutem w tagu snapshotu restic `audit-head:<sequence>:<hash>`, a `app:audit:verify --anchor` sprawdza bazę wobec tagów | przyjęta 2026-10-17 | po F0a |
 | D-78 | szybkie wygrane z roadmapy: SBOM CycloneDX 1.6 jako artefakt `sbom` joba `lint` (własny `tools/sbom.php` z `composer.lock` i `importmap.php`, bez wtyczki Composer) i eksport CSV list panelu (ewidencja roku, obowiązki, faktury sprzedaży, złożenia) przez `CsvExport` z ochroną przed formułami arkusza | przyjęta 2026-10-17 | po F0b |
@@ -1398,6 +1399,17 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-81 Widżet „Najbliższe terminy”
+
+- **Status:** przyjęta 2026-10-17 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Widżet »najbliższe 3 terminy« na stronie startowej panelu” z listy „Szybkie wygrane” w [roadmap.md](roadmap.md) nie wymaga niczego od właściciela. Pulpit pokazywał tylko baner celów, passkeye, samosprawdzenie i ważność poświadczeń; terminy były dopiero w `/calendar`.
+- **Decyzja:**
+  - Sekcja `#upcoming-deadlines` na `/` pokazuje trzy otwarte obowiązki (`status='open'`) bieżącego środowiska w porządku listy kalendarza (`due_date`, `type`, `dedupe_key`), więc zaległe są na początku i oznaczone „zaległy”. Wiersz: termin z linkiem do wiersza w `/calendar`, rodzaj, okres, notatka, kwota albo komunikat o brakujących parametrach ZUS.
+  - Pod listą liczba wszystkich otwartych obowiązków i link do kalendarza; bez akcji na pulpicie, zapis zostaje w `/calendar`.
+  - Limit 3 to stała widoku (`PanelController::UPCOMING_LIMIT`), nie parametr podatkowy, więc nie trafia do `setting`.
+- **Skutki:** `src/Controller/PanelController.php`, `templates/panel/dashboard.html.twig`; test `UpcomingDeadlinesPanelTest`; nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-80 Paczka diagnostyczna
 
