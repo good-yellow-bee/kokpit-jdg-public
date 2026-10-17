@@ -253,7 +253,7 @@ Cele są niezależne od `APP_ENV`, mają osobne zestawy poświadczeń i osobną 
 | `app:ops:record-deploy` | wpis `ops.deployed` w `audit_log` w kroku 7 `make deploy` | [operations.md](operations.md) |
 | `app:passkey:enrol-link`, `app:passkey:reset` | pierwszy passkey i odzyskanie dostępu przez SSH; w F0a wersja minimalna (D-28) | [security.md](security.md) |
 | `app:calendar:feed-link [--username] [--base-url] [--revoke]` | adres kanału ICS obowiązków z nowym tokenem albo wyłączenie kanału (D-77) | [security.md](security.md) |
-| `app:audit:verify`, `app:files:verify` | łańcuch `audit_log`; hashe plików | [security.md](security.md), [operations.md](operations.md) |
+| `app:audit:verify [--anchor=audit-head:<sequence>:<hash>]...`, `app:files:verify` | łańcuch `audit_log` i kotwice z tagów snapshotów (D-79); hashe plików | [security.md](security.md), [operations.md](operations.md) |
 | `app:fixtures:record <connector> <scenariusz>` | nagranie odpowiedzi do fixtures | [../.claude/rules/integrations.md](../.claude/rules/integrations.md) |
 | `app:push:test [--channel=mail]` | testowy push ntfy albo mail | [phases/f0a-szkielet.md](phases/f0a-szkielet.md) |
 | `app:ledger:import <źródło> <rok> [--file=<plik>]` | idempotentny import ewidencji ze źródła `import`, `freshbooks` albo `ksef_subject1`; `import` wymaga `--file` z eksportem narzędzia (XML JPK_EWP(4) albo CSV); `freshbooks` i `ksef_subject1` od F2.2 | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) |
@@ -675,6 +675,15 @@ Część b: sekcja niżej.
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+
+### Kotwica łańcucha audytu (D-79): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Audyt (`src/Audit`) | `AuditLog::head` (kotwica `<sequence>:<hash>`), `AuditLog::matchesAnchor` |
+| Komenda | opcja `--anchor` w `app:audit:verify` (`AuditVerifyCommand`) |
+| Backup | tag snapshotu restic `audit-head:<sequence>:<hash>` obok `backup.run`; zmienna `audit_head` w `run-backup.sh` |
+| Testy | `AuditLogTest::testHeadAnchorsMatchOnlyTheirOwnChainEntry`, `BackupScriptTest` |
 
 ### SBOM i eksport CSV list panelu (D-78): nazwy
 

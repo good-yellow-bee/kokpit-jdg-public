@@ -213,6 +213,7 @@ Dwa logi o różnych celach. Kolumny są w [data-model.md](data-model.md).
 | Ochrona | zwykła tabela | rola `kokpit_app` bez `UPDATE`, `DELETE` i `TRUNCATE`; trigger odrzuca `UPDATE` i `DELETE` |
 | Retencja | 90 dni | bez usuwania |
 | Sprawdzenie | – | `app:audit:verify` przelicza łańcuch co tydzień |
+| Kotwica poza serwerem | – | `backup.run` zapisuje głowę łańcucha w tagu snapshotu restic `audit-head:<sequence>:<hash>`; `app:audit:verify --anchor=<tag>` wykrywa historię przepisaną po tym snapshocie (D-79) |
 
 **Role PostgreSQL**
 

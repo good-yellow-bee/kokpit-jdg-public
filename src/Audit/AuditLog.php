@@ -39,6 +39,23 @@ final readonly class AuditLog
         }
         return true;
     }
+    /** Głowa łańcucha jako kotwica `<sequence>:<hash>`; pusty łańcuch to `0:` i 64 zera. Ten sam format backup zapisuje w tagu `audit-head:` (D-79). */
+    public function head(): string
+    {
+        $row = $this->db->fetchAssociative('SELECT sequence, hash FROM audit_log ORDER BY sequence DESC LIMIT 1');
+        return is_array($row) && is_scalar($row['sequence']) && is_string($row['hash']) ? $row['sequence'] . ':' . $row['hash'] : '0:' . str_repeat('0', 64);
+    }
+    /** Czy wpis o numerze z kotwicy (`<sequence>:<hash>`, także z prefiksem tagu `audit-head:`) ma w bazie ten sam hash (D-79). */
+    public function matchesAnchor(string $anchor): bool
+    {
+        if (preg_match('/^(?:audit-head:)?(\d{1,18}):([0-9a-f]{64})$/', $anchor, $match) !== 1) {
+            throw new \InvalidArgumentException('Kotwica w formacie <sequence>:<hash> albo audit-head:<sequence>:<hash>.');
+        }
+        if ((int) $match[1] === 0) {
+            return $match[2] === str_repeat('0', 64);
+        }
+        return $this->db->fetchOne('SELECT hash FROM audit_log WHERE sequence=?', [(int) $match[1]]) === $match[2];
+    }
     /** @param array<string,mixed> $row */
     private static function hash(array $row): string
     {
