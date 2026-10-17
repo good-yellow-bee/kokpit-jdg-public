@@ -85,7 +85,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 | --- | --- | --- | --- | --- | --- | --- |
 | Klucz sprzętowy do step-upu | Rejestracja passkeya z `authenticatorAttachment` = `cross-platform` filtruje do kluczy FIDO2 ([WebAuthn L3](https://www.w3.org/TR/webauthn-3/)); zatwierdzenia kluczem, logowanie telefonem | M | S | L: utrata klucza → `app:passkey:reset` przez SSH | F0b (`StepUpVerifier` i drugi passkey, D-28) | po F0b |
 | Sandbox Claude Code | Sandbox systemowy poleceń powłoki z pustą listą domen plus hosty testowe; uzupełnia deny w `.claude/settings.json`, ochroną zostaje `HostAllowlist` ([security.md](security.md)) | M | S | L | F0a | przed F1 |
-| SBOM i skan zależności | `composer audit --locked` w jobie `lint` zrobiony (D-77); zostaje SBOM ([Composer](https://getcomposer.org/doc/03-cli.md)); `CycloneDX:make-sbom` (Apache-2.0, PHP ^8.1, [GitHub](https://github.com/CycloneDX/cyclonedx-php-composer)) jako artefakt; Dependabot dla Composer w repo prywatnym ([GitHub](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)) | M | S | L: plan GitHub (Q-43) | F0a (CI) | po F0a |
+| SBOM i skan zależności | `composer audit --locked` w jobie `lint` zrobiony (D-77); SBOM CycloneDX jako artefakt `sbom` zrobiony (D-78, własny `tools/sbom.php` zamiast wtyczki `CycloneDX:make-sbom`, także pakiety JS z importmap); zostaje Dependabot dla Composer w repo prywatnym ([GitHub](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)) | M | S | L: plan GitHub (Q-43) | F0a (CI) | po F0a |
 | Test odtworzenia jednym poleceniem | Kwartalny `[manual]` z [operations.md](operations.md) jako skrypt na laptopie: jednorazowy projekt lokalny (D-28) z ostatniego snapshotu, `app:files:verify`, `app:audit:verify`, porównanie liczb z PROD, raport do `docs/evidence`. Ręcznie zostaje uruchomienie i czytanie raportu | H (R-26) | M | L: klucz sejfu PROD na laptopie tylko na czas testu; `CONNECTORS_ENABLED=0` | F0a, pierwszy test ręczny | po F0a |
 | Kotwica łańcucha `audit_log` | Codzienny hash głowy łańcucha w tagu snapshotu restic albo w pingu dead-man; wykrywa przepisanie historii na serwerze | M | S | L | F0a | po F0a |
 | Panel zdrowia konektorów | Wykresy z `connector_call` i `rate_counter`: błędy, 429, czas odpowiedzi, `blocked_until`, wiek `sync_cursor`; zamiast grep po logach | M | S | L | F1 | po F1 |
@@ -108,7 +108,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - Eksport ICS obowiązków z tabeli integracji: zrobione (D-77).
 - Liczby pod kreator Twój e-PIT: przychód i ryczałt per miesiąc i stawka, do przepisania; wpłaty kreator ma z urzędu.
 - Przycisk kopiowania danych przelewu przy „Sprawdź przed przelewem”: rachunek, kwota, tytuł z numerem KSeF od 1.01.2027.
-- `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt.
+- `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt (zrobione, D-78).
 - Sandbox Claude Code z pustą listą domen przed F1.
 - Kotwica hasha `audit_log` w tagu snapshotu restic.
 - `cache_control` na stałym prefiksie czatu od pierwszej wersji F6.
@@ -116,7 +116,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - Klucz FIDO2 jako drugi passkey, gdy F0b doda drugi passkey (D-28).
 - Widżet „najbliższe 3 terminy” na stronie startowej panelu.
 - Poniedziałkowy przegląd mailem: liczby otwartych obowiązków, zatwierdzeń i poświadczeń `expiring`, bez kwot (D-19).
-- Eksport CSV każdej listy panelu (ewidencja, koszty, płatności, obowiązki).
+- Eksport CSV każdej listy panelu: ewidencja, obowiązki, faktury sprzedaży i złożenia zrobione (D-78); koszty i płatności razem z ich listami w panelu.
 
 ## Świadomie odrzucone
 

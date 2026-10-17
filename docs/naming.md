@@ -676,6 +676,14 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### SBOM i eksport CSV list panelu (D-78): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| SBOM | `App\Security\Sbom` (`build`), skrypt `tools/sbom.php [<wersja>]` (CycloneDX 1.6 JSON na stdout); w CI plik `sbom.cdx.json`, artefakt `sbom` joba `lint` |
+| Panel | `App\Panel\CsvExport` (`build`, `response`, `cell`); parametr `?format=csv` na `/ledger` (z `year`), `/calendar`, `/invoices`, `/filings`; pliki `ewidencja-<rok>.csv`, `obowiazki.csv`, `faktury-sprzedazy.csv`, `zlozenia.csv`; linki `#ledger-csv`, `#calendar-csv`, `#invoices-csv`, `#filings-csv` |
+| Testy | `SbomTest`, `CsvExportTest`, `PanelCsvExportTest`, `CiWorkflowTest` |
+
 ### Kanał ICS obowiązków i skan zależności (D-77): nazwy
 
 | Rodzaj | Nazwy |

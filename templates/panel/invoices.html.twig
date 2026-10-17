@@ -4,7 +4,7 @@
 
 {% block body %}
     <h1>Faktury sprzedaży</h1>
-    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a></nav>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_approvals') }}">Zatwierdzenia</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a id="invoices-csv" href="{{ path('panel_invoices', {format: 'csv'}) }}">Eksport CSV</a></nav>
     {% for message in app.flashes('notice') %}<p role="status" id="delivery-notice">{{ message }}</p>{% endfor %}
     {% for message in app.flashes('error') %}<p role="alert" id="delivery-error">{{ message }}</p>{% endfor %}
     <p>„Doręcz klientowi” wysyła e-mail z PDF (KOD I) i linkiem do płatności na adres z FreshBooks, od razu w tym żądaniu (D-31). Jedno kliknięcie to jedna próba; ponowienie to nowe kliknięcie.</p>

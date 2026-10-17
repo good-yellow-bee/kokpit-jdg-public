@@ -9,6 +9,7 @@ use App\Connector\FreshBooks\FreshBooksInvoice;
 use App\Fx\FxRateProvider;
 use App\Fx\FxRateUnavailable;
 use App\Invoice\VatFx;
+use App\Panel\CsvExport;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 
@@ -35,18 +36,7 @@ final readonly class LedgerReconciliation
     /** @param list<array{check:string,document_number:string,ksef_number:string,sources:string,status:string,detail:string}> $rows */
     public static function csv(array $rows): string
     {
-        $handle = fopen('php://temp', 'w+');
-        if ($handle === false) {
-            throw new \RuntimeException('Nie można zbudować CSV.');
-        }
-        fputcsv($handle, self::COLUMNS, ';', '"', '');
-        foreach ($rows as $row) {
-            fputcsv($handle, array_values($row), ';', '"', '');
-        }
-        rewind($handle);
-        $csv = stream_get_contents($handle);
-        fclose($handle);
-        return $csv === false ? '' : $csv;
+        return CsvExport::build(self::COLUMNS, $rows);
     }
 
     /** @return list<array{check:string,document_number:string,ksef_number:string,sources:string,status:string,detail:string}> */

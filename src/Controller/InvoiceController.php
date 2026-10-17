@@ -9,6 +9,7 @@ use App\Invoice\ClientDelivery;
 use App\Invoice\ClientDeliveryFailed;
 use App\Invoice\InvoicePdf;
 use App\Invoice\InvoicePdfRefused;
+use App\Panel\CsvExport;
 use App\Passkey\AppUser;
 use App\Storage\FileStore;
 use Doctrine\DBAL\Connection;
@@ -35,17 +36,24 @@ final class InvoiceController extends AbstractController
         'mail_failed' => 'Wysyłka e-maila nie powiodła się; nic nie ponowiono. Spróbuj ponownie nowym kliknięciem.',
     ];
 
+    /** Kolumny eksportu CSV (D-78): lista faktur bez limitu wierszy, z ostatnim doręczeniem. */
+    private const EXPORT_COLUMNS = ['kind','invoice_number','issue_date','status','ksef_number','currency','gross_total','written_back_at','delivered_at'];
+
     public function __construct(private readonly Connection $db, private readonly ConnectorConfiguration $configuration) {}
 
     #[Route('/invoices', name: 'panel_invoices', methods: ['GET'])]
-    public function index(ClientDelivery $delivery): Response
+    public function index(Request $request, ClientDelivery $delivery): Response
     {
+        $csv = $request->query->getString('format') === 'csv';
         $invoices = $this->db->fetchAllAssociative(
-            "SELECT id, kind, invoice_number, issue_date, status, ksef_number, currency, gross_total, written_back_at FROM invoice WHERE environment=? AND direction='sale' AND status IN ('approved','submitted','unknown','accepted','corrected') ORDER BY issue_date DESC, invoice_number DESC LIMIT 200",
+            "SELECT id, kind, invoice_number, issue_date, status, ksef_number, currency, gross_total, written_back_at FROM invoice WHERE environment=? AND direction='sale' AND status IN ('approved','submitted','unknown','accepted','corrected') ORDER BY issue_date DESC, invoice_number DESC" . ($csv ? '' : ' LIMIT 200'),
             [$this->configuration->environment()],
         );
         foreach ($invoices as $index => $invoice) {
             $invoices[$index]['delivered_at'] = is_string($invoice['id']) ? $delivery->lastDelivery($invoice['id']) : null;
+        }
+        if ($csv) {
+            return CsvExport::response('faktury-sprzedazy.csv', self::EXPORT_COLUMNS, $invoices);
         }
         return $this->render('panel/invoices.html.twig', ['invoices' => $invoices]);
     }

@@ -36,6 +36,11 @@ final class CiWorkflowTest extends TestCase
         }
         // Skan podatności zależności w jobie lint (D-77).
         self::assertStringContainsString('composer audit --locked', implode("\n", array_column($jobs['lint']['steps'], 'run')));
+        // SBOM jako artefakt joba lint (D-78).
+        self::assertStringContainsString('php tools/sbom.php "$GITHUB_SHA" > sbom.cdx.json', implode("\n", array_column($jobs['lint']['steps'], 'run')));
+        $sbom = array_values(array_filter($jobs['lint']['steps'], static fn(array $step): bool => ($step['uses'] ?? '') === 'actions/upload-artifact@v4'));
+        self::assertCount(1, $sbom);
+        self::assertSame(['name' => 'sbom','path' => 'sbom.cdx.json','if-no-files-found' => 'error'], $sbom[0]['with'] ?? null);
         foreach ($jobs as $job) {
             self::assertContains('sh scripts/ci-bootstrap.sh', array_column($job['steps'], 'run'));
         }
