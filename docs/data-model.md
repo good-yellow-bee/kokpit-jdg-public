@@ -792,6 +792,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | `username` | text | login |
 | `display_name` | text | nazwa w panelu |
 | `disabled_at` | timestamptz null | wyłączenie |
+| `calendar_feed_token_hash` | char(64) null, unikalne | sha256 tokena adresu kanału ICS obowiązków; pusty to kanał wyłączony (D-77) |
 
 Jeden użytkownik. Tabela istnieje, bo `approval`, `audit_log` i `draft` zapisują aktora.
 

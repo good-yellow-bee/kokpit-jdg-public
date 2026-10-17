@@ -57,7 +57,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 | Stripe: opłaty i wypłaty | Klucz tylko do odczytu w `SecretStore`, host `api.stripe.com`. `balance_transactions` ma `fee`, `fee_details`, `net`, `exchange_rate`, typ `payout` ([Stripe](https://docs.stripe.com/api/balance_transactions/object)) → `payment.fee_*`, `payout_*`, `actual_rate`; miesięczny dokument DI/WEW opłat do JPK_V7M | H | M | M: VAT od opłat Stripe (Q-21, Q-29) | F2.2/F2.3 (`payment`), Q-21, Q-24; dokument JPK po F5 | po F2.2/F2.3 |
 | Konektor poczty przychodzącej | IMAP tylko do odczytu na dedykowanej skrzynce. PDF → `stored_file` `cost_document`, `invoice.source` = `email`, stan `imported`. Tekst lokalnie: smalot/pdfparser (LGPL-3.0, [Packagist](https://repo.packagist.org/p2/smalot/pdfparser.json)), Tesseract dla skanów (Apache-2.0, [GitHub](https://github.com/tesseract-ocr/tesseract)). Pola proponuje reguła per dostawca, zatwierdzasz Ty. [modules/e-doreczenia.md](modules/e-doreczenia.md) dziś wyklucza konektor poczty, więc to nowy D-xx | H | M | M: złośliwe załączniki (bez wykonywania, bez linków); model dostaje tekst tylko po `Redactor` i po zmianie D-22 | F1 (koszty spoza KSeF), nowy D-xx, licznik `mail_in.fetch` | po F1 |
 | Powiadomienia systemowe z poczty | Ten sam konektor rozpoznaje maile e-US, eZUS i e-Doręczeń po nadawcy i temacie i tworzy obowiązek ad hoc „sprawdź kanał”. Mail nie jest treścią pisma, więc nie ma odbioru. e-US wysyła SMS i e-mail po zgodzie, fikcja po 14 dniach ([MF, 22.12.2023](https://www.gov.pl/web/finanse/juz-14-mln-osob-korzysta-z-e-korespondencji)); eZUS do weryfikacji | H (R-11); rośnie po odłożeniu F4 (D-29) | S | L: fałszywe maile KAS; kokpit tylko sygnalizuje, nigdy nie otwiera linku | konektor poczty, Q-13 | po konektorze poczty |
-| Eksport ICS obowiązków | Kanał iCalendar ([RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545)) z `obligation` pod adresem z tokenem, tylko w VPN; tytuły bez kwot (D-19) | M | S | L | F0b | po F0b |
+| Eksport ICS obowiązków | Zrobione (D-77). Kanał iCalendar ([RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545)) z `obligation` pod adresem z tokenem, tylko w VPN; tytuły bez kwot (D-19) | M | S | L | F0b | po F0b |
 
 ### Produkt i UX
 
@@ -85,7 +85,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 | --- | --- | --- | --- | --- | --- | --- |
 | Klucz sprzętowy do step-upu | Rejestracja passkeya z `authenticatorAttachment` = `cross-platform` filtruje do kluczy FIDO2 ([WebAuthn L3](https://www.w3.org/TR/webauthn-3/)); zatwierdzenia kluczem, logowanie telefonem | M | S | L: utrata klucza → `app:passkey:reset` przez SSH | F0b (`StepUpVerifier` i drugi passkey, D-28) | po F0b |
 | Sandbox Claude Code | Sandbox systemowy poleceń powłoki z pustą listą domen plus hosty testowe; uzupełnia deny w `.claude/settings.json`, ochroną zostaje `HostAllowlist` ([security.md](security.md)) | M | S | L | F0a | przed F1 |
-| SBOM i skan zależności | `composer audit --locked` w jobie `lint` ([Composer](https://getcomposer.org/doc/03-cli.md)); `CycloneDX:make-sbom` (Apache-2.0, PHP ^8.1, [GitHub](https://github.com/CycloneDX/cyclonedx-php-composer)) jako artefakt; Dependabot dla Composer w repo prywatnym ([GitHub](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)) | M | S | L: plan GitHub (Q-43) | F0a (CI) | po F0a |
+| SBOM i skan zależności | `composer audit --locked` w jobie `lint` zrobiony (D-77); zostaje SBOM ([Composer](https://getcomposer.org/doc/03-cli.md)); `CycloneDX:make-sbom` (Apache-2.0, PHP ^8.1, [GitHub](https://github.com/CycloneDX/cyclonedx-php-composer)) jako artefakt; Dependabot dla Composer w repo prywatnym ([GitHub](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)) | M | S | L: plan GitHub (Q-43) | F0a (CI) | po F0a |
 | Test odtworzenia jednym poleceniem | Kwartalny `[manual]` z [operations.md](operations.md) jako skrypt na laptopie: jednorazowy projekt lokalny (D-28) z ostatniego snapshotu, `app:files:verify`, `app:audit:verify`, porównanie liczb z PROD, raport do `docs/evidence`. Ręcznie zostaje uruchomienie i czytanie raportu | H (R-26) | M | L: klucz sejfu PROD na laptopie tylko na czas testu; `CONNECTORS_ENABLED=0` | F0a, pierwszy test ręczny | po F0a |
 | Kotwica łańcucha `audit_log` | Codzienny hash głowy łańcucha w tagu snapshotu restic albo w pingu dead-man; wykrywa przepisanie historii na serwerze | M | S | L | F0a | po F0a |
 | Panel zdrowia konektorów | Wykresy z `connector_call` i `rate_counter`: błędy, 429, czas odpowiedzi, `blocked_until`, wiek `sync_cursor`; zamiast grep po logach | M | S | L | F1 | po F1 |
@@ -105,10 +105,10 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 
 ## Szybkie wygrane (do 1 dnia każda)
 
-- Eksport ICS obowiązków z tabeli integracji.
+- Eksport ICS obowiązków z tabeli integracji: zrobione (D-77).
 - Liczby pod kreator Twój e-PIT: przychód i ryczałt per miesiąc i stawka, do przepisania; wpłaty kreator ma z urzędu.
 - Przycisk kopiowania danych przelewu przy „Sprawdź przed przelewem”: rachunek, kwota, tytuł z numerem KSeF od 1.01.2027.
-- `composer audit --locked` w jobie `lint` i SBOM jako artefakt.
+- `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt.
 - Sandbox Claude Code z pustą listą domen przed F1.
 - Kotwica hasha `audit_log` w tagu snapshotu restic.
 - `cache_control` na stałym prefiksie czatu od pierwszej wersji F6.

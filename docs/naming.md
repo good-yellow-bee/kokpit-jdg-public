@@ -252,6 +252,7 @@ Cele są niezależne od `APP_ENV`, mają osobne zestawy poświadczeń i osobną 
 | `app:credential:register <kind> [--valid-until=<data>]`, `app:credential:smoke <kind>` | rejestracja poświadczenia i wywołanie testowe po rotacji; bez flagi `ksef_auth_cert` i `ksef_offline_cert` biorą notAfter z certyfikatu, `ksef_token_*` biorą `ksef.token_legal_valid_until`, pozostałe rodzaje wymagają flagi | [operations.md](operations.md) |
 | `app:ops:record-deploy` | wpis `ops.deployed` w `audit_log` w kroku 7 `make deploy` | [operations.md](operations.md) |
 | `app:passkey:enrol-link`, `app:passkey:reset` | pierwszy passkey i odzyskanie dostępu przez SSH; w F0a wersja minimalna (D-28) | [security.md](security.md) |
+| `app:calendar:feed-link [--username] [--base-url] [--revoke]` | adres kanału ICS obowiązków z nowym tokenem albo wyłączenie kanału (D-77) | [security.md](security.md) |
 | `app:audit:verify`, `app:files:verify` | łańcuch `audit_log`; hashe plików | [security.md](security.md), [operations.md](operations.md) |
 | `app:fixtures:record <connector> <scenariusz>` | nagranie odpowiedzi do fixtures | [../.claude/rules/integrations.md](../.claude/rules/integrations.md) |
 | `app:push:test [--channel=mail]` | testowy push ntfy albo mail | [phases/f0a-szkielet.md](phases/f0a-szkielet.md) |
@@ -675,6 +676,18 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Kanał ICS obowiązków i skan zależności (D-77): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Kalendarz (`src/Calendar`) | `CalendarFeed` (`issue`, `revoke`, `userForToken`, `render`, `escape`, `fold`) |
+| Panel | `CalendarFeedController`, trasa `calendar_feed` (`GET /calendar-feed/{token}.ics`, token 43 znaki base64url, dostęp publiczny w `access_control`, zły token 404) |
+| Kolumna | `app_user.calendar_feed_token_hash` (migracja `Version20261024000100`) |
+| Komenda | `app:calendar:feed-link` (`CalendarFeedLinkCommand`) |
+| Akcje audytu | `calendar.feed_link_issued`, `calendar.feed_revoked` |
+| CI | krok `composer audit --locked` w jobie `lint` |
+| Testy | `CalendarFeedTest` (Unit i Integration), `CiWorkflowTest` |
+
 ### Prognoza progów i rezerwa (D-76): nazwy
 
 | Rodzaj | Nazwy |
@@ -785,7 +798,7 @@ Nazwy z istniejących tabel aplikacyjnych i technicznych; semantyka tabel aplika
 
 | Tabela | Kolumny |
 | --- | --- |
-| `app_user` | `id`, `username`, `display_name`, `disabled_at`, `enrollment_token_hash`, `enrollment_expires_at`, `enrollment_used_at`, `created_at`, `updated_at` |
+| `app_user` | `id`, `username`, `display_name`, `disabled_at`, `enrollment_token_hash`, `enrollment_expires_at`, `enrollment_used_at`, `calendar_feed_token_hash` (D-77), `created_at`, `updated_at` |
 | `audit_log` | `id`, `sequence`, `occurred_at`, `actor_user_id`, `action`, `target_type`, `target_id`, `environment`, `connector`, `approval_id`, `payload_sha256`, `details`, `prev_hash`, `hash` |
 | `cache_items` | `item_id`, `item_data`, `item_lifetime`, `item_time` |
 | `connector_call` | `id`, `sequence`, `environment`, `connector`, `operation`, `host`, `http_method`, `path`, `started_at`, `duration_ms`, `http_status`, `error_code`, `retry_after_s`, `request_sha256`, `request_bytes`, `response_sha256`, `response_bytes`, `approval_id`, `correlation_id` |
