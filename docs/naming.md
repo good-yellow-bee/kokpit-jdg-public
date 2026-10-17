@@ -260,6 +260,7 @@ Cele są niezależne od `APP_ENV`, mają osobne zestawy poświadczeń i osobną 
 | `app:jpk:dry-run <typ> <rok> --until=<data>` | JPK bez zatwierdzenia i bez konektora `jpk` | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) |
 | `app:ksef:parallel-compare <rok-miesiąc>` | okres równoległy F3: mapuje fakturę FreshBooks połączoną z fakturą Subject1 na FA(3) i porównuje; bez zatwierdzenia i wysyłki | [modules/ksef.md](modules/ksef.md) |
 | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` | obserwacja prawa teraz; szkic wierszy do tabeli „Obserwacja prawa” w [facts.md](facts.md) z niesprawdzonych trafień (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
+| `kokpit:diagnostics [--days=1..90] [--logs=<plik>\|-]` | paczka diagnostyczna JSON w `var/diagnostics` bez sekretów, logi po `Redactor` (D-80) | [operations.md](operations.md) |
 | `kokpit:evidence <phase>` | uruchamia komendy kryteriów `ci` albo `live` fazy i zbiera artefakty z `manifest.json`, zamaskowane przez `Redactor`; powstaje w F0a | [testing.md](testing.md) |
 
 Sposób uruchamiania komend: [../.claude/rules/zasady-twarde.md](../.claude/rules/zasady-twarde.md).
@@ -675,6 +676,15 @@ Część b: sekcja niżej.
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+
+### Paczka diagnostyczna (D-80): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Diagnostyka (`src/Health`) | `Diagnostics` (`collect`, `render`); klucze paczki `generated_at`, `period_days`, `deployment`, `versions`, `migrations`, `health`, `queues`, `credentials`, `rate_blocks`, `connector_calls`, `connector_errors`, `logs` |
+| Komenda | `kokpit:diagnostics` (`DiagnosticsCommand`), opcje `--days`, `--logs` |
+| Pliki | `var/diagnostics/kokpit-diagnostics-<RRRRMMDD>-<GGMMSS>.json` (0600, poza repo) |
+| Testy | `DiagnosticsTest` |
 
 ### Kotwica łańcucha audytu (D-79): nazwy
 
