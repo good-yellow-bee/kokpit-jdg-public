@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-77 | szybkie wygrane z roadmapy: kanał ICS obowiązków (`/calendar-feed/{token}.ics`, token z `app:calendar:feed-link`, w bazie tylko sha256, treść bez kwot jak push) i `composer audit --locked` w jobie `lint` | przyjęta 2026-10-17 | po F0b |
 | D-76 | prognoza progów i rezerwa podatkowa (roadmap, priorytet 5 po F6): `ThresholdForecast` z run-rate zakończonych miesięcy wobec limitów w euro i progów zdrowotnej, kwota do odłożenia (ryczałt trwającego okresu i dopłata zdrowotnej), pole `quarterly_limit_eur` i wiersz domyślny `ryczalt.eligibility`; kurs progów w euro z października roku przychodu (art. 4 ust. 2), przed nim szacunek z flagą | przyjęta 2026-10-16 | po F2.3 |
 | D-75 | obserwacja prawa automatyczna (roadmap, priorytet 3 po F6): konektor `eli` (`api.sejm.gov.pl`, tylko `GET`, licznik `eli.read`), zadanie tygodniowe `legal_watch.check`, tabele `legal_watch` i `legal_watch_hit`, push `legal_change` i szkic wierszy do [facts.md](facts.md) przez `app:legal-watch report`; ocena skutku zostaje ręczna | przyjęta 2026-10-16 | po F0b |
 | D-74 | F1 rejestry i NBP na hostach testowych: nagrania VIES (`check-vat-test-service`), białej listy (`wykazpodatnikowvat-test.mf.gov.pl/api`) i NBP w `tests/Fixtures`; usługa testowa VIES zwraca pusty `requestIdentifier`, więc kryteria testowe go nie wymagają; Imperva przed wykazem daje `waf_challenge`; pusty zakres NBP daje alert `connector_failure` | przyjęta 2026-10-16 | F1 |
@@ -1394,6 +1395,20 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-77 Kanał ICS obowiązków i skan zależności
+
+- **Status:** przyjęta 2026-10-17 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Po D-76 priorytety 1, 2 i 4 z [roadmap.md](roadmap.md) czekają na właściciela. Lista „Szybkie wygrane” ma dwie pozycje bez wymagań wobec właściciela: eksport ICS obowiązków i `composer audit --locked` w jobie `lint`.
+  - Aplikacje kalendarza pobierają kanał bez sesji i passkeya, więc adres musi nieść sekret. Proxy ma wyłączony `access_log` i `error_log`, więc token w adresie nie trafia do logów nginx.
+- **Decyzja:**
+  - `GET /calendar-feed/{token}.ics`: otwarte `obligation` środowiska jako wydarzenia całodniowe w dniu `due_date` (UID = identyfikator obowiązku), `SUMMARY` = `type` i miesiąc `period_start`, opis z linkiem do `/calendar`. Bez kwot, notatek, rachunków i kontrahentów, jak treść push (D-19). Wykonane i nieobowiązujące znikają z kanału.
+  - Token 32 bajty losowe w base64url z `app:calendar:feed-link` przez SSH; w bazie tylko sha256 w `app_user.calendar_feed_token_hash`. Nowy token unieważnia stary, `--revoke` wyłącza kanał; wydanie i wyłączenie trafiają do `audit_log`. Zły albo wyłączony token daje 404, bez rozróżnienia.
+  - Kanał działa tylko tam, gdzie panel: w VPN (D-18). Bez przypomnień `VALARM`: przypomnienia zostają w push.
+  - Job `lint` uruchamia `composer audit --locked` po sprawdzeniu licencji; znana podatność w `composer.lock` blokuje merge. SBOM z wiersza roadmapy zostaje na później.
+- **Skutki:** `src/Calendar/CalendarFeed.php`, `src/Controller/CalendarFeedController.php`, `src/Command/CalendarFeedLinkCommand.php`, migracja `Version20261024000100`, `config/packages/security.yaml`, `.github/workflows/ci.yml`; testy `CalendarFeedTest` (Unit i Integration) i `CiWorkflowTest`; [security.md](security.md), [data-model.md](data-model.md), nazwy w [naming.md](naming.md).
+- **Pytania:** brak.
 
 ### D-76 Prognoza progów i rezerwa podatkowa
 

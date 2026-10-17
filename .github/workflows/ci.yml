@@ -28,6 +28,8 @@ jobs:
       - run: docker compose exec -T app vendor/bin/php-cs-fixer fix --dry-run --diff
       - run: docker compose exec -T app vendor/bin/phpstan analyse
       - run: docker compose exec -T app composer check-licenses
+      # Znane podatności zależności z composer.lock (D-77).
+      - run: docker compose exec -T app composer audit --locked
       - run: docker compose exec -T app composer fixtures:scan
   unit_property:
     name: unit+property

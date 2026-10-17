@@ -34,6 +34,8 @@ final class CiWorkflowTest extends TestCase
                 self::assertStringContainsString('--testsuite ' . $suite, implode("\n", array_column($jobs[$job]['steps'], 'run')));
             }
         }
+        // Skan podatności zależności w jobie lint (D-77).
+        self::assertStringContainsString('composer audit --locked', implode("\n", array_column($jobs['lint']['steps'], 'run')));
         foreach ($jobs as $job) {
             self::assertContains('sh scripts/ci-bootstrap.sh', array_column($job['steps'], 'run'));
         }

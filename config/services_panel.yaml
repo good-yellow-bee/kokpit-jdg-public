@@ -10,6 +10,8 @@ services:
     arguments: { $panelOrigin: '%env(default:app.panel.default_origin:PANEL_ORIGIN)%' }
   App\Command\PasskeyResetCommand:
     arguments: { $panelOrigin: '%env(default:app.panel.default_origin:PANEL_ORIGIN)%' }
+  App\Command\CalendarFeedLinkCommand:
+    arguments: { $panelOrigin: '%env(default:app.panel.default_origin:PANEL_ORIGIN)%' }
   App\Panel\:
     resource: '../src/Panel/'
   App\Passkey\:

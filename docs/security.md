@@ -151,6 +151,7 @@ Panel działa tylko w Tailscale, bez publicznego portu. Uwierzytelnienie nie ufa
 | Pierwszy passkey | komenda `app:passkey:enrol-link` przez SSH tworzy jednorazowy link ważny 15 minut | F0a, wersja minimalna |
 | Logowanie | jeden passkey | F0a |
 | Utrata urządzeń | komenda `app:passkey:reset` przez SSH unieważnia wszystkie passkeye i wydaje nowy link | F0a, wersja minimalna |
+| Kanał ICS obowiązków | jedyny adres panelu bez passkeya: `GET /calendar-feed/{token}.ics`, token 256 bitów z `app:calendar:feed-link` przez SSH, w bazie tylko sha256; nowy token unieważnia stary, `--revoke` wyłącza kanał; zły token daje 404. Treść jak push: rodzaj i okres obowiązku, bez kwot, notatek i kontrahentów; adres działa tylko w VPN jak panel (D-77) | po F0b |
 | Drugi passkey | co najmniej 2 passkeye na różnych urządzeniach; panel ostrzega, gdy jest jeden; dodanie i unieważnienie ze step-up w `/passkeys`; ostatniego aktywnego panel nie unieważnia (D-40) | F0b |
 | Sesja | bezczynność 30 minut, limit bezwzględny 12 godzin; ciasteczko `Secure`, `HttpOnly`, `SameSite=Strict` | F0a |
 | CSRF | token Symfony w każdym formularzu zmieniającym stan, także w formularzach Turbo | F0a |
