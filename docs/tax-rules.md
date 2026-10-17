@@ -71,7 +71,7 @@ Ta sekcja jest jedynym domem reguły kursu. Mechanikę pobierania (`FxRateProvid
 | faktura korygująca (VAT) | kurs przyjęty dla faktury pierwotnej | ustawa o VAT, art. 31b ust. 1 | kurs faktury korygowanej |
 | korekta przychodu (PIT, K_8 wiersza `correction`) | kurs PIT wiersza korygowanego (`fx_rate_id` wiersza z `corrects_entry_id`); przegląd doradcy | ustawa o PIT, art. 11a ust. 1 | `revenue_entry.fx_rate_id` |
 | różnica kursowa przy zapłacie | kurs faktycznie zastosowany w dniu wpływu (`payment.paid_on`); bez niego średni NBP z ostatniego dnia roboczego przed `paid_on` (sekcja „Płatności, różnice kursowe i metoda kasowa”) | ustawa o PIT, art. 24c ust. 2 pkt 1 i ust. 4, przez art. 6 ust. 1c ustawy o ryczałcie | `payment.actual_rate`, `payment.fx_rate_id` |
-| progi w euro (wpłata co kwartał, limit ryczałtu) | średni kurs euro NBP z pierwszego dnia roboczego października roku poprzedniego; wywołanie `getRate('EUR', dzień po pierwszym dniu roboczym października)`; numer tabeli to dowód | ustawa o ryczałcie, art. 4 ust. 2 | wyliczenie, bez kolumny |
+| progi w euro (wpłata co kwartał, limit ryczałtu) | średni kurs euro NBP z pierwszego dnia roboczego października roku poprzedzającego rok podatkowy, czyli października roku przychodu (przychód 2026 i limity na 2027: kurs z 1.10.2026, D-76); wywołanie `getRate('EUR', dzień po pierwszym dniu roboczym października)`; numer tabeli to dowód. Przed tym dniem metryka i prognoza biorą ostatnią tabelę A z oznaczeniem „szacunek” | ustawa o ryczałcie, art. 4 ust. 2 | wyliczenie, bez kolumny |
 
 Źródła: [ustawa o VAT](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf), [ustawa o PIT](https://api.sejm.gov.pl/eli/acts/DU/2026/592/text.pdf), [ustawa o ryczałcie](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf).
 
@@ -197,7 +197,16 @@ Przykład (fikcyjny, przed przeglądem doradcy): `[{"service_type": "software", 
 
 - Ryczałt w roku przysługuje przy przychodzie z poprzedniego roku do 2 000 000 euro ([ustawa o ryczałcie, art. 6 ust. 4](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)).
 - Projekt UD458 obniża limit na 2027 do 250 tys. EUR przychodu z 2026 i wprowadza 17% powyżej 300 tys. EUR. Na 08.10.2026 jest nieuchwalony ([proces druku 3147](https://api.sejm.gov.pl/sejm/term10/processes/3147)).
+- Wpłata co kwartał w roku przysługuje przy przychodzie z poprzedniego roku do 200 000 euro ([ustawa o ryczałcie, art. 21 ust. 1b](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)).
 - Parametry są w `ryczalt.eligibility`; panel pokazuje przychód 2026 wobec 250 tys. EUR (Q-38).
+
+**Prognoza progów i rezerwa** (D-76, sekcja `threshold-forecast` na panelu „Podatki”)
+
+- Podstawa to zakończone miesiące roku: średnia miesiąca = suma K_8 tych miesięcy / ich liczba. Wartość narastająco po podstawie rośnie o średnią co miesiąc; prognoza roku to większa z wartości na grudzień i przychodu do dziś. W styczniu bieżącego roku prognozy nie ma; za rok zamknięty prognoza równa się przychodowi.
+- Limity w euro z `ryczalt.eligibility` (`limit_eur`, `watch_limit_eur`, `quarterly_limit_eur`) przelicza się na złote po kursie z wiersza „progi w euro” do grosza (`HALF_UP`). Panel pokazuje miesiąc przekroczenia: rzeczywisty albo z prognozy.
+- Progi zdrowotnej z `zus.parameters` liczy się tą samą metodą na przychodzie po składkach społecznych zapłaconych w miesiącu (art. 81 ust. 2g); panel pokazuje próg teraz, próg z prognozy i miesiąc przekroczenia granicy bieżącego progu.
+- Do odłożenia dziś = ryczałt narosły w trwającym okresie zaliczki (wzór „Zaliczki na ryczałt” na przychodzie i odliczeniach do dziś) + dopłata zdrowotnej za miesiące z wpisem `zus_payment`, gdyby rok skończył się progiem z prognozy (kwota progu × liczba miesięcy − zapłacona zdrowotna, nie mniej niż zero).
+- To prognoza, nie porada: panel tak ją opisuje i niczego nie wysyła ani nie zapisuje.
 
 ## Zaliczka na ryczałt
 
@@ -411,7 +420,7 @@ Przykład (fikcyjne kursy): przychód 1 000,00 EUR po 4,2500 to 4 250,00 zł. Pr
 | --- | --- | --- |
 | `ryczalt.service_map` | usługa → PKWiU 2015 → stawka; pola w „Stawkach ryczałtu” | do przeglądu doradcy (Q-22) |
 | `ryczalt.advance_frequency` | zaliczka co miesiąc albo co kwartał | co miesiąc (Q-17) |
-| `ryczalt.eligibility` | limit prawa do ryczałtu i próg stawki 17% | 2 000 000 euro; UD458 jako obserwacja (Q-38) |
+| `ryczalt.eligibility` | limit prawa do ryczałtu, próg z projektu (obserwacja) i limit wpłaty co kwartał | 2 000 000 euro, obserwacja 250 000 euro z UD458 (Q-38), wpłata co kwartał 200 000 euro; wiersz domyślny od 1.01.2026 wstawia migracja, gdy klucza nie ma (D-76) |
 | `zus.parameters` | podstawy i kwoty składek na rok, progi zdrowotnej; pola w „Składkach ZUS” | wartości ZUS na 2026 |
 | `zus.variant` | wariant składek społecznych: `full`, `preferential`, `start_relief` | `full` (Q-16) |
 | `fx.art31a_2a_elected` | wybór art. 31a ust. 2a | brak wyboru (D-21) |

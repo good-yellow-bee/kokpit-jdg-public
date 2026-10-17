@@ -82,17 +82,20 @@ final class SettingKeys
         };
     }
     /**
-     * Limit prawa do ryczałtu w euro i limit obserwowany z projektu ustawy (Q-38); oba jako napisy dziesiętne.
+     * Limit prawa do ryczałtu w euro, limit obserwowany z projektu ustawy (Q-38) i limit wpłaty co kwartał
+     * (art. 21 ust. 1b, D-76); kwoty jako napisy dziesiętne, dwa ostatnie mogą być puste.
      *
-     * @return array{limit_eur:string,watch_limit_eur:?string}
+     * @return array{limit_eur:string,watch_limit_eur:?string,quarterly_limit_eur:?string}
      */
     private static function eligibility(mixed $value): array
     {
-        if (!is_array($value) || array_diff(array_keys($value), ['limit_eur','watch_limit_eur']) !== []) {
-            throw new \InvalidArgumentException('ryczalt.eligibility ma pola limit_eur i watch_limit_eur.');
+        if (!is_array($value) || array_diff(array_keys($value), ['limit_eur','watch_limit_eur','quarterly_limit_eur']) !== []) {
+            throw new \InvalidArgumentException('ryczalt.eligibility ma pola limit_eur, watch_limit_eur i quarterly_limit_eur.');
         }
         $watch = $value['watch_limit_eur'] ?? null;
-        return ['limit_eur' => self::amount('limit_eur', $value['limit_eur'] ?? null),'watch_limit_eur' => $watch === null ? null : self::amount('watch_limit_eur', $watch)];
+        $quarterly = $value['quarterly_limit_eur'] ?? null;
+        return ['limit_eur' => self::amount('limit_eur', $value['limit_eur'] ?? null),'watch_limit_eur' => $watch === null ? null : self::amount('watch_limit_eur', $watch),
+            'quarterly_limit_eur' => $quarterly === null ? null : self::amount('quarterly_limit_eur', $quarterly)];
     }
     /**
      * Wynik przeglądu doradcy: dzień przeglądu, zatwierdzone `tax_scenario`, zgoda na KOR i sha256 złotych plików.
