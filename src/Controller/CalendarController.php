@@ -8,6 +8,7 @@ use App\Calendar\ObligationActions;
 use App\Calendar\ObligationRules;
 use App\Config\ConnectorConfiguration;
 use App\Messenger\Message\ObligationRecomputeMessage;
+use App\Panel\CsvExport;
 use App\Passkey\AppUser;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
@@ -23,11 +24,17 @@ use Symfony\Component\Routing\Attribute\Route;
 /** Kalendarz obowiązków w panelu (docs/phases/f0b-bramka-kalendarz.md, „Kalendarz”, wiersz „panel”). */
 final class CalendarController extends AbstractController
 {
+    /** Kolumny eksportu CSV (D-78): te same obowiązki co lista, bez limitu wierszy. */
+    private const EXPORT_COLUMNS = ['type','rule_key','period_start','nominal_due_date','due_date','amount_due','payment_title','status','note'];
+
     public function __construct(private readonly Connection $db, private readonly BusinessDate $date, private readonly ConnectorConfiguration $configuration, private readonly SettingStore $settings) {}
 
     #[Route('/calendar', name: 'panel_calendar', methods: ['GET'])]
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        if ($request->query->getString('format') === 'csv') {
+            return CsvExport::response('obowiazki.csv', self::EXPORT_COLUMNS, $this->db->iterateAssociative('SELECT ' . implode(', ', self::EXPORT_COLUMNS) . " FROM obligation WHERE environment=? AND (status='open' OR due_date>=?) ORDER BY due_date, type, dedupe_key", [$this->configuration->environment(), $this->date->today()]));
+        }
         return $this->page(null);
     }
 

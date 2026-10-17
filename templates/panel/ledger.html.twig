@@ -4,7 +4,7 @@
 
 {% block body %}
     <h1>Ewidencja przychodów {{ year }}</h1>
-    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_ledger_reconciliation') }}">Uzgodnienia</a></nav>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_ledger_reconciliation') }}">Uzgodnienia</a> · <a id="ledger-csv" href="{{ path('panel_ledger', {year: year, format: 'csv'}) }}">Eksport CSV {{ year }}</a></nav>
     <p>Wpisy automatyczne: {{ auto ? 'włączone' : 'wyłączone (ewidencję prowadzisz w narzędziu z Q-11)' }}.</p>
     {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}

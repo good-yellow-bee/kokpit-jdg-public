@@ -30,6 +30,13 @@ jobs:
       - run: docker compose exec -T app composer check-licenses
       # Znane podatności zależności z composer.lock (D-77).
       - run: docker compose exec -T app composer audit --locked
+      # SBOM CycloneDX z composer.lock i importmap.php jako artefakt przebiegu (D-78).
+      - run: docker compose exec -T app php tools/sbom.php "$GITHUB_SHA" > sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.cdx.json
+          if-no-files-found: error
       - run: docker compose exec -T app composer fixtures:scan
   unit_property:
     name: unit+property

@@ -15,6 +15,7 @@ use App\Ledger\LedgerReconciliation;
 use App\Ledger\ManualRevenueEntry;
 use App\Ledger\Periods;
 use App\Ledger\ServiceMap;
+use App\Panel\CsvExport;
 use App\Passkey\AppUser;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
@@ -29,17 +30,24 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Ewidencja w panelu (F2.2): alerty liczone zapytaniem (brak stawki, brak daty przychodu, kurs w toku), wiersze roku
- * wpis ręczny z dowodem, zadania „korekta z KOR” i widok „Uzgodnienia” z eksportem CSV (docs/modules/ewidencja.md).
+ * wpis ręczny z dowodem, zadania „korekta z KOR” i widok „Uzgodnienia” z eksportem CSV (docs/modules/ewidencja.md). Eksport
+ * CSV całego roku ewidencji: `?format=csv&year=<rok>` (D-78).
  */
 final class LedgerController extends AbstractController
 {
     private const EVIDENCE_TYPES = ['application/pdf','image/jpeg','image/png','text/plain','application/xml','text/xml'];
+    /** Kolumny K_1–K_9 i pochodzenie wiersza w eksporcie CSV ewidencji roku (D-78). */
+    private const EXPORT_COLUMNS = ['lp','entry_date','revenue_date','document_number','ksef_number','counterparty_country','counterparty_tax_id','amount_pln','rate_pct','source','kind'];
 
     public function __construct(private readonly Connection $db, private readonly BusinessDate $date, private readonly ConnectorConfiguration $configuration, private readonly SettingStore $settings, private readonly CorrectionLedger $corrections, private readonly Periods $periods, private readonly LedgerEntryCheck $entryCheck) {}
 
     #[Route('/ledger', name: 'panel_ledger', methods: ['GET'])]
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        if ($request->query->getString('format') === 'csv') {
+            $year = $this->year($request);
+            return CsvExport::response(sprintf('ewidencja-%d.csv', $year), self::EXPORT_COLUMNS, $this->db->iterateAssociative('SELECT ' . implode(', ', self::EXPORT_COLUMNS) . ' FROM revenue_entry WHERE environment=? AND year=? ORDER BY lp', [$this->configuration->environment(), $year]));
+        }
         return $this->page(null);
     }
 
@@ -93,7 +101,7 @@ final class LedgerController extends AbstractController
         $year = $this->year($request);
         $rows = $reconciliation->report($year, $this->freshbooksInvoices($year, $oauth, $freshbooks));
         if ($request->query->getString('format') === 'csv') {
-            return new Response(LedgerReconciliation::csv($rows), Response::HTTP_OK, ['Content-Type' => 'text/csv; charset=UTF-8','Content-Disposition' => sprintf('attachment; filename="uzgodnienia-%d.csv"', $year)]);
+            return CsvExport::response(sprintf('uzgodnienia-%d.csv', $year), LedgerReconciliation::COLUMNS, $rows);
         }
         return $this->render('panel/ledger_reconciliation.html.twig', ['rows' => $rows,'year' => $year]);
     }

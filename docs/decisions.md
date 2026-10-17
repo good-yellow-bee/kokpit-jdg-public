@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-78 | szybkie wygrane z roadmapy: SBOM CycloneDX 1.6 jako artefakt `sbom` joba `lint` (własny `tools/sbom.php` z `composer.lock` i `importmap.php`, bez wtyczki Composer) i eksport CSV list panelu (ewidencja roku, obowiązki, faktury sprzedaży, złożenia) przez `CsvExport` z ochroną przed formułami arkusza | przyjęta 2026-10-17 | po F0b |
 | D-77 | szybkie wygrane z roadmapy: kanał ICS obowiązków (`/calendar-feed/{token}.ics`, token z `app:calendar:feed-link`, w bazie tylko sha256, treść bez kwot jak push) i `composer audit --locked` w jobie `lint` | przyjęta 2026-10-17 | po F0b |
 | D-76 | prognoza progów i rezerwa podatkowa (roadmap, priorytet 5 po F6): `ThresholdForecast` z run-rate zakończonych miesięcy wobec limitów w euro i progów zdrowotnej, kwota do odłożenia (ryczałt trwającego okresu i dopłata zdrowotnej), pole `quarterly_limit_eur` i wiersz domyślny `ryczalt.eligibility`; kurs progów w euro z października roku przychodu (art. 4 ust. 2), przed nim szacunek z flagą | przyjęta 2026-10-16 | po F2.3 |
 | D-75 | obserwacja prawa automatyczna (roadmap, priorytet 3 po F6): konektor `eli` (`api.sejm.gov.pl`, tylko `GET`, licznik `eli.read`), zadanie tygodniowe `legal_watch.check`, tabele `legal_watch` i `legal_watch_hit`, push `legal_change` i szkic wierszy do [facts.md](facts.md) przez `app:legal-watch report`; ocena skutku zostaje ręczna | przyjęta 2026-10-16 | po F0b |
@@ -1395,6 +1396,22 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-78 SBOM i eksport CSV list panelu
+
+- **Status:** przyjęta 2026-10-17 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Po D-77 lista „Szybkie wygrane” w [roadmap.md](roadmap.md) ma dalej pozycje bez wymagań wobec właściciela. SBOM domyka pozycję „`composer audit --locked` i SBOM jako artefakt”; eksport CSV to osobna pozycja.
+  - Roadmapa wskazywała wtyczkę `cyclonedx/cyclonedx-php-composer`. Wtyczka to nowa zależność z wykonywanym kodem (`allow-plugins`) i nie widzi pakietów JS z `importmap.php` (D-73), które też trafiają do obrazu PROD.
+  - Panel ma listy ewidencji, obowiązków, faktur sprzedaży i złożeń. Kosztów i płatności nie ma jeszcze jako listy w panelu.
+- **Decyzja:**
+  - `tools/sbom.php` wypisuje SBOM CycloneDX 1.6 JSON (`App\Security\Sbom`): każdy pakiet z `composer.lock` jako `pkg:composer/…` z licencją i adresem repozytorium (`packages` zakres `required`, `packages-dev` zakres `excluded`), pakiety z wersją z `importmap.php` jako `pkg:npm/…` (podścieżki jednego pakietu łączą się). Kilka licencji pakietu to wyrażenie `OR`, jak w Composer. Wersja komponentu głównego to commit przebiegu.
+  - Job `lint` zapisuje wynik do `sbom.cdx.json` i wysyła go jako artefakt `sbom` po `composer audit --locked`; brak pliku blokuje job.
+  - Listy panelu dostają link „Eksport CSV”, czyli `?format=csv` na tej samej trasie: `/ledger` (cały rok z `year`, plik `ewidencja-<rok>.csv`), `/calendar` (`obowiazki.csv`), `/invoices` (`faktury-sprzedazy.csv`), `/filings` (`zlozenia.csv`). Filtr jak na liście, bez limitu wierszy. Format jak „Uzgodnienia”: średnik, UTF-8, nagłówek z nazwami kolumn z bazy; `Cache-Control: no-store`.
+  - Komórka tekstu zaczynająca się od `=`, `+`, `-`, `@`, tabulatora albo CR dostaje apostrof, żeby arkusz nie wykonał jej jako formuły; liczby (także ujemne kwoty) zostają bez zmian. Tę samą ochronę dostaje eksport „Uzgodnień”. Eksport jest za passkeyem jak panel i niesie te same dane co lista.
+  - Eksport kosztów i płatności dochodzi razem z ich listami w panelu.
+- **Skutki:** `src/Security/Sbom.php`, `tools/sbom.php`, `src/Panel/CsvExport.php`, kontrolery `LedgerController`, `CalendarController`, `InvoiceController`, `FilingController`, `LedgerReconciliation::csv`, szablony list, `.github/workflows/ci.yml`; testy `SbomTest`, `CsvExportTest`, `PanelCsvExportTest`, `CiWorkflowTest`; nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-77 Kanał ICS obowiązków i skan zależności
 

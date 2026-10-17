@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Config\ConnectorConfiguration;
 use App\Ledger\ManualFiling;
 use App\Ledger\Periods;
+use App\Panel\CsvExport;
 use App\Passkey\AppUser;
 use App\Passkey\StepUp;
 use Doctrine\DBAL\Connection;
@@ -24,12 +25,17 @@ use Symfony\Component\Routing\Attribute\Route;
 final class FilingController extends AbstractController
 {
     private const UPO_TYPES = ['application/pdf','application/xml','text/xml'];
+    /** Kolumny eksportu CSV złożeń (D-78), bez limitu wierszy listy. */
+    private const EXPORT_COLUMNS = ['type','period_start','purpose','seq','status','submitted_via','reference_number','accepted_at'];
 
     public function __construct(private readonly Connection $db, private readonly ConnectorConfiguration $configuration, private readonly Periods $periods) {}
 
     #[Route('/filings', name: 'panel_filings', methods: ['GET'])]
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        if ($request->query->getString('format') === 'csv') {
+            return CsvExport::response('zlozenia.csv', self::EXPORT_COLUMNS, $this->db->iterateAssociative('SELECT ' . implode(', ', self::EXPORT_COLUMNS) . ' FROM filing WHERE environment=? ORDER BY period_start DESC, type, seq DESC', [$this->configuration->environment()]));
+        }
         return $this->page(null);
     }
 
