@@ -87,7 +87,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 | Sandbox Claude Code | Sandbox systemowy poleceń powłoki z pustą listą domen plus hosty testowe; uzupełnia deny w `.claude/settings.json`, ochroną zostaje `HostAllowlist` ([security.md](security.md)) | M | S | L | F0a | przed F1 |
 | SBOM i skan zależności | `composer audit --locked` w jobie `lint` zrobiony (D-77); SBOM CycloneDX jako artefakt `sbom` zrobiony (D-78, własny `tools/sbom.php` zamiast wtyczki `CycloneDX:make-sbom`, także pakiety JS z importmap); zostaje Dependabot dla Composer w repo prywatnym ([GitHub](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)) | M | S | L: plan GitHub (Q-43) | F0a (CI) | po F0a |
 | Test odtworzenia jednym poleceniem | Kwartalny `[manual]` z [operations.md](operations.md) jako skrypt na laptopie: jednorazowy projekt lokalny (D-28) z ostatniego snapshotu, `app:files:verify`, `app:audit:verify`, porównanie liczb z PROD, raport do `docs/evidence`. Ręcznie zostaje uruchomienie i czytanie raportu | H (R-26) | M | L: klucz sejfu PROD na laptopie tylko na czas testu; `CONNECTORS_ENABLED=0` | F0a, pierwszy test ręczny | po F0a |
-| Kotwica łańcucha `audit_log` | Codzienny hash głowy łańcucha w tagu snapshotu restic albo w pingu dead-man; wykrywa przepisanie historii na serwerze | M | S | L | F0a | po F0a |
+| Kotwica łańcucha `audit_log` | Zrobione (D-79): codzienny hash głowy łańcucha w tagu snapshotu restic `audit-head:`, sprawdzany przez `app:audit:verify --anchor`; wykrywa przepisanie historii na serwerze | M | S | L | F0a | po F0a |
 | Panel zdrowia konektorów | Wykresy z `connector_call` i `rate_counter`: błędy, 429, czas odpowiedzi, `blocked_until`, wiek `sync_cursor`; zamiast grep po logach | M | S | L | F1 | po F1 |
 | OpenTelemetry | SDK PHP stabilny dla śladów, metryk i logów ([OTel](https://opentelemetry.io/docs/languages/php/)); lokalny kolektor na VPS; instrumentacja Symfony do weryfikacji | L: jeden użytkownik, `/health` wystarcza | M | L | F0a | tylko przy problemach z workerami |
 | Gotowość na CRA | Tylko gdy obraz trafi do innych: SBOM wyżej, polityka zgłaszania podatności, kanał poprawek. Zgłoszenia od 11.09.2026, pełne obowiązki od 11.12.2027 ([KE](https://digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act)) | L dziś | M | L | zmiana D-25 | przy decyzji o dystrybucji |
@@ -110,7 +110,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - Przycisk kopiowania danych przelewu przy „Sprawdź przed przelewem”: rachunek, kwota, tytuł z numerem KSeF od 1.01.2027.
 - `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt (zrobione, D-78).
 - Sandbox Claude Code z pustą listą domen przed F1.
-- Kotwica hasha `audit_log` w tagu snapshotu restic.
+- Kotwica hasha `audit_log` w tagu snapshotu restic: zrobione (D-79).
 - `cache_control` na stałym prefiksie czatu od pierwszej wersji F6.
 - Paczka diagnostyczna `kokpit:diagnostics`.
 - Klucz FIDO2 jako drugi passkey, gdy F0b doda drugi passkey (D-28).

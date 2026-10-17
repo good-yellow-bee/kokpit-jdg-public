@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-79 | kotwica łańcucha `audit_log` poza serwerem: `backup.run` zapisuje głowę łańcucha przed zrzutem w tagu snapshotu restic `audit-head:<sequence>:<hash>`, a `app:audit:verify --anchor` sprawdza bazę wobec tagów | przyjęta 2026-10-17 | po F0a |
 | D-78 | szybkie wygrane z roadmapy: SBOM CycloneDX 1.6 jako artefakt `sbom` joba `lint` (własny `tools/sbom.php` z `composer.lock` i `importmap.php`, bez wtyczki Composer) i eksport CSV list panelu (ewidencja roku, obowiązki, faktury sprzedaży, złożenia) przez `CsvExport` z ochroną przed formułami arkusza | przyjęta 2026-10-17 | po F0b |
 | D-77 | szybkie wygrane z roadmapy: kanał ICS obowiązków (`/calendar-feed/{token}.ics`, token z `app:calendar:feed-link`, w bazie tylko sha256, treść bez kwot jak push) i `composer audit --locked` w jobie `lint` | przyjęta 2026-10-17 | po F0b |
 | D-76 | prognoza progów i rezerwa podatkowa (roadmap, priorytet 5 po F6): `ThresholdForecast` z run-rate zakończonych miesięcy wobec limitów w euro i progów zdrowotnej, kwota do odłożenia (ryczałt trwającego okresu i dopłata zdrowotnej), pole `quarterly_limit_eur` i wiersz domyślny `ryczalt.eligibility`; kurs progów w euro z października roku przychodu (art. 4 ust. 2), przed nim szacunek z flagą | przyjęta 2026-10-16 | po F2.3 |
@@ -1396,6 +1397,20 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-79 Kotwica łańcucha audytu w tagu snapshotu
+
+- **Status:** przyjęta 2026-10-17 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - `app:audit:verify` sprawdza spójność łańcucha `prev_hash` i `hash`, ale ktoś z dostępem do bazy na serwerze może przeliczyć cały łańcuch od zmienionego wpisu i dostać łańcuch znowu spójny. Pozycja „Kotwica hasha `audit_log` w tagu snapshotu restic” z listy „Szybkie wygrane” w [roadmap.md](roadmap.md) nie wymaga niczego od właściciela.
+  - Restic szyfruje repozytorium, także tagi, a snapshoty leżą poza serwerem (Q-41).
+- **Decyzja:**
+  - `backup.run` przed `pg_dump` czyta głowę łańcucha rolą `kokpit_backup` i dodaje do snapshotu tag `audit-head:<sequence>:<hash>` obok `backup.run`. Pusty łańcuch to `0` i 64 zera. Odczyt przed zrzutem, więc zrzut zawiera wpis z kotwicy. Wynik spoza formatu przerywa backup bez snapshotu.
+  - `app:audit:verify --anchor=<kotwica>` (opcja wielokrotna, z prefiksem `audit-head:` albo bez) sprawdza łańcuch i to, że wpis o numerze z kotwicy ma w bazie ten sam hash; niezgodność to wynik `1`, zły format `2`. Komenda wypisuje też bieżącą głowę.
+  - Test odtworzenia sprawdza kotwicę odtworzonego snapshotu i najstarszego zachowanego; odtworzenie po awarii sprawdza kotwicę snapshotu, z którego odtwarza ([operations.md](operations.md)).
+  - Ping dead-man zostaje bez kotwicy: tag w zaszyfrowanym repozytorium restic wystarcza, a usługa monitoringu nie dostaje hashy.
+- **Skutki:** `docker/backup/run-backup.sh`, `src/Audit/AuditLog.php` (`head`, `matchesAnchor`), `src/Command/AuditVerifyCommand.php`; testy `AuditLogTest::testHeadAnchorsMatchOnlyTheirOwnChainEntry`, `BackupScriptTest`; [operations.md](operations.md), [security.md](security.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-78 SBOM i eksport CSV list panelu
 

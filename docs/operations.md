@@ -197,13 +197,14 @@ Backup obejmuje bazę i pliki `FileStore` w jednym snapshocie. Cel jest poza ser
 | Retencja | 30 dziennych, 12 miesięcznych, 7 rocznych snapshotów |
 | RODO | usunięty plik znika z backupu po wygaśnięciu snapshotów; zasady w [security.md](security.md) |
 | Sprawdzenie | `restic check` co tydzień po `backup.run` |
+| Kotwica audytu | przed zrzutem `backup.run` czyta głowę łańcucha `audit_log` i zapisuje ją w tagu snapshotu `audit-head:<sequence>:<hash>` (pusty łańcuch: `0` i 64 zera); tagi pokazuje `restic snapshots`, a `app:audit:verify --anchor=<tag>` sprawdza, że wpis o tym numerze ma w bazie ten sam hash (D-79) |
 | Znacznik sukcesu | po udanym `restic backup` kontener `backup` zapisuje plik `var/run/backup/last_success` na wolumenie montowanym w `app` tylko do odczytu; `/health` czyta jego czas modyfikacji |
 
 **Test odtworzenia** w jednorazowym projekcie `kokpit-restore` na laptopie (D-28)
 
 1. Postaw `kokpit-restore` (`KOKPIT_DEPLOYMENT=restore`) bez usług `backup` i `vpn`, z `CONNECTORS_ENABLED=0` i wszystkimi `*_TARGET` na wartościach testowych. Pingi dead-man nie wychodzą („Monitoring”).
 2. Odtwórz `var/data` i bazę z jednego snapshotu (`restic restore`, `pg_restore`). Klucz restic, poświadczenia celu backupu i klucz sejfu PROD weź z menedżera haseł.
-3. Uruchom `app:files:verify` i `app:audit:verify`. Oczekiwany wynik: zero niezgodnych hashy, łańcuch poprawny.
+3. Uruchom `app:files:verify` i `app:audit:verify --anchor=<tag audit-head odtworzonego snapshotu> --anchor=<tag najstarszego snapshotu>`. Oczekiwany wynik: zero niezgodnych hashy, łańcuch poprawny, obie kotwice zgodne.
 4. Porównaj liczby `approval`, `filing` i `revenue_entry` z ostatniego miesiąca z panelem PROD.
 5. Zapisz wynik wpisem `ops.restored` w `kokpit-prod` i w dowodzie `cc-14` ([testing.md](testing.md)).
 6. Usuń projekt razem z wolumenami (`docker compose -f compose.yaml down -v`), katalog odtworzenia i pliki kluczy. W tym katalogu nie działa sesja Claude Code ([security.md](security.md)).
@@ -215,7 +216,7 @@ Test odtworzenia robisz na koniec F0a, a potem raz na kwartał (`[manual]`, [tes
 Krok 4 używa przejścia `approved` → `unknown` z wyzwalaczem „odtworzenie z backupu” i aktorem Ty. Przejście definiuje [approval-gate.md](approval-gate.md), nazwę stanu [naming.md](naming.md).
 
 1. Postaw `kokpit-prod` z `CONNECTORS_ENABLED=0`. Plik klucza sejfu PROD z menedżera haseł połóż z uprawnieniami 0400 ([security.md](security.md)). Panel dostaje tę samą nazwę DNS, bo passkey jest związany z nią jako RP ID; inaczej `app:passkey:reset`.
-2. Odtwórz bazę i `var/data` z jednego snapshotu. Uruchom `app:files:verify` i `app:audit:verify`.
+2. Odtwórz bazę i `var/data` z jednego snapshotu. Uruchom `app:files:verify` i `app:audit:verify --anchor=<tag audit-head tego snapshotu>`.
 3. Ustaw cele PROD z ostatniego `ops.deployed` i `CONNECTORS_ENABLED=1`. Startuj usługi bez `worker_official_writes` i `scheduler`.
 4. Każde `approved` z odtworzonej bazy przestaw na `unknown` (odtworzenie z backupu) poleceniem `bin/console app:approval mark-restored`, bo mogło wyjść po zrzucie. Nie anulujesz go: anulowanie zamyka fakturę jako `cancelled_before_send`.
 5. Uruchom ręcznie rekoncyliację tylko odczytem: `ksef.sync` Subject1 od czasu zrzutu, odpytanie statusu złożeń, `SubmissionReconciler` dla `dispatching`, `submitted` i `unknown`. Wyniki dopasuj po P_2 i `payload_sha256`.
