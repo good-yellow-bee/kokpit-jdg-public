@@ -689,6 +689,15 @@ Część b: sekcja niżej.
 | Pliki | `var/evidence/restore/kokpit-restore-<RRRRMMDD>T<GGMMSS>Z.json` (0600, poza repo); w wolumenie `backup_state` projektu `kokpit-restore`: `snapshots.json`, `target.json`, `restore/` |
 | Testy | `RestoreCheckTest`, `RestoreScriptTest` |
 
+### Cash-flow na 90 dni (D-88): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Ewidencja (`src/Ledger`) | `CashFlow` (`summary`; stałe `HORIZON_DAYS`, `MAX_ROWS`) |
+| Panel | `CashFlowController`: trasa `panel_cashflow` (`GET /cashflow`) |
+| Szablon | `templates/panel/cashflow.html.twig`; identyfikatory `#cashflow-balance`, `#cashflow-receivables-pln`, `#cashflow-obligations-pln`, `#cashflow-payables-pln`, `#cashflow-balance-pln`, `#cashflow-obligations`, `#cashflow-obligation-<id>`, `#cashflow-without-amount`, `#cashflow-receivables`, `#cashflow-receivable-<id>`, `#cashflow-payables`, `#cashflow-payable-<id>` |
+| Testy | `CashFlowPanelTest` |
+
 ### Raport rok do roku (D-87): nazwy
 
 | Rodzaj | Nazwy |
