@@ -257,7 +257,7 @@ Faktura z Subject1 i faktura FreshBooks o tym samym numerze to jeden wiersz `inv
 - Płatność dopasowuje się po `payment.freshbooks_invoice_id` do `invoice.freshbooks_id`.
 - Inaczej kokpit czyta z FreshBooks numer faktury o tym id. Dopasowuje go do `revenue_entry.document_number` wiersza `regular` dowolnego `source`, także `import` z F2.1.
 - Kolumna `payment.revenue_entry_id`: [../data-model.md](../data-model.md).
-- Niedopasowane płatności sprawdza ponownie każdy przebieg pollingu.
+- Niedopasowane płatności sprawdza ponownie każdy przebieg pollingu. Listę płatności z filtrem nieprzypisanych i eksportem CSV pokazuje strona `/payments` panelu (D-84).
 - Uzgodnienie sum z FreshBooks i Aplikacją Podatnika KSeF jest kryterium F2.2/F2.3 na liście `docs/evidence/f2.md`.
 
 ## Testy

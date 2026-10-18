@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-84 | lista płatności klientów w panelu `/payments` (tylko odczyt): data, id płatności i faktury FreshBooks, dokument (faktura albo wiersz ewidencji), kwota, bramka, prowizja, wypłata, kurs faktyczny, przypisanie i stan różnic kursowych; filtr `?unmatched=1` (link z liczby nieprzypisanych na stronie FreshBooks) i eksport CSV | przyjęta 2026-10-18 | po F2.2/F2.3 |
 | D-83 | lista faktur kosztowych w panelu `/costs` z eksportem CSV i akcją „Sprawdź przed przelewem”; przy `TAK` dane do przelewu (odbiorca, rachunek, kwota brutto w walucie faktury, tytuł z numerem faktury i numerem KSeF) z przyciskami kopiowania, przy `NIE` powyżej progu trzy wyjścia i zawiadomienie `wl_notice`; wynik wraca z zapisanej `verification`, bez ponownego wywołania białej listy | przyjęta 2026-10-18 | po F1 |
 | D-82 | przegląd tygodnia mailem: zadanie `notifications.weekly_digest` w poniedziałek 7:30 planuje jeden mail `weekly_digest` na tydzień ISO z liczbami otwartych, zaległych i bliskich obowiązków, zatwierdzeń `pending` i `unknown` oraz poświadczeń `expiring` i `expired` środowiska; tylko klucze i liczby, bez kwot, nazw i terminów (D-19); wysyła `notifications.dispatch` | przyjęta 2026-10-18 | po F0b |
 | D-81 | widżet „Najbliższe terminy” na pulpicie panelu: trzy najbliższe otwarte obowiązki środowiska z kalendarza (zaległe na początku), liczba otwartych i link do kalendarza; bez nowej tabeli i ustawienia | przyjęta 2026-10-17 | po F0b |
@@ -1401,6 +1402,18 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-84 Płatności klientów w panelu
+
+- **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Eksport CSV każdej listy panelu” z listy „Szybkie wygrane” w [roadmap.md](roadmap.md) zostawiła płatności „razem z ich listą w panelu”. Tabela `payment` (F2.2/F2.3, D-44) miała w panelu tylko liczbę nieprzypisanych na stronie FreshBooks, bez wskazania, które to płatności.
+- **Decyzja:**
+  - Strona `/payments` (`PaymentController`), tylko do odczytu: ostatnie 200 płatności środowiska według `paid_on` malejąco. Kolumny: data, `freshbooks_payment_id` z `freshbooks_invoice_id`, dokument (numer faktury z `invoice_id` albo `document_number` wiersza ewidencji z `revenue_entry_id`), kwota z walutą, bramka, prowizja, wypłata z dniem, kurs faktyczny, przypisanie (`matched_at`) i różnice kursowe (`nie dotyczy` dla PLN, `zaksięgowane` przy `fx_posted_at`, inaczej `czeka`).
+  - Filtr `?unmatched=1` pokazuje płatności bez `matched_at`. Liczba nieprzypisanych na stronie FreshBooks linkuje do filtra; link „Płatności” na pulpicie.
+  - Eksport `?format=csv` bez limitu wierszy, jak D-78: `platnosci.csv`, z filtrem `platnosci-nieprzypisane.csv`.
+  - Strona niczego nie zmienia: przypisanie i różnice kursowe zostają przy synchronizacji FreshBooks (`PaymentLedger`, `FxDifference`), a `fee_*` i `payout_*` przy Q-24.
+- **Skutki:** `src/Controller/PaymentController.php`, `templates/panel/payments.html.twig`, `templates/panel/dashboard.html.twig`, `templates/panel/freshbooks.html.twig`; test `PaymentPanelTest`; [modules/freshbooks.md](modules/freshbooks.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-83 Faktury kosztowe w panelu i dane do przelewu
 
