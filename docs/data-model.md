@@ -100,7 +100,7 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | Tabela | Cel | Faza | Dom semantyki |
 | --- | --- | --- | --- |
 | `stored_file` | rejestr plików adresowanych sha256 | F0a | ten plik |
-| `connector_call` | każde wywołanie zewnętrzne | F0a | [security.md](security.md) |
+| `connector_call` | każde wywołanie zewnętrzne; indeks `(environment, started_at)` pod panel zdrowia (D-85) | F0a | [security.md](security.md) |
 | `audit_log` | akcje użytkownika i zapisy w urzędzie, łańcuch hashy | F0a | [security.md](security.md) |
 | `rate_counter` | liczniki limitów per konektor | F0a | [architecture.md](architecture.md) |
 | `credential_state` | tokeny rotujące i daty ważności poświadczeń | F0a | [security.md](security.md) |
