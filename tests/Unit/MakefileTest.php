@@ -182,7 +182,7 @@ final class MakefileTest extends TestCase
         self::assertStringContainsString('Bez aktualizacji', $output);
     }
 
-    /** @return list<string> */
+    /** @return list<non-empty-string> */
     private static function verification(string $commit): array
     {
         $commands = [];
