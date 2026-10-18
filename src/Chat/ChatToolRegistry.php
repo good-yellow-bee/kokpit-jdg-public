@@ -14,7 +14,8 @@ final readonly class ChatToolRegistry
     public const PHASES = ['F0b', 'F1', 'F2', 'F3'];
     /** Faza, od której działa wartość `query` (D-58). */
     private const QUERY_PHASES = ['revenue_by_month' => 'F2', 'sales_by_currency' => 'F3', 'costs_by_month' => 'F1', 'invoice_list' => 'F3', 'top_counterparties' => 'F3'];
-    private const TOOL_PHASES = ['get_obligations' => 'F0b', 'query_invoices' => 'F1', 'get_fx_rate' => 'F1', 'verify_counterparty' => 'F1', 'render_chart' => 'F1', 'draft_document' => null];
+    private const TOOL_PHASES = ['get_obligations' => 'F0b', 'query_invoices' => 'F1', 'get_fx_rate' => 'F1', 'verify_counterparty' => 'F1', 'render_chart' => 'F1', 'get_period_summary' => 'F2', 'get_cashflow' => 'F2', 'compare_periods' => 'F2', 'draft_document' => null];
+    public const MONTH_PATTERN = '^[0-9]{4}-(0[1-9]|1[0-2])$';
     public const PSEUDONYM_PATTERN = '^K-[0-9]{2,3}$';
 
     /** @var array<string,array<string,mixed>> */
@@ -90,6 +91,9 @@ final readonly class ChatToolRegistry
             'get_fx_rate' => ['Zapisany kurs średni NBP z dnia roboczego przed datą zdarzenia; bez zapytania do NBP.', ['currency' => ['type' => 'string', 'enum' => array_values(array_diff($this->currencies, ['PLN']))], 'date' => $date('Data zdarzenia, RRRR-MM-DD.')], ['currency', 'date']],
             'verify_counterparty' => ['Zapisany wynik weryfikacji kontrahenta i jego wiek; bez zapytania do rejestru.', ['counterparty' => ['type' => 'string', 'pattern' => self::PSEUDONYM_PATTERN, 'description' => 'Pseudonim kontrahenta, np. K-01.']], ['counterparty']],
             'render_chart' => ['Specyfikacja wykresu nazwanego zapytania; dane pobiera i rysuje panel, narzędzie nie zwraca liczb.', ['query' => ['type' => 'string', 'enum' => $queries], 'chart_type' => ['type' => 'string', 'enum' => ['bar', 'line']]] + $range + ['currency' => $currency], ['query', 'chart_type', 'date_from', 'date_to']],
+            'get_period_summary' => ['Podsumowanie miesiąca: przychód K_8 z ewidencji, liczby z najnowszego przyjętego JPK_V7M (K_11, K_12, P_51, P_62) i kwoty zaliczki ryczałtu oraz ZUS za ten okres.', ['month' => ['type' => 'string', 'pattern' => self::MONTH_PATTERN, 'description' => 'Miesiąc RRRR-MM.']], ['month']],
+            'get_cashflow' => ['Przepływy do daty: otwarte obowiązki z kwotą do date_to (z zaległymi), należności z faktur sprzedaży po płatnościach i koszty do zapłaty, sumy per waluta bez przeliczania.', ['date_to' => $date('Koniec horyzontu obowiązków, RRRR-MM-DD.')], ['date_to']],
+            'compare_periods' => ['Porównanie dwóch okresów: przychód z ewidencji, sprzedaż netto PLN i koszty firmowe netto PLN z liczbą dokumentów.', $range + ['compare_from' => $date('Początek okresu porównawczego, RRRR-MM-DD.'), 'compare_to' => $date('Koniec okresu porównawczego, RRRR-MM-DD.')], ['date_from', 'date_to', 'compare_from', 'compare_to']],
             'draft_document' => ['Szkic maila do kontrahenta, tylko na prośbę z panelu; zapis do zatwierdzenia, bez wysyłki.', ['kind' => ['type' => 'string', 'enum' => ['email']], 'recipient' => ['type' => 'string', 'pattern' => self::PSEUDONYM_PATTERN], 'subject' => ['type' => 'string'], 'body' => ['type' => 'string'], 'source_refs' => ['type' => 'array', 'items' => ['type' => 'string']]], ['kind', 'recipient', 'subject', 'body', 'source_refs']],
         ];
         $tools = [];

@@ -13,10 +13,10 @@ use Symfony\Component\Clock\MockClock;
 /** chat-views-minimal: widoki `chat_*` bez kolumn z listy zakazanej i bez danych zakazanych w wynikach. */
 final class ChatViewsMinimalTest extends DatabaseTestCase
 {
-    private const VIEWS = ['chat_counterparty', 'chat_fx_rate', 'chat_invoice', 'chat_obligation', 'chat_revenue', 'chat_verification'];
+    private const VIEWS = ['chat_counterparty', 'chat_filing', 'chat_fx_rate', 'chat_invoice', 'chat_obligation', 'chat_payment', 'chat_revenue', 'chat_verification'];
     /** PESEL, rachunki, adresy, dane autoryzujące, identyfikatory i nazwy kontrahentów, wolny tekst i odwołania do danych technicznych. */
     private const FORBIDDEN_COLUMNS = ['pesel', 'nip', 'name', 'address', 'bank_account', 'bank_accounts', 'buyer_snapshot', 'counterparty_tax_id', 'subject', 'remarks', 'note', 'payment_title', 'auth_data', 'ciphertext', 'credential_state_id', 'connector_call_id', 'request_identifier', 'pseudonym_map', 'secret_name', 'done_by', 'checked_by', 'recorded_by', 'reviewed_by', 'freshbooks_client_id', 'eu_vat_number', 'foreign_tax_id', 'krs', 'regon', 'environment'];
-    private const SOURCES = ['counterparty', 'fx_rate', 'invoice', 'obligation', 'revenue_entry', 'verification'];
+    private const SOURCES = ['counterparty', 'filing', 'fx_rate', 'invoice', 'obligation', 'payment', 'revenue_entry', 'verification'];
 
     public function testViewColumnsAvoidForbiddenData(): void
     {

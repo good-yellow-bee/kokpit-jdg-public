@@ -75,7 +75,7 @@ final class ChatToolSchemaTest extends ClaudeTestCase
 
     public function testToolListIsReadOnlyPlusDraftDocument(): void
     {
-        self::assertSame(['get_obligations', 'query_invoices', 'get_fx_rate', 'verify_counterparty', 'render_chart', 'draft_document'], ClaudeTestTools::registry()->names());
+        self::assertSame(['get_obligations', 'query_invoices', 'get_fx_rate', 'verify_counterparty', 'render_chart', 'get_period_summary', 'get_cashflow', 'compare_periods', 'draft_document'], ClaudeTestTools::registry()->names());
         foreach (ClaudeTestTools::registry()->tools() as $tool) {
             self::assertTrue($tool['strict']);
             self::assertIsArray($tool['input_schema']);
