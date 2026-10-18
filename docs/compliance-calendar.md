@@ -187,6 +187,7 @@ Przypomnienie to wiersz `notification`. Kategoria to `obligation.type`, a przy p
 | `wl_notice` | T−3, T−1, T0 | push |
 | `approval_pending` | 24 h po `requested_at`; w dniu `due_date` powiązanego obowiązku 8:00 i 15:00 | push |
 | zaległy obowiązek | codziennie od T+1 do zamknięcia | push |
+| przegląd tygodnia `weekly_digest` (D-82) | poniedziałek 7:30: liczby obowiązków, zatwierdzeń i poświadczeń, bez kwot i terminów | mail |
 
 - `notifications.dispatch` tworzy wiersz, gdy offset nadszedł (8:00 Europe/Warsaw) i obowiązek jest `open` ([operations.md](operations.md)). Zapis idzie przez `INSERT … ON CONFLICT (dedupe_key) DO NOTHING`. Potem zadanie wysyła wiersze bez `sent_at`.
 - Zamknięty obowiązek nie dostaje nowych wierszy, a jego niewysłane wiersze zadanie pomija.

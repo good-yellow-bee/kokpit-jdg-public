@@ -719,7 +719,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | Pole | Typ | Opis |
 | --- | --- | --- |
 | `channel` | text | `push` albo `mail` |
-| `category` | text | `obligation.type` przy przypomnieniu; zdarzenia: `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `freshbooks_number_changed` (D-53), `p2_collision` (D-54) |
+| `category` | text | `obligation.type` przy przypomnieniu; zdarzenia: `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `freshbooks_number_changed` (D-53), `p2_collision` (D-54), `legal_change` (D-75), `weekly_digest` (D-82) |
 | `obligation_id`, `approval_id` | uuid FK null | przyczyna |
 | `dedupe_key` | text | przyczyna, przesunięcie przypomnienia i kanał |
 | `body` | text | kategoria, liczba i link; bez nadawcy, kwot i danych osobowych ([security.md](security.md)) |

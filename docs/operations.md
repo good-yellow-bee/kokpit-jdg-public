@@ -133,6 +133,7 @@ Jeden harmonogram `default` z `stateful(cache)`, `processOnlyLastMissedRun(true)
 | `obligations.recompute` | codziennie 06:00 oraz po każdej zmianie `setting` albo encji źródłowej reguły | `reads` | `obligation.dedupe_key` | – | F0b | [compliance-calendar.md](compliance-calendar.md) |
 | `notifications.dispatch` | co 5 min | `notifications` | `notification.dedupe_key`, `sent_at` | tak | F0b | [compliance-calendar.md](compliance-calendar.md) |
 | `credentials.check_expiry` | codziennie 07:00 | `reads` | stan `credential_state` | – | F0b | [security.md](security.md) |
+| `notifications.weekly_digest` | poniedziałek 07:30 | `notifications` | `notification.dedupe_key` z tygodniem ISO; wysyła `notifications.dispatch` | – | po F0b (D-82) | [compliance-calendar.md](compliance-calendar.md) |
 | `approval.expire` | co 5 min oraz 00:00 | `reads` | stan `approval` | – | F0b | [approval-gate.md](approval-gate.md) |
 | `approval.poll_status` | co 2 min dla stanu `submitted` | `reads` | `approval.external_refs` | – | F0b | [approval-gate.md](approval-gate.md) |
 | `approval.reconcile` | co 10 min dla `unknown` i starych `dispatching`; wysyła `connector_failure` dla `unknown` starszego niż 1 h | `reads` | tylko odczyt statusu; push z deduplikacją po `approval_id` | – | F0b | [approval-gate.md](approval-gate.md) |
