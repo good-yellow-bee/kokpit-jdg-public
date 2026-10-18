@@ -83,6 +83,7 @@ final class FilingPanelTest extends WebTestCase
             $id = (string) Uuid::v7();
             $now = (new \DateTimeImmutable())->format('c');
             $db->insert('app_user', ['id' => $id,'username' => 'fictional-owner','display_name' => 'Fikcyjny właściciel','created_at' => $now,'updated_at' => $now]);
+            $db->insert('webauthn_credential', ['id' => (string) Uuid::v7(),'app_user_id' => $id,'credential_id' => 'fictional-credential-id','public_key' => 'fictional-public-key','label' => 'Fikcyjny passkey','created_at' => $now,'updated_at' => $now]);
             $client->loginUser(new AppUser($id, 'fictional-owner'));
             $crawler = $client->request('GET', '/filings');
             self::assertResponseIsSuccessful();
