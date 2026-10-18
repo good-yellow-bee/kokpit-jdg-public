@@ -333,6 +333,12 @@ Przełączenie to dzień, od którego ewidencję prowadzi tylko kokpit. Następu
 | JPK_V7M | sprzedaż w ewidencji | sprzedaż w JPK_V7M | różnice tylko z kursów PIT i VAT, z wierszy `fx_difference`, z różnych miesięcy `revenue_date` i `tax_point_date` oraz z różnych okresów korekty w PIT (art. 14 ust. 1m) i VAT (TypKorekty) ([tax-rules.md](../tax-rules.md)); każda wyjaśniona per faktura | co miesiąc od F2.2/F2.3 |
 | zaliczki | zaliczka wyliczona z ewidencji | zaliczka zapłacona | różnica to zadanie | co miesiąc od F2.2/F2.3 |
 
+## Raport rok do roku
+
+- Strona `/reports` panelu zestawia per miesiąc rok wybrany wobec poprzedniego: przychód (suma `revenue_entry.amount_pln` według miesiąca `revenue_date`), VAT należny, naliczony i P_51 z najnowszego przyjętego JPK_V7M okresu, koszty netto w zł z faktur kosztowych `business` i średni kurs NBP z tabel w bazie (D-87).
+- Wiersze „cały rok” i, dla roku bieżącego, „styczeń do bieżącego miesiąca” obu lat. Brak danych to „–”, nie zero. Eksport `?format=csv`.
+- Raport tylko czyta; nie zastępuje uzgodnień wyżej. Czat nie ma do niego narzędzia (`tool_set` bez zmian).
+
 ## Wykaz środków trwałych i WNiP
 
 - Wykaz prowadzisz w programie i wysyłasz jako JPK_ST(1) razem z terminem JPK_EWP ([ustawa o ryczałcie, art. 15 ust. 12](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)).
