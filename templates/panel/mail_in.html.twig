@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dokumenty z poczty – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Dokumenty z poczty</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_costs') }}">Koszty</a> · <a href="{{ path('panel_connectors') }}">Konektory</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status" id="mail-in-notice">{{ message }}</p>{% endfor %}
+
+    <section id="mail-in-status">
+        {% if not configured %}
+            <p>Skrzynka nie jest skonfigurowana. Ustaw host <code>MAIL_IN_HOST</code> wdrożenia i sekret <code>{{ secret }}</code> w sejfie (docs/operations.md, „Skrzynka dokumentów kosztowych”).</p>
+        {% elseif not enabled %}
+            <p>Konektory są wyłączone (<code>CONNECTORS_ENABLED=0</code>), więc kokpit nie łączy się ze skrzynką.</p>
+        {% else %}
+            <p>Kokpit czyta skrzynkę co 30 minut, tylko do odczytu: nie oznacza wiadomości jako przeczytanych, niczego nie przenosi ani nie usuwa.{% if last_call %} Ostatnia sesja: {{ last_call.started_at|date('Y-m-d H:i', 'Europe/Warsaw') }}{% if last_call.error_code %}, błąd <code id="mail-in-error">{{ last_call.error_code }}</code>{% endif %}.{% endif %}</p>
+        {% endif %}
+        <p>Pliki pobierasz jako załączniki i wpisujesz koszt sam. Kokpit przyjmuje tylko PDF, JPEG i PNG rozpoznane po zawartości pliku; nie czyta treści maila i nie otwiera linków. Do wpisania: <strong id="mail-in-open">{{ open }}</strong>.</p>
+    </section>
+
+    {% if messages is empty %}<p>Brak pobranych wiadomości.</p>{% else %}
+    <table id="mail-in-messages">
+        <thead><tr><th>Pobrano</th><th>Nadawca</th><th>Temat</th><th>Dokumenty</th><th>Stan</th></tr></thead>
+        <tbody>
+        {% for message in messages %}
+            <tr id="mail-in-{{ message.id }}">
+                <td>{{ message.fetched_at|date('Y-m-d H:i', 'Europe/Warsaw') }}</td>
+                <td>{{ message.from_address ?? '–' }}</td>
+                <td>{{ message.subject ?? '–' }}</td>
+                <td>
+                    {% for file in files[message.id] ?? [] %}
+                        <a href="{{ path('panel_mail_in_file', {id: file.id}) }}" download>{{ file.original_name ?? 'dokument' }}</a> ({{ (file.size_bytes / 1024)|round(0, 'ceil') }} KB){% if not loop.last %}<br>{% endif %}
+                    {% else %}–{% endfor %}
+                    {% if message.skipped > 0 %}<br><small>pominięte załączniki: {{ message.skipped }}</small>{% endif %}
+                </td>
+                <td>
+                    {% if message.status == 'new' %}
+                        {% if message.handled_at %}
+                            wpisane {{ message.handled_at|date('Y-m-d', 'Europe/Warsaw') }}
+                        {% else %}
+                            <form method="post" action="{{ path('panel_mail_in_handled', {id: message.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('mail_in') }}">
+                                <button type="submit">Oznacz jako wpisane</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        {{ {'no_document': 'bez dokumentu', 'too_large': 'za duża, nie pobrana', 'duplicate': 'powtórzona', 'unreadable': 'nieczytelna'}[message.status] ?? message.status }}
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

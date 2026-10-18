@@ -43,6 +43,9 @@ final readonly class HostAllowlist implements HttpClientInterface
         if ($connector === 'mail') {
             $allowed = [$this->configuration->mailHost];
         }
+        if ($connector === 'mail_in') {
+            $allowed = [$this->configuration->mailInHost];
+        }
         if ($connector === 'deadman') {
             $allowed = [$this->configuration->deadmanHost];
         }

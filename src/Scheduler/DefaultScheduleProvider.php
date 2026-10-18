@@ -14,6 +14,7 @@ use App\Messenger\Message\LatarniaStatusMessage;
 use App\Messenger\Message\CredentialExpiryMessage;
 use App\Messenger\Message\LedgerTaskMessage;
 use App\Messenger\Message\LegalWatchMessage;
+use App\Messenger\Message\MailInFetchMessage;
 use App\Messenger\Message\NotificationDispatchMessage;
 use App\Messenger\Message\ObligationRecomputeMessage;
 use App\Messenger\Message\RegistryTaskMessage;
@@ -62,6 +63,8 @@ final class DefaultScheduleProvider implements ScheduleProviderInterface
             // Obserwacja prawa raz w tygodniu, w poniedziałek rano (D-75); API Sejmu bez okna przerw.
             ->add(RecurringMessage::cron('30 6 * * 1', new RedispatchMessage(new LegalWatchMessage('legal_watch.check'), 'reads'), $timezone))
             // Przegląd tygodnia mailem po `obligations.recompute` i `credentials.check_expiry` (D-82); wysyła `notifications.dispatch`.
-            ->add(RecurringMessage::cron('30 7 * * 1', new RedispatchMessage(new NotificationDispatchMessage('notifications.weekly_digest'), 'notifications'), $timezone));
+            ->add(RecurringMessage::cron('30 7 * * 1', new RedispatchMessage(new NotificationDispatchMessage('notifications.weekly_digest'), 'notifications'), $timezone))
+            // Skrzynka dokumentów kosztowych co 30 min (D-92); bez `MAIL_IN_HOST` handler kończy się bez połączenia.
+            ->add(RecurringMessage::cron('*/30 * * * *', new RedispatchMessage(new MailInFetchMessage('mail_in.fetch'), 'reads'), $timezone));
     }
 }

@@ -4,7 +4,7 @@
 
 {% block body %}
     <h1>Faktury kosztowe</h1>
-    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a id="costs-csv" href="{{ path('panel_costs', {format: 'csv'}) }}">Eksport CSV</a></nav>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a id="costs-csv" href="{{ path('panel_costs', {format: 'csv'}) }}">Eksport CSV</a> · <a href="{{ path('panel_mail_in') }}">Dokumenty z poczty</a></nav>
     {% for message in app.flashes('notice') %}<p role="status" id="cost-notice">{{ message }}</p>{% endfor %}
     {% for message in app.flashes('error') %}<p role="alert" id="cost-error">{{ message }}</p>{% endfor %}
     {% if check_error %}<p role="alert" id="cost-error">{{ check_error }}</p>{% endif %}

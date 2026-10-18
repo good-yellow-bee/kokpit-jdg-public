@@ -31,5 +31,7 @@ final class ConnectorHosts
         'freshbooks' => ['default' => ['api.freshbooks.com']],
         'claude' => ['default' => ['api.anthropic.com']],
         'mail' => ['default' => []],
+        // Skrzynka na dokumenty kosztowe, IMAP tylko do odczytu; host z `MAIL_IN_HOST` (D-92).
+        'mail_in' => ['default' => []],
     ];
 }

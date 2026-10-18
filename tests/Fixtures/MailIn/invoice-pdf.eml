@@ -1,0 +1,28 @@
+Return-Path: <faktury@dostawca.example.invalid>
+From: "Fikcyjny Dostawca sp. z o.o." <Faktury@Dostawca.example.invalid>
+To: koszty@example.invalid
+Subject: Faktura FV/FIKC/1 (fictional)
+Date: Thu, 15 Oct 2026 09:12:00 +0200
+Message-ID: <fikc-1@dostawca.example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="==fictional-boundary-1=="
+
+This is a multi-part message in MIME format (fictional).
+
+--==fictional-boundary-1==
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Dzie=C5=84 dobry, w za=C5=82=C4=85czniku fikcyjna faktura. Zap=C5=82a=C4=87 na
+https://pay.example.invalid/fictional (link nie jest otwierany).
+
+--==fictional-boundary-1==
+Content-Type: application/pdf; name="FV-FIKC-1.pdf"
+Content-Disposition: attachment; filename="FV-FIKC-1.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKJSBGaWtjeWpuYSBmYWt0dXJhIEZWL0ZJS0MvMSAoZmljdGlvbmFsKQoxIDAgb2Jq
+IDw8IC9UeXBlIC9DYXRhbG9nID4+IGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUl
+RU9GCg==
+--==fictional-boundary-1==--

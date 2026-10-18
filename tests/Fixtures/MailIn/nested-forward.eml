@@ -1,0 +1,51 @@
+From: =?UTF-8?Q?Jan_Fikcyjny?= <jan.fikcyjny@example.invalid>
+To: koszty@example.invalid
+Subject: =?UTF-8?B?RndkOiBza2FuIGZha3R1cnkgxbzDs8WCdGEgKGZpY3Rpb25hbCk=?=
+Date: Fri, 16 Oct 2026 18:40:05 +0000
+Message-ID: <fikc-2@example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=outer-fictional
+
+--outer-fictional
+Content-Type: multipart/alternative; boundary="alt-fictional"
+
+--alt-fictional
+Content-Type: text/plain; charset=us-ascii
+
+Fictional forwarded message, see attachment.
+--alt-fictional
+Content-Type: text/html; charset=us-ascii
+
+<p>Fictional <a href="https://evil.example.invalid/">link</a></p>
+--alt-fictional--
+
+--outer-fictional
+Content-Type: message/rfc822
+
+From: Fikcyjny Sklep <sklep@example.invalid>
+Subject: Paragon (fictional)
+Message-ID: <fikc-2-inner@example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="inner-fictional"
+
+--inner-fictional
+Content-Type: image/png
+Content-Disposition: attachment;
+ filename*=utf-8''faktura%20%C5%BC%C3%B3%C5%82ta.png
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUiBmaWN0aW9uYWwgc2NhbiBvZiBhIGNvc3QgZG9jdW1lbnQ=
+--inner-fictional--
+
+--outer-fictional
+Content-Type: application/pdf; name="program.pdf.exe"
+Content-Disposition: attachment; filename="program.pdf.exe"
+Content-Transfer-Encoding: base64
+
+TVqQACBmaWN0aW9uYWwgZXhlY3V0YWJsZSBkaXNndWlzZWQgYXMgcGRm
+--outer-fictional
+Content-Type: application/zip; name="archiwum.zip"
+Content-Transfer-Encoding: base64
+
+UEsDBCBmaWN0aW9uYWwgYXJjaGl2ZQ==
+--outer-fictional--

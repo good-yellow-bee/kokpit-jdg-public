@@ -4,13 +4,15 @@ parameters:
   app.connectors.default_target: test
   app.push.default_endpoint: 'http://ntfy/kokpit'
   app.mail.default_host: 'smtp.example.invalid'
+  # Skrzynka `mail_in` (D-92): pusty host wyłącza zadanie `mail_in.fetch`; host ustawia właściciel w `MAIL_IN_HOST`.
+  app.mail_in.default_host: ''
   app.deadman.default_host: 'hc-ping.com'
   app.mail.default_from: 'kokpit@example.invalid'
   app.mail.default_to: 'owner@example.invalid'
   app.default_deployment: dev
   app.panel.default_origin: 'http://localhost'
   app.panel.default_certificate: '/run/kokpit/certificates/panel.crt'
-  connector.daily_limits: { jpk.init_upload: 10, edeklaracje.send: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, eli.read: 100, white_list.search: 80, white_list.check: 4000 }
+  connector.daily_limits: { jpk.init_upload: 10, edeklaracje.send: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, eli.read: 100, white_list.search: 80, white_list.check: 4000, mail_in.fetch: 100 }
   # Adresy rejestrów per środowisko (docs/modules/rejestry-kursy.md); poza PROD tylko usługi testowe.
   registry.vies_endpoints: { test: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service', prod: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number' }
   registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
@@ -60,6 +62,10 @@ parameters:
   legal_watch.act_categories: ['Akty zmieniające', 'Inf. o tekście jednolitym', 'Akty wykonawcze', 'Orzeczenie TK', 'Uchylenia wynikające z']
   # Konektor `claude` (F6.2, D-60): jeden host, timeout z `chat.timeout_s`, bez ponowień SDK.
   claude.base_url: 'https://api.anthropic.com'
+  # Konektor `mail_in` (D-92): IMAP tylko do odczytu, sesja co 30 min; większe wiadomości zostają bez pobrania.
+  mail_in.timeout_s: 30
+  mail_in.max_message_bytes: 26214400
+  mail_in.max_messages_per_run: 50
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\Config\ConnectorConfiguration:
@@ -74,6 +80,7 @@ services:
       $mailHost: '%env(default:app.mail.default_host:MAIL_HOST)%'
       $deadmanHost: '%env(default:app.deadman.default_host:DEADMAN_HOST)%'
       $dailyLimits: '%connector.daily_limits%'
+      $mailInHost: '%env(default:app.mail_in.default_host:MAIL_IN_HOST)%'
   App\Scheduler\DefaultScheduleProvider:
     arguments: { $schedulerState: '@cache.scheduler' }
   App\Scheduler\HeartbeatStore:
@@ -155,6 +162,14 @@ services:
   App\Connector\Claude\ClaudeClientFactory:
     arguments: { $baseUrl: '%claude.base_url%', $timeoutSeconds: '%chat.timeout_s%' }
   App\Connector\Claude\ClaudeMessages: ~
+  # Konektor `mail_in` (D-92): skrzynka na dokumenty kosztowe, tylko odczyt przez IMAPS.
+  App\Connector\MailIn\TlsImapStream: ~
+  App\Connector\MailIn\ImapStream: '@App\Connector\MailIn\TlsImapStream'
+  App\Connector\MailIn\MimeParser: ~
+  App\Connector\MailIn\MailInConnector:
+    arguments: { $timeoutSeconds: '%mail_in.timeout_s%', $maxMessageBytes: '%mail_in.max_message_bytes%' }
+  App\Cost\MailInbox:
+    arguments: { $maxMessagesPerRun: '%mail_in.max_messages_per_run%' }
 when@dev:
   services:
     dummy.mock_response:

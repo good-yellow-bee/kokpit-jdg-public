@@ -77,13 +77,13 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | Element | Reguła |
 | --- | --- |
 | Kolumna | `environment text NOT NULL CHECK (environment IN ('test','demo','prod'))`; `int` wraca z F4 osobną migracją (sekcja „Odłożone”) |
-| Tabele z kolumną | `invoice`, `ksef_session`, `counterparty`, `verification`, `payment`, `revenue_entry`, `fixed_asset`, `zus_payment`, `period`, `filing`, `obligation`, `approval`, `draft`, `stored_file`, `connector_call`, `rate_counter`, `sync_cursor`, `credential_state`; w `audit_log` kolumna wskazuje cel akcji i może być pusta |
+| Tabele z kolumną | `invoice`, `ksef_session`, `counterparty`, `verification`, `payment`, `revenue_entry`, `fixed_asset`, `zus_payment`, `period`, `filing`, `obligation`, `approval`, `draft`, `stored_file`, `connector_call`, `rate_counter`, `sync_cursor`, `credential_state`, `mail_in_message`; w `audit_log` kolumna wskazuje cel akcji i może być pusta |
 | Tabele bez kolumny | `invoice_line` (dziedziczy po `invoice`), `fx_rate`, `setting`, `notification`, `app_user`, `webauthn_credential`, `chat_session`, `chat_message`, `legal_watch`, `legal_watch_hit` (stan prawa jest ten sam dla każdego środowiska) |
 | Środowisko wdrożenia | `prod` przy `APP_ENV=prod` (`kokpit-prod`, `kokpit-restore`), w innym wypadku `test` (`kokpit-dev`, testy); ten sam przełącznik wybiera hosty rejestrów ([modules/rejestry-kursy.md](modules/rejestry-kursy.md)) |
 | Dane prawdziwe | tylko w `kokpit-prod` i w jego kopii w `kokpit-restore`; `kokpit-dev` i testy działają wyłącznie na danych fikcyjnych |
 | Wiersz z konektora z celem | cel konektora w chwili zapisu (`KSEF_TARGET`, `JPK_TARGET`, `EDEKLARACJE_TARGET`) |
 | Wiersz z FreshBooks: dane (`invoice`, `payment`, `counterparty`, `revenue_entry`) i techniczne (`connector_call`, `rate_counter`, `sync_cursor`, `credential_state`) | na `kokpit-prod`: `prod`, z prawdziwej firmy, tylko odczyt do pierwszego zapisu zwrotnego w F3; w `kokpit-dev` i testach: tylko fixtures, `KSEF_TARGET` w chwili zapisu (`test` albo `demo`); firmy testowej nie ma (D-35, [modules/freshbooks.md](modules/freshbooks.md)) |
-| Konektor bez celu: `vies`, `white_list`, `nbp`, `eli`, `claude`, `push`, `mail`, `deadman`, `dummy` | środowisko wdrożenia; dotyczy `connector_call`, `rate_counter` i `credential_state`, np. `dummy_token` |
+| Konektor bez celu: `vies`, `white_list`, `nbp`, `eli`, `mail_in`, `claude`, `push`, `mail`, `deadman`, `dummy` | środowisko wdrożenia; dotyczy `connector_call`, `rate_counter` i `credential_state`, np. `dummy_token` |
 | Wiersz `verification` z rejestru (VIES, biała lista) | `environment` kontrahenta, którego dotyczy; samosprawdzenie z pustym `counterparty_id`: środowisko wdrożenia |
 | Wiersz `obligation` | obowiązek z encją (`credential_state`, `counterparty`, `invoice`) dziedziczy jej `environment`; obowiązek bez encji (`zus`, `vat_jpk_v7m`, `manual_channel_check`, wpisany ręcznie `edelivery_reply_due` i inne): środowisko wdrożenia |
 | `draft` | `environment` odbiorcy (`counterparty`) |
@@ -122,6 +122,7 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | `ksef_session` | sesje wysyłki do KSeF | F3 | [modules/ksef.md](modules/ksef.md) |
 | `chat_session`, `chat_message`, `draft` | historia czatu i szkice | F6 | [modules/czat.md](modules/czat.md) |
 | `legal_watch`, `legal_watch_hit` | obserwowane akty i procesy legislacyjne, wykryte zmiany | po F6 (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
+| `mail_in_message` | wiadomości z dedykowanej skrzynki na dokumenty kosztowe | po F1 (D-92) | [decisions.md](decisions.md), D-92 |
 
 - Kolejność wierszy idzie za kolejnością realizacji z D-30: F0a → F2.1 → F2.4 → F0b → F1 → F2.2/F2.3 → F3 → F5 → F6. Dokładny podział F2 jest w [phases/f2-ewidencja.md](phases/f2-ewidencja.md).
 - F2.1 i F2.4 działają przed F0b i F1. `revenue_entry.invoice_id`, `payment_id`, `fx_rate_id` oraz `fixed_asset.invoice_id` powstają bez kluczy obcych. Klucz obcy dodaje migracja fazy, która tworzy tabelę docelową: F1 (`invoice`, `fx_rate`), F2.2/F2.3 (`payment`).
@@ -875,6 +876,27 @@ Zmiana `chat.model`, listy narzędzi albo promptu systemowego w konfiguracji otw
 | `reviewed_at` | timestamptz null | przeniesienie do [facts.md](facts.md) (`app:legal-watch report --mark-reviewed`) |
 
 - Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`. Tabele nie mają danych osobowych ani kwot.
+
+### Poczta przychodząca
+
+#### `mail_in_message`
+
+Jedna pobrana wiadomość skrzynki `mail_in` (D-92). Treści maila kokpit nie zapisuje; dokumenty są w `stored_file` (`cost_document`, `owner_table` = `mail_in_message`).
+
+| Pole | Typ | Opis |
+| --- | --- | --- |
+| `environment` | text | środowisko wdrożenia |
+| `uid_validity`, `uid` | bigint | `UIDVALIDITY` skrzynki i UID wiadomości; `UNIQUE (environment, uid_validity, uid)`; kursor to największy `uid` dla bieżącego `uid_validity` |
+| `message_id_sha256` | char(64) null | sha256 nagłówka `Message-ID`; ta sama wiadomość pod nowym UID dostaje `duplicate` |
+| `from_address`, `subject` | text null | adres nadawcy (małe litery) i temat do 200 znaków, bez znaków sterujących |
+| `sent_at` | timestamptz null | nagłówek `Date` |
+| `size_bytes` | bigint | `RFC822.SIZE` z serwera |
+| `status` | text | `new` (są dokumenty), `no_document`, `too_large` (bez pobrania), `duplicate`, `unreadable` |
+| `documents`, `skipped` | int | zapisane dokumenty i pominięte załączniki; `documents > 0` tylko przy `new` |
+| `fetched_at` | timestamptz | pobranie |
+| `handled_at`, `handled_by` | timestamptz null, uuid FK null | „Oznacz jako wpisane” w panelu, tylko przy `new` |
+
+- Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`. Pliki dziedziczą retencję `stored_file` (koniec roku pobrania + 5 lat).
 
 ## Stany encji
 

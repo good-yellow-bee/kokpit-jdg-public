@@ -35,7 +35,7 @@ Decyzja: D-12. Jedynym wejściem do sekretów jest `SecretStore`; konektor nigdy
 | Forma nazwy | Kiedy | Przykład |
 | --- | --- | --- |
 | `<CONNECTOR>_<CEL>_<NAZWA>` | konektor z `*_TARGET`; `<CEL>` to wartość celu wielkimi literami | `KSEF_PROD_TOKEN_WRITE` |
-| `<CONNECTOR>_<CEL>_<NAZWA>` | konektor bez `*_TARGET` (`freshbooks`, `claude`, `push`, `mail`, `deadman`, rejestry); `<CEL>` to `PROD` w sejfie `prod` i `TEST` w sejfie `dev` | `PUSH_TEST_TOKEN` w sejfie `dev`, `PUSH_PROD_TOKEN` i `FRESHBOOKS_PROD_CLIENT_SECRET` w sejfie `prod` |
+| `<CONNECTOR>_<CEL>_<NAZWA>` | konektor bez `*_TARGET` (`freshbooks`, `claude`, `push`, `mail`, `mail_in`, `deadman`, rejestry); `<CEL>` to `PROD` w sejfie `prod` i `TEST` w sejfie `dev` | `PUSH_TEST_TOKEN` w sejfie `dev`, `PUSH_PROD_TOKEN` i `FRESHBOOKS_PROD_CLIENT_SECRET` w sejfie `prod` |
 | bez `<CEL>` | sekret aplikacji bez konektora: `APP_SECRET`, `SECRETBOX_KEY_<key_id>`, `DB_<ROLE>_PASSWORD` | `DB_KOKPIT_APP_PASSWORD` |
 
 **Sejf per wdrożenie**
@@ -80,6 +80,7 @@ Sekret konektora istnieje osobno dla każdego celu. Sekrety aplikacji i hosta is
 | klucz Claude API | – | statyczny | wywołania modelu, koszt | bez daty; osobny workspace z niskim limitem wydatków | unieważnienie w konsoli | F6 |
 | token ntfy | – | statyczny; przy self-hosted ntfy kopia tokenu w `auth-tokens` konfiguracji serwera `ntfy` w pliku hosta ([ntfy](https://docs.ntfy.sh/config/)) | wysyłka push | bez daty | nowy token | F0a |
 | poświadczenia SMTP | – | statyczny | wysyłka maili | według dostawcy | zmiana hasła u dostawcy | F0a |
+| poświadczenie skrzynki dokumentów kosztowych `MAIL_IN_<CEL>_DSN` | – | statyczny; najlepiej hasło aplikacji dedykowanej skrzynki | odczyt tej skrzynki przez IMAPS (kokpit wysyła tylko polecenia odczytu, D-92) | według dostawcy | zmiana hasła u dostawcy ([operations.md](operations.md), „Skrzynka dokumentów kosztowych”) | po F1 |
 | poświadczenie atrapy `dummy` | `dummy_token` | statyczny, wartość fikcyjna; tylko sejf `dev` i sejf tymczasowy CI, nigdy `prod` (D-32) | wywołania konektora `dummy` w testach | bez daty | – | F0a |
 | klucz repozytorium backupu | – | host, poza sejfem | odczyt całego backupu; plik czyta tylko usługa `backup` przez `RESTIC_PASSWORD_FILE` ([restic](https://restic.readthedocs.io/)); kopie offline w menedżerze haseł i na papierze | bez daty | nowe repozytorium backupu | F0a |
 | poświadczenia celu backupu (S3 albo SFTP) | – | host, poza sejfem | zapis i odczyt snapshotów u dostawcy; tylko usługa `backup`; kopia w menedżerze haseł do odtworzenia | według dostawcy | nowy klucz u dostawcy | F0a |

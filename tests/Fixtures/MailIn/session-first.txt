@@ -1,0 +1,32 @@
+# Fictional IMAP session: first read of a dedicated cost-document mailbox (no real server, no real account).
+S: * OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] fictional IMAP server ready
+C: K001 LOGIN "koszty@example.invalid" "fictional-mail-in-password"
+S: K001 OK [CAPABILITY IMAP4rev1] LOGIN completed
+C: K002 EXAMINE "INBOX"
+S: * FLAGS (\Answered \Flagged \Deleted \Seen \Draft)
+S: * 4 EXISTS
+S: * 0 RECENT
+S: * OK [UIDVALIDITY 1700000001] UIDs valid
+S: * OK [UIDNEXT 105] Predicted next UID
+S: K002 OK [READ-ONLY] EXAMINE completed
+C: K003 UID SEARCH UID 1:*
+S: * SEARCH 101 102 103 104
+S: K003 OK SEARCH completed
+C: K004 UID FETCH 101,102,103,104 (UID RFC822.SIZE)
+S: * 1 FETCH (UID 101 RFC822.SIZE @size:invoice-pdf.eml)
+S: * 2 FETCH (RFC822.SIZE @size:nested-forward.eml UID 102)
+S: * 3 FETCH (UID 103 RFC822.SIZE @size:no-attachment.eml)
+S: * 4 FETCH (UID 104 RFC822.SIZE 99999999)
+S: K004 OK FETCH completed
+C: K005 UID FETCH 101 (UID BODY.PEEK[])
+S: * 1 FETCH (UID 101 BODY[] @literal:invoice-pdf.eml)
+S: K005 OK FETCH completed
+C: K006 UID FETCH 102 (UID BODY.PEEK[])
+S: * 2 FETCH (BODY[] @literal:nested-forward.eml UID 102)
+S: K006 OK FETCH completed
+C: K007 UID FETCH 103 (UID BODY.PEEK[])
+S: * 3 FETCH (UID 103 BODY[] @literal:no-attachment.eml)
+S: K007 OK FETCH completed
+C: K008 LOGOUT
+S: * BYE fictional IMAP server logging out
+S: K008 OK LOGOUT completed
