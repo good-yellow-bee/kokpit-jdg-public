@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Zamknięcie roku – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Zamknięcie roku {{ close.year }}</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a href="{{ path('panel_filings') }}">Złożenia</a> · <a href="{{ path('panel_ledger', {year: close.year}) }}">Ewidencja</a> · <a id="year-close-archive" href="{{ path('panel_year_close_archive', {year: close.year}) }}">Archiwum ZIP roku</a></nav>
+    <p id="year-close-years">Rok:
+        {% for year in years %}{% if not loop.first %} · {% endif %}{% if year == close.year %}<strong>{{ year }}</strong>{% else %}<a href="{{ path('panel_year_close', {year: year}) }}">{{ year }}</a>{% endif %}{% endfor %}
+    </p>
+    <p id="year-close-summary">Otwarte obowiązki roczne: {{ close.open_obligations }}. Miesiące niezamknięte: {{ close.open_months }} z 12. Lista tylko pokazuje stan; obowiązki zamykasz w kalendarzu, miesiące w złożeniach.</p>
+
+    <section id="year-close-obligations">
+        <h2>Obowiązki roczne za {{ close.year }}</h2>
+        {% if close.obligations is empty %}<p>Brak obowiązków rocznych z terminem w {{ close.year + 1 }}. Kalendarz tworzy je zadaniem <code>obligations.recompute</code>.</p>{% else %}
+        <table>
+            <thead><tr><th>Termin</th><th>Obowiązek</th><th>Stan</th><th>Złożenie</th></tr></thead>
+            <tbody>
+            {% for obligation in close.obligations %}
+                <tr id="year-obligation-{{ obligation.id }}">
+                    <td><a href="{{ path('panel_calendar') }}#obligation-{{ obligation.id }}">{{ obligation.due_date }}</a></td>
+                    <td>{{ obligation.type }}</td>
+                    <td class="status">{{ obligation.status }}</td>
+                    <td>{{ obligation.filing_type ? obligation.filing_type ~ ' (' ~ obligation.filing_status ~ ')' : '–' }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="year-close-months">
+        <h2>Miesiące</h2>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Stan</th><th>Zamknięty</th><th>Korekta wymagana</th></tr></thead>
+            <tbody>
+            {% for month in close.months %}
+                <tr id="year-month-{{ month.month }}"><td>{{ month.month }}</td><td class="status">{{ month.status }}</td><td>{{ month.closed_at ?? '–' }}</td><td>{{ month.correction_required_at ?? '–' }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="year-close-filings">
+        <h2>Złożenia za {{ close.year }}</h2>
+        {% if close.filings is empty %}<p>Brak złożeń.</p>{% else %}
+        <table>
+            <thead><tr><th>Typ</th><th>Okres</th><th>Cel</th><th>Stan</th><th>Numer referencyjny</th><th>XML</th><th>UPO</th></tr></thead>
+            <tbody>
+            {% for filing in close.filings %}
+                <tr id="year-filing-{{ filing.id }}">
+                    <td>{{ filing.type }}</td>
+                    <td>{{ filing.period_start }} – {{ filing.period_end }}</td>
+                    <td>{{ filing.purpose == 1 ? 'złożenie' : 'korekta ' ~ filing.seq }}</td>
+                    <td>{{ filing.status }}</td>
+                    <td>{{ filing.reference_number ?? '–' }}</td>
+                    <td>{{ filing.xml_files }}</td>
+                    <td class="upo">{{ filing.upo_files }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="year-close-revenue">
+        <h2>Przychód per miesiąc i stawka</h2>
+        {% if close.revenue is empty %}<p>Brak wierszy ewidencji.</p>{% else %}
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Stawka %</th><th>Przychód zł</th></tr></thead>
+            <tbody>
+            {% for row in close.revenue %}<tr><td>{{ row.month }}</td><td>{{ row.rate_pct }}</td><td>{{ row.amount_pln }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="year-close-settings">
+        <h2>Ustawienia na {{ close.year + 1 }}</h2>
+        <p>Klucz bez wiersza od 1.01.{{ close.year + 1 }} działa dalej z ostatnią wartością. Sprawdź stawki, progi i parametry ZUS na nowy rok w <a href="{{ path('panel_settings') }}">ustawieniach</a>.</p>
+        {% if close.settings is empty %}<p>Brak ustawień.</p>{% else %}
+        <table>
+            <thead><tr><th>Klucz</th><th>Ostatnia zmiana od</th><th>Wiersz na {{ close.year + 1 }}</th></tr></thead>
+            <tbody>
+            {% for setting in close.settings %}<tr><td>{{ setting.key }}</td><td>{{ setting.latest_valid_from }}</td><td class="next-year">{{ setting.next_year_ready ? 'tak' : 'nie' }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+{% endblock %}
