@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Zdrowie konektorów – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Zdrowie konektorów</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a></nav>
+    <p id="connectors-period">Okres od {{ summary.since }}:
+        {% for days in periods %}{% if not loop.first %} · {% endif %}{% if days == summary.days %}<strong>{{ days == 1 ? 'dziś' : days ~ ' dni' }}</strong>{% else %}<a href="{{ path('panel_connectors', {days: days}) }}">{{ days == 1 ? 'dziś' : days ~ ' dni' }}</a>{% endif %}{% endfor %}
+    </p>
+
+    <section id="connector-summary">
+        <h2>Konektory</h2>
+        {% if summary.connectors is empty %}<p>Brak wywołań w tym okresie.</p>{% else %}
+        <table>
+            <thead><tr><th>Konektor</th><th>Wywołania</th><th>Błędy</th><th>429 i limit</th><th>Średnio ms</th><th>p95 ms</th><th>Ostatnie wywołanie</th><th>Ostatni błąd</th></tr></thead>
+            <tbody>
+            {% for row in summary.connectors %}
+                <tr id="connector-{{ row.connector }}">
+                    <td>{{ row.connector }}</td>
+                    <td>{{ row.calls }}</td>
+                    <td class="errors">{{ row.errors }}</td>
+                    <td class="rate-limited">{{ row.rate_limited }}</td>
+                    <td>{{ row.avg_ms }}</td>
+                    <td>{{ row.p95_ms }}</td>
+                    <td>{{ row.last_at }}</td>
+                    <td>{{ row.last_error_at ?? '–' }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="connector-daily">
+        <h2>Wywołania i błędy per dzień</h2>
+        {{ render_chart(chart) }}
+        <table>
+            <thead><tr><th>Dzień</th><th>Wywołania</th><th>Błędy</th></tr></thead>
+            <tbody>
+            {% for day in summary.daily %}<tr><td>{{ day.day }}</td><td>{{ day.calls }}</td><td>{{ day.errors }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="rate-blocks">
+        <h2>Aktywne blokady limitów</h2>
+        {% if summary.blocks is empty %}<p>Brak blokad.</p>{% else %}
+        <table>
+            <thead><tr><th>Konektor</th><th>Grupa</th><th>Okno od</th><th>Licznik</th><th>Zablokowany do</th></tr></thead>
+            <tbody>
+            {% for block in summary.blocks %}<tr><td>{{ block.connector }}</td><td>{{ block.bucket }}</td><td>{{ block.window_start }}</td><td>{{ block.count }}</td><td>{{ block.blocked_until }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="sync-cursors">
+        <h2>Kursory synchronizacji</h2>
+        {% if summary.cursors is empty %}<p>Brak kursorów.</p>{% else %}
+        <table>
+            <thead><tr><th>Konektor</th><th>Strumień</th><th>Ostatni przebieg</th><th>Ostatni sukces</th><th>Backfill</th></tr></thead>
+            <tbody>
+            {% for cursor in summary.cursors %}<tr><td>{{ cursor.connector }}</td><td>{{ cursor.stream }}</td><td>{{ cursor.last_run_at ?? '–' }}</td><td>{{ cursor.last_success_at ?? 'nigdy' }}</td><td>{{ cursor.backfill_done_at ?: 'w toku' }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
+    <section id="connector-errors">
+        <h2>Ostatnie błędy (najwyżej {{ max_errors }})</h2>
+        {% if summary.errors is empty %}<p>Brak błędów w tym okresie.</p>{% else %}
+        <table>
+            <thead><tr><th>Chwila</th><th>Konektor</th><th>Operacja</th><th>Host</th><th>HTTP</th><th>Kod błędu</th><th>Retry-After s</th><th>ms</th></tr></thead>
+            <tbody>
+            {% for error in summary.errors %}<tr><td>{{ error.started_at }}</td><td>{{ error.connector }}</td><td>{{ error.operation }}</td><td>{{ error.host }}</td><td>{{ error.http_status ?? '–' }}</td><td>{{ error.error_code ?? '–' }}</td><td>{{ error.retry_after_s ?? '–' }}</td><td>{{ error.duration_ms }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -689,6 +689,26 @@ Część b: sekcja niżej.
 | Pliki | `var/evidence/restore/kokpit-restore-<RRRRMMDD>T<GGMMSS>Z.json` (0600, poza repo); w wolumenie `backup_state` projektu `kokpit-restore`: `snapshots.json`, `target.json`, `restore/` |
 | Testy | `RestoreCheckTest`, `RestoreScriptTest` |
 
+### Kreator zamknięcia roku (D-86): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Ewidencja (`src/Ledger`) | `YearClose` (`checklist`, `archive`, `annualRules`; stała `FIRST_YEAR`) |
+| Panel | `YearCloseController`: trasy `panel_year_close` (`GET /year-close`, parametr `year`), `panel_year_close_archive` (`GET /year-close/{year}.zip`) |
+| Archiwum | `kokpit-rok-<rok>.zip`: `obowiazki-roczne.csv`, `miesiace.csv`, `zlozenia.csv`, `przychody-miesiecznie.csv`, `ewidencja-<rok>.csv`, katalog `zlozenia/<typ>-<okres>-<cel>-<seq>/` |
+| Szablon | `templates/panel/year_close.html.twig`; identyfikatory `#year-close-archive`, `#year-close-years`, `#year-close-summary`, `#year-close-obligations`, `#year-obligation-<id>`, `#year-close-months`, `#year-month-<RRRR-MM>`, `#year-close-filings`, `#year-filing-<id>`, `#year-close-revenue`, `#year-close-settings` |
+| Testy | `YearClosePanelTest` |
+
+### Panel zdrowia konektorów (D-85): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Zdrowie (`src/Health`) | `ConnectorHealth` (`summary`, `chart`; stałe `PERIODS`, `DEFAULT_PERIOD`, `MAX_ERRORS`) |
+| Panel | `ConnectorHealthController`: trasa `panel_connectors` (`GET /connectors`, parametr `days`) |
+| Szablon | `templates/panel/connectors.html.twig`; identyfikatory `#connectors-period`, `#connector-summary`, `#connector-<konektor>`, `#connector-daily`, `#rate-blocks`, `#sync-cursors`, `#connector-errors` |
+| Indeks | `connector_call_environment_started` (migracja `Version20261026000100`) |
+| Testy | `ConnectorHealthPanelTest` |
+
 ### Płatności klientów w panelu (D-84): nazwy
 
 | Rodzaj | Nazwy |
