@@ -1,0 +1,73 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Raport rok do roku – Kokpit JDG{% endblock %}
+
+{% macro value(amount) %}{{ amount ?? '–' }}{% endmacro %}
+{% macro label(month, names) %}{% if month == 'rok' %}cały rok{% elseif month starts with 'od-' %}styczeń–{{ names[month|slice(-2)] }}{% else %}{{ names[month] }}{% endif %}{% endmacro %}
+
+{% block body %}
+    {% set y = report.year %}
+    {% set p = report.previous %}
+    {% set month_names = {'01': 'styczeń', '02': 'luty', '03': 'marzec', '04': 'kwiecień', '05': 'maj', '06': 'czerwiec', '07': 'lipiec', '08': 'sierpień', '09': 'wrzesień', '10': 'październik', '11': 'listopad', '12': 'grudzień'} %}
+    {% set lines = report.months|merge([report.total])|merge(report.comparable ? [report.comparable] : []) %}
+    <h1>Raport rok do roku: {{ y }} wobec {{ p }}</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_taxes') }}">Podatki</a> · <a href="{{ path('panel_costs') }}">Koszty</a> · <a id="reports-csv" href="{{ path('panel_reports', {year: y, currency: report.currency, format: 'csv'}) }}">Eksport CSV</a></nav>
+    <form id="reports-filter" method="get" action="{{ path('panel_reports') }}">
+        <label>Rok <select name="year">{% for option in years %}<option value="{{ option }}"{% if option == y %} selected{% endif %}>{{ option }}</option>{% endfor %}</select></label>
+        <label>Waluta kursu <select name="currency">{% for option in currencies %}<option value="{{ option }}"{% if option == report.currency %} selected{% endif %}>{{ option }}</option>{% endfor %}</select></label>
+        <button type="submit">Pokaż</button>
+    </form>
+    <p>Tylko odczyt zapisanych danych. „–” znaczy brak danych, nie zero. Różnica to rok {{ y }} minus rok {{ p }}.{% if report.comparable %} Wiersz „styczeń–{{ month_names[report.comparable.month|slice(-2)] }}” porównuje te same miesiące obu lat.{% endif %}</p>
+
+    <section id="report-revenue">
+        <h2>Przychód (zł)</h2>
+        <p>Suma wierszy ewidencji (z korektami i różnicami kursowymi) według miesiąca przychodu.</p>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>{{ p }}</th><th>{{ y }}</th><th>Różnica</th></tr></thead>
+            <tbody>
+            {% for line in lines %}
+                <tr id="revenue-{{ line.month }}"><td>{{ _self.label(line.month, month_names) }}</td><td>{{ _self.value(line.previous.revenue_pln) }}</td><td>{{ _self.value(line.current.revenue_pln) }}</td><td>{{ _self.value(line.diff.revenue_pln) }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="report-vat">
+        <h2>VAT (zł)</h2>
+        <p>Z najnowszego przyjętego JPK_V7M okresu (z korektą). Do zapłaty to P_51 w pełnych złotych; bez przyjętego złożenia brak liczby.</p>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Należny {{ p }}</th><th>Należny {{ y }}</th><th>Naliczony {{ p }}</th><th>Naliczony {{ y }}</th><th>Do zapłaty {{ p }}</th><th>Do zapłaty {{ y }}</th><th>Różnica do zapłaty</th></tr></thead>
+            <tbody>
+            {% for line in lines %}
+                <tr id="vat-{{ line.month }}"><td>{{ _self.label(line.month, month_names) }}</td><td>{{ _self.value(line.previous.vat_due) }}</td><td>{{ _self.value(line.current.vat_due) }}</td><td>{{ _self.value(line.previous.vat_input) }}</td><td>{{ _self.value(line.current.vat_input) }}</td><td>{{ _self.value(line.previous.vat_payable) }}</td><td>{{ _self.value(line.current.vat_payable) }}</td><td>{{ _self.value(line.diff.vat_payable) }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="report-costs">
+        <h2>Koszty netto (zł)</h2>
+        <p>Faktury kosztowe oznaczone jako firmowe, według daty wystawienia, w złotych po kursie VAT.</p>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>{{ p }}</th><th>{{ y }}</th><th>Różnica</th><th>Faktur {{ p }}</th><th>Faktur {{ y }}</th><th>Bez kwoty w zł {{ y }}</th></tr></thead>
+            <tbody>
+            {% for line in lines %}
+                <tr id="costs-{{ line.month }}"><td>{{ _self.label(line.month, month_names) }}</td><td>{{ _self.value(line.previous.costs_net_pln) }}</td><td>{{ _self.value(line.current.costs_net_pln) }}</td><td>{{ _self.value(line.diff.costs_net_pln) }}</td><td>{{ _self.value(line.previous.costs_documents) }}</td><td>{{ _self.value(line.current.costs_documents) }}</td><td>{{ _self.value(line.current.costs_without_pln) }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="report-fx">
+        <h2>Kurs średni NBP {{ report.currency }}</h2>
+        <p>Średnia z tabel A NBP zapisanych w kokpicie (pobranych do faktur i limitów), nie ze wszystkich tabel miesiąca.</p>
+        <table>
+            <thead><tr><th>Miesiąc</th><th>{{ p }}</th><th>{{ y }}</th><th>Różnica</th><th>Tabel {{ p }}</th><th>Tabel {{ y }}</th></tr></thead>
+            <tbody>
+            {% for line in lines %}
+                <tr id="fx-{{ line.month }}"><td>{{ _self.label(line.month, month_names) }}</td><td>{{ _self.value(line.previous.fx_mid) }}</td><td>{{ _self.value(line.current.fx_mid) }}</td><td>{{ _self.value(line.diff.fx_mid) }}</td><td>{{ _self.value(line.previous.fx_tables) }}</td><td>{{ _self.value(line.current.fx_tables) }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endblock %}
