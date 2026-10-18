@@ -58,7 +58,7 @@ final class MailInboxTest extends DatabaseTestCase
             ['uid' => 103, 'status' => 'no_document', 'documents' => 0, 'skipped' => 0, 'from_address' => 'news@example.invalid', 'subject' => 'Newsletter (fictional)'],
             ['uid' => 104, 'status' => 'too_large', 'documents' => 0, 'skipped' => 0, 'from_address' => null, 'subject' => null],
         ], $rows);
-        $files = $this->db()->fetchAllAssociative("SELECT original_name, media_type FROM stored_file WHERE owner_table='mail_in_message' AND kind='cost_document' ORDER BY original_name");
+        $files = $this->db()->fetchAllAssociative("SELECT original_name, media_type FROM stored_file WHERE owner_table='mail_in_message' AND kind='cost_document' ORDER BY media_type");
         self::assertSame([['original_name' => 'FV-FIKC-1.pdf', 'media_type' => 'application/pdf'], ['original_name' => 'faktura żółta.png', 'media_type' => 'image/png']], $files);
 
         $call = $this->db()->fetchAssociative("SELECT host, operation, http_method, path, error_code, request_bytes, response_bytes FROM connector_call WHERE connector='mail_in'");
