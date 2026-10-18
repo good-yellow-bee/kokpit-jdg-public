@@ -45,12 +45,12 @@ Symfony ma osobny sejf i klucz na środowisko. Sejf wybiera `APP_RUNTIME_ENV`, a
 | --- | --- | --- | --- | --- |
 | `kokpit-prod` na VPS | `prod` | `config/secrets/prod/` | plik 0400 montowany tylko do usług `kokpit-prod`; kopie w menedżerze haseł i na papierze | wszystkie |
 | `kokpit-dev` na laptopie | `dev` | `config/secrets/dev/` | plik 0400 na laptopie, poza git; sekret środowiska GitHub joba `live` ([testing.md](testing.md)); kopia w menedżerze haseł | `test`, `demo` |
-| `kokpit-restore`, jednorazowy na laptopie | `prod` | `config/secrets/prod/` | z menedżera haseł, tylko na czas testu odtworzenia | test odtworzenia: żadne, `CONNECTORS_ENABLED=0`; prawdziwa awaria: nowy VPS według [operations.md](operations.md) |
+| `kokpit-restore`, jednorazowy na laptopie | `prod` | brak; sprawdzenia czytają tylko bazę i pliki (D-89) | niepotrzebny | test odtworzenia: żadne, `CONNECTORS_ENABLED=0`; prawdziwa awaria: nowy VPS z sejfem PROD według [operations.md](operations.md) |
 | CI | `test` | sejf tymczasowy z fikcyjnymi wartościami, tworzony na starcie joba | brak klucza poza jobem `live` | `test` |
 
 - `kokpit-dev` nigdy nie działa z `APP_ENV=prod`. Szukałby sejfu PROD, a rejestry wybrałyby hosty PROD ([modules/rejestry-kursy.md](modules/rejestry-kursy.md)).
 - `@group live` działa w `APP_ENV=test` z `APP_RUNTIME_ENV=dev`, więc czyta sejf `dev`.
-- Klucz sejfu PROD trafia na laptop tylko na czas testu odtworzenia. Po teście usuwasz plik i projekt; w tym katalogu nie działa sesja Claude Code ([operations.md](operations.md)).
+- Klucz sejfu PROD nie trafia na laptop: test odtworzenia działa bez sejfu PROD (D-89). Kopie plików backupu (klucz restic, poświadczenia celu) leżą poza checkoutem tylko na czas testu; `scripts/restore-test.sh` odmawia w sesji Claude Code ([operations.md](operations.md)).
 
 **Klucze sejfu**
 
@@ -89,7 +89,7 @@ Sekret konektora istnieje osobno dla każdego celu. Sekrety aplikacji i hosta is
 | hasła ról `kokpit_app` i `chat_ro` (F6) | – | statyczny; kopia w pliku hosta dla `db` przy tworzeniu ról | połączenia aplikacji z bazą | bez daty | rotacja obu kopii z restartem | F0a |
 | hasło roli `kokpit_owner` | – | host, poza sejfem | DDL i własność tabel; plik tylko dla kontenera migracji z kroku 5 wdrożenia ([operations.md](operations.md)) | bez daty | zmiana hasła roli | F0a |
 | hasło superużytkownika PostgreSQL | – | host, poza sejfem | pełna kontrola bazy; `db` czyta je przez `POSTGRES_PASSWORD_FILE` ([obraz postgres](https://hub.docker.com/_/postgres)) | bez daty | zmiana hasła | F0a |
-| klucz deszyfrujący sejfu PROD | – | host, poza sejfem | odczyt wszystkich sekretów statycznych `kokpit-prod`; plik tylko na VPS, na laptopie tylko na czas testu odtworzenia; wyłączony z backupu bazy i restic; kopie offline w menedżerze haseł i na papierze | bez daty | `secrets:generate-keys --rotate` | F0a |
+| klucz deszyfrujący sejfu PROD | – | host, poza sejfem | odczyt wszystkich sekretów statycznych `kokpit-prod`; plik tylko na VPS, test odtworzenia go nie używa (D-89); wyłączony z backupu bazy i restic; kopie offline w menedżerze haseł i na papierze | bez daty | `secrets:generate-keys --rotate` | F0a |
 | klucz deszyfrujący sejfu `dev` | – | plik na laptopie, poza git | odczyt sekretów celów testowych; plik 0400 na laptopie, sekret środowiska GitHub joba `live`, kopia w menedżerze haseł | bez daty | `secrets:generate-keys --rotate` przy `APP_ENV=dev`; nowy sekret w GitHub | F0a |
 | klucz wdrożeniowy repo (deploy key tylko do odczytu) | – | host, poza sejfem | odczyt repo i zaszyfrowanego sejfu | bez daty | usunięcie klucza w GitHub | F0a |
 | auth key Tailscale | – | host, poza sejfem | dostęp do sieci panelu | wygasanie klucza węzła serwera wyłączone ([Tailscale](https://tailscale.com/kb/1028/key-expiry)) | usunięcie węzła w Tailscale | F0a |
@@ -325,7 +325,7 @@ Jesteś administratorem danych. Kokpit przetwarza dane osobowe w ramach obowiąz
 | Warstwa | Co robi | Ograniczenie |
 | --- | --- | --- |
 | test `HostAllowlist` w kodzie | pada przy hoście PROD bez celu `prod` | prawdziwa ochrona ([architecture.md](architecture.md)) |
-| `CONNECTORS_ENABLED=0` i sejf `dev` bez sekretów PROD na laptopie | kod w sesji nie ma czym zawołać PROD | wyjątek: klucz sejfu PROD na czas testu odtworzenia, bez sesji Claude Code w tym katalogu |
+| `CONNECTORS_ENABLED=0` i sejf `dev` bez sekretów PROD na laptopie | kod w sesji nie ma czym zawołać PROD | test odtworzenia bez sejfu PROD (D-89); `scripts/restore-test.sh` odmawia w sesji Claude Code |
 | deny w `.claude/settings.json` | blokuje odczyt `*.decrypt.private.php`, `.env.local`, `.env.local.php`, `.env.*.local`; polecenia Bash i WebFetch z hostami PROD KSeF, JPK, e-Deklaracji i UA API; `secrets:reveal`, `secrets:list --reveal`, `secrets:decrypt-to-local`; `*_TARGET=prod` | nie łapie wywołania PROD z kodu PHP lub testów (`phpunit`, `bin/console`) ani hosta składanego w runtime; dlatego ochroną jest `HostAllowlist` ([uprawnienia](https://code.claude.com/docs/en/permissions)) |
 | sandbox Claude Code (opcjonalny) | system operacyjny ogranicza pliki i hosty sieciowe poleceń powłoki; lista dozwolonych domen startuje pusta | obejmuje tylko polecenia powłoki, nie Read ani WebFetch ([sandbox](https://code.claude.com/docs/en/sandboxing)) |
 
