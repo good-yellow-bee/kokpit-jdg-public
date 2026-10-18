@@ -14,6 +14,7 @@ Najcenniejsze są token KSeF z prawem wystawiania i dane autoryzujące. Każdy z
 | przejęcie panelu | Tailscale, TLS, passkey, step-up od F0b, CSRF | Panel |
 | polecenie ukryte w piśmie lub fakturze | czat bez narzędzi zapisujących; szkic z odbiorcą tylko z bazy | [modules/czat.md](modules/czat.md) |
 | utrata danych przechowywanych tylko u Ciebie | backup poza serwerem, test odtworzenia | [operations.md](operations.md) |
+| podmiana obrazu w rejestrze albo na hoście | obrazy tylko z CI `main`, podpis cosign bez klucza, `make deploy` i `make rollback` weryfikują podpis i przypinają digest (D-93) | [operations.md](operations.md) |
 
 ## Sejf dwupoziomowy
 

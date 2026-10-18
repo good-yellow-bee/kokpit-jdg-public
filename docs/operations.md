@@ -66,24 +66,47 @@ Cele konektorów są niezależne od `APP_ENV` ([architecture.md](architecture.md
 
 | Krok | Komenda | Po co |
 | --- | --- | --- |
-| 1 | `git pull`, budowa etapów `production` i `proxy` z tagiem równym sha commita; wybór `APP_IMAGE` i `PROXY_IMAGE` | nowa wersja; poprzedni obraz zostaje pod swoim tagiem |
+| 1 | `git pull`, pobranie obrazów `app` i `proxy` commita z rejestru, weryfikacja podpisu (`cosign verify`); `APP_IMAGE` i `PROXY_IMAGE` przypięte do digestu | nowa wersja tylko z podpisanych obrazów CI; poprzednie obrazy zostają lokalnie pod tagiem swojego commita |
 | 2 | `docker compose -f compose.yaml stop scheduler worker_official_writes worker_reads worker_notifications` | workery kończą bieżącą wiadomość w `stop_grace_period` i stoją do kroku 6 |
 | 3 | sprawdzenie, że żadne `approval` nie jest w stanie `dispatching`; jeśli jest, wdrożenie staje | wdrożenie nie przerywa wysyłki do urzędu |
 | 4 | `pg_dump` przed migracją | punkt powrotu |
 | 5 | `docker compose -f compose.yaml run --rm app bin/console doctrine:migrations:migrate --no-interaction`, następnie `docker compose -f compose.yaml run --rm app bin/console cache:clear` | schemat i cache na nowym obrazie |
 | 6 | `docker compose -f compose.yaml up -d` | nowe kontenery |
-| 7 | `/health` zwraca 200; `docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy` | potwierdzenie; wpis `ops.deployed` ze szczegółami: commit, digest obrazu, `*_TARGET`, `CONNECTORS_ENABLED` |
+| 7 | `/health` zwraca 200; `docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy` | potwierdzenie; wpis `ops.deployed` ze szczegółami: commit, digest obrazu `app` w rejestrze, `*_TARGET`, `CONNECTORS_ENABLED` |
 
 - Bez `messenger:stop-workers`: przy `restart: unless-stopped` Compose podniósłby workery na starych kontenerach zaraz po wyjściu.
 - Stan `dispatching` ustawia tylko worker, więc po kroku 2 nowa wysyłka nie startuje. Zatwierdzenie z panelu czeka w kolejce w stanie `approved` ([approval-gate.md](approval-gate.md)).
 - Krok 3 to `bin/console app:approval idle`: kod 1 przy zatwierdzeniu w `dispatching`. Przy pierwszym wdrożeniu F0b tabeli `approval` jeszcze nie ma, więc krok przechodzi (D-41).
 - Migracje są wstecznie zgodne (najpierw rozszerzenie schematu, usunięcie w kolejnym wydaniu).
-- Wycofanie: `docker compose -f compose.yaml up -d` z poprzednimi `APP_IMAGE` i `PROXY_IMAGE` (commit z poprzedniego `ops.deployed`), bez budowy i instalowania zależności; przed startem `cache:clear` na wybranym poprzednim obrazie, bo cache jest na wolumenie runtime; kod, zależności i zasoby wracają razem. Przy migracji niezgodnej wstecz także odtworzenie zrzutu z kroku 4.
+- Wycofanie: `docker compose -f compose.yaml up -d` z obrazami commita z poprzedniego `ops.deployed`, bez budowy i instalowania zależności; przed startem `cache:clear` na wybranym poprzednim obrazie, bo cache jest na wolumenie runtime; kod, zależności i zasoby wracają razem. Przy migracji niezgodnej wstecz także odtworzenie zrzutu z kroku 4.
 - Zmiana `*_TARGET` albo `CONNECTORS_ENABLED` to osobne wdrożenie z checklisty go-live, nigdy przy okazji.
 - Krok 7 porównuje szczegóły z poprzednim `ops.deployed`. Każda różnica daje jeden wpis `connector.target_changed` albo `connector.enabled_changed` ([architecture.md](architecture.md)). Pierwsze wdrożenie zapisuje tylko `ops.deployed`.
 - Wpisy zmian celu powstają tylko w kroku 7, nie przy starcie kontenerów, więc nie mają duplikatów.
 - Makefile wymaga jawnego `KOKPIT_DEPLOYMENT=prod`; `deploy` wymaga też `PANEL_ORIGIN` (adres HTTPS panelu w VPN). Ustawia `APP_ENV=prod`, `APP_DEBUG=0` i `COMPOSE_PROFILES=prod`, pomija `COMPOSE_PROJECT_NAME` i używa tylko `compose.yaml`. Nie ustawia celów konektorów ani `CONNECTORS_ENABLED`: operator wybiera je ręcznie. Zrzut przed migracją trafia do lokalnego `backups/deploy-<sha>-<sufiks>` z uprawnieniami 0600; plik `.partial` oznacza przerwany zrzut. Wrapper migracji kopiuje poświadczenie `kokpit_owner` z wolumenu tylko do odczytu do pliku tymczasowego 0400 w kontenerze i uruchamia PHP jako `www-data`, aby zachować właściciela cache; pozostałe komendy aplikacji używają roli `kokpit_app`.
-- `make rollback` wymaga obu poprzednich `APP_IMAGE` i `PROXY_IMAGE` z tagiem sha wskazanym przez poprzedni `ops.deployed`. Sprawdza obecność obrazów lokalnie, czyści cache i uruchamia je bez budowy ani pobierania. Odtworzenie zrzutu przy niezgodnej migracji pozostaje osobnym krokiem operatora.
+- `make rollback KOKPIT_COMMIT=<sha>` bierze commit z poprzedniego `ops.deployed`. Obrazy `app` i `proxy` tego commita muszą być lokalnie; przed startem przechodzą tę samą weryfikację podpisu co przy wdrożeniu. Cel czyści cache i uruchamia je bez budowy ani pobierania. Odtworzenie zrzutu przy niezgodnej migracji pozostaje osobnym krokiem operatora.
+
+### Podpisane obrazy i kanał aktualizacji
+
+Decyzja: D-93. Na VPS nic się nie buduje: `make deploy` uruchamia tylko obrazy, które zbudował i podpisał CI.
+
+| Element | Jak działa |
+| --- | --- |
+| kanał | gałąź `main`: każdy push do `main` z zielonymi testami daje obrazy `app` (etap `production`) i `proxy` z tagiem sha commita w `ghcr.io/good-yellow-bee/kokpit-jdg-public` (`KOKPIT_REGISTRY`) |
+| podpis | job `images` podpisuje digest każdego obrazu przez `cosign sign` bez klucza: certyfikat Sigstore z tożsamością OIDC przebiegu `ci.yml@refs/heads/main`, wpis w publicznym logu Rekor; nie ma klucza prywatnego do przechowania ani rotacji |
+| weryfikacja | `cosign verify` sprawdza tożsamość `KOKPIT_SIGNER`, wystawcę `https://token.actions.githubusercontent.com`, wyzwalacz `push` i sha commita w certyfikacie; obraz spoza `KOKPIT_REGISTRY` albo bez zgodnego podpisu zatrzymuje wdrożenie przed krokiem 2 |
+| przypięcie | `APP_IMAGE` i `PROXY_IMAGE` to odwołania `repo@sha256:…`, więc uruchomiony obraz jest tym zweryfikowanym, nawet gdy tag w rejestrze się zmieni |
+| `make update-check` | `git fetch` gałęzi `main`, lista nowych commitów względem checkoutu, pobranie i weryfikacja obrazów najnowszego commita; kod 0 oznacza, że `make deploy` może ruszyć |
+| `make verify-images KOKPIT_COMMIT=<sha>` | sama weryfikacja lokalnych obrazów commita; wypisuje przypięte `APP_IMAGE` i `PROXY_IMAGE`; CI uruchamia ją po podpisie, więc flagi weryfikacji są sprawdzane na prawdziwym podpisie przy każdym push do `main` |
+
+- Obrazy commita powstają dopiero po zielonym przebiegu CI na `main`; wcześniej `make deploy` i `make update-check` kończą się komunikatem, że obrazu nie da się pobrać.
+- `docker compose up` lokalnie (`kokpit-dev`) dalej buduje z checkoutu; podpis dotyczy tylko `kokpit-prod`.
+
+**Kroki tylko dla Ciebie (raz, przy stawianiu VPS):**
+
+1. Zainstaluj `cosign` 2.x na VPS z wydań [sigstore/cosign](https://github.com/sigstore/cosign/releases), ze sprawdzeniem sumy z `cosign_checksums.txt`. Bez niego `deploy`, `rollback`, `verify-images` i `update-check` odmawiają (kod 2).
+2. Dostęp do rejestru: pakiety `app` i `proxy` w GHCR powstają przy pierwszym push do `main` po D-93. Zostaw je prywatne i zaloguj VPS raz: `docker login ghcr.io` tokenem klasycznym tylko z `read:packages` (token w menedżerze haseł, nie w repo). Obrazy nie zawierają sekretów ani sejfu, więc publiczne pakiety też są dopuszczalne; wtedy logowanie odpada.
+3. Opcjonalnie cron na VPS z `make update-check` i powiadomieniem o nowej wersji; wdrożenie zostaje ręczne.
+
 - Na laptopie `kokpit-dev` startuje przez `docker compose up -d` (oba pliki z `COMPOSE_FILE`) z `KOKPIT_DEPLOYMENT=dev` i migracją z kroku 5. Kroki 3, 4 i 7 odpadają.
 - Po zmianie zasobów w dev przebuduj i odtwórz `proxy` (`docker compose up -d --build proxy`), żeby nginx serwował aktualne skompilowane pliki.
 

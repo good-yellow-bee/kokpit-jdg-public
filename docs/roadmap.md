@@ -100,7 +100,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 | --- | --- | --- | --- | --- | --- | --- |
 | Instalator | Kreator pierwszego uruchomienia (sekcja „Produkt i UX”) generuje klucz sejfu u klienta i prowadzi przez poświadczenia; dla Ciebie skraca odtworzenie na nowym hoście | M | M | L | kreator, F1 | po F1 |
 | Paczka diagnostyczna | Zrobione (D-80). `kokpit:diagnostics`: wersje, `/health`, `connector_call` z 7 dni, logi po `Redactor`; dla własnego debugowania po tygodniach i dla wsparcia bez zdalnego dostępu | M | S | L: skaner sekretów na paczce | F0a | po F0a |
-| Podpisane obrazy i kanał aktualizacji | Obrazy w prywatnym rejestrze z podpisem (narzędzie do weryfikacji), `make deploy` sprawdza podpis; zmniejsza ryzyko podmiany obrazu także przy jednym wdrożeniu | M | S | L | F0a | po F0a |
+| Podpisane obrazy i kanał aktualizacji | Zrobione (D-93): job `images` publikuje obrazy commitów `main` w GHCR z podpisem cosign bez klucza, `make deploy` i `make rollback` sprawdzają podpis, `make update-check` pokazuje nową wersję; zmniejsza ryzyko podmiany obrazu także przy jednym wdrożeniu | M | S | L | F0a | po F0a |
 | Publiczny HTTPS za passkeyem | Opcjonalny profil compose: proxy z publicznym portem, limit prób logowania, bez VPN. Dla Ciebie wyłączony | L | M | H: ekspozycja panelu | zmiana D-18, D-25 | tylko przy planie B |
 
 ## Szybkie wygrane (do 1 dnia każda)

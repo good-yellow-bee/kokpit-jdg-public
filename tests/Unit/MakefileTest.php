@@ -11,17 +11,19 @@ use Symfony\Component\Process\Process;
 
 final class MakefileTest extends TestCase
 {
+    private const SIGNER = 'https://github.com/good-yellow-bee/kokpit-jdg-public/.github/workflows/ci.yml@refs/heads/main';
+
     public function testDeployFollowsTheDocumentedOrderAndLeavesConnectorSettingsAlone(): void
     {
         [$status, $commands, $output] = $this->runMake('deploy');
         self::assertSame(0, $status, $output);
-        self::assertCount(13, $commands);
+        self::assertCount(16, $commands);
         foreach ([
             'git pull --ff-only',
             'git rev-parse HEAD',
-            'docker build --target production -t kokpit-app:previous-commit .',
-            'docker build --target proxy -t kokpit-proxy:previous-commit .',
-            'docker image inspect kokpit-app:previous-commit --format {{.Id}}',
+            'docker pull --quiet registry.invalid/kokpit/app:fictional-commit',
+            'docker pull --quiet registry.invalid/kokpit/proxy:fictional-commit',
+            ...self::verification('fictional-commit'),
             'docker compose -f compose.yaml stop scheduler worker_official_writes worker_reads worker_notifications',
             'docker compose -f compose.yaml run --rm app bin/console app:approval idle',
             'docker compose -f compose.yaml exec -T --user postgres db sh -ec',
@@ -33,8 +35,9 @@ final class MakefileTest extends TestCase
         ] as $index => $command) {
             self::assertStringStartsWith($command, $commands[$index]);
         }
-        self::assertStringContainsString('pg_dump -h localhost -U kokpit_backup -d kokpit -Fc', $commands[7]);
-        self::assertStringContainsString('exec su -s /bin/sh www-data -c "bin/console doctrine:migrations:migrate --no-interaction"', $commands[8]);
+        self::assertStringNotContainsString('docker build', implode("\n", $commands));
+        self::assertStringContainsString('pg_dump -h localhost -U kokpit_backup -d kokpit -Fc', $commands[10]);
+        self::assertStringContainsString('exec su -s /bin/sh www-data -c "bin/console doctrine:migrations:migrate --no-interaction"', $commands[11]);
 
         $makefile = file_get_contents(dirname(__DIR__, 2) . '/Makefile');
         self::assertIsString($makefile);
@@ -71,7 +74,7 @@ final class MakefileTest extends TestCase
     /** @return iterable<string, array{string, int}> */
     public static function deployFailures(): iterable
     {
-        foreach (['deploy' => 13, 'rollback' => 4] as $target => $count) {
+        foreach (['deploy' => 16, 'rollback' => 6] as $target => $count) {
             foreach (range(1, $count) as $step) {
                 yield $target . '-command-' . $step => [$target, $step];
             }
@@ -90,28 +93,105 @@ final class MakefileTest extends TestCase
     {
         [$status, $commands] = $this->runMake('deploy', ['HEALTH_STATUS' => '503']);
         self::assertNotSame(0, $status);
-        self::assertCount(12, $commands);
+        self::assertCount(15, $commands);
     }
 
-    public function testRollbackUsesPreviousImagesAndClearsCacheBeforeStarting(): void
+    public function testDeployStopsBeforeTouchingServicesWithoutAValidSignature(): void
+    {
+        [$status, $commands, $output] = $this->runMake('deploy', ['FAIL_AT' => '6']);
+        self::assertNotSame(0, $status);
+        self::assertCount(6, $commands);
+        self::assertStringStartsWith('cosign verify', $commands[5]);
+        self::assertStringContainsString('Podpis obrazu app commita fictional-commit nie przeszedł weryfikacji.', $output);
+    }
+
+    public function testDeployRefusesAnImageWithoutADigestFromTheRegistry(): void
+    {
+        [$status, $commands, $output] = $this->runMake('deploy', ['REPO_DIGEST_PREFIX' => 'other.invalid/kokpit/app']);
+        self::assertNotSame(0, $status);
+        self::assertCount(5, $commands);
+        self::assertStringContainsString('nie pochodzi z registry.invalid/kokpit', $output);
+    }
+
+    /** @return iterable<string, array{string, array<string, string>}> */
+    public static function targetsNeedingCosign(): iterable
+    {
+        yield 'deploy' => ['deploy', []];
+        yield 'rollback' => ['rollback', []];
+        yield 'verify-images' => ['verify-images', ['KOKPIT_DEPLOYMENT' => '']];
+        yield 'update-check' => ['update-check', ['KOKPIT_DEPLOYMENT' => '']];
+    }
+
+    /** @param array<string, string> $environment */
+    #[DataProvider('targetsNeedingCosign')]
+    public function testRefusesWithoutCosignBeforeAnyCommand(string $target, array $environment): void
+    {
+        [$status, $commands, $output] = $this->runMake($target, $environment + ['WITHOUT_COSIGN' => '1']);
+        self::assertSame(2, $status, $output);
+        self::assertSame([], $commands);
+        self::assertStringContainsString('Brak cosign', $output);
+    }
+
+    public function testRollbackVerifiesThePreviousCommitImagesAndClearsCacheBeforeStarting(): void
     {
         [$status, $commands, $output] = $this->runMake('rollback');
         self::assertSame(0, $status, $output);
         self::assertSame([
-            'docker image inspect kokpit-app:previous-commit --format {{.Id}}',
-            'docker image inspect kokpit-proxy:previous-commit',
+            ...self::verification('previous-commit'),
             'docker compose -f compose.yaml run --rm app bin/console cache:clear',
             'docker compose -f compose.yaml up -d --no-build --pull never',
         ], $commands);
     }
 
-    public function testRollbackRequiresBothPreviousImages(): void
+    public function testRollbackRequiresThePreviousCommit(): void
     {
-        foreach (['APP_IMAGE', 'PROXY_IMAGE'] as $image) {
-            [$status, $commands] = $this->runMake('rollback', [$image => '']);
-            self::assertNotSame(0, $status);
-            self::assertSame([], $commands);
+        [$status, $commands] = $this->runMake('rollback', ['KOKPIT_COMMIT' => '']);
+        self::assertNotSame(0, $status);
+        self::assertSame([], $commands);
+    }
+
+    public function testVerifyImagesPrintsDigestPinnedReferences(): void
+    {
+        [$status, $commands, $output] = $this->runMake('verify-images', ['KOKPIT_DEPLOYMENT' => '']);
+        self::assertSame(0, $status, $output);
+        self::assertSame(self::verification('previous-commit'), $commands);
+        self::assertSame("APP_IMAGE=registry.invalid/kokpit/app@sha256:fictional\nPROXY_IMAGE=registry.invalid/kokpit/proxy@sha256:fictional\n", $output);
+    }
+
+    public function testUpdateCheckVerifiesTheNewestMainCommit(): void
+    {
+        [$status, $commands, $output] = $this->runMake('update-check', ['KOKPIT_DEPLOYMENT' => '']);
+        self::assertSame(0, $status, $output);
+        self::assertSame([
+            'git fetch --quiet origin main',
+            'git rev-parse HEAD',
+            'git rev-parse origin/main',
+            'git log --oneline fictional-commit..fictional-next',
+            'docker pull --quiet registry.invalid/kokpit/app:fictional-next',
+            'docker pull --quiet registry.invalid/kokpit/proxy:fictional-next',
+            ...self::verification('fictional-next'),
+        ], $commands);
+        self::assertStringContainsString('Commit fictional-next ma podpisane obrazy', $output);
+    }
+
+    public function testUpdateCheckStopsWhenTheCheckoutIsCurrent(): void
+    {
+        [$status, $commands, $output] = $this->runMake('update-check', ['KOKPIT_DEPLOYMENT' => '', 'LATEST_COMMIT' => 'fictional-commit']);
+        self::assertSame(0, $status, $output);
+        self::assertCount(3, $commands);
+        self::assertStringContainsString('Bez aktualizacji', $output);
+    }
+
+    /** @return list<string> */
+    private static function verification(string $commit): array
+    {
+        $commands = [];
+        foreach (['app', 'proxy'] as $image) {
+            $commands[] = sprintf('docker image inspect registry.invalid/kokpit/%s:%s --format {{join .RepoDigests " "}}', $image, $commit);
+            $commands[] = sprintf('cosign verify --certificate-identity %s --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-github-workflow-sha %s --certificate-github-workflow-trigger push registry.invalid/kokpit/%s@sha256:fictional', self::SIGNER, $commit, $image);
         }
+
+        return $commands;
     }
 
     /**
@@ -125,18 +205,24 @@ final class MakefileTest extends TestCase
         $stub = <<<'SH'
 #!/bin/sh
 set -eu
-[ "$APP_ENV" = prod ] && [ "$COMPOSE_PROFILES" = prod ] && [ -z "${COMPOSE_PROJECT_NAME:-}" ] || exit 8
+if [ "$EXPECT_PROD" = 1 ]; then
+    [ "$APP_ENV" = prod ] && [ "$COMPOSE_PROFILES" = prod ] && [ -z "${COMPOSE_PROJECT_NAME:-}" ] || exit 8
+fi
 [ "$KSEF_TARGET" = test ] && [ "$JPK_TARGET" = test ] && [ "$EDEKLARACJE_TARGET" = test ] && [ "$CONNECTORS_ENABLED" = 0 ] || exit 8
 tool=${0##*/}
 printf '%s %s\n' "$tool" "$*" >> "$COMMAND_LOG"
 [ "$(wc -l < "$COMMAND_LOG")" -ne "$FAIL_AT" ] || exit 9
 case "$tool $*" in
-    'git rev-parse HEAD') echo previous-commit;;
-    'docker image inspect '*) echo sha256:fictional;;
+    'docker compose '*)
+        [ "${APP_IMAGE:-}" = "$KOKPIT_REGISTRY/app@sha256:fictional" ] && [ "${PROXY_IMAGE:-}" = "$KOKPIT_REGISTRY/proxy@sha256:fictional" ] && [ "${KOKPIT_IMAGE_DIGEST:-}" = sha256:fictional ] || exit 7;;
+    'git rev-parse HEAD') echo fictional-commit;;
+    'git rev-parse origin/main') echo "$LATEST_COMMIT";;
+    'docker image inspect '*) image=$3; printf 'other.invalid/mirror@sha256:other %s@sha256:fictional\n' "${REPO_DIGEST_PREFIX:-${image%:*}}";;
     'curl '*) printf '%s' "$HEALTH_STATUS";;
 esac
 SH;
-        foreach (['git', 'docker', 'curl'] as $tool) {
+        $tools = ($environment['WITHOUT_COSIGN'] ?? '') === '1' ? ['git', 'docker', 'curl'] : ['git', 'docker', 'curl', 'cosign'];
+        foreach ($tools as $tool) {
             file_put_contents($directory . '/' . $tool, $stub);
             chmod($directory . '/' . $tool, 0700);
         }
@@ -146,8 +232,12 @@ SH;
                 'MAKEFLAGS' => '',
                 'KOKPIT_DEPLOYMENT' => 'prod',
                 'COMPOSE_PROJECT_NAME' => 'fictional-other-project',
-                'APP_IMAGE' => 'kokpit-app:previous-commit',
-                'PROXY_IMAGE' => 'kokpit-proxy:previous-commit',
+                'EXPECT_PROD' => in_array($target, ['deploy', 'rollback'], true) ? '1' : '0',
+                'KOKPIT_REGISTRY' => 'registry.invalid/kokpit',
+                'KOKPIT_COMMIT' => 'previous-commit',
+                'LATEST_COMMIT' => 'fictional-next',
+                'APP_IMAGE' => 'fictional-unsigned/app:latest',
+                'PROXY_IMAGE' => 'fictional-unsigned/proxy:latest',
                 'PANEL_ORIGIN' => 'https://panel.invalid/',
                 'KSEF_TARGET' => 'test',
                 'JPK_TARGET' => 'test',

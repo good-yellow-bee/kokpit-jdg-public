@@ -14,7 +14,7 @@ final class CiWorkflowTest extends TestCase
         $root = dirname(__DIR__, 2);
         $content = file_get_contents($root . '/.github/workflows/ci.yml');
         self::assertIsString($content);
-        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,steps:list<array{run?:string,uses?:string,with?:array<string,string>}>}>} $workflow */
+        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,uses?:string,with?:array<string,string>}>}>} $workflow */
         $workflow = Yaml::parse($content);
         self::assertSame(['push','pull_request','workflow_dispatch'], array_keys($workflow['on']));
         // D-43: gałąź PR liczy minuty raz (pull_request), push tylko na main, starsze przebiegi PR anulowane.
@@ -22,7 +22,7 @@ final class CiWorkflowTest extends TestCase
         self::assertStringContainsString('github.head_ref || github.ref_name', $workflow['concurrency']['group']);
         self::assertSame("\${{ github.event_name == 'pull_request' }}", $workflow['concurrency']['cancel-in-progress']);
         $jobs = $workflow['jobs'];
-        self::assertSame(['lint','unit_property','contract','xsd','integration','security','mutation','evidence','live'], array_keys($jobs));
+        self::assertSame(['lint','unit_property','contract','xsd','integration','security','images','mutation','evidence','live'], array_keys($jobs));
         self::assertSame('unit+property', $jobs['unit_property']['name'] ?? null);
         self::assertTrue($jobs['mutation']['continue-on-error'] ?? null);
         self::assertSame("github.event_name != 'pull_request'", $jobs['mutation']['if'] ?? null);
@@ -41,9 +41,25 @@ final class CiWorkflowTest extends TestCase
         $sbom = array_values(array_filter($jobs['lint']['steps'], static fn(array $step): bool => ($step['uses'] ?? '') === 'actions/upload-artifact@v4'));
         self::assertCount(1, $sbom);
         self::assertSame(['name' => 'sbom','path' => 'sbom.cdx.json','if-no-files-found' => 'error'], $sbom[0]['with'] ?? null);
-        foreach ($jobs as $job) {
-            self::assertContains('sh scripts/ci-bootstrap.sh', array_column($job['steps'], 'run'));
+        foreach ($jobs as $id => $job) {
+            if ($id !== 'images') {
+                self::assertContains('sh scripts/ci-bootstrap.sh', array_column($job['steps'], 'run'));
+            }
         }
+        // Kanał aktualizacji (D-93): publikacja i podpis tylko z push do main, po zielonych testach, weryfikacja tym samym celem co `make deploy`.
+        $images = $jobs['images'];
+        self::assertSame("github.event_name != 'workflow_dispatch'", $images['if'] ?? null);
+        self::assertSame(['lint','unit_property','contract','xsd','integration','security'], $images['needs'] ?? null);
+        self::assertSame(['contents' => 'read','packages' => 'write','id-token' => 'write'], $images['permissions'] ?? null);
+        self::assertSame("\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}", $images['env']['PUBLISH'] ?? null);
+        self::assertSame('ghcr.io/${{ github.repository }}', $images['env']['REGISTRY'] ?? null);
+        $published = array_values(array_filter($images['steps'], static fn(array $step): bool => ($step['if'] ?? '') === "env.PUBLISH == 'true'"));
+        self::assertCount(2, $published);
+        self::assertStringContainsString('cosign sign --yes', $published[0]['run'] ?? '');
+        self::assertSame('make verify-images KOKPIT_COMMIT="$GITHUB_SHA"', trim($published[1]['run'] ?? ''));
+        $makefile = (string) file_get_contents($root . '/Makefile');
+        self::assertStringContainsString('KOKPIT_SIGNER ?= https://github.com/good-yellow-bee/kokpit-jdg-public/.github/workflows/ci.yml@refs/heads/main', $makefile);
+        self::assertStringContainsString('KOKPIT_REGISTRY ?= ghcr.io/good-yellow-bee/kokpit-jdg-public', $makefile);
         foreach (['evidence','live'] as $job) {
             $upload = array_values(array_filter($jobs[$job]['steps'], static fn(array $step): bool => ($step['uses'] ?? '') === 'actions/upload-artifact@v4'));
             self::assertCount(1, $upload);
