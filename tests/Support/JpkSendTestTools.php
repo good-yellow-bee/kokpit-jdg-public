@@ -32,6 +32,7 @@ use App\Ledger\VatUeK12Gate;
 use App\Security\Redactor;
 use App\Security\SecretStore;
 use App\Storage\FileStore;
+use App\Xml\Pit28Builder;
 use App\Xml\VatUeBuilder;
 use App\Xml\XsdCatalog;
 use App\Xml\XsdValidator;
@@ -83,6 +84,7 @@ final class JpkSendTestTools
     public readonly FakeEDeklaracjeGateway $edeklaracje;
     public readonly EDeklaracjeWriter $edeklaracjeWriter;
     public readonly VatUeBuilder $vatUe;
+    public readonly Pit28Builder $pit28;
     public readonly ApprovalConnectors $connectors;
     public readonly OfficialWritesHandler $handler;
     public readonly SubmissionReconciler $reconciler;
@@ -121,6 +123,7 @@ final class JpkSendTestTools
             $clock,
             $this->vatUe,
             new VatUeK12Gate($db),
+            $this->pit28 = new Pit28Builder($db, ObligationTestTools::tax($db, $clock), $configuration, $catalog),
         )]);
         $this->transitions = new ApprovalTransitions($db, $this->audit, $clock, $this->subjects);
         $this->notifications = new ApprovalNotifications($db, $clock);

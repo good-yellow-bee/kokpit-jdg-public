@@ -90,7 +90,7 @@ final readonly class TaxCalculator
     }
 
     /**
-     * Zestawienie PIT-28 (wysyłka ręczna): przychód per stawka równy sumie K_8 per K_9 roku, odliczenia zapłacone w roku.
+     * Zestawienie PIT-28 (strona „Podatki” i `Pit28Builder`, D-96): przychód per stawka równy sumie K_8 per K_9 roku, odliczenia zapłacone w roku.
      *
      * @return array{year:int,revenue:array<string,string>,revenue_total:string,social_paid:string,health_paid:string,health_deductible:string}
      */

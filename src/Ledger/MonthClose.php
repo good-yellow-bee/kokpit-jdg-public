@@ -69,6 +69,22 @@ final readonly class MonthClose
         }
     }
 
+    /** Przyjęty PIT-28 za rok (D-96): otwarty obowiązek `pit_28` roku `done` z `filing_id`. */
+    public function pit28Accepted(string $filingId, ?string $userId): void
+    {
+        $filing = $this->db->fetchAssociative("SELECT environment, period_start FROM filing WHERE id=? AND type='PIT_28'", [$filingId]);
+        if ($filing === false) {
+            throw new \LogicException('Zamknięcie PIT-28 tylko po PIT_28.');
+        }
+        $environment = self::str($filing['environment']);
+        $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
+        $obligation = $this->db->fetchOne("SELECT id FROM obligation WHERE environment=? AND type='pit_28' AND period_start=? AND status='open'", [$environment, self::str($filing['period_start'])]);
+        if (is_string($obligation)) {
+            $this->db->update('obligation', ['status' => 'done', 'done_at' => $now, 'done_by' => $userId, 'filing_id' => $filingId, 'updated_at' => $now], ['id' => $obligation]);
+            $this->audit->append('obligation.completed', ['type' => 'pit_28', 'done_by' => $userId, 'source' => 'filing.accepted', 'filing_id' => $filingId], $environment, 'obligation', $obligation, $userId);
+        }
+    }
+
     private static function str(mixed $value): string
     {
         return is_scalar($value) ? (string) $value : throw new \LogicException('Niepoprawna wartość złożenia.');

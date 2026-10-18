@@ -682,6 +682,17 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### PIT-28 przez e-Deklaracje (D-96): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Generator (`src/Xml`) | `Pit28Builder` (`variants`, `schemas`, `variant`, `variantMissing`, `inputs`, `build`; `SCHEMA_VERSION_PREFIX` = `PIT-28`), `Pit28Document` (`valid`, `sha256`; `year`, `variant`, `schema`, `totals`) |
+| Bramka i zamknięcie (`src/Ledger`) | `FilingRequest::pit28`, `MonthClose::pit28Accepted`; konektor `edeklaracje` dla `filing.type` `PIT_28` |
+| Ustawienia | `pit_28.review` (`variant`, `reviewed_on`, `note`) w `SettingKeys::PIT_28_REVIEW` i w panelu `/settings` |
+| Klucze `filing.totals` (`PIT_28`) | kwoty z `Pit28Builder::inputs`: `revenue` (per stawka), `revenue_total`, `social_paid`, `health_paid`, `health_deductible`, `advances_paid`; `jpk_ewp_filing_id`, `xml_sha256` |
+| Panel | trasa `panel_filings_request` (`POST /filings/request`, pola `type`, `period`, `reason`), sekcja `#filing-request` na `/filings`; `FilingController::REQUEST_TYPES` |
+| Testy | `Pit28RequestTest`, `Pit28ReviewSettingTest`, `FilingPanelTest::testFilingRequestValidatesPeriodAndRefusesWithoutConnectors`; `JpkSendTestTools::$pit28` |
+
 ### Narzędzia okresu w czacie (D-95): nazwy
 
 | Rodzaj | Nazwy |

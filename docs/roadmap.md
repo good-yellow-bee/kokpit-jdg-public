@@ -8,7 +8,7 @@ Skala: wartość dla właściciela H, M, L. Wysiłek jednej osoby po godzinach: 
 
 ## Priorytety po F6
 
-1. Zamknięcie roku i PIT-28 z kokpitu: twardy termin 30.04.2027, bez biura; dane z F2 i konektor `edeklaracje` z F5 są wtedy gotowe.
+1. Zamknięcie roku i PIT-28 z kokpitu: kreator roku zrobiony (D-86); wysyłka PIT-28 przez `edeklaracje` w toku (D-96).
 2. Stripe: opłaty i wypłaty: zamyka luki Q-24 (`fee_*`, `payout_*`, `actual_rate`) i comiesięczny dokument DI/WEW ręcznie liczony dziś z raportu.
 3. Automatyczna obserwacja prawa: zrobiona dla aktów w ELI i procesów Sejmu (D-75, [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md)). Projekty RCL, komunikaty MF i changelog ksef-docs zostają ręczne.
 4. Import wyciągu bankowego i dopasowanie płatności: różnice kursowe, zamykanie obowiązków po wpłacie, podzielona płatność; zero ruchu pieniędzy.
@@ -35,7 +35,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 
 | Propozycja | Co i po co | Wartość | Wysiłek | Ryzyko | Wymaga | Najwcześniej |
 | --- | --- | --- | --- | --- | --- | --- |
-| PIT-28 przez e-Deklaracje | XML PIT-28(25) z ewidencji i odliczeń, XSD, dane autoryzujące przez `edeklaracje`, bramka zatwierdzeń. Wzór ma gwiazdkę ([struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/)). Najpierw bramka testowa (R-31) | H | M | M: błędne odliczenia; korekta w e-US | F5, nowy D-xx zmieniający „PIT-28 ręcznie” w D-03 | okno 15.02–30.04.2027 tylko przy F5 w PROD (D-30); realnie 2028 |
+| PIT-28 przez e-Deklaracje | W toku (D-96): typ `PIT_28` na konektorze `edeklaracje` i prośba z `/filings`; generator czeka na XSD wariantu w `resources/xsd`. XML PIT-28 z ewidencji i odliczeń, XSD, dane autoryzujące przez `edeklaracje`, bramka zatwierdzeń. Wzór ma gwiazdkę ([struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/)). Najpierw bramka testowa (R-31) | H | M | M: błędne odliczenia; korekta w e-US | F5, nowy D-xx zmieniający „PIT-28 ręcznie” w D-03 | okno 15.02–30.04.2027 tylko przy F5 w PROD (D-30); realnie 2028 |
 | Kreator zamknięcia roku | Zrobione (D-86, strona `/year-close` i ZIP roku). Jedna lista z datami: N−2 (2.01), CIT-10Z (31.01), IFT-2R (31.03), JPK_EWP, JPK_ST i PIT-28 (30.04), zdrowotna (20.05), parametry ZUS; zestawienie roczne i ZIP roku z UPO | H | S | L | F5; obowiązki roczne są od F0b | po F5; rok 2026 zamykasz ręcznie według „Teraz – zgodność” w [README.md](README.md) |
 | Korekty półautomatyczne | Zadanie „korekta wymagana” ([modules/jpk.md](modules/jpk.md)) buduje szkic korekty JPK_V7M albo VAT-UEK z różnicą wobec przyjętego pliku i P_ORDZU; bramka | M | M | M: okres korekty (Q-29); kod 410 dla VAT-UEK (R-30) | F5, przegląd doradcy | po F5 |
 | Jeden podpis kwalifikowany | Decyzja zakupu QES: wniosek o certyfikat KSeF typ 1 i 2 ([MF](https://ksef.podatki.gov.pl/informacje-ogolne-ksef-20/certyfikaty-ksef/)), IFT-2R i CIT-10Z, zapas przy kodzie 418 (R-30). XAdES w kodzie to osobna praca (M) | M | S zakup, M XAdES | M: koszt roczny; PZ wystarcza do wniosku o certyfikat | Q-21, Q-29, nowy D-xx | przed 1.12.2026, jeśli § 13 nie zmieni się (R-01); inaczej 2027 |

@@ -14,6 +14,7 @@ use App\Xml\JpkDocument;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
 use App\Xml\JpkV7mBuilder;
+use App\Xml\Pit28Builder;
 use App\Xml\VatUeBuilder;
 use App\Xml\VatUeDocument;
 use Brick\Math\BigDecimal;
@@ -31,6 +32,8 @@ use Symfony\Component\Clock\ClockInterface;
  * pozycji `DI` w `summary`, a przyjęcie zamyka okres przez `MonthClose`. F5.5 dodaje VAT-UE(5) i VAT-UEK(5) za miesiąc
  * (D-66): payload z `VatUeBuilder` bez `DaneAutoryzujace`, twarda bramka K_12 (`VatUeK12Gate`), konektor `edeklaracje`
  * z celem `EDEKLARACJE_TARGET`; przyjęcie oznacza `vat_ue` jako `done`, a VAT-UEK zastępuje poprzednie złożenie okresu.
+ * D-96 dodaje PIT-28 za rok przez ten sam konektor: payload z `Pit28Builder` (wariant z XSD w `resources/xsd`), bramki
+ * JPK_EWP roku, przyjęty JPK_EWP z tą samą sumą przychodu i na celu `prod` wpis `pit_28.review` dla wariantu.
  *
  * @phpstan-import-type Position from VatUeDocument
  */
@@ -39,7 +42,7 @@ final readonly class FilingSubject implements ApprovalSubject
     /** Stan złożenia po `approval.status`; `cancelled`, `expired` i `superseded` zależą od kontekstu. */
     private const STATES = ['pending' => 'ready', 'approved' => 'approved', 'dispatching' => 'approved', 'submitted' => 'submitted', 'accepted' => 'accepted', 'rejected' => 'rejected', 'unknown' => 'unknown'];
     /** Konektor wysyłki per typ złożenia. */
-    private const CONNECTORS = ['JPK_EWP' => 'jpk', 'JPK_ST' => 'jpk', 'JPK_V7M' => 'jpk', 'VAT_UE' => 'edeklaracje', 'VAT_UEK' => 'edeklaracje'];
+    private const CONNECTORS = ['JPK_EWP' => 'jpk', 'JPK_ST' => 'jpk', 'JPK_V7M' => 'jpk', 'VAT_UE' => 'edeklaracje', 'VAT_UEK' => 'edeklaracje', 'PIT_28' => 'edeklaracje'];
     private const VAT_UE_TYPES = ['VAT_UE', 'VAT_UEK'];
     private const FINAL_SALES = "('accepted','corrected','superseded','cancelled_before_send')";
     private const TIMESTAMP = 'Y-m-d\TH:i:s.uP';
@@ -57,6 +60,7 @@ final readonly class FilingSubject implements ApprovalSubject
         private ClockInterface $clock,
         private VatUeBuilder $vatUe,
         private VatUeK12Gate $vatUeGate,
+        private Pit28Builder $pit28,
         private ?ApprovalSubject $fallback = null,
     ) {}
 
@@ -96,6 +100,9 @@ final readonly class FilingSubject implements ApprovalSubject
         }
         if ($type === 'JPK_V7M') {
             return $this->jpkV7m($subjectId, $filing, $environment);
+        }
+        if ($type === 'PIT_28') {
+            return $this->pit28Filing($subjectId, $filing, $environment);
         }
         $year = (int) substr(self::string($filing, 'period_start'), 0, 4);
         $purpose = (int) self::string($filing, 'purpose');
@@ -188,6 +195,58 @@ final readonly class FilingSubject implements ApprovalSubject
         }
         $preconditions = ['xsd' => 'ok (LIBXML_NONET)', 'connector_target' => $this->configuration->target('edeklaracje'), 'environment' => $environment, 'k12_gate' => 'ok', 'auth_data' => 'DaneAutoryzujace przy wysyłce, poza xml_sent'];
         $this->db->update('filing', ['schema_version' => $schemaVersion, 'totals' => json_encode($totals, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'updated_at' => $this->now()], ['id' => $subjectId]);
+        return new ApprovalPayload($document->xml, 'application/xml', (int) self::string($filing, 'version'), $summary, $preconditions);
+    }
+
+    /**
+     * PIT-28 za rok przychodu (D-96): tylko pierwsze złożenie, wariant z XSD, bramki „przed budową JPK_EWP(4)”, przyjęty
+     * JPK_EWP roku z sumą K_8 równą przychodowi zeznania, na celu `prod` wpis `pit_28.review` dla wariantu; budowa i XSD.
+     *
+     * @param array<string,mixed> $filing
+     */
+    private function pit28Filing(string $subjectId, array $filing, string $environment): ApprovalPayload
+    {
+        $year = (int) substr(self::string($filing, 'period_start'), 0, 4);
+        $purpose = (int) self::string($filing, 'purpose');
+        if ($purpose !== 1) {
+            throw new JpkBuildRefused(sprintf('Korektę PIT-28 za %d składasz ręcznie i zapisujesz jako złożenie manual (D-96).', $year));
+        }
+        if ($this->db->fetchOne("SELECT 1 FROM filing WHERE environment=? AND type='PIT_28' AND period_start=? AND status='accepted' AND id<>?", [$environment, self::string($filing, 'period_start'), $subjectId]) !== false) {
+            throw new JpkBuildRefused(sprintf('PIT-28 za %d jest przyjęty; korektę składasz ręcznie (D-96).', $year));
+        }
+        $variant = $this->pit28->variant($year) ?? throw new JpkBuildRefused(Pit28Builder::variantMissing($year));
+        $gates = $this->gates($environment, $year);
+        $problems = array_keys(array_filter($gates, static fn(array $gate): bool => !$gate['ok']));
+        if ($problems !== []) {
+            throw new JpkBuildRefused('Bramki przed budową PIT-28 niespełnione: ' . implode(', ', array_map(static fn(string $gate): string => sprintf('%s (%d)', $gate, $gates[$gate]['count']), $problems)) . '.');
+        }
+        $inputs = $this->pit28->inputs($year);
+        $ewp = $this->db->fetchAssociative("SELECT id, totals FROM filing WHERE environment=? AND type='JPK_EWP' AND period_start=? AND status='accepted' ORDER BY seq DESC LIMIT 1", [$environment, sprintf('%04d-01-01', $year)]);
+        if ($ewp === false) {
+            throw new JpkBuildRefused(sprintf('PIT-28 za %d wymaga przyjętego JPK_EWP za ten rok: obie liczby pochodzą z tej samej ewidencji (D-96).', $year));
+        }
+        $ewpTotals = json_decode(self::string($ewp, 'totals'), true, 8, JSON_THROW_ON_ERROR);
+        $ewpSum = is_array($ewpTotals) && is_string($ewpTotals['sum'] ?? null) ? $ewpTotals['sum'] : null;
+        if ($ewpSum === null || !BigDecimal::of($ewpSum)->isEqualTo($inputs['revenue_total'])) {
+            throw new JpkBuildRefused(sprintf('Przychód PIT-28 %s różny od sumy K_8 przyjętego JPK_EWP %s.', $inputs['revenue_total'], $ewpSum ?? 'brak'));
+        }
+        $review = null;
+        if ($environment === 'prod') {
+            $review = $this->settings->value(SettingKeys::PIT_28_REVIEW, $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Warsaw'))->format('Y-m-d'));
+            if (!is_array($review) || ($review['variant'] ?? null) !== $variant['variant']) {
+                throw new JpkBuildRefused(sprintf('Brak wpisu pit_28.review dla %s: przy EDEKLARACJE_TARGET=prod prośba czeka na przegląd doradcy (D-96, D-04).', $variant['variant']));
+            }
+        }
+        $document = $this->pit28->build($year);
+        if (!$document->valid()) {
+            throw new JpkBuildRefused(sprintf('%s niezgodny z XSD: %s', $document->variant, implode('; ', array_slice($document->xsdErrors, 0, 3))));
+        }
+        $totals = $document->totals + ['jpk_ewp_filing_id' => self::string($ewp, 'id'), 'xml_sha256' => $document->sha256()];
+        $summary = ['type' => 'PIT_28', 'period' => (string) $year, 'period_start' => self::string($filing, 'period_start'), 'period_end' => self::string($filing, 'period_end'), 'purpose' => 1, 'schema_version' => $document->variant]
+            + $document->totals + ['checklist' => $gates + ['jpk_ewp_sum' => ['ok' => true, 'count' => 0]]];
+        $preconditions = ['xsd' => 'ok (LIBXML_NONET)', 'connector_target' => $this->configuration->target('edeklaracje'), 'environment' => $environment, 'jpk_ewp_sum' => 'ok',
+            'adviser_review' => is_array($review) && is_string($review['reviewed_on'] ?? null) ? $review['reviewed_on'] : 'cel testowy', 'auth_data' => 'DaneAutoryzujace przy wysyłce, poza xml_sent'];
+        $this->db->update('filing', ['schema_version' => $document->variant, 'totals' => json_encode($totals, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'updated_at' => $this->now()], ['id' => $subjectId]);
         return new ApprovalPayload($document->xml, 'application/xml', (int) self::string($filing, 'version'), $summary, $preconditions);
     }
 
@@ -338,6 +397,11 @@ final readonly class FilingSubject implements ApprovalSubject
         if ($state === 'accepted' && in_array($current['type'], self::VAT_UE_TYPES, true) && $current['status'] !== 'accepted') {
             $decided = $this->db->fetchOne("SELECT decided_by FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
             $this->monthClose->vatUeAccepted($subjectId, is_string($decided) ? $decided : null);
+        }
+        // Przyjęty PIT-28 z bramki (D-96): obowiązek `pit_28` roku `done`.
+        if ($state === 'accepted' && $current['type'] === 'PIT_28' && $current['status'] !== 'accepted') {
+            $decided = $this->db->fetchOne("SELECT decided_by FROM approval WHERE subject_type='filing' AND subject_id=? ORDER BY requested_at DESC, id DESC LIMIT 1", [$subjectId]);
+            $this->monthClose->pit28Accepted($subjectId, is_string($decided) ? $decided : null);
         }
     }
 
