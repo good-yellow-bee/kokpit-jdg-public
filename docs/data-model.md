@@ -502,7 +502,7 @@ Bilans otwarcia nie ma tabeli (D-29). Wartości są w kluczach `setting` `openin
 - Pliki: `xml_sent` i `upo` w `stored_file` z właścicielem `filing`. Wysłany XML to payload przyjętego `approval`.
 - Złożenie `manual` nie ma `approval`. Wymaga `upo`, a `xml_sent` jest opcjonalny.
 - `xml_sent` to dokument przed kompresją i szyfrowaniem; jego SHA-256 trafia do metadanych ([specyfikacja JPK 5.6.0](https://www.podatki.gov.pl/media/bngboylg/specyfikacja-interfejs%C3%B3w-us%C5%82ug-jpk-wersja-560.pdf)). Zaszyfrowanych części kokpit nie przechowuje.
-- `PIT_28` jest poza planem faz; wiersz powstaje tylko przy złożeniu `manual` z wgranym UPO.
+- `PIT_28`: złożenie za rok przez bramkę i konektor `edeklaracje` (D-96, [modules/jpk.md](modules/jpk.md)) albo `manual` z wgranym UPO; korekta tylko `manual`.
 
 #### `obligation`
 

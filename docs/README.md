@@ -49,7 +49,7 @@ Osobisty kokpit jednej JDG: automatyzuje KSeF i JPK, weryfikuje kontrahentów i 
 - Scraping portali urzędowych.
 - Sprzedaż B2C i OSS.
 - WHT, IFT-2R i CIT-10Z: kokpit przypomina i liczy, żadna faza nie planuje wysyłki.
-- PIT-28: kokpit daje zestawienie roczne; wysyłka przez e-Deklaracje poza planem faz.
+- PIT-28: zestawienie roczne i wysyłka przez e-Deklaracje przez bramkę zatwierdzeń (D-96); korekta i formularz z ulgami ręcznie.
 - Wersja dla innych firm: decyzja odłożona, notatki poza repo.
 
 **Kup czy zbuduj.** Przy samej zgodności z KSeF gotowy program fakturowy wystarczy. Własny kokpit zachowuje FreshBooks, daje jedno miejsce na alerty i kontrolę danych (D-09).

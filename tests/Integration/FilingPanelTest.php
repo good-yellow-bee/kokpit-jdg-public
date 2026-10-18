@@ -12,7 +12,10 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Uuid;
 
-/** Panel `/filings`: złożenie ręczne z UPO tylko po step-upie (F2.3, kryterium `manual-filing`). Dane fikcyjne. */
+/**
+ * Panel `/filings`: złożenie ręczne z UPO tylko po step-upie (F2.3, kryterium `manual-filing`) i prośba o wysyłkę
+ * złożenia (D-96), która przy `CONNECTORS_ENABLED=0` odmawia bez zatwierdzenia. Dane fikcyjne.
+ */
 final class FilingPanelTest extends WebTestCase
 {
     public function testManualFilingPanelRequiresStepUpAndShowsClosedPeriod(): void
@@ -63,6 +66,41 @@ final class FilingPanelTest extends WebTestCase
             self::assertSame('reopened', $db->fetchOne("SELECT status FROM period WHERE period_start='2026-09-01'"));
         } finally {
             @unlink($upo);
+            while ($db->isTransactionActive()) {
+                $db->rollBack();
+            }
+        }
+    }
+
+    public function testFilingRequestValidatesPeriodAndRefusesWithoutConnectors(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $db = self::getContainer()->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $db);
+        $db->beginTransaction();
+        try {
+            $id = (string) Uuid::v7();
+            $now = (new \DateTimeImmutable())->format('c');
+            $db->insert('app_user', ['id' => $id,'username' => 'fictional-owner','display_name' => 'Fikcyjny właściciel','created_at' => $now,'updated_at' => $now]);
+            $client->loginUser(new AppUser($id, 'fictional-owner'));
+            $crawler = $client->request('GET', '/filings');
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('#filing-request select[name=type] option[value=PIT_28]');
+            $token = $crawler->filter('#filing-request input[name=_token]')->attr('value');
+
+            $client->request('POST', '/filings/request', ['_token' => $token,'type' => 'PIT_28','period' => '2026-04']);
+            self::assertResponseStatusCodeSame(422);
+            self::assertSelectorTextContains('[role=alert]', 'PIT_28 składasz za rok: podaj RRRR.');
+
+            $client->request('POST', '/filings/request', ['_token' => $token,'type' => 'PIT_28','period' => '2026']);
+            self::assertResponseStatusCodeSame(422);
+            self::assertSelectorTextContains('[role=alert]', 'CONNECTORS_ENABLED=0');
+            self::assertEquals(0, $db->fetchOne('SELECT count(*) FROM approval'));
+
+            $client->request('POST', '/filings/request', ['_token' => 'fictional-bad-token','type' => 'PIT_28','period' => '2026']);
+            self::assertResponseStatusCodeSame(403);
+        } finally {
             while ($db->isTransactionActive()) {
                 $db->rollBack();
             }

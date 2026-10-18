@@ -357,9 +357,12 @@ Do weryfikacji na bramce testowej w F5:
 
 ## PIT-28
 
-- Poza planem faz. Kokpit daje zestawienie roczne z ewidencji i odliczeń ([tax-rules.md](../tax-rules.md)).
-- Składasz ręcznie. Złożenie `PIT_28` powstaje tylko jako `manual` z wgranym UPO ([data-model.md](../data-model.md)).
-- Schemat PIT-28(25) też dopuszcza dane autoryzujące ([struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/)). Automatyzacja wymaga nowego rekordu D-xx.
+- Od D-96 złożenie `PIT_28` za rok przychodu idzie przez bramkę zatwierdzeń i konektor `edeklaracje`, jak VAT-UE: payload bez `DaneAutoryzujace`, element z `auth_data` wstawia worker przy wysyłce, UPO z `requestUPO`. Schemat PIT-28 dopuszcza dane autoryzujące ([struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/)).
+- Generator działa per wariant formularza: wariant dla roku przychodu to opublikowany XSD w `resources/xsd` z manifestem. Bez wariantu dla roku prośba odmawia; pól nie zgaduje się bez XSD.
+- Zakres: przychód per stawka z ewidencji, składki społeczne zapłacone w roku, 50% zapłaconej zdrowotnej i wpłacone zaliczki (zestawienie w [tax-rules.md](../tax-rules.md)). Ulgi, załączniki i przychody spoza działalności: składasz ręcznie, złożenie `manual` z UPO ([data-model.md](../data-model.md)).
+- Przed prośbą: bramki „przed budową JPK_EWP(4)” roku i przyjęty JPK_EWP za ten rok z tymi samymi sumami per stawka.
+- Na PROD prośba wymaga wpisu `pit_28.review` (wariant, data, notatka) z przeglądu doradcy mapowania odliczeń i zaokrągleń (D-04). Najpierw przebieg na bramce testowej z fikcyjnymi danymi.
+- Tylko pierwsze złożenie (`CelZlozenia` 1). Korektę składasz ręcznie i zapisujesz jako `manual`.
 
 ## Korekty
 

@@ -11,6 +11,18 @@
     <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
     <p id="passkey-result" role="status"></p>
 
+    <section id="filing-request">
+        <h2>Prośba o wysyłkę złożenia</h2>
+        <p>Kokpit buduje plik, sprawdza XSD i bramki, a potem tworzy prośbę w Zatwierdzeniach. Nic nie wychodzi do urzędu przed Twoim zatwierdzeniem. JPK_EWP, JPK_ST i PIT-28 za rok (RRRR), JPK_V7M i VAT-UE za miesiąc (RRRR-MM). Uzasadnienie wpisujesz tylko przy korekcie JPK_V7M po ponownym otwarciu okresu.</p>
+        <form method="post" action="{{ path('panel_filings_request') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('filings') }}">
+            <label>Rodzaj <select name="type"><option value="JPK_EWP">JPK_EWP</option><option value="JPK_ST">JPK_ST</option><option value="PIT_28">PIT-28</option><option value="JPK_V7M">JPK_V7M</option><option value="VAT_UE">VAT-UE</option></select></label>
+            <label>Okres <input name="period" placeholder="RRRR albo RRRR-MM" pattern="\d{4}(-\d{2})?" required></label>
+            <label>Uzasadnienie korekty JPK_V7M (P_ORDZU) <input name="reason" maxlength="3500"></label>
+            <button type="submit">Poproś o zatwierdzenie</button>
+        </form>
+    </section>
+
     <section id="filing-manual">
         <h2>Złożenie poza kokpitem</h2>
         <p>JPK_V7M albo VAT-UE złożony w narzędziu MF. Kokpit zapisuje go jako przyjęty, z UPO, bez zatwierdzenia. Przyjęty JPK_V7M zamyka okres; korektę zapiszesz po ponownym otwarciu.</p>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Connector\EDeklaracje;
 
 use App\Connector\Jpk\AuthDataDocument;
+use App\Xml\Pit28Builder;
 use App\Xml\VatUeBuilder;
 use App\Xml\XsdValidator;
 
@@ -14,6 +15,7 @@ use App\Xml\XsdValidator;
  * bajty `xml_sent` zostają nienaruszone, bez ponownej serializacji. Opublikowane XSD VAT-UE(5) i VAT-UEK(5) nie deklarują
  * `DaneAutoryzujace`, więc kontrola w pamięci to: deklaracja (bajty `xml_sent`) zgodna ze swoim XSD, element zgodny
  * z SIG-2008, dokładnie jeden i ostatni w korzeniu; odpowiedź bramki testowej potwierdza to w F5.6 (401 → nowy D-xx).
+ * Ta sama kontrola obejmuje warianty PIT-28 z `Pit28Builder::schemas` (D-96).
  */
 final readonly class EDeklaracjeDocument
 {
@@ -34,7 +36,7 @@ final readonly class EDeklaracjeDocument
             throw EDeklaracjeException::of(EDeklaracjeError::DocumentInvalid);
         }
         $root = $declaration->documentElement;
-        $schema = self::SCHEMAS[(string) $root->namespaceURI] ?? null;
+        $schema = (self::SCHEMAS + Pit28Builder::schemas())[(string) $root->namespaceURI] ?? null;
         if ($schema === null || $root->localName !== 'Deklaracja' || $root->prefix !== '' || $this->validator->validate($xmlSent, $schema) !== []) {
             throw EDeklaracjeException::of(EDeklaracjeError::DocumentInvalid);
         }

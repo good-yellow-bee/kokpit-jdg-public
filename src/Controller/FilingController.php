@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Config\ConnectorConfiguration;
+use App\Ledger\FilingRequest;
 use App\Ledger\ManualFiling;
 use App\Ledger\Periods;
 use App\Panel\CsvExport;
@@ -20,11 +21,14 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Złożenia i okresy (F2.3): rejestracja JPK_V7M albo VAT-UE złożonego poza kokpitem z UPO, ponowne otwarcie okresu
- * i zamknięcie bez korekty. Każda zmiana wymaga step-upu passkeyem (docs/security.md, „Panel”).
+ * i zamknięcie bez korekty. Każda zmiana wymaga step-upu passkeyem (docs/security.md, „Panel”). Prośba o wysyłkę
+ * złożenia (F5, D-96) tylko tworzy zatwierdzenie w `pending`; wysyłka rusza po zatwierdzeniu w `/approvals`.
  */
 final class FilingController extends AbstractController
 {
     private const UPO_TYPES = ['application/pdf','application/xml','text/xml'];
+    /** Rodzaje prośby o wysyłkę: złożenia za rok i za miesiąc. */
+    public const REQUEST_TYPES = ['JPK_EWP' => 'year','JPK_ST' => 'year','PIT_28' => 'year','JPK_V7M' => 'month','VAT_UE' => 'month'];
     /** Kolumny eksportu CSV złożeń (D-78), bez limitu wierszy listy. */
     private const EXPORT_COLUMNS = ['type','period_start','purpose','seq','status','submitted_via','reference_number','accepted_at'];
 
@@ -62,6 +66,38 @@ final class FilingController extends AbstractController
         }
         $this->addFlash('notice', 'Zapisano złożenie z UPO.');
         return $this->redirectToRoute('panel_filings');
+    }
+
+    #[Route('/filings/request', name: 'panel_filings_request', methods: ['POST'])]
+    public function requestFiling(Request $request, FilingRequest $filings): Response
+    {
+        $this->guard($request);
+        $type = $request->request->getString('type');
+        $period = trim($request->request->getString('period'));
+        $scope = self::REQUEST_TYPES[$type] ?? null;
+        try {
+            if ($scope === null) {
+                throw new \InvalidArgumentException('Nieznany rodzaj złożenia.');
+            }
+            if ($scope === 'year' && preg_match('/^\d{4}$/D', $period) !== 1) {
+                throw new \InvalidArgumentException(sprintf('%s składasz za rok: podaj RRRR.', $type));
+            }
+            if ($scope === 'month' && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/D', $period) !== 1) {
+                throw new \InvalidArgumentException(sprintf('%s składasz za miesiąc: podaj RRRR-MM.', $type));
+            }
+            $reason = trim($request->request->getString('reason'));
+            match ($type) {
+                'JPK_EWP' => $filings->jpkEwp((int) $period),
+                'JPK_ST' => $filings->jpkSt((int) $period),
+                'PIT_28' => $filings->pit28((int) $period),
+                'JPK_V7M' => $reason === '' ? $filings->jpkV7m($period . '-01') : $filings->jpkV7mCorrection($period . '-01', $reason),
+                default => $filings->vatUe($period . '-01'),
+            };
+        } catch (\InvalidArgumentException | \DomainException $exception) {
+            return $this->page($exception->getMessage());
+        }
+        $this->addFlash('notice', sprintf('Prośba o zatwierdzenie %s za %s czeka w Zatwierdzeniach.', $type, $period));
+        return $this->redirectToRoute('panel_approvals');
     }
 
     #[Route('/filings/period/{month}/reopen', name: 'panel_filings_reopen', requirements: ['month' => '\d{4}-\d{2}'], methods: ['POST'])]

@@ -58,6 +58,19 @@
         </form>
     </section>
 
+    {% set pit28review = current['pit_28.review'] %}
+    <section id="pit_28-review">
+        <h2>Przegląd doradcy PIT-28 (pit_28.review)</h2>
+        <p>Obowiązuje od: {{ pit28review ? pit28review.valid_from : 'brak; przy EDEKLARACJE_TARGET=prod prośba o PIT-28 jest zablokowana (D-96)' }}</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'pit_28.review'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>JSON: variant (np. PIT-28(28)), reviewed_on, note <textarea name="value" rows="4" cols="80" required>{{ pit28review ? pit28review.value|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) : '' }}</textarea></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
     {% set snapshot = current['chat.law_snapshot'] %}
     <section id="chat-law_snapshot">
         <h2>Snapshot prawa czatu (chat.law_snapshot)</h2>

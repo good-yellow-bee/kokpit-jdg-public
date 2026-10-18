@@ -11,6 +11,7 @@ use App\Xml\JpkBuildRefused;
 use App\Xml\JpkEwpBuilder;
 use App\Xml\JpkStBuilder;
 use App\Xml\JpkV7mBuilder;
+use App\Xml\Pit28Builder;
 use App\Xml\VatUeBuilder;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -23,7 +24,7 @@ use Symfony\Component\Uid\UuidV7;
  * idzie tą samą ścieżką tylko przy `jpk_st.enabled` = true na 31.12. roku; inaczej komunikat Q-25 bez wiersza i prośby (D-64).
  * JPK_V7M(3) za miesiąc: pierwsze złożenie (`CelZlozenia` 1) albo korekta po ponownym otwarciu okresu: `purpose` 2,
  * kolejny `seq`, `supersedes_id` do przyjętego złożenia i uzasadnienie P_ORDZU w `filing.totals` (D-65). VAT-UE(5) i
- * VAT-UEK(5) za miesiąc trasą tabeli „KOR do faktury `eu_b2b`” (D-66).
+ * VAT-UEK(5) za miesiąc trasą tabeli „KOR do faktury `eu_b2b`” (D-66). PIT-28 za rok przez `edeklaracje` (D-96).
  */
 final readonly class FilingRequest
 {
@@ -178,6 +179,12 @@ final readonly class FilingRequest
         return $this->request('JPK_ST', JpkStBuilder::SCHEMA_VERSION, $year);
     }
 
+    /** PIT-28 za rok przychodu (D-96), tylko pierwsze złożenie; zwraca id zatwierdzenia w `pending`. */
+    public function pit28(int $year): string
+    {
+        return $this->request('PIT_28', Pit28Builder::SCHEMA_VERSION_PREFIX, $year);
+    }
+
     private function request(string $type, string $schemaVersion, int $year): string
     {
         $environment = $this->configuration->environment();
@@ -191,7 +198,9 @@ final readonly class FilingRequest
             }
             $id = is_string($existing['id']) ? $existing['id'] : throw new \LogicException('Niepoprawne złożenie.');
             if (in_array($existing['status'], ['accepted', 'superseded'], true)) {
-                throw new JpkBuildRefused(sprintf('%s za %d jest przyjęty; zmiana roku to korekta (CelZlozenia 2).', $type, $year));
+                throw new JpkBuildRefused($type === 'PIT_28'
+                    ? sprintf('PIT-28 za %d jest przyjęty; korektę składasz ręcznie (D-96).', $year)
+                    : sprintf('%s za %d jest przyjęty; zmiana roku to korekta (CelZlozenia 2).', $type, $year));
             }
             if ($existing['status'] === 'rejected') {
                 // Poprawka po odrzuceniu: szkic i nowa prośba (docs/data-model.md, `rejected` → `draft`).
