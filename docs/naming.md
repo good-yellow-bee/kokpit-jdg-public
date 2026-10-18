@@ -677,6 +677,16 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Panel zdrowia konektorów (D-85): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Zdrowie (`src/Health`) | `ConnectorHealth` (`summary`, `chart`; stałe `PERIODS`, `DEFAULT_PERIOD`, `MAX_ERRORS`) |
+| Panel | `ConnectorHealthController`: trasa `panel_connectors` (`GET /connectors`, parametr `days`) |
+| Szablon | `templates/panel/connectors.html.twig`; identyfikatory `#connectors-period`, `#connector-summary`, `#connector-<konektor>`, `#connector-daily`, `#rate-blocks`, `#sync-cursors`, `#connector-errors` |
+| Indeks | `connector_call_environment_started` (migracja `Version20261026000100`) |
+| Testy | `ConnectorHealthPanelTest` |
+
 ### Płatności klientów w panelu (D-84): nazwy
 
 | Rodzaj | Nazwy |

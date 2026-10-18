@@ -183,6 +183,8 @@ Pingi wysyła tylko `kokpit-prod`: adresy pingu są w jego sejfie i w pliku host
 | zatwierdzenia w `unknown` | każde starsze niż 1 h |
 | `CONNECTORS_ENABLED` i cele konektorów | informacja, nie błąd |
 
+**Zdrowie konektorów** (D-85): strona `/connectors` panelu pokazuje wywołania, błędy, 429, czasy, blokady `rate_counter` i kursory `sync_cursor` za dziś, 7 albo 30 dni, bez ścieżek żądań.
+
 **Paczka diagnostyczna** (D-80) do własnego debugowania i wsparcia bez zdalnego dostępu: `docker compose logs --since 168h | docker compose exec -T app bin/console kokpit:diagnostics --logs=-` zapisuje `var/diagnostics/kokpit-diagnostics-<data>-<czas>.json` z prawami 0600. W środku: wersje PHP, rozszerzeń i pakietów, commit, stan migracji, wynik `/health`, kolejki Messenger, poświadczenia (rodzaj, stan i daty, bez sekretów), aktywne blokady `rate_counter`, podsumowanie `connector_call` z `--days` dni (domyślnie 7) i ostatnie 50 błędów oraz ostatnie 2000 wierszy logów. Teksty przechodzą przez `Redactor`, numery o poprawnej sumie NIP stają się `[NIP]`, a gdy skaner fixtures coś znajdzie, paczka nie powstaje. Plik wyciągasz `docker compose cp` i usuwasz po użyciu.
 
 Powiadomienia mailowe z aplikacji e-Doręczeń zostają włączone na stałe jako niezależny kanał. Do powrotu F4 to jedyny sygnał o nowym piśmie (D-29).

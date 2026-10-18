@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-85 | panel zdrowia konektorów `/connectors` (tylko odczyt): podsumowanie `connector_call` per konektor (wywołania, błędy, 429 i limit, średni i p95 czas, ostatnie wywołanie i błąd) za dziś, 7 albo 30 dni, wykres dzienny wywołań i błędów, aktywne blokady `rate_counter`, kursory `sync_cursor` i ostatnie 50 błędów bez ścieżek żądań; indeks `connector_call (environment, started_at)` | przyjęta 2026-10-18 | po F1 |
 | D-84 | lista płatności klientów w panelu `/payments` (tylko odczyt): data, id płatności i faktury FreshBooks, dokument (faktura albo wiersz ewidencji), kwota, bramka, prowizja, wypłata, kurs faktyczny, przypisanie i stan różnic kursowych; filtr `?unmatched=1` (link z liczby nieprzypisanych na stronie FreshBooks) i eksport CSV | przyjęta 2026-10-18 | po F2.2/F2.3 |
 | D-83 | lista faktur kosztowych w panelu `/costs` z eksportem CSV i akcją „Sprawdź przed przelewem”; przy `TAK` dane do przelewu (odbiorca, rachunek, kwota brutto w walucie faktury, tytuł z numerem faktury i numerem KSeF) z przyciskami kopiowania, przy `NIE` powyżej progu trzy wyjścia i zawiadomienie `wl_notice`; wynik wraca z zapisanej `verification`, bez ponownego wywołania białej listy | przyjęta 2026-10-18 | po F1 |
 | D-82 | przegląd tygodnia mailem: zadanie `notifications.weekly_digest` w poniedziałek 7:30 planuje jeden mail `weekly_digest` na tydzień ISO z liczbami otwartych, zaległych i bliskich obowiązków, zatwierdzeń `pending` i `unknown` oraz poświadczeń `expiring` i `expired` środowiska; tylko klucze i liczby, bez kwot, nazw i terminów (D-19); wysyła `notifications.dispatch` | przyjęta 2026-10-18 | po F0b |
@@ -1402,6 +1403,19 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-85 Panel zdrowia konektorów
+
+- **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Panel zdrowia konektorów” z tabeli „Ops, bezpieczeństwo, jakość” w [roadmap.md](roadmap.md) nie wymaga niczego od właściciela. Stan konektorów był dotąd widoczny tylko w paczce `kokpit:diagnostics` (D-80) i w logach.
+- **Decyzja:**
+  - Strona `/connectors` (`ConnectorHealthController`, usługa `ConnectorHealth`), tylko do odczytu, dla środowiska wdrożenia. Okres to dni kalendarzowe Europe/Warsaw do dziś: `?days=1`, `7` (domyślnie) albo `30` (`ConnectorHealth::PERIODS`); inna wartość daje domyślny okres.
+  - Podsumowanie per konektor: wywołania, błędy (HTTP ≥ 400 albo `error_code`), 429 i `rate_limited`, średni i p95 czas (`percentile_disc`), ostatnie wywołanie i ostatni błąd.
+  - Wykres słupkowy Symfony UX Chart.js (jak D-73) wywołań bez błędu i błędów per dzień, z tabelą tych samych liczb; aktywne blokady `rate_counter` (`blocked_until` w przyszłości); kursory `sync_cursor` (ostatni przebieg, sukces, backfill); ostatnie 50 błędów z hostem, statusem, kodem i `Retry-After`.
+  - Bez ścieżek żądań i skrótów treści: ścieżka może nieść NIP albo rachunek (biała lista), a do debugowania jest paczka D-80 po `Redactor`.
+  - Migracja `Version20261026000100` dodaje indeks `connector_call_environment_started` pod okna czasowe strony i paczki diagnostycznej. Link „Konektory” na pulpicie.
+- **Skutki:** `src/Health/ConnectorHealth.php`, `src/Controller/ConnectorHealthController.php`, `templates/panel/connectors.html.twig`, `templates/panel/dashboard.html.twig`, migracja `Version20261026000100`; test `ConnectorHealthPanelTest`; [operations.md](operations.md), [data-model.md](data-model.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-84 Płatności klientów w panelu
 
