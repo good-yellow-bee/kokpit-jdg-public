@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-if [ "${KOKPIT_DEPLOYMENT}" = dev ]; then
+# Hasła generowane w dev i w jednorazowym kokpit-restore (D-89); na PROD pliki hosta.
+if [ "${KOKPIT_DEPLOYMENT}" = dev ] || [ "${KOKPIT_DEPLOYMENT}" = restore ]; then
   for target in /run/owner/postgres-password /run/owner/owner-password /run/app/app-password /run/app/chat-ro-password; do
     if [ ! -s "$target" ]; then
       umask 077

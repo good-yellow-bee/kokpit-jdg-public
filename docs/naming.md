@@ -251,6 +251,7 @@ Cele są niezależne od `APP_ENV`, mają osobne zestawy poświadczeń i osobną 
 | --- | --- | --- |
 | `app:credential:register <kind> [--valid-until=<data>]`, `app:credential:smoke <kind>` | rejestracja poświadczenia i wywołanie testowe po rotacji; bez flagi `ksef_auth_cert` i `ksef_offline_cert` biorą notAfter z certyfikatu, `ksef_token_*` biorą `ksef.token_legal_valid_until`, pozostałe rodzaje wymagają flagi | [operations.md](operations.md) |
 | `app:ops:record-deploy` | wpis `ops.deployed` w `audit_log` w kroku 7 `make deploy` | [operations.md](operations.md) |
+| `app:ops:restore-check [--counts-only] [--month=RRRR-MM] [--snapshots=<plik> --snapshot=<id>] [--expected=<plik>\|-]`, `app:ops:record-restore <raport>\|-` | test odtworzenia: liczby z PROD do porównania, raport JSON z kopii w `kokpit-restore` i wpis `ops.restored` w `kokpit-prod` (D-89) | [operations.md](operations.md) |
 | `app:passkey:enrol-link`, `app:passkey:reset` | pierwszy passkey i odzyskanie dostępu przez SSH; w F0a wersja minimalna (D-28) | [security.md](security.md) |
 | `app:calendar:feed-link [--username] [--base-url] [--revoke]` | adres kanału ICS obowiązków z nowym tokenem albo wyłączenie kanału (D-77) | [security.md](security.md) |
 | `app:audit:verify [--anchor=audit-head:<sequence>:<hash>]...`, `app:files:verify` | łańcuch `audit_log` i kotwice z tagów snapshotów (D-79); hashe plików | [security.md](security.md), [operations.md](operations.md) |
@@ -676,6 +677,17 @@ Część b: sekcja niżej.
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+
+### Test odtworzenia jednym poleceniem (D-89): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Skrypt | `scripts/restore-test.sh --secrets <katalog> [--expected <plik>] [--snapshot <id>] [--repo-dir <katalog>] [--keep]`; pliki katalogu jak u usługi `backup`: `restic-password`, `restic-repository`, `s3-access-key`, `s3-secret-key` |
+| Operacje (`src/Ops`) | `RestoreCheck` (`previousMonth`, `counts`, `countsDocument`, `snapshots`, `report`, `parseCounts`, `restoredEntry`; stałe `KIND` = `kokpit.restore_check`, `COUNTS_KIND` = `kokpit.restore_counts`, `COUNTED`) |
+| Komendy | `app:ops:restore-check` (`RestoreCheckCommand`), `app:ops:record-restore` (`RecordRestoreCommand`); wpis `ops.restored` |
+| Klucze raportu | `kind`, `checked_at`, `commit`, `schema_version`, `snapshot`, `oldest_snapshot`, `files`, `audit` (`chain_valid`, `head`, `anchors`), `counts` (`month`, `restored`, `expected`, `matches`), `passed` |
+| Pliki | `var/evidence/restore/kokpit-restore-<RRRRMMDD>T<GGMMSS>Z.json` (0600, poza repo); w wolumenie `backup_state` projektu `kokpit-restore`: `snapshots.json`, `target.json`, `restore/` |
+| Testy | `RestoreCheckTest`, `RestoreScriptTest` |
 
 ### Cash-flow na 90 dni (D-88): nazwy
 

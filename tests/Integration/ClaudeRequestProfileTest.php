@@ -30,7 +30,7 @@ final class ClaudeRequestProfileTest extends ClaudeTestCase
         foreach ($bodies as $index => $body) {
             self::assertSame('POST', $requests[$index]['method']);
             self::assertSame('https://api.anthropic.com/v1/messages', $requests[$index]['url']);
-            self::assertSame(['model', 'max_tokens', 'system', 'thinking', 'output_config', 'tool_choice', 'tools', 'messages'], array_keys($body));
+            self::assertSame(['model', 'max_tokens', 'system', 'thinking', 'output_config', 'tool_choice', 'tools', 'messages', 'cache_control'], array_keys($body));
             self::assertSame(ChatRequestProfile::MODEL, $body['model']);
             self::assertSame(ClaudeTestTools::MAX_TOKENS, $body['max_tokens']);
             self::assertSame(['type' => 'adaptive', 'display' => 'omitted'], $body['thinking']);
@@ -39,7 +39,9 @@ final class ClaudeRequestProfileTest extends ClaudeTestCase
             foreach (['temperature', 'top_p', 'top_k', 'fallbacks', 'stop_sequences', 'stream'] as $forbidden) {
                 self::assertArrayNotHasKey($forbidden, $body);
             }
-            // cache_control tylko na ostatnim bloku stałego prefiksu (narzędzia, prompt, snapshot prawa).
+            // Dwa punkty cache (D-94): jawny na ostatnim bloku stałego prefiksu (narzędzia, prompt, snapshot prawa)
+            // i automatyczny na poziomie żądania dla rosnącej historii; TTL 5 min w obu, więc kolejność TTL jest poprawna.
+            self::assertSame(['type' => 'ephemeral'], $body['cache_control']);
             $system = ClaudeTestTools::objects($body, 'system');
             self::assertCount(2, $system);
             self::assertSame(ClaudeTestTools::PROMPT, $system[0]['text']);
@@ -56,6 +58,8 @@ final class ClaudeRequestProfileTest extends ClaudeTestCase
             $last = end($messages);
             self::assertIsArray($last);
             self::assertSame('user', $last['role']);
+            // Historia bez jawnych znaczników: punkt na końcu rozmowy stawia API, a zapisane wiadomości zostają bez zmian.
+            self::assertStringNotContainsString('cache_control', (string) json_encode($messages));
         }
         // Drugie żądanie niesie blok thinking z pierwszej odpowiedzi bajt w bajt, w kolejności bloków API.
         $fixture = ClaudeTestTools::objects(ClaudeTestTools::decode(ClaudeTestTools::fixture('messages-tool-use')), 'content');
@@ -76,7 +80,7 @@ final class ClaudeRequestProfileTest extends ClaudeTestCase
 
         $lines = [];
         foreach ($bodies as $index => $body) {
-            $lines[] = sprintf('request %d: keys=%s model=%s max_tokens=%s thinking=%s output_config=%s tool_choice=%s tools=%d cache_control=system[1] last_role=user sha256=%s', $index + 1, implode(',', array_keys($body)), (string) json_encode($body['model']), (string) json_encode($body['max_tokens']), (string) json_encode($body['thinking']), (string) json_encode($body['output_config']), (string) json_encode($body['tool_choice']), count(ClaudeTestTools::objects($body, 'tools')), hash('sha256', $requests[$index]['body']));
+            $lines[] = sprintf('request %d: keys=%s model=%s max_tokens=%s thinking=%s output_config=%s tool_choice=%s tools=%d cache_control=system[1]+top-level last_role=user sha256=%s', $index + 1, implode(',', array_keys($body)), (string) json_encode($body['model']), (string) json_encode($body['max_tokens']), (string) json_encode($body['thinking']), (string) json_encode($body['output_config']), (string) json_encode($body['tool_choice']), count(ClaudeTestTools::objects($body, 'tools')), hash('sha256', $requests[$index]['body']));
         }
         $lines[] = 'thinking block returned unchanged in request 2: yes';
         EvidenceArtefacts::write('cmd/claude-request-profile.txt', implode("\n", $lines) . "\n");

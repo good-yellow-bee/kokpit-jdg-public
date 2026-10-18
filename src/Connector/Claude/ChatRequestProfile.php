@@ -7,7 +7,8 @@ namespace App\Connector\Claude;
 /**
  * Profil żądania Haiku 5.5 (docs/modules/czat.md, „Profil żądań Haiku 5.5”): tylko `claude-haiku-5-5`, `thinking`
  * adaptive z `display: omitted`, jawny `output_config.effort`, `tool_choice` `auto`, bez parametrów próbkowania,
- * prefill i `fallbacks`. `cache_control` stoi na ostatnim bloku stałego prefiksu (narzędzia, prompt, snapshot prawa).
+ * prefill i `fallbacks`. Dwa punkty cache (D-94): jawny `cache_control` na ostatnim bloku stałego prefiksu (narzędzia, prompt,
+ * snapshot prawa) i automatyczny `cache_control` na poziomie żądania, który API stawia na ostatnim bloku rosnącej historii.
  */
 final readonly class ChatRequestProfile
 {
@@ -58,6 +59,7 @@ final readonly class ChatRequestProfile
             'tool_choice' => ['type' => 'auto'],
             'tools' => $tools,
             'messages' => $messages,
+            'cache_control' => ['type' => 'ephemeral'],
         ];
     }
 }
