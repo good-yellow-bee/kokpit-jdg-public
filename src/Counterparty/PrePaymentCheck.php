@@ -38,21 +38,48 @@ final readonly class PrePaymentCheck
     ) {}
 
     /**
-     * @return array{verification_id:string,result:string,warning:bool,above_threshold:bool,exits:list<string>,value_pln:string,ksef_number:?string}
+     * @return array{verification_id:string,result:string,warning:bool,above_threshold:bool,exits:list<string>,value_pln:string,ksef_number:?string,order_date:string,transfer:?array{recipient:string,account:string,amount:string,currency:string,title:string}}
      */
     public function check(string $invoiceId, string $account, string $orderDate): array
     {
         $cost = $this->cost($invoiceId);
         $verification = $this->verifier->checkAccount($cost['counterparty_id'], $account, $orderDate);
+        $outcome = $this->outcome($invoiceId, $verification['id']);
+        $this->audit->append('cost.pre_payment_checked', ['result' => $outcome['result'],'order_date' => $orderDate,'above_threshold' => $outcome['above_threshold']], $cost['environment'], 'invoice', $invoiceId, null);
+        return $outcome;
+    }
+
+    /**
+     * Wynik zapisanego sprawdzenia rachunku dla kosztu, bez wywołania białej listy (panel `/costs`, D-83). Przy `TAK`
+     * dochodzą dane do przelewu: odbiorca, sprawdzony rachunek, kwota brutto w walucie faktury i tytuł z numerem
+     * faktury, a przy fakturze z KSeF także jej numerem KSeF (art. 108g ustawy o VAT od 1.01.2027).
+     *
+     * @return array{verification_id:string,result:string,warning:bool,above_threshold:bool,exits:list<string>,value_pln:string,ksef_number:?string,order_date:string,transfer:?array{recipient:string,account:string,amount:string,currency:string,title:string}}
+     */
+    public function outcome(string $invoiceId, string $verificationId): array
+    {
+        $cost = $this->cost($invoiceId);
+        $row = $this->db->fetchAssociative(
+            "SELECT result,bank_account,checked_for_date FROM verification WHERE id=? AND environment=? AND counterparty_id=? AND source='white_list' AND bank_account IS NOT NULL",
+            [$verificationId, $cost['environment'], $cost['counterparty_id']],
+        );
+        if ($row === false || !is_string($row['result']) || !is_string($row['bank_account']) || !is_string($row['checked_for_date'])) {
+            throw new \DomainException('Nie ma takiego sprawdzenia rachunku dla tego kosztu.');
+        }
         $value = $this->valuePln($cost);
-        $threshold = $this->threshold($orderDate);
-        $warning = $verification['result'] !== 'valid';
-        $above = $value->isGreaterThan($threshold);
-        $this->audit->append('cost.pre_payment_checked', ['result' => $verification['result'],'order_date' => $orderDate,'above_threshold' => $above], $cost['environment'], 'invoice', $invoiceId, null);
+        $warning = $row['result'] !== 'valid';
+        $above = $value->isGreaterThan($this->threshold($row['checked_for_date']));
         return [
-            'verification_id' => $verification['id'],'result' => $verification['result'],'warning' => $warning,'above_threshold' => $above,
-            'exits' => $warning && $above ? self::EXITS : [],'value_pln' => (string) $value,'ksef_number' => $warning ? null : $cost['ksef_number'],
+            'verification_id' => $verificationId,'result' => $row['result'],'warning' => $warning,'above_threshold' => $above,
+            'exits' => $warning && $above ? self::EXITS : [],'value_pln' => (string) $value,'ksef_number' => $warning ? null : $cost['ksef_number'],'order_date' => $row['checked_for_date'],
+            'transfer' => $warning ? null : ['recipient' => $cost['name'],'account' => $row['bank_account'],'amount' => $cost['gross_total'],'currency' => $cost['currency'],'title' => self::title($cost['invoice_number'], $cost['ksef_number'])],
         ];
+    }
+
+    /** Tytuł przelewu: numer faktury, a przy fakturze z KSeF także numer KSeF. */
+    public static function title(string $invoiceNumber, ?string $ksefNumber): string
+    {
+        return 'Faktura ' . $invoiceNumber . ($ksefNumber === null ? '' : '; KSeF ' . $ksefNumber);
     }
 
     /**
@@ -110,18 +137,18 @@ final readonly class PrePaymentCheck
         return BigDecimal::of($value);
     }
 
-    /** @return array{environment:string,version:int,counterparty_id:string,currency:string,gross_total:string,transaction_date:string,ksef_number:?string} */
+    /** @return array{environment:string,version:int,counterparty_id:string,name:string,invoice_number:string,currency:string,gross_total:string,transaction_date:string,ksef_number:?string} */
     private function cost(string $invoiceId): array
     {
-        $row = $this->db->fetchAssociative("SELECT i.environment,i.version,i.counterparty_id,i.currency,i.gross_total,COALESCE(i.tax_point_date,i.issue_date) AS transaction_date,i.ksef_number,c.country,c.nip
+        $row = $this->db->fetchAssociative("SELECT i.environment,i.version,i.counterparty_id,i.invoice_number,i.currency,i.gross_total,COALESCE(i.tax_point_date,i.issue_date) AS transaction_date,i.ksef_number,c.name,c.country,c.nip
             FROM invoice i JOIN counterparty c ON c.id=i.counterparty_id WHERE i.id=? AND i.environment=? AND i.direction='cost'", [$invoiceId, $this->configuration->environment()]);
-        if ($row === false || !is_string($row['environment']) || !is_string($row['counterparty_id']) || !is_string($row['currency']) || !is_string($row['gross_total']) || !is_string($row['transaction_date'])) {
+        if ($row === false || !is_string($row['environment']) || !is_string($row['counterparty_id']) || !is_string($row['currency']) || !is_string($row['gross_total']) || !is_string($row['transaction_date']) || !is_string($row['invoice_number']) || !is_string($row['name'])) {
             throw new \DomainException('Nie ma takiego kosztu.');
         }
         if ($row['country'] !== 'PL' || !is_string($row['nip'])) {
             throw new \DomainException('Sprawdzenie przed przelewem dotyczy polskiego dostawcy z NIP.');
         }
-        return ['environment' => $row['environment'],'version' => is_numeric($row['version']) ? (int) $row['version'] : 1,'counterparty_id' => $row['counterparty_id'],'currency' => $row['currency'],
+        return ['environment' => $row['environment'],'version' => is_numeric($row['version']) ? (int) $row['version'] : 1,'counterparty_id' => $row['counterparty_id'],'name' => $row['name'],'invoice_number' => $row['invoice_number'],'currency' => $row['currency'],
             'gross_total' => $row['gross_total'],'transaction_date' => $row['transaction_date'],'ksef_number' => is_string($row['ksef_number']) ? $row['ksef_number'] : null];
     }
 }

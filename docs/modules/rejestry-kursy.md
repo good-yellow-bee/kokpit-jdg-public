@@ -151,11 +151,11 @@ Każde sprawdzenie dodaje nowy, niezmienny wiersz `verification`. Zatwierdzenie 
 
 ## Sprawdzenie przed przelewem
 
-Płacisz ręcznie, więc wyzwalaczem jest akcja „Sprawdź przed przelewem” przy fakturze kosztowej polskiego dostawcy.
+Płacisz ręcznie, więc wyzwalaczem jest akcja „Sprawdź przed przelewem” przy fakturze kosztowej polskiego dostawcy na stronie `/costs` panelu (D-83).
 
 1. Kokpit wysyła `check` z NIP dostawcy i rachunkiem z faktury na dzień zlecenia przelewu.
 2. Wynik trafia do `verification` z `bank_account` i `checked_for_date`.
-3. `TAK`: panel pokazuje dane do przelewu, a od 1.01.2027 także numer KSeF faktury do tytułu przelewu.
+3. `TAK`: panel pokazuje dane do przelewu z przyciskami kopiowania: odbiorcę, sprawdzony rachunek, kwotę brutto w walucie faktury i tytuł `Faktura <numer>; KSeF <numer KSeF>` (numer KSeF, gdy faktura go ma; obowiązkowy od 1.01.2027). Wynik czyta zapisaną `verification`, więc odświeżenie nie woła białej listy (D-83).
 4. `NIE`: panel pokazuje ostrzeżenie i skutki z tabeli niżej.
 
 | Reguła | Źródło |

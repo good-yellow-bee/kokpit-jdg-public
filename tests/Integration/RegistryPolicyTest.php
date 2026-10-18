@@ -50,6 +50,7 @@ final class RegistryPolicyTest extends DatabaseTestCase
         $tools->play('WhiteList/check-supplier-account-32-nie.json');
         $check = $tools->prePayment()->check($cost, FictionalIdentifiers::account(32), '2026-11-04');
         self::assertSame(['invalid', true, false, []], [$check['result'], $check['warning'], $check['above_threshold'], $check['exits']]);
+        self::assertNull($check['transfer']);
         self::assertSame(0, $tools->recordings?->remaining());
         self::assertSame(0, F1TestTools::count($this->db(), "SELECT count(*) FROM obligation WHERE type='wl_notice'"));
     }
@@ -62,6 +63,8 @@ final class RegistryPolicyTest extends DatabaseTestCase
         $tools->responses = [RegistryTestTools::check(true, 'FIKC-0103')];
         $check = $tools->prePayment(['EUR' => ['2026-10-29' => '4.2500']])->check($cost, FictionalIdentifiers::account(33), '2026-11-04');
         self::assertSame(['valid', false, true, [], '15300.00', 'FIKCYJNY-KSEF-0201'], [$check['result'], $check['warning'], $check['above_threshold'], $check['exits'], $check['value_pln'], $check['ksef_number']]);
+        // Dane do przelewu (D-83): kwota w walucie faktury, tytuł z numerem faktury i numerem KSeF.
+        self::assertSame(['recipient' => 'Fikcyjny kontrahent','account' => FictionalIdentifiers::account(33),'amount' => '3600.00','currency' => 'EUR','title' => 'Faktura FV/FIKC/3600.00; KSeF FIKCYJNY-KSEF-0201'], $check['transfer']);
     }
 
     public function testManualEvidenceForGbClientHasFileAndEmptySource(): void
