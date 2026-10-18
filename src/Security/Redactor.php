@@ -23,7 +23,8 @@ final class Redactor
             '~\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b~',
             '~\bBearer\s+[^\s"<>]+~i',
             '~\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b~',
-            '~(?<!\d)\d{11}(?!\d)~',
+            // PESEL: 11 cyfr bez sąsiedniej litery, żeby nie maskować cyfr w UUID (np. `…-a36971627276`).
+            '~(?<![0-9A-Za-z])\d{11}(?![0-9A-Za-z])~',
             '~(?<!\d)(?:\d[ ]?){26}(?!\d)~',
             '~\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b~',
             '~(?<=/passkey/enrol/)[A-Za-z0-9_-]{43}~',
