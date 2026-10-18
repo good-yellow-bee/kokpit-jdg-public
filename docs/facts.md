@@ -201,6 +201,8 @@ Stan każdego aktu sprawdzony w API ELI Sejmu 8.10.2026. Przed użyciem przepisu
 | VAT-UE(5): P_Uc w pełnych złotych (`etd:TKwotaC`, czyli `xsd:integer`) | [schemat VAT-UE(5)](http://crd.gov.pl/wzor/2021/01/12/10293/schemat.xsd), [ElementarneTypyDanych v6-0E](http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2020/03/11/eD/DefinicjeTypy/ElementarneTypyDanych_v6-0E.xsd) | 2026-10-08 | krok 0 F5 | F5 |
 | Kanał VAT-UE z danymi autoryzującymi: źródła w sekcji „Kanał VAT-UE” niżej | [struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/) | 2026-10-08 | krok 0 F5 | F5 |
 | PIT-28(25) też dopuszcza dane autoryzujące | [struktury e-Deklaracji](https://podatki-arch.mf.gov.pl/e-deklaracje/dokumentacja-it/struktury-dokumentow-xml/) | 2026-10-08 | przy decyzji o automatyzacji PIT-28 | poza fazami |
+| PIT-28(27) dla przychodu od 2025: wzór [2025/10/10/13916](http://crd.gov.pl/wzor/2025/10/10/13916/schemat.xsd), `kodSystemowy` `PIT-28 (27)`, `wersjaSchemy` 1-1E, `Rok` od 2025; importuje PIT/O(30), PIT/D(31), PIT-2K(9), PIT-28/B(20), ORD-ZU(3), KodyUrzedowSkarbowychExWUS v8 i KodyWalut v2. Formularz papierowy PIT-28(27) wersja 07 opisuje pozycje | [schemat PIT-28(27)](http://crd.gov.pl/wzor/2025/10/10/13916/schemat.xsd), [formularze PIT](https://www.podatki.gov.pl/podatki-osobiste/pit/formularze-pit) | 2026-10-18 | przy nowym wariancie | poza fazami (D-96) |
+| Wariant PIT-28 dla przychodu 2026: na crd.gov.pl nie było XSD PIT-28(28) (sprawdzone 18.10.2026); do publikacji prośba o PIT-28 za 2026 odmawia | [strona MF PIT-28](https://www.gov.pl/web/finanse/pit-28) | 2026-10-18 | 2026-12-01 | poza fazami (D-96) |
 
 ### Rejestry i kursy NBP
 

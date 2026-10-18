@@ -61,7 +61,7 @@ Konektor to adapter jednego systemu w `src/Connector/<System>`, ze slugiem z kon
 
 **Schematy**
 
-- Wszystkie schematy leżą w `resources/xsd`: FA(3) 1-0E z importami, JPK_V7M(3), JPK_EWP(4), JPK_ST(1), VAT-UE(5)_v2-0E, VAT-UEK(5)_v2-1E, SIG-2008_v2-0 i metadane `InitUpload`.
+- Wszystkie schematy leżą w `resources/xsd`: FA(3) 1-0E z importami, JPK_V7M(3), JPK_EWP(4), JPK_ST(1), VAT-UE(5)_v2-0E, VAT-UEK(5)_v2-1E, PIT-28(27)_v1-1E z importami (D-96), SIG-2008_v2-0 i metadane `InitUpload`.
 - Źródła schematów: [docs/modules/ksef.md](../../docs/modules/ksef.md) i [docs/modules/jpk.md](../../docs/modules/jpk.md).
 - Manifest w `resources/xsd` podaje dla każdego pliku adres źródła, datę pobrania i sha256. Test sprawdza sumy.
 - Manifest to `resources/xsd/checksums.json`: lista wpisów `file`, `source`, `fetched_on`, `sha256` i opcjonalnie `locations`, czyli adresy `schemaLocation`, pod którymi inne schematy importują plik.

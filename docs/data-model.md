@@ -755,6 +755,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | `company.zus_account` | rachunek składkowy ZUS | [compliance-calendar.md](compliance-calendar.md) |
 | `ryczalt.service_map` | usługa → PKWiU 2015 → stawka; mapowanie pozycji FreshBooks | Q-22, [tax-rules.md](tax-rules.md) |
 | `ryczalt.advance_frequency` | zaliczka co miesiąc albo co kwartał | Q-17 |
+| `taxpayer.residence_address` | adres zamieszkania podatnika do PIT-28 część B: `province`, `county`, `municipality`, `street` (opcjonalnie), `building`, `unit` (opcjonalnie), `city`, `postal_code`; obowiązuje wiersz z 31 grudnia roku przychodu | D-96, [modules/jpk.md](modules/jpk.md) |
 | `ryczalt.eligibility` | limit prawa do ryczałtu, próg z projektu (obserwacja) i limit wpłaty co kwartał; wiersz domyślny z migracji (D-76) | Q-38, D-76, [tax-rules.md](tax-rules.md) |
 | `zus.parameters` | podstawy i kwoty składek na rok | [tax-rules.md](tax-rules.md) |
 | `zus.variant` | wariant składek społecznych | Q-16 |

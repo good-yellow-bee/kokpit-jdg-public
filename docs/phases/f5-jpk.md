@@ -252,6 +252,14 @@ Wiersze `live` wymagają `CONNECTORS_ENABLED=1` i sejfu testowego. W CI uruchami
 | `edeklaracje-te-vat-uek` (`live`): VAT-UEK z danymi autoryzującymi | `vendor/bin/phpunit --testsuite live --filter EDeklaracjeTeVatUekTest` | UPO bez 410 i 418; inaczej `rejected` i nowy rekord D-xx zastępujący D-27 | `junit.xml`: `EDeklaracjeTeVatUek*`; `cmd/edeklaracje-te-vat-uek.txt` |
 | `edeklaracje-te-fixtures`: nagrania | przebieg live zapisuje nagrania przez `Scrubber` i skaner do `var/live-recordings/EDeklaracje` (D-68); `vendor/bin/phpunit --filter EDeklaracjeLiveRecording` odtwarza `live-send`, `live-upo`, `live-uek-send`, `live-uek-upo` przez bramkę | VAT-UE i VAT-UEK `accepted` z UPO systemu testowego; skaner bez trafień; testy F5.5 przechodzą | `junit.xml`: `EDeklaracjeLiveRecording*` |
 
+### PIT-28 (D-96)
+
+| Kryterium | Komenda / kroki | Oczekiwany wynik | Dowód |
+| --- | --- | --- | --- |
+| `pit-28-golden`: PIT-28(27) z ewidencji | `vendor/bin/phpunit --filter Pit28Golden`: fikcyjny rok 2025 (`Pit28TestTools`), wariant kwartalny, stawka 2%, brak adresu zamieszkania, rok 2026 | złoty plik zgodny bajt w bajt i z XSD PIT-28(27); kwartał wypełnia P_241, P_244, P_247, P_250 i P_267; 2%, brak adresu i rok bez wariantu → odmowa z komunikatem | `junit.xml`: `Pit28Golden*`; `golden/pit-28-golden.diff` |
+| `pit-28-send-accepted`: wysyłka PIT-28 | `vendor/bin/phpunit --filter Pit28SendAccepted`: `FakeEDeklaracjeGateway` (`soap-send`, `soap-upo-200`) | `accepted` z UPO, obowiązek `pit_28` roku `done`; `DaneAutoryzujace` ostatnim dzieckiem korzenia; payload bez nich zgodny z XSD; druga prośba po przyjęciu odmawia | `junit.xml`: `Pit28SendAccepted*` |
+| `edeklaracje-te-pit-28` (`live`): PIT-28 na bramce testowej | `vendor/bin/phpunit --testsuite live --filter EDeklaracjeTePit28Test` | UPO i `accepted`; przy odrzuceniu kod statusu bramki w artefakcie | `junit.xml`: `EDeklaracjeTePit28*`; `cmd/edeklaracje-te-pit-28.txt`; nagrania `live-pit28-send`, `live-pit28-upo` w `var/live-recordings/EDeklaracje` |
+
 ### Go-live w kryteriach
 
 Wiersze `[manual]` wynikają z bramek D-30 i z pierwszych złożeń PROD, nie z testów.

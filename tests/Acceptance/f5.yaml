@@ -45,3 +45,7 @@ criteria:
   - { key: jpk-te-tls, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeTlsTest', junit: true }
   - { key: jpk-te-fixtures, runner: ci, command: 'vendor/bin/phpunit --filter JpkLiveRecording', junit: true }
   - { key: jpk-te-v7m-upo, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter JpkTeV7mUpoTest', junit: true }
+  # PIT-28 przez e-Deklaracje (D-96): generator PIT-28(27), wysyłka na FakeEDeklaracjeGateway i przebieg na bramce testowej.
+  - { key: pit-28-golden, runner: ci, command: 'vendor/bin/phpunit --filter Pit28Golden', junit: true }
+  - { key: pit-28-send-accepted, runner: ci, command: 'vendor/bin/phpunit --filter Pit28SendAccepted', junit: true }
+  - { key: edeklaracje-te-pit-28, runner: live, command: 'vendor/bin/phpunit --testsuite live --filter EDeklaracjeTePit28Test', junit: true }

@@ -8,6 +8,7 @@ use App\Connector\Jpk\AuthDataDocument;
 use App\Connector\Jpk\JpkInitUpload;
 use App\Invoice\Fa3Reader;
 use App\Ledger\JpkEwpSchema;
+use App\Xml\Pit28Builder;
 use App\Xml\XsdCatalog;
 use App\Xml\XsdValidator;
 use PHPUnit\Framework\TestCase;
@@ -31,7 +32,7 @@ final class XsdInventoryTest extends TestCase
     public static function roots(): iterable
     {
         // Schematy główne dokumentów urzędowych i metadanych (D-63); importy rozwiązuje loader z manifestu.
-        foreach ([Fa3Reader::SCHEMA, JpkEwpSchema::SCHEMA, 'Schemat_JPK_V7M(3)_v1-0E.xsd', 'Schemat_JPK_ST(1)_v1-2.xsd', 'VAT-UE(5)_v2-0E.xsd', 'VAT-UEK(5)_v2-1E.xsd', AuthDataDocument::SCHEMA, JpkInitUpload::SCHEMA, 'GateService.xsd'] as $root) {
+        foreach ([Fa3Reader::SCHEMA, JpkEwpSchema::SCHEMA, 'Schemat_JPK_V7M(3)_v1-0E.xsd', 'Schemat_JPK_ST(1)_v1-2.xsd', 'VAT-UE(5)_v2-0E.xsd', 'VAT-UEK(5)_v2-1E.xsd', Pit28Builder::SCHEMA_27, AuthDataDocument::SCHEMA, JpkInitUpload::SCHEMA, 'GateService.xsd'] as $root) {
             yield $root => [$root];
         }
     }

@@ -123,7 +123,7 @@ final class JpkSendTestTools
             $clock,
             $this->vatUe,
             new VatUeK12Gate($db),
-            $this->pit28 = new Pit28Builder($db, ObligationTestTools::tax($db, $clock), $configuration, $catalog),
+            $this->pit28 = new Pit28Builder($db, ObligationTestTools::tax($db, $clock), $configuration, $catalog, JpkTestTools::taxpayer($db, $clock, $secrets), $settings, $validator),
         )]);
         $this->transitions = new ApprovalTransitions($db, $this->audit, $clock, $this->subjects);
         $this->notifications = new ApprovalNotifications($db, $clock);
