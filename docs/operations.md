@@ -86,6 +86,7 @@ Cele konektorów są niezależne od `APP_ENV` ([architecture.md](architecture.md
 - `make rollback` wymaga obu poprzednich `APP_IMAGE` i `PROXY_IMAGE` z tagiem sha wskazanym przez poprzedni `ops.deployed`. Sprawdza obecność obrazów lokalnie, czyści cache i uruchamia je bez budowy ani pobierania. Odtworzenie zrzutu przy niezgodnej migracji pozostaje osobnym krokiem operatora.
 - Na laptopie `kokpit-dev` startuje przez `docker compose up -d` (oba pliki z `COMPOSE_FILE`) z `KOKPIT_DEPLOYMENT=dev` i migracją z kroku 5. Kroki 3, 4 i 7 odpadają.
 - Po zmianie zasobów w dev przebuduj i odtwórz `proxy` (`docker compose up -d --build proxy`), żeby nginx serwował aktualne skompilowane pliki.
+- Po pierwszym wdrożeniu i po odtworzeniu na nowym hoście strona `/setup` panelu („Pierwsze uruchomienie”, D-91) pokazuje brakujące ustawienia, poświadczenia i test powiadomień, z linkami do formularzy.
 
 ## Messenger
 
