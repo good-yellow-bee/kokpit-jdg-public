@@ -249,6 +249,10 @@ Bramki działają przy prośbie zatwierdzenia ([approval-gate.md](approval-gate.
 
 JPK_EWP(4) powstaje tylko z `revenue_entry`, więc nie czeka na bilans otwarcia. Bilans potwierdzasz w PROD przy go-live JPK_V7M(3), czyli po JPK_EWP ([operations.md](operations.md)).
 
+## Zamknięcie roku
+
+Strona `/year-close` panelu (D-86) zbiera rok N w jednym miejscu: obowiązki roczne z terminem w roku N+1, stan 12 miesięcy, złożenia z plikami XML i UPO, przychód per miesiąc i stawka oraz klucze `setting` bez wiersza od 1.01 roku N+1. Strona tylko pokazuje stan. Archiwum `kokpit-rok-<N>.zip` ma zestawienia CSV, ewidencję roku i pliki złożeń sprawdzone sha256.
+
 ## Blokada okresu
 
 Okres to miesiąc z kluczem `period_start`. Stan zmienia się według tabeli.

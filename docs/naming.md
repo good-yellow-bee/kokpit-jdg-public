@@ -677,6 +677,16 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Kreator zamknięcia roku (D-86): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Ewidencja (`src/Ledger`) | `YearClose` (`checklist`, `archive`, `annualRules`; stała `FIRST_YEAR`) |
+| Panel | `YearCloseController`: trasy `panel_year_close` (`GET /year-close`, parametr `year`), `panel_year_close_archive` (`GET /year-close/{year}.zip`) |
+| Archiwum | `kokpit-rok-<rok>.zip`: `obowiazki-roczne.csv`, `miesiace.csv`, `zlozenia.csv`, `przychody-miesiecznie.csv`, `ewidencja-<rok>.csv`, katalog `zlozenia/<typ>-<okres>-<cel>-<seq>/` |
+| Szablon | `templates/panel/year_close.html.twig`; identyfikatory `#year-close-archive`, `#year-close-years`, `#year-close-summary`, `#year-close-obligations`, `#year-obligation-<id>`, `#year-close-months`, `#year-month-<RRRR-MM>`, `#year-close-filings`, `#year-filing-<id>`, `#year-close-revenue`, `#year-close-settings` |
+| Testy | `YearClosePanelTest` |
+
 ### Panel zdrowia konektorów (D-85): nazwy
 
 | Rodzaj | Nazwy |
