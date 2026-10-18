@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Cash-flow – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Cash-flow na {{ horizon }} dni</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a href="{{ path('panel_taxes') }}">Podatki</a> · <a href="{{ path('panel_payments') }}">Płatności</a> · <a href="{{ path('panel_costs') }}">Koszty</a></nav>
+    <p>Od {{ flow.today }} do {{ flow.until }}. Prognoza, nie porada: kokpit nie przelicza walut, więc saldo dotyczy tylko kwot w PLN. Kwotę do odłożenia na ryczałt i zdrowotną pokazuje strona <a href="{{ path('panel_taxes') }}">Podatki</a>.</p>
+
+    <section id="cashflow-balance">
+        <h2>Saldo w PLN</h2>
+        <table>
+            <tbody>
+                <tr><th>Należności od klientów (PLN)</th><td id="cashflow-receivables-pln">{{ flow.pln.receivables }}</td></tr>
+                <tr><th>Obowiązki z kwotą do {{ flow.until }}, z zaległymi</th><td id="cashflow-obligations-pln">−{{ flow.pln.obligations }}</td></tr>
+                <tr><th>Koszty do zapłaty (PLN)</th><td id="cashflow-payables-pln">−{{ flow.pln.payables }}</td></tr>
+                <tr><th>Saldo</th><td id="cashflow-balance-pln"><strong>{{ flow.pln.balance }}</strong></td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="cashflow-obligations">
+        <h2>Obowiązki z kwotą</h2>
+        {% if flow.by_month is empty %}<p>Brak otwartych obowiązków z kwotą w horyzoncie.</p>{% else %}
+        <table>
+            <thead><tr><th>Miesiąc</th><th>Obowiązek</th><th>Liczba</th><th>Kwota zł</th></tr></thead>
+            <tbody>
+            {% for row in flow.by_month %}<tr class="cashflow-month"><td>{{ row.month }}</td><td>{{ row.type }}</td><td>{{ row.items }}</td><td>{{ row.amount }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        <ul>
+            {% for obligation in flow.obligations %}<li id="cashflow-obligation-{{ obligation.id }}"><a href="{{ path('panel_calendar') }}#obligation-{{ obligation.id }}">{{ obligation.due_date }}</a>{% if obligation.overdue %} <strong>zaległy</strong>{% endif %}: {{ obligation.type }}{% if obligation.period_start %} ({{ obligation.period_start }}){% endif %}, {{ obligation.amount }} zł</li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% if flow.without_amount is not empty %}
+            <p id="cashflow-without-amount">Bez kwoty jeszcze ({{ flow.without_amount|length }}), więc poza saldem:
+                {% for obligation in flow.without_amount %}{% if not loop.first %}, {% endif %}{{ obligation.type }} {{ obligation.due_date }}{% endfor %}.</p>
+        {% endif %}
+    </section>
+
+    <section id="cashflow-receivables">
+        <h2>Należności od klientów</h2>
+        {% if flow.receivable_totals is empty %}<p>Brak niezapłaconych faktur sprzedaży.</p>{% else %}
+        <p>{% for total in flow.receivable_totals %}{% if not loop.first %} · {% endif %}<span class="cashflow-total">{{ total.outstanding }} {{ total.currency }} ({{ total.items }})</span>{% endfor %}</p>
+        <table>
+            <thead><tr><th>Faktura</th><th>Data</th><th>Klient</th><th>Brutto</th><th>Zapłacono</th><th>Do zapłaty</th></tr></thead>
+            <tbody>
+            {% for invoice in flow.receivables %}<tr id="cashflow-receivable-{{ invoice.id }}"><td>{{ invoice.invoice_number }}</td><td>{{ invoice.issue_date }}</td><td>{{ invoice.counterparty_name }}</td><td>{{ invoice.gross_total }} {{ invoice.currency }}</td><td>{{ invoice.paid }}</td><td class="outstanding">{{ invoice.outstanding }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% if flow.receivables|length >= max_rows %}<p>Lista pokazuje {{ max_rows }} najstarszych faktur; sumy obejmują wszystkie.</p>{% endif %}
+        {% endif %}
+    </section>
+
+    <section id="cashflow-payables">
+        <h2>Koszty do zapłaty</h2>
+        {% if flow.payable_totals is empty %}<p>Brak niezapłaconych kosztów.</p>{% else %}
+        <p>{% for total in flow.payable_totals %}{% if not loop.first %} · {% endif %}<span class="cashflow-total">{{ total.outstanding }} {{ total.currency }} ({{ total.items }})</span>{% endfor %}</p>
+        <table>
+            <thead><tr><th>Faktura</th><th>Data</th><th>Dostawca</th><th>Brutto</th><th>Przegląd</th></tr></thead>
+            <tbody>
+            {% for invoice in flow.payables %}<tr id="cashflow-payable-{{ invoice.id }}"><td>{{ invoice.invoice_number }}</td><td>{{ invoice.issue_date }}</td><td>{{ invoice.counterparty_name }}</td><td>{{ invoice.gross_total }} {{ invoice.currency }}</td><td>{{ invoice.cost_review ?? '–' }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% if flow.payables|length >= max_rows %}<p>Lista pokazuje {{ max_rows }} najstarszych kosztów; sumy obejmują wszystkie.</p>{% endif %}
+        {% endif %}
+    </section>
+{% endblock %}
