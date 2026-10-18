@@ -14,10 +14,11 @@ final readonly class PasskeyEnrollmentService
 
     /**
      * `$additional`: drugi passkey z panelu po step-upie (F0b); bez niego link wydaje tylko SSH przy braku passkeya.
+     * `$kind`: rodzaj uwierzytelniacza linku (D-90); ceremonia rejestracji i nowy wiersz `webauthn_credential` biorą go z `app_user`.
      *
      * @return array{user_id: string, token: string, expires_at: \DateTimeImmutable}
      */
-    public function issue(string $username, string $displayName, bool $revokeCredentials = false, bool $additional = false): array
+    public function issue(string $username, string $displayName, bool $revokeCredentials = false, bool $additional = false, AuthenticatorKind $kind = AuthenticatorKind::Passkey): array
     {
         $user = $this->connection->fetchAssociative('SELECT id FROM app_user WHERE username = :username', ['username' => $username]);
         $userId = is_array($user) && is_string($user['id'] ?? null) ? $user['id'] : UuidV7::generate($this->clock->now());
@@ -26,7 +27,7 @@ final readonly class PasskeyEnrollmentService
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
         $hash = hash('sha256', $token);
 
-        $this->connection->transactional(function () use ($user, $userId, $username, $displayName, $now, $expires, $hash, $revokeCredentials, $additional): void {
+        $this->connection->transactional(function () use ($user, $userId, $username, $displayName, $now, $expires, $hash, $revokeCredentials, $additional, $kind): void {
             if ($user === false || $user === []) {
                 $this->connection->insert('app_user', [
                     'id' => $userId,
@@ -46,6 +47,7 @@ final readonly class PasskeyEnrollmentService
                 'enrollment_token_hash' => $hash,
                 'enrollment_expires_at' => $expires->format('Y-m-d H:i:sP'),
                 'enrollment_used_at' => null,
+                'enrollment_kind' => $kind->value,
                 'updated_at' => $now->format('Y-m-d H:i:sP'),
             ], ['id' => $userId]);
         });
@@ -53,11 +55,11 @@ final readonly class PasskeyEnrollmentService
         return ['user_id' => $userId, 'token' => $token, 'expires_at' => $expires];
     }
 
-    /** @return array{id: string, username: string, display_name: string}|null */
+    /** @return array{id: string, username: string, display_name: string, kind: AuthenticatorKind}|null */
     public function consumeableUser(string $token): ?array
     {
         $user = $this->connection->fetchAssociative(
-            'SELECT id, username, display_name FROM app_user WHERE enrollment_token_hash = :hash AND enrollment_used_at IS NULL AND enrollment_expires_at > :now AND disabled_at IS NULL',
+            'SELECT id, username, display_name, enrollment_kind FROM app_user WHERE enrollment_token_hash = :hash AND enrollment_used_at IS NULL AND enrollment_expires_at > :now AND disabled_at IS NULL',
             ['hash' => hash('sha256', $token), 'now' => $this->clock->now()->format('Y-m-d H:i:sP')],
         );
 
@@ -65,7 +67,9 @@ final readonly class PasskeyEnrollmentService
             return null;
         }
 
-        return ['id' => $user['id'], 'username' => $user['username'], 'display_name' => $user['display_name']];
+        $kind = AuthenticatorKind::tryFrom(is_string($user['enrollment_kind'] ?? null) ? $user['enrollment_kind'] : '') ?? AuthenticatorKind::Passkey;
+
+        return ['id' => $user['id'], 'username' => $user['username'], 'display_name' => $user['display_name'], 'kind' => $kind];
     }
 
 }

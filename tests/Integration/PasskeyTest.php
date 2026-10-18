@@ -70,8 +70,17 @@ final class PasskeyTest extends WebTestCase
             self::assertSame(0, $tester->execute([]));
             self::assertStringStartsWith('http://localhost/passkey/enrol/', $tester->getDisplay());
         }
-        self::assertSame(2, $this->db->fetchOne("SELECT count(*) FROM audit_log WHERE action='auth.recovery_link_issued'"));
-        self::assertSame(1, $this->db->fetchOne("SELECT count(*) FROM audit_log WHERE action='auth.passkey_revoked'"));
+        // Odzyskanie na klucz FIDO2 (D-90): link otwiera ceremonię `cross-platform`.
+        $tester = new CommandTester($application->find('app:passkey:reset'));
+        self::assertSame(0, $tester->execute(['--security-key' => true]));
+        self::assertSame('security_key', $this->db->fetchOne("SELECT enrollment_kind FROM app_user WHERE username='owner'"));
+        self::assertSame(3, $this->db->fetchOne("SELECT count(*) FROM audit_log WHERE action='auth.recovery_link_issued'"));
+        self::assertSame(2, $this->db->fetchOne("SELECT count(*) FROM audit_log WHERE action='auth.passkey_revoked'"));
+        self::assertSame(['passkey','passkey','security_key'], $this->db->fetchFirstColumn("SELECT details->>'kind' FROM audit_log WHERE action='auth.recovery_link_issued' ORDER BY sequence"));
+        $this->client->request('GET', '/passkey/enrol/' . substr(trim($tester->getDisplay()), strlen('http://localhost/passkey/enrol/')));
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('#security-key-hint');
+        self::assertSame('/passkey/enrol/security-key/options', $this->client->getCrawler()->filter('#passkey-enrol')->attr('data-options'));
     }
     public function testAnonymousPanelRedirectAndCsrfAreEnforced(): void
     {

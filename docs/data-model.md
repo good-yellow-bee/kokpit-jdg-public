@@ -793,6 +793,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | `display_name` | text | nazwa w panelu |
 | `disabled_at` | timestamptz null | wyłączenie |
 | `calendar_feed_token_hash` | char(64) null, unikalne | sha256 tokena adresu kanału ICS obowiązków; pusty to kanał wyłączony (D-77) |
+| `enrollment_kind` | text null `CHECK` | rodzaj uwierzytelniacza aktywnego linku rejestracji: `passkey` albo `security_key`; czyszczony po użyciu (D-90) |
 
 Jeden użytkownik. Tabela istnieje, bo `approval`, `audit_log` i `draft` zapisują aktora.
 
@@ -806,6 +807,7 @@ Jeden użytkownik. Tabela istnieje, bo `approval`, `audit_log` i `draft` zapisuj
 | `sign_count` | bigint | licznik podpisów |
 | `transports`, `aaguid` | jsonb, uuid | dane uwierzytelniacza |
 | `label` | text | nazwa urządzenia |
+| `kind` | text `CHECK`, domyślnie `passkey` | `passkey` albo `security_key` (klucz FIDO2, `cross-platform`), z linku rejestracji (D-90) |
 | `last_used_at`, `revoked_at` | timestamptz null | użycie i unieważnienie |
 
 `UNIQUE (credential_id)`. Pozostałe pola według `web-auth/webauthn-symfony-bundle`. W F0a jeden passkey; drugi passkey i step-up od F0b (D-28). Zasady w [security.md](security.md).

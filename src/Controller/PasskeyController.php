@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Passkey\AuthenticatorKind;
 use App\Passkey\PasskeyEnrollmentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,6 +35,6 @@ final class PasskeyController extends AbstractController implements \Symfony\Com
         $request->getSession()->set('passkey.enrollment_user_id', $user['id']);
         $request->getSession()->set('passkey.enrollment_hash', hash('sha256', $token));
 
-        return $this->render('passkey/enrol.html.twig', ['display_name' => $user['display_name']]);
+        return $this->render('passkey/enrol.html.twig', ['display_name' => $user['display_name'],'kind' => $user['kind'],'security_key' => $user['kind'] === AuthenticatorKind::SecurityKey]);
     }
 }

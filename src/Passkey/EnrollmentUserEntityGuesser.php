@@ -21,8 +21,13 @@ final readonly class EnrollmentUserEntityGuesser implements UserEntityGuesser
             throw MissingUserEntityException::create('Brak aktywnego linku rejestracji.');
         }
         $hash = $request->getSession()->get('passkey.enrollment_hash');
-        if (!is_string($hash) || $this->connection->fetchOne('SELECT id FROM app_user WHERE id=? AND enrollment_token_hash=? AND enrollment_used_at IS NULL AND enrollment_expires_at>?', [$id,$hash,$this->clock->now()->format('c')]) === false) {
+        $kind = is_string($hash) ? $this->connection->fetchOne("SELECT COALESCE(enrollment_kind,'passkey') FROM app_user WHERE id=? AND enrollment_token_hash=? AND enrollment_used_at IS NULL AND enrollment_expires_at>?", [$id,$hash,$this->clock->now()->format('c')]) : false;
+        if (!is_string($kind)) {
             throw MissingUserEntityException::create('Link rejestracji wygasł.');
+        }
+        // Link na klucz FIDO2 rusza tylko profil `security_key` (cross-platform), link na passkey tylko profil `panel` (D-90).
+        if ($request->getPathInfo() !== AuthenticatorKind::from($kind)->enrolPaths()['options']) {
+            throw MissingUserEntityException::create('Link rejestracji dotyczy innego rodzaju uwierzytelniacza.');
         }
         $user = $this->repository->findOneByUserHandle($id);
         $user !== null || throw MissingUserEntityException::create('Link rejestracji wygasł.');

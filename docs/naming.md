@@ -380,6 +380,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Przypomnienia i akcje | `NotificationDispatcher` (`run`, `plan`, `send`, `offsets`, `channels`, `body`; link `/calendar`; klucz zaległości `{obligation_id}:overdue:{data}:push`), `ObligationActions` (`complete`, `recordPayment`, `markNotApplicable`, `addLetterDeadline`), `CredentialExpiryChecker` (`src/Security`), `CredentialValidity` (`rows`; sekcja pulpitu `#connector-validity`); wiadomości `NotificationDispatchMessage` (transport `notifications`), `CredentialExpiryMessage` (`reads`) |
 | Panel | `CalendarController`: `/calendar`, `/calendar/letter`, `/calendar/{id}/complete`, `/calendar/{id}/payment`, `/calendar/{id}/not-applicable`; `/settings` z kluczami F0b |
 | Passkey i step-up | interfejs `StepUp` (`require`), `StepUpVerifier` (`options`, `verify`, `require`; sesja `step_up.*`, 5 minut), `PasskeyManager` (`active`, `warning`, `enrolmentToken`, `revoke`), `PasskeyPanelController`: `/passkeys`, `/passkeys/add`, `/passkeys/{id}/revoke`, `/passkey/step-up/options`, `/passkey/step-up/verify` (D-40) |
+| Klucz FIDO2 | wyliczenie `AuthenticatorKind` (`passkey`, `security_key`; `label`, `enrolPaths`); profil WebAuthn `security_key` i kontroler `enrolment_security_key`: `/passkey/enrol/security-key/options`, `/passkey/enrol/security-key/result`; pole formularza `kind` w `/passkeys/add`; opcja `--security-key` w `app:passkey:enrol-link` i `app:passkey:reset` (D-90) |
 | Bramka zatwierdzeń (`src/Approval`) | `ApprovalGate` (`request`, `renew`, `approve`, `cancel`, `markCopied`, `recordManualFiling`, `markRestoredUnknown`, `retry`), `ApprovalTransitions` (`TABLE`, `LIVE`, `FINAL`, `apply`, `action`), `ApprovalSubject`, `ApprovalSubjects`, `ApprovalPayload`, `OfficialWriter`, `StatusReader`, `ApprovalConnectors`, `DispatchRequest`, `DispatchGuard`, `SubmissionResult`, `ApprovalExpiry`, `ApprovalNotifications` (link `/approvals`; klucz `{approval_id}:{category}:{powód}:push`), `OfficialWritesHandler`, `SubmissionReconciler` (`poll`, `reconcile`), `ApprovalTaskHandler`, `GateBypassException`, `InvalidTransitionException`; tagi `app.approval_subject`, `app.official_writer`, `app.status_reader` (D-41) |
 | Wiadomości bramki | `ApprovalDispatchMessage` i `ApprovalDispatchWaitingMessage` (transport `official_writes`), `ApprovalTaskMessage` (`reads`: `approval.expire`, `approval.poll_status`, `approval.reconcile`); middleware `OfficialWritesRetryGuard` |
 | Parametry bramki | `approval.expiry` (`approval.expiry.<subject_type>.pending`, `.approved`), `approval.poll_window` per konektor |
@@ -866,7 +867,7 @@ W F0a klucze główne siedmiu tabel aplikacyjnych są UUIDv7; tabele techniczne 
 | --- | --- |
 | Konfiguracja i wyniki | `ConnectorConfiguration`, `ConnectorHosts`, `ConnectorError`, `RateCounterResult`, `TargetBanner` |
 | Passkey | `AppUser`, `AppUserProvider`, `WebauthnRepository`, `EnrollmentUserEntityGuesser`, `PasskeyAccessSubscriber`, `SessionLifetimeSubscriber`, `AuthenticationAuditSubscriber` |
-| Pola panelu | `app_user.enrollment_token_hash`, `app_user.enrollment_expires_at`, `app_user.enrollment_used_at`: jednorazowy link SSH; `webauthn_credential.credential_source`: rekord biblioteki WebAuthn |
+| Pola panelu | `app_user.enrollment_token_hash`, `app_user.enrollment_expires_at`, `app_user.enrollment_used_at`: jednorazowy link SSH; `webauthn_credential.credential_source`: rekord biblioteki WebAuthn; `app_user.enrollment_kind` i `webauthn_credential.kind` (`passkey`, `security_key`): rodzaj uwierzytelniacza (D-90) |
 | Harmonogram i kolejka | `DefaultScheduleProvider`, `HeartbeatStore`, `ScheduledTaskHandler`, `FailureNotificationMessage`, `FailureNotificationHandler`, `RedactingTransportSerializer`, `RateLimitDeferralMiddleware`, `cache.scheduler`, `ops.last_heartbeat`, `scheduler_default` |
 | Komendy | `EvidenceCommand`, `FixturesRecordCommand`, `PasskeyEnrolLinkCommand`, `PasskeyResetCommand`, `PushTestCommand`, `RecordDeployCommand` |
 | HTTP i SMTP | `GuardedMailTransport`, `dummy.http_client`, `dummy.host_allowlist`, `dummy.mock_http_client`, `http_client.raw` |
@@ -926,7 +927,7 @@ Nazwy z istniejących tabel aplikacyjnych i technicznych; semantyka tabel aplika
 
 | Tabela | Kolumny |
 | --- | --- |
-| `app_user` | `id`, `username`, `display_name`, `disabled_at`, `enrollment_token_hash`, `enrollment_expires_at`, `enrollment_used_at`, `calendar_feed_token_hash` (D-77), `created_at`, `updated_at` |
+| `app_user` | `id`, `username`, `display_name`, `disabled_at`, `enrollment_token_hash`, `enrollment_expires_at`, `enrollment_used_at`, `enrollment_kind` (D-90), `calendar_feed_token_hash` (D-77), `created_at`, `updated_at` |
 | `audit_log` | `id`, `sequence`, `occurred_at`, `actor_user_id`, `action`, `target_type`, `target_id`, `environment`, `connector`, `approval_id`, `payload_sha256`, `details`, `prev_hash`, `hash` |
 | `cache_items` | `item_id`, `item_data`, `item_lifetime`, `item_time` |
 | `connector_call` | `id`, `sequence`, `environment`, `connector`, `operation`, `host`, `http_method`, `path`, `started_at`, `duration_ms`, `http_status`, `error_code`, `retry_after_s`, `request_sha256`, `request_bytes`, `response_sha256`, `response_bytes`, `approval_id`, `correlation_id` |
@@ -935,4 +936,4 @@ Nazwy z istniejących tabel aplikacyjnych i technicznych; semantyka tabel aplika
 | `messenger_messages` | `id`, `body`, `headers`, `queue_name`, `created_at`, `available_at`, `delivered_at` |
 | `rate_counter` | `id`, `environment`, `connector`, `bucket`, `window_start`, `count`, `blocked_until` |
 | `stored_file` | `id`, `environment`, `kind`, `sha256`, `path`, `size_bytes`, `media_type`, `original_name`, `owner_table`, `owner_id`, `last_verified_at`, `verify_failed_at`, `retention_until`, `legal_hold`, `deleted_at`, `created_at`, `updated_at` |
-| `webauthn_credential` | `id`, `app_user_id`, `credential_id`, `public_key`, `sign_count`, `transports`, `aaguid`, `label`, `last_used_at`, `revoked_at`, `credential_source`, `created_at`, `updated_at` |
+| `webauthn_credential` | `id`, `app_user_id`, `credential_id`, `public_key`, `sign_count`, `transports`, `aaguid`, `label`, `kind` (D-90), `last_used_at`, `revoked_at`, `credential_source`, `created_at`, `updated_at` |

@@ -97,13 +97,15 @@ final readonly class WebauthnRepository implements CredentialRecordRepositoryInt
             if (!is_string($hash)) {
                 throw new \LogicException('Brak sesji rejestracji.');
             }
-            $user = $this->connection->fetchAssociative('SELECT id FROM app_user WHERE id=? AND enrollment_token_hash=? AND enrollment_used_at IS NULL AND enrollment_expires_at>? AND disabled_at IS NULL FOR UPDATE', [$record->userHandle,$hash,$now]);
+            $user = $this->connection->fetchAssociative('SELECT id,enrollment_kind FROM app_user WHERE id=? AND enrollment_token_hash=? AND enrollment_used_at IS NULL AND enrollment_expires_at>? AND disabled_at IS NULL FOR UPDATE', [$record->userHandle,$hash,$now]);
             if ($user === false || !is_string($user['id'])) {
                 throw new \LogicException('Link rejestracji wygasł.');
             }
-            $this->connection->executeStatement("INSERT INTO webauthn_credential (id,app_user_id,credential_id,public_key,sign_count,transports,aaguid,label,credential_source,created_at,updated_at) VALUES (?,?,decode(?,'hex'),decode(?,'hex'),?,?::jsonb,?,?,?,?,?)", [\Symfony\Component\Uid\UuidV7::generate($this->clock->now()),$user['id'],bin2hex($record->publicKeyCredentialId),bin2hex($record->credentialPublicKey),$record->counter,json_encode($record->transports, JSON_THROW_ON_ERROR),$record->aaguid->toRfc4122(),'Passkey',$source,$now,$now]);
-            $this->connection->executeStatement('UPDATE app_user SET enrollment_used_at=?,enrollment_token_hash=NULL,updated_at=? WHERE id=?', [$now,$now,$user['id']]);
-            $this->auditLog->append('auth.passkey_enrolled', [], targetType: 'app_user', targetId: $user['id']);
+            $kind = AuthenticatorKind::tryFrom(is_string($user['enrollment_kind']) ? $user['enrollment_kind'] : '') ?? AuthenticatorKind::Passkey;
+            $id = \Symfony\Component\Uid\UuidV7::generate($this->clock->now());
+            $this->connection->executeStatement("INSERT INTO webauthn_credential (id,app_user_id,credential_id,public_key,sign_count,transports,aaguid,label,kind,credential_source,created_at,updated_at) VALUES (?,?,decode(?,'hex'),decode(?,'hex'),?,?::jsonb,?,?,?,?,?,?)", [$id,$user['id'],bin2hex($record->publicKeyCredentialId),bin2hex($record->credentialPublicKey),$record->counter,json_encode($record->transports, JSON_THROW_ON_ERROR),$record->aaguid->toRfc4122(),$kind->label(),$kind->value,$source,$now,$now]);
+            $this->connection->executeStatement('UPDATE app_user SET enrollment_used_at=?,enrollment_token_hash=NULL,enrollment_kind=NULL,updated_at=? WHERE id=?', [$now,$now,$user['id']]);
+            $this->auditLog->append('auth.passkey_enrolled', ['credential_id' => $id,'kind' => $kind->value,'transports' => $record->transports], targetType: 'app_user', targetId: $user['id']);
         });
     }
 }

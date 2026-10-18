@@ -13,16 +13,17 @@ final readonly class PasskeyManager
 {
     public function __construct(private Connection $db, private PasskeyEnrollmentService $enrollment, private StepUpVerifier $stepUp, private AuditLog $audit, private ClockInterface $clock) {}
 
-    /** @return list<array{id:string,label:string,created_at:string,last_used_at:?string}> */
+    /** @return list<array{id:string,label:string,kind:AuthenticatorKind,transports:list<string>,created_at:string,last_used_at:?string}> */
     public function active(string $userId): array
     {
-        $rows = $this->db->fetchAllAssociative('SELECT id,label,created_at,last_used_at FROM webauthn_credential WHERE app_user_id=? AND revoked_at IS NULL ORDER BY created_at', [$userId]);
+        $rows = $this->db->fetchAllAssociative('SELECT id,label,kind,transports,created_at,last_used_at FROM webauthn_credential WHERE app_user_id=? AND revoked_at IS NULL ORDER BY created_at', [$userId]);
         $result = [];
         foreach ($rows as $row) {
-            if (!is_string($row['id']) || !is_string($row['label']) || !is_string($row['created_at'])) {
+            $transports = is_string($row['transports']) ? json_decode($row['transports'], true, flags: JSON_THROW_ON_ERROR) : null;
+            if (!is_string($row['id']) || !is_string($row['label']) || !is_string($row['kind']) || !is_string($row['created_at']) || !is_array($transports)) {
                 throw new \LogicException('Niepoprawny wiersz passkeya.');
             }
-            $result[] = ['id' => $row['id'],'label' => $row['label'],'created_at' => $row['created_at'],'last_used_at' => is_string($row['last_used_at']) ? $row['last_used_at'] : null];
+            $result[] = ['id' => $row['id'],'label' => $row['label'],'kind' => AuthenticatorKind::from($row['kind']),'transports' => array_values(array_filter($transports, is_string(...))),'created_at' => $row['created_at'],'last_used_at' => is_string($row['last_used_at']) ? $row['last_used_at'] : null];
         }
         return $result;
     }
@@ -33,15 +34,15 @@ final readonly class PasskeyManager
         return count($this->active($userId)) < 2;
     }
 
-    /** Wydaje jednorazowy link rejestracji kolejnego passkeya po świeżym step-upie. */
-    public function enrolmentToken(AppUser $user): string
+    /** Wydaje jednorazowy link rejestracji kolejnego passkeya albo klucza FIDO2 (D-90) po świeżym step-upie. */
+    public function enrolmentToken(AppUser $user, AuthenticatorKind $kind = AuthenticatorKind::Passkey): string
     {
         $this->stepUp->require();
         $row = $this->db->fetchAssociative('SELECT username,display_name FROM app_user WHERE id=?', [$user->id()]);
         if ($row === false || !is_string($row['username']) || !is_string($row['display_name'])) {
             throw new \DomainException('Brak użytkownika.');
         }
-        return $this->enrollment->issue($row['username'], $row['display_name'], false, true)['token'];
+        return $this->enrollment->issue($row['username'], $row['display_name'], false, true, $kind)['token'];
     }
 
     /** Unieważnia passkey po step-upie; ostatniego aktywnego passkeya nie unieważnisz (odzyskanie: `app:passkey:reset`). */

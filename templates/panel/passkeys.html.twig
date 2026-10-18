@@ -6,13 +6,14 @@
     <h1>Passkeye</h1>
     <nav><a href="{{ path('panel_dashboard') }}">Start</a></nav>
     {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
-    {% if warning %}<p role="alert" id="passkey-warning">Masz tylko jeden passkey. Dodaj drugi na innym urządzeniu, żeby nie stracić dostępu.</p>{% endif %}
+    {% if warning %}<p role="alert" id="passkey-warning">Masz tylko jeden passkey. Dodaj drugi na innym urządzeniu albo klucz FIDO2, żeby nie stracić dostępu.</p>{% endif %}
+    {% if not security_key %}<p id="security-key-hint">Klucz sprzętowy FIDO2 (USB albo NFC) jest dobrym passkeyem zapasowym: nie zależy od telefonu ani konta w chmurze. Potrzebuje PIN-u klucza.</p>{% endif %}
     <p>Dodanie i unieważnienie passkeya wymaga potwierdzenia passkeyem (step-up, ważne 5 minut).</p>
     <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
     <p id="passkey-result" role="status"></p>
     <ul>
         {% for passkey in passkeys %}
-            <li>{{ passkey.label }}, dodany {{ passkey.created_at }}, ostatnio {{ passkey.last_used_at ?? 'nieużywany' }}
+            <li data-kind="{{ passkey.kind.value }}">{{ passkey.label }}{% if passkey.transports is not empty %} ({{ passkey.transports|join(', ') }}){% endif %}, dodany {{ passkey.created_at }}, ostatnio {{ passkey.last_used_at ?? 'nieużywany' }}
                 <form method="post" action="{{ path('panel_passkey_revoke', {id: passkey.id}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('passkeys') }}">
                     <button type="submit">Unieważnij</button>
@@ -22,7 +23,8 @@
     </ul>
     <form method="post" action="{{ path('panel_passkey_add') }}" id="passkey-add">
         <input type="hidden" name="_token" value="{{ csrf_token('passkeys') }}">
-        <button type="submit">Dodaj passkey</button>
+        <button type="submit" name="kind" value="passkey">Dodaj passkey</button>
+        <button type="submit" name="kind" value="security_key" id="security-key-add">Dodaj klucz FIDO2</button>
     </form>
     <script src="{{ asset('passkey.js') }}" defer></script>
 {% endblock %}
