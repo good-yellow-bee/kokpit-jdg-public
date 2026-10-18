@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Deklaracja xmlns="http://crd.gov.pl/wzor/2025/10/10/13916/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="PIT-28 (27)" kodPodatku="PPE" rodzajZobowiazania="Z" wersjaSchemy="1-1E">PIT-28</KodFormularza>
+    <WariantFormularza>27</WariantFormularza>
+    <CelZlozenia poz="P_6">1</CelZlozenia>
+    <Rok>2025</Rok>
+    <KodUrzedu>1433</KodUrzedu>
+  </Naglowek>
+  <Podmiot1 rola="Podatnik">
+    <OsobaFizyczna>
+      <NIP>1111111111</NIP>
+      <ImiePierwsze>Fictional</ImiePierwsze>
+      <Nazwisko>Podatnik</Nazwisko>
+      <DataUrodzenia poz="P_10">1980-01-01</DataUrodzenia>
+    </OsobaFizyczna>
+    <AdresZamieszkania rodzajAdresu="RAD">
+      <AdresPol>
+        <KodKraju>PL</KodKraju>
+        <Wojewodztwo>FIKCYJNE</Wojewodztwo>
+        <Powiat>FIKCYJNY</Powiat>
+        <Gmina>FIKCYJNA</Gmina>
+        <Ulica>Fikcyjna</Ulica>
+        <NrDomu>1</NrDomu>
+        <NrLokalu>2</NrLokalu>
+        <Miejscowosc>Fikcyjne</Miejscowosc>
+        <KodPocztowy>00-001</KodPocztowy>
+      </AdresPol>
+    </AdresZamieszkania>
+  </Podmiot1>
+  <PozycjeSzczegolowe>
+    <P_28>4801.00</P_28>
+    <P_30>180000.00</P_30>
+    <P_35>184801.00</P_35>
+    <P_55>4801.00</P_55>
+    <P_57>180000.00</P_57>
+    <P_63>184801.00</P_63>
+    <P_79>2.60</P_79>
+    <P_81>97.40</P_81>
+    <P_98>19203.84</P_98>
+    <P_100>165597.16</P_100>
+    <P_104>19203.84</P_104>
+    <P_105>4983.48</P_105>
+    <P_107>4983.48</P_107>
+    <P_112>499.30</P_112>
+    <P_114>18704.54</P_114>
+    <P_123>129.47</P_123>
+    <P_125>4854.01</P_125>
+    <P_135>4172.23</P_135>
+    <P_137>156441.45</P_137>
+    <P_144>160613.68</P_144>
+    <P_175>4172.23</P_175>
+    <P_177>156441.45</P_177>
+    <P_183>160613.68</P_183>
+    <P_200>4172</P_200>
+    <P_202>156441</P_202>
+    <P_215>354.62</P_215>
+    <P_217>18772.92</P_217>
+    <P_224>19127.54</P_224>
+    <P_228>19127.54</P_228>
+    <P_230>19127.54</P_230>
+    <P_232>19128</P_232>
+    <P_236>17558</P_236>
+    <P_237>1570</P_237>
+    <P_239>1558</P_239>
+    <P_240>1558</P_240>
+    <P_241>1558</P_241>
+    <P_242>1558</P_242>
+    <P_243>1764</P_243>
+    <P_244>1564</P_244>
+    <P_245>1557</P_245>
+    <P_246>1557</P_246>
+    <P_247>1760</P_247>
+    <P_248>1566</P_248>
+    <P_249>1558</P_249>
+    <P_250>1558</P_250>
+  </PozycjeSzczegolowe>
+  <Pouczenia>1</Pouczenia>
+</Deklaracja>

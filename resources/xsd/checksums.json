@@ -151,5 +151,74 @@
     "source": "https://test-bramka.edeklaracje.gov.pl/uslugi/dokumenty?xsd=GateService.xsd",
     "fetched_on": "2026-10-15",
     "sha256": "4d1a0747398d6a2e2e9c6a6f8d65838cb9e48984a52bdfcbdb28ece71037d676"
+  },
+  {
+    "file": "PIT-28(27)_v1-1E.xsd",
+    "source": "http://crd.gov.pl/wzor/2025/10/10/13916/schemat.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "6833c26df0268672d9d26fcb1d99af09772099d540baa2a1b7ec24ed0c5bbfb6"
+  },
+  {
+    "file": "PIT_O(30)_Z28_v1-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/08/27/eD/PITO28/PIT_O(30)_Z28_v1-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "a18161a9a90aae8989d66a94454f5d28b7cf42bb1e15a4ff8b5e4aca434f86a1",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/08/27/eD/PITO28/PIT_O(30)_Z28_v1-0E.xsd"
+    ]
+  },
+  {
+    "file": "PIT_D(31)_Z_v1-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/10/23/eD/PITD/PIT_D(31)_Z_v1-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "89080931eaeb3701d9202a7ccbe911f6524fe184bce288e40e9064b259c9e497",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/10/23/eD/PITD/PIT_D(31)_Z_v1-0E.xsd"
+    ]
+  },
+  {
+    "file": "PIT-2K(9)_Z_v2-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/10/23/eD/PIT2K/PIT-2K(9)_Z_v2-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "eb981ec6352a00795a978c5ae734fd3d29ab879fd5c0af281ecf4e9c13ba54c2",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/10/23/eD/PIT2K/PIT-2K(9)_Z_v2-0E.xsd"
+    ]
+  },
+  {
+    "file": "PIT-28_B(20)_Z_v1-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/10/27/eD/PIT28B/PIT-28_B(20)_Z_v1-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "598da6d783d1e2fe8ba7c8124db5f70c1515d5f6908b1e7dba5aaebcdc1b8a9a",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/10/27/eD/PIT28B/PIT-28_B(20)_Z_v1-0E.xsd"
+    ]
+  },
+  {
+    "file": "ORD-ZU(3)_v10-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/ORDZU/ORD-ZU(3)_v10-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "96a082b43f32dc44a65f0a08fa360e8972aa855b6b38e5168590f257ae2bbcd5",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/ORDZU/ORD-ZU(3)_v10-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyUrzedowSkarbowychExWUS_v8-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2021/12/23/eD/KodyUrzedowSkarbowychExWUS/KodyUrzedowSkarbowychExWUS_v8-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "07a3d257cf82611fe6ffca36d016f3f5b0cc6ddebbf2986c06e1fac72935f6d3",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2021/12/23/eD/KodyUrzedowSkarbowychExWUS/KodyUrzedowSkarbowychExWUS_v8-0E.xsd"
+    ]
+  },
+  {
+    "file": "KodyWalut_v2-0E.xsd",
+    "source": "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/01/04/eD/KodyWalut/KodyWalut_v2-0E.xsd",
+    "fetched_on": "2026-10-18",
+    "sha256": "8c77ea4c8ff0ff0a0920d30ce3620661eceee20dedbb890b2b697af43d0d2bb1",
+    "locations": [
+      "http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/01/04/eD/KodyWalut/KodyWalut_v2-0E.xsd"
+    ]
   }
 ]

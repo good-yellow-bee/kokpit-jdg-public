@@ -71,6 +71,19 @@
         </form>
     </section>
 
+    {% set residence = current['taxpayer.residence_address'] %}
+    <section id="taxpayer-residence_address">
+        <h2>Adres zamieszkania (taxpayer.residence_address)</h2>
+        <p>Obowiązuje od: {{ residence ? residence.valid_from : 'brak; PIT-28 bez adresu zamieszkania nie powstaje (D-96)' }}. PIT-28 bierze wiersz obowiązujący 31 grudnia roku przychodu.</p>
+        <form method="post" action="{{ path('panel_setting_change', {key: 'taxpayer.residence_address'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label>JSON: province, county, municipality, street, building, unit, city, postal_code <textarea name="value" rows="6" cols="80" required>{{ residence ? residence.value|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_UNICODE')) : '' }}</textarea></label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
     {% set snapshot = current['chat.law_snapshot'] %}
     <section id="chat-law_snapshot">
         <h2>Snapshot prawa czatu (chat.law_snapshot)</h2>

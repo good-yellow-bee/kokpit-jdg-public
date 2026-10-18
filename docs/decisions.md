@@ -1428,7 +1428,13 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Kolejność: najpierw przebieg na bramce testowej z fikcyjnymi danymi (`@group live`, jak D-68), dopiero potem cel `prod`, który ustawiasz Ty.
   - Tylko pierwsze złożenie (`CelZlozenia` 1). Korektę PIT-28 składasz ręcznie i rejestrujesz jako `manual`.
 - **Skutki:** typ `PIT_28` dostaje konektor `edeklaracje` w `FilingSubject`, `FilingRequest::pit28` i formularz prośby na `/filings`; generator i złoty plik powstają z XSD wariantu. [modules/jpk.md](modules/jpk.md) (sekcja „PIT-28”), [data-model.md](data-model.md), [README.md](README.md), [roadmap.md](roadmap.md), nazwy w [naming.md](naming.md).
-- **Kroki tylko dla Ciebie:** dostęp sesji do `crd.gov.pl` i `podatki-arch.mf.gov.pl` (lista dozwolonych domen środowiska) albo pliki XSD wariantu; przegląd doradcy i wpis `pit_28.review` przed PROD; cel `prod` dla `edeklaracje`.
+- **Wykonanie (2026-10-18):**
+  - Wariant PIT-28(27) dla przychodu 2025: schemat `PIT-28(27)_v1-1E.xsd` z siedmioma importami w `resources/xsd` (źródło crd.gov.pl, sumy w manifeście), mapowanie pól w [modules/jpk.md](modules/jpk.md) („PIT-28(27): mapowanie pól”). Wariantu dla przychodu 2026 MF jeszcze nie opublikował ([facts.md](facts.md)); prośba za 2026 odmawia.
+  - Część B wymaga adresu zamieszkania, którego kokpit nie trzymał: nowe ustawienie `taxpayer.residence_address` z datą obowiązywania; bez niego budowa odmawia.
+  - Zaokrąglenia: udział stawki do setnych procentu (instrukcja formularza), odliczenia per stawka do grosza, podstawa i ryczałt należny do pełnych złotych HALF_UP (OP art. 63 § 1). Składki społeczne odliczone najwyżej do przychodu, zdrowotna per stawka najwyżej do przychodu po społecznych. Część Q liczy ryczałt okresu tym samym wzorem co zaliczka.
+  - Odmowa przy stawce 2% (produkty rolne), stawce spoza kolumn części D.1, zaliczkach z groszami i roku bez przychodu.
+  - Testy: złoty plik i XSD (`Pit28GoldenTest`), pełna ścieżka bramki na atrapie (`Pit28SendAcceptedTest`), przebieg live `EDeklaracjeTePit28Test` (kryterium `edeklaracje-te-pit-28`).
+- **Kroki tylko dla Ciebie:** ręczny przebieg joba `live` (obejmuje `edeklaracje-te-pit-28` na bramce testowej); wpis `taxpayer.residence_address` na `/settings`; przegląd doradcy mapowania z [modules/jpk.md](modules/jpk.md) i wpis `pit_28.review` przed PROD; cel `prod` dla `edeklaracje`.
 - **Pytania:** Q-02.
 
 ### D-95 Narzędzia okresu w czacie

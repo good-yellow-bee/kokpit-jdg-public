@@ -686,12 +686,14 @@ Część b: sekcja niżej.
 
 | Rodzaj | Nazwy |
 | --- | --- |
-| Generator (`src/Xml`) | `Pit28Builder` (`variants`, `schemas`, `variant`, `variantMissing`, `inputs`, `build`; `SCHEMA_VERSION_PREFIX` = `PIT-28`), `Pit28Document` (`valid`, `sha256`; `year`, `variant`, `schema`, `totals`) |
+| Generator (`src/Xml`) | `Pit28Builder` (`variants`, `schemas`, `variant`, `variantMissing`, `inputs`, `build`; `SCHEMA_VERSION_PREFIX` = `PIT-28`; wariant 2025: `VARIANT_27` = `PIT-28(27)`, `SCHEMA_27` = `PIT-28(27)_v1-1E.xsd`, `TNS_27`), `Pit28Document` (`valid`, `sha256`; `year`, `variant`, `schema`, `totals`) |
 | Bramka i zamknięcie (`src/Ledger`) | `FilingRequest::pit28`, `MonthClose::pit28Accepted`; konektor `edeklaracje` dla `filing.type` `PIT_28` |
-| Ustawienia | `pit_28.review` (`variant`, `reviewed_on`, `note`) w `SettingKeys::PIT_28_REVIEW` i w panelu `/settings` |
-| Klucze `filing.totals` (`PIT_28`) | kwoty z `Pit28Builder::inputs`: `revenue` (per stawka), `revenue_total`, `social_paid`, `health_paid`, `health_deductible`, `advances_paid`; `jpk_ewp_filing_id`, `xml_sha256` |
+| Ustawienia | `pit_28.review` (`variant`, `reviewed_on`, `note`) w `SettingKeys::PIT_28_REVIEW` i w panelu `/settings`; `taxpayer.residence_address` (`province`, `county`, `municipality`, `street`, `building`, `unit`, `city`, `postal_code`) w `SettingKeys::TAXPAYER_RESIDENCE_ADDRESS`, sekcja `#taxpayer-residence_address` na `/settings` |
+| Klucze `filing.totals` (`PIT_28`) | kwoty z `Pit28Builder::inputs`: `revenue` (per stawka), `revenue_total`, `social_paid`, `health_paid`, `health_deductible`, `advances_paid`; z budowy: `social_deducted`, `health_deducted`, `base`, `ryczalt`, `ryczalt_due`, `to_pay`, `overpaid`, `advances_computed`; `jpk_ewp_filing_id`, `xml_sha256` |
 | Panel | trasa `panel_filings_request` (`POST /filings/request`, pola `type`, `period`, `reason`), sekcja `#filing-request` na `/filings`; `FilingController::REQUEST_TYPES` |
-| Testy | `Pit28RequestTest`, `Pit28ReviewSettingTest`, `FilingPanelTest::testFilingRequestValidatesPeriodAndRefusesWithoutConnectors`; `JpkSendTestTools::$pit28` |
+| Testy | `Pit28RequestTest`, `Pit28ReviewSettingTest`, `FilingPanelTest::testFilingRequestValidatesPeriodAndRefusesWithoutConnectors`; `JpkSendTestTools::$pit28`; `Pit28GoldenTest`, `Pit28SendAcceptedTest`, `Pit28TestCase`, `Pit28TestTools`, `ResidenceAddressSettingTest`, live `EDeklaracjeTePit28Test`; złoty plik `tests/Fixtures/Jpk/golden/pit-28-golden.xml` |
+| Kryteria i dowody | `pit-28-golden`, `pit-28-send-accepted` (`ci`), `edeklaracje-te-pit-28` (`live`) w `tests/Acceptance/f5.yaml`; artefakty `golden/pit-28-golden.diff`, `cmd/edeklaracje-te-pit-28.txt`; nagrania `live-pit28-send`, `live-pit28-upo` |
+| Schematy (`resources/xsd`) | `PIT-28(27)_v1-1E.xsd` z importami `PIT_O(30)_Z28_v1-0E.xsd`, `PIT_D(31)_Z_v1-0E.xsd`, `PIT-2K(9)_Z_v2-0E.xsd`, `PIT-28_B(20)_Z_v1-0E.xsd`, `ORD-ZU(3)_v10-0E.xsd`, `KodyUrzedowSkarbowychExWUS_v8-0E.xsd`, `KodyWalut_v2-0E.xsd` |
 
 ### Narzędzia okresu w czacie (D-95): nazwy
 

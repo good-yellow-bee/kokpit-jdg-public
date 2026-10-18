@@ -22,7 +22,7 @@ Wysyłka JPK_EWP(4), JPK_ST(1) i JPK_V7M(3) przez API JPK 5.6.0 oraz VAT-UE i VA
 | JPK_ST(1) za 2026 | API JPK | jak JPK_EWP, za flagą `jpk_st.enabled` | 30.04.2027 ([broszura JPK_ST(1)](https://podatki.gov.pl/media/jikpuwwp/broszura_informacyjna_dot_jpk_st-1.pdf)) | jak wyżej |
 | JPK_V7M(3) | API JPK | F5, po JPK_EWP | 25. dzień za poprzedni miesiąc ([ustawa o VAT](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf), art. 99 ust. 1) | e-mikrofirma albo Klient JPK WEB |
 | VAT-UE(5), VAT-UEK(5) | bramka e-Deklaracji, konektor `edeklaracje` | F5 | 25. dzień (art. 100 ust. 3); korekta niezwłocznie (art. 101 [ustawy o VAT](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf)) | formularz w e-Deklaracjach |
-| PIT-28 | poza planem faz | – | 30.04 ([ustawa o ryczałcie](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf), art. 21 ust. 2 pkt 2) | składasz ręcznie |
+| PIT-28(27) za 2025 i kolejne warianty | bramka e-Deklaracji, konektor `edeklaracje` (D-96) | poza planem faz | 30.04 ([ustawa o ryczałcie](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf), art. 21 ust. 2 pkt 2) | formularz w e-Deklaracjach albo Twój e-PIT |
 
 Daty milowe i bramka 31.03.2027 są w [README.md](../README.md), narzędzia zapasowe w [narzędziach MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_pd/bezplatne-narzedzia). Każda wysyłka przechodzi przez bramkę zatwierdzeń i transport `official_writes` bez automatycznych ponowień.
 
@@ -363,6 +363,35 @@ Do weryfikacji na bramce testowej w F5:
 - Przed prośbą: bramki „przed budową JPK_EWP(4)” roku i przyjęty JPK_EWP za ten rok z tymi samymi sumami per stawka.
 - Na PROD prośba wymaga wpisu `pit_28.review` (wariant, data, notatka) z przeglądu doradcy mapowania odliczeń i zaokrągleń (D-04). Najpierw przebieg na bramce testowej z fikcyjnymi danymi.
 - Tylko pierwsze złożenie (`CelZlozenia` 1). Korektę składasz ręcznie i zapisujesz jako `manual`.
+- Adres zamieszkania (część B) pochodzi z `setting` `taxpayer.residence_address` obowiązującego 31 grudnia roku przychodu; bez wpisu budowa odmawia.
+
+### PIT-28(27): mapowanie pól
+
+Wariant dla przychodu 2025: schemat `PIT-28(27)_v1-1E.xsd` (wzór `2025/10/10/13916`) w `resources/xsd`, `Pit28Builder::VARIANT_27`. Pozycje według formularza PIT-28(27) wersja 07; kolumny stawek działalności: 3%, 5,5%, 8,5%, 10%, 12%, 12,5%, 14%, 15% i 17%.
+
+| Część | Pozycje | Źródło i wzór |
+| --- | --- | --- |
+| Naglowek | `KodFormularza` `PIT-28` (`kodSystemowy` `PIT-28 (27)`, `kodPodatku` `PPE`, `rodzajZobowiazania` `Z`, `wersjaSchemy` `1-1E`), `WariantFormularza` 27, `CelZlozenia` 1 (`poz` P_6), `Rok`, `KodUrzedu` | `company.identity.tax_office_code` |
+| B | `OsobaFizyczna` (NIP, imię, nazwisko, `DataUrodzenia` z `poz` P_10), `AdresZamieszkania` `AdresPol` (`rodzajAdresu` RAD) | `company.identity`, `auth_data` (data urodzenia), `taxpayer.residence_address` |
+| D.1 i D.5 | P_26–P_34 i P_52, P_53, P_55–P_57, P_59–P_62 per stawka; P_35 i P_63 razem | przychód roku per stawka z ewidencji (`TaxCalculator::pit28`) |
+| D.7 | P_76, P_77, P_79–P_81, P_83–P_86 | udział stawki w P_63 w procentach, do dwóch miejsc, HALF_UP |
+| E.1 i E.3 | P_98 i P_104; P_100 = P_63 − P_98 | składki społeczne zapłacone w roku (`zus_payment.social_pln` po `paid_on`), nie więcej niż P_63; `other_pln` poza odliczeniem |
+| E.4 i E.5 | P_105 i P_107 | 50% zdrowotnej zapłaconej w roku |
+| F.1 | P_109, P_110, P_112–P_114, P_116–P_119 | P_104 × udział z D.7, do grosza HALF_UP, nie więcej niż przychód stawki |
+| F.2 | P_121–P_129 | P_107 × przychód stawki ÷ P_35, do grosza HALF_UP, nie więcej niż przychód stawki minus F.1 |
+| G i I | P_132–P_142 (bez najmu), P_144; P_173–P_181, P_183 | przychód stawki minus F.1 i F.2; I równa G, bo części H nie ma |
+| K | P_197, P_198, P_200–P_202, P_204–P_207 | I w pełnych złotych, HALF_UP (OP art. 63 § 1) |
+| L | P_212, P_213, P_215–P_217, P_219–P_222; P_224, P_228, P_230 | stawka × K do grosza HALF_UP; suma |
+| N | P_232 | P_230 w pełnych złotych, HALF_UP |
+| P | P_236; P_237 albo P_238 | suma `obligation.amount_paid` zaliczek z okresów roku (w pełnych złotych, inaczej odmowa); do zapłaty albo nadpłata |
+| Q | P_239–P_250; przy wpłatach co kwartał tylko P_241, P_244, P_247, P_250 | ryczałt okresu tym samym wzorem co zaliczka (`TaxCalculator::advance`) |
+| X | P_267 = 1 | `ryczalt.advance_frequency` = `quarterly` na 1 stycznia roku |
+| Pouczenia | 1 | stała |
+
+- Puste zostają: C (zwolnienia z art. 21 ust. 1 pkt 152–154 ustawy o PIT), D.2–D.4 i D.6 (spółka, najem prywatny, produkty rolne, art. 17), E.2 (ulgi mieszkaniowe), H i J (zatory płatnicze z art. 11 ust. 4), M i O, R–W (w tym 1,5% dla OPP) i Y (rachunek do zwrotu) oraz załączniki. Zeznanie, które ich potrzebuje, składasz ręcznie.
+- Odmowa budowy: stawka 2% albo inna spoza tabeli, ujemny przychód stawki, rok bez przychodu, zaliczki z groszami, brak `taxpayer.residence_address`.
+- Udział z D.7 zaokrąglony do setnych procentu daje F.1 według instrukcji formularza („kwota z poz. 104 pomnożona przez udział”); zaliczki w ciągu roku liczą udział bez zaokrąglenia, więc Q nie musi się sumować do N.
+- Złoty plik: `tests/Fixtures/Jpk/golden/pit-28-golden.xml` (fikcyjny rok 2025, `Pit28GoldenTest`).
 
 ## Korekty
 

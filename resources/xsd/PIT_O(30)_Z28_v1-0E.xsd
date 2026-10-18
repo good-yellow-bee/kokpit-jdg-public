@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/" xmlns:kk="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:zo28="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/08/27/eD/PITO28/" targetNamespace="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2025/08/27/eD/PITO28/" elementFormDefault="qualified" attributeFormDefault="unqualified" xml:lang="pl">
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/" schemaLocation="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/09/13/eD/DefinicjeTypy/StrukturyDanych_v12-0E.xsd"/>
+	<xsd:import namespace="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/" schemaLocation="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2023/09/06/eD/KodyKrajow/KodyKrajow_v13-0E.xsd"/>
+	<!--PIT/O jest załącznikiem do zeznań: PIT-28, PIT-28S.-->
+	<!-- -->
+	<!--Załącznik wypełnij, jeśli korzystasz z odliczeń innych niż wykazane w załącznikach PIT/D, PIT/BR, PIT/WOT, informacjach PIT-CSR/PIT-CSRS, PIT-RB/PIT-RBS lub bezpośrednio w zeznaniach podatkowych.-->
+	<!-- -->
+	<!--Małżonkowie, którzy wspólnie rozliczają podatek, składają jeden załącznik PIT/O. Jeśli małżonkowie rozliczają podatek indywidualnie i oboje korzystają z odliczeń, załącznik PIT/O wypełnia i dołącza do swojego zeznania każdy z nich, wpisując w nim dane identyfikacyjne obojga.-->
+	<!-- -->
+	<!--Informacje jak wypełnić załącznik znajdziesz na stronie: www.podatki.gov.pl.-->
+	<xsd:complexType name="TNaglowek_PIT_O">
+		<xsd:annotation>
+			<xsd:documentation>Nagłówek deklaracji</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="KodFormularza">
+				<xsd:complexType>
+					<xsd:simpleContent>
+						<xsd:extension base="zo28:TKodFormularza_PIT_O">
+							<xsd:attribute name="kodSystemowy" type="xsd:string" use="required" fixed="PPE/OD (30)"/>
+							<xsd:attribute name="wersjaSchemy" type="xsd:string" use="required" fixed="1-0E"/>
+						</xsd:extension>
+					</xsd:simpleContent>
+				</xsd:complexType>
+			</xsd:element>
+			<xsd:element name="WariantFormularza">
+				<xsd:simpleType>
+					<xsd:restriction base="xsd:byte">
+						<xsd:enumeration value="30"/>
+					</xsd:restriction>
+				</xsd:simpleType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:simpleType name="TKodFormularza_PIT_O">
+		<xsd:annotation>
+			<xsd:documentation>Symbol wzoru formularza</xsd:documentation>
+		</xsd:annotation>
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="PIT/O"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Zalacznik_PIT_O">
+		<xsd:annotation>
+			<xsd:documentation>Informacja o odliczeniach od dochodu (przychodu) i od podatku za rok podatkowy</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="Naglowek" type="zo28:TNaglowek_PIT_O"/>
+				<xsd:element name="Podmiot1">
+					<xsd:complexType>
+						<xsd:complexContent>
+							<xsd:extension base="etd:TIdentyfikatorOsobyFizycznej1">
+								<xsd:attribute name="rola" type="xsd:string" use="required" fixed="Podatnik"/>
+							</xsd:extension>
+						</xsd:complexContent>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element name="Podmiot2" minOccurs="0">
+					<xsd:complexType>
+						<xsd:complexContent>
+							<xsd:extension base="etd:TIdentyfikatorOsobyFizycznej1">
+								<xsd:attribute name="rola" type="xsd:string" use="required" fixed="Małżonek"/>
+							</xsd:extension>
+						</xsd:complexContent>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element name="PozycjeSzczegolowe">
+					<xsd:annotation>
+						<xsd:documentation>Odliczenia od dochodu (przychodu), odliczenia od podatku, informacja o przekazanych darowiznach oraz o obdarowanych, informacja o dzieciach uprawniających do ulgi na dzieci lub do ulgi dla rodzin 4+</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:sequence minOccurs="0">
+								<!--Ustawa oznacza ustawę z dnia 26 lipca 1991 r. o podatku dochodowym od osób fizycznych.-->
+								<!-- -->
+								<!--Suma kwot z wierszy od 1 do 11 w kolumnie „podatnik” oraz w kolumnie „małżonek” nie może przekroczyć wysokości dochodu (przychodu), od którego jest odliczana.-->
+								<xsd:element name="P_11" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 1. Darowizny przekazane organizacjom na prowadzoną przez nie działalność pożytku publicznego w sferze zadań publicznych (art. 26 ust. 1 pkt 9 lit. a ustawy)</xsd:documentation>
+									</xsd:annotation>
+									<xsd:simpleType>
+										<xsd:restriction base="etd:TKwota2Nieujemna">
+											<xsd:minExclusive value="0"/>
+										</xsd:restriction>
+									</xsd:simpleType>
+								</xsd:element>
+								<xsd:element name="P_13" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 1. Darowizny przekazane na cele kultu religijnego (art. 26 ust. 1 pkt 9 lit. b ustawy)</xsd:documentation>
+									</xsd:annotation>
+									<xsd:simpleType>
+										<xsd:restriction base="etd:TKwota2Nieujemna">
+											<xsd:minExclusive value="0"/>
+										</xsd:restriction>
+									</xsd:simpleType>
+								</xsd:element>
+								<xsd:element name="P_15" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 1. Darowizny przekazane na cele krwiodawstwa (art. 26 ust. 1 pkt 9 lit. c ustawy)</xsd:documentation>
+									</xsd:annotation>
+									<xsd:simpleType>
+										<xsd:restriction base="etd:TKwota2Nieujemna">
+											<xsd:minExclusive value="0"/>
+										</xsd:restriction>
+									</xsd:simpleType>
+								</xsd:element>
+								<xsd:element name="P_17" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 1. Darowizny przekazane na cele kształcenia zawodowego (art. 26 ust. 1 pkt 9 lit. d ustawy)</xsd:documentation>
+									</xsd:annotation>
+									<xsd:simpleType>
+										<xsd:restriction base="etd:TKwota2Nieujemna">
+											<xsd:minExclusive value="0"/>
+										</xsd:restriction>
+									</xsd:simpleType>
+								</xsd:element>
+								<xsd:element name="P_19" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 1. Darowizny przekazane na cele odbudowy Pałacu Saskiego, Pałacu Brühla oraz kamienic przy ulicy Królewskiej w Warszawie (art. 26 ust. 1 pkt 9 lit. e ustawy)</xsd:documentation>
+									</xsd:annotation>
+									<xsd:simpleType>
+										<xsd:restriction base="etd:TKwota2Nieujemna">
+											<xsd:minExclusive value="0"/>
+										</xsd:restriction>
+									</xsd:simpleType>
+								</xsd:element>
+								<xsd:element name="P_21" minOccurs="0">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 2. Darowizny wynikające z odrębnych ustaw</xsd:documentation>
+									</xsd:annotation>
+									<!--Jeśli wypełniasz ten wiersz, wypełnij część D.-->
+									<xsd:simpleType>
+										<xsd:restriction base="etd:TKwota2Nieujemna">
+											<xsd:minExclusive value="0"/>
+										</xsd:restriction>
+									</xsd:simpleType>
+								</xsd:element>
+								<xsd:element name="P_D" maxOccurs="unbounded">
+									<xsd:annotation>
+										<xsd:documentation>Informacja o przekazanych darowiznach oraz o obdarowanych</xsd:documentation>
+									</xsd:annotation>
+									<xsd:complexType>
+										<xsd:sequence>
+											<xsd:element name="P_D1" type="etd:TZnakowy">
+												<xsd:annotation>
+													<xsd:documentation>Nazwa pełna</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="P_D3" type="kk:TKodKraju">
+												<xsd:annotation>
+													<xsd:documentation>Kod kraju</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:element name="P_D4" type="etd:TKwota2Nieujemna">
+												<xsd:annotation>
+													<xsd:documentation>Podatnik - Wysokość darowizny przekazanej obdarowanemu</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+										</xsd:sequence>
+										<xsd:attribute name="typ" use="required" fixed="G"/>
+									</xsd:complexType>
+								</xsd:element>
+							</xsd:sequence>
+							<xsd:element name="P_23" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 3. Ulga rehabilitacyjna (art. 26 ust. 1 pkt 6 ustawy)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<xsd:element name="P_25" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 4. Zwrot nienależnie pobranych świadczeń, które uprzednio zwiększyły dochód podlegający opodatkowaniu (w kwotach uwzględniających podatek), jeżeli nie zostały one potrącone przez płatnika (art. 26 ust. 1 pkt 5 ustawy)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<xsd:element name="P_27" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 5. Ulga internetowa (art. 26 ust. 1 pkt 6a ustawy)</xsd:documentation>
+								</xsd:annotation>
+								<!--Odliczenie przysługuje wyłącznie w kolejno po sobie następujących dwóch latach podatkowych.-->
+								<xsd:simpleType>
+									<xsd:restriction base="etd:TKwota2Nieujemna">
+										<xsd:maxInclusive value="760"/>
+									</xsd:restriction>
+								</xsd:simpleType>
+							</xsd:element>
+							<xsd:element name="P_29" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 6. Ulga termomodernizacyjna (art. 26h ustawy)</xsd:documentation>
+								</xsd:annotation>
+								<xsd:simpleType>
+									<xsd:restriction base="etd:TKwota2Nieujemna">
+										<xsd:maxInclusive value="53000"/>
+									</xsd:restriction>
+								</xsd:simpleType>
+							</xsd:element>
+							<xsd:element name="P_31" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 7. Wpłaty na IKZE (art. 26 ust. 1 pkt 2b ustawy)</xsd:documentation>
+								</xsd:annotation>
+								<xsd:simpleType>
+									<xsd:restriction base="etd:TKwota2Nieujemna">
+										<xsd:maxInclusive value="15611.40"/>
+									</xsd:restriction>
+								</xsd:simpleType>
+							</xsd:element>
+							<xsd:element name="P_33" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 8. Składki członkowskie na rzecz związków zawodowych (art. 26 ust. 1 pkt 2c ustawy)</xsd:documentation>
+								</xsd:annotation>
+								<xsd:simpleType>
+									<xsd:restriction base="etd:TKwota2Nieujemna">
+										<xsd:maxInclusive value="840"/>
+									</xsd:restriction>
+								</xsd:simpleType>
+							</xsd:element>
+							<xsd:element name="P_35" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 9. Ulga na zabytki (art. 26hb ustawy)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<xsd:sequence minOccurs="0">
+								<!--Wiersz 11 w części B wypełnij, jeśli obowiązujące przepisy przewidują odliczenia od dochodu (przychodu) inne niż wymienione w wierszach od 1 do 10 części B. Wiersz 5 w części C wypełnij, jeśli obowiązujące przepisy przewidują odliczenia od podatku inne niż wymienione w wierszach od 1 do 4 części C.-->
+								<xsd:element name="P_39" type="etd:TZnakowy">
+									<xsd:annotation>
+										<xsd:documentation>11. Inne ulgi, niewymienione w wierszach od 1 do 10 - Rodzaj</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="P_40" type="etd:TKwota2Nieujemna">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 11. Inne ulgi, niewymienione w wierszach od 1 do 10</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+							</xsd:sequence>
+							<!--Wpisz sumę kwot z wierszy od 1 do 11. 
+Kwotę z kolumny „podatnik" wpisz do poz. „podatnik” w wierszu „Odliczenia - wykazane w części B załącznika PIT/O” zeznania PIT-28, PIT-28S, PIT-36, PIT-36S, PIT-36L, PIT-36LS lub PIT-37.-->
+							<xsd:element name="P_42" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - Razem odliczenia od dochodu (przychodu)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<!--Suma kwot z wierszy od 1 do 5 w kolumnie „podatnik” oraz kolumnie „małżonek”, nie może przekroczyć wysokości podatku, od którego jest odliczana.-->
+							<xsd:element name="P_44" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 1. Ulga uczniowska przyznana na podstawie decyzji (prawa nabyte)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<xsd:element name="P_46" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 2. Składki na ubezpieczenia społeczne opłacone przez osobę prowadzącą gospodarstwo domowe z tytułu zawarcia umowy aktywizacyjnej z osobą bezrobotną (prawa nabyte)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<xsd:element name="P_E" minOccurs="0" maxOccurs="unbounded">
+								<xsd:annotation>
+									<xsd:documentation>Informacja o dzieciach uprawniających do ulgi na dzieci lub do ulgi dla rodzin 4+</xsd:documentation>
+								</xsd:annotation>
+								<!--Ulga dla rodzin 4+ oznacza zwolnienie od podatku określone w art. 21 ust. 1 pkt 153 ustawy.-->
+								<!-- -->
+								<!--Podaj numer PESEL każdego dziecka. Jeśli dziecko urodziło się za granicą i nie posiada numeru PESEL, podaj jego imię, nazwisko oraz datę urodzenia. Jeśli korzystasz z ulgi dla rodzin 4+, podaj dane co najmniej czworga dzieci. Jeśli informacje o dzieciach podajesz wyłącznie dla potrzeb ulgi dla rodzin 4+, nie wypełniaj poz. od 5 do 8. Jeśli to samo dziecko uprawnia Cię zarówno do ulgi dla rodzin 4+, jak i do ulgi na dzieci, w kolumnie „podatnik” wypełnij poz. 5 i 7, a następnie zaznacz kwadrat w poz. 9, w kolumnie „małżonek” wypełnij poz. 6 i 8, a następnie zaznacz kwadrat w poz. 10.-->
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:choice>
+											<xsd:element name="P_E1" type="etd:TNrPESEL">
+												<xsd:annotation>
+													<xsd:documentation>PESEL</xsd:documentation>
+												</xsd:annotation>
+											</xsd:element>
+											<xsd:sequence>
+												<xsd:element name="P_E2" type="etd:TImie">
+													<xsd:annotation>
+														<xsd:documentation>Pierwsze imię</xsd:documentation>
+													</xsd:annotation>
+												</xsd:element>
+												<xsd:element name="P_E3" type="etd:TNazwisko">
+													<xsd:annotation>
+														<xsd:documentation>Nazwisko</xsd:documentation>
+													</xsd:annotation>
+												</xsd:element>
+												<xsd:element name="P_E4" type="etd:TData">
+													<xsd:annotation>
+														<xsd:documentation>Data urodzenia</xsd:documentation>
+													</xsd:annotation>
+												</xsd:element>
+											</xsd:sequence>
+										</xsd:choice>
+										<xsd:element name="P_E9" type="etd:TWybor1">
+											<xsd:annotation>
+												<xsd:documentation>Podatnik. Ulga dla rodzin 4+. Wartość: 1 - tak</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+									</xsd:sequence>
+									<xsd:attribute name="typ" use="required" fixed="G"/>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="P_52" type="etd:TKwota2Nieujemna" minOccurs="0">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - 4. Ulga abolicyjna (art. 27g ustawy)</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+							<xsd:sequence minOccurs="0">
+								<!--Wiersz 11 w części B wypełnij, jeśli obowiązujące przepisy przewidują odliczenia od dochodu (przychodu) inne niż wymienione w wierszach od 1 do 10 części B. Wiersz 5 w części C wypełnij, jeśli obowiązujące przepisy przewidują odliczenia od podatku inne niż wymienione w wierszach od 1 do 4 części C.-->
+								<xsd:element name="P_54" type="etd:TZnakowy">
+									<xsd:annotation>
+										<xsd:documentation>Inne ulgi, niewymienione w wierszach od 1 do 4 - Rodzaj</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+								<xsd:element name="P_55" type="etd:TKwota2Nieujemna">
+									<xsd:annotation>
+										<xsd:documentation>Podatnik - 5. Inne ulgi, niewymienione w wierszach od 1 do 4</xsd:documentation>
+									</xsd:annotation>
+								</xsd:element>
+							</xsd:sequence>
+							<xsd:element name="P_57" type="etd:TKwota2Nieujemna">
+								<xsd:annotation>
+									<xsd:documentation>Podatnik - Razem odliczenia od podatku</xsd:documentation>
+								</xsd:annotation>
+								<!--Wpisz sumę kwot z wierszy od 1 do 5. Kwotę z kolumny „podatnik" wpisz do poz. „podatnik” w wierszu „Odliczenia - wykazane w części C załącznika PIT/O” zeznania PIT-28, PIT-28S, PIT-36, PIT-36S, PIT-36L, PIT-36LS lub PIT-37.-->
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
+		</xsd:complexType>
+		<xsd:unique name="klucz_NIP_PESEL">
+			<xsd:selector xpath="zo28:Podmiot1|zo28:Podmiot2"/>
+			<xsd:field xpath="etd:NIP|etd:PESEL"/>
+		</xsd:unique>
+	</xsd:element>
+</xsd:schema>
