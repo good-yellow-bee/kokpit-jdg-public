@@ -282,7 +282,7 @@ Sposób uruchamiania komend: [../.claude/rules/zasady-twarde.md](../.claude/rule
 | opcje | `kokpit:evidence --only=<wykonawca>` (`ci`, `live`) |
 | kolumny kryteriów | `Kryterium`, `Komenda / kroki`, `Oczekiwany wynik`, `Dowód`; `[manual]` też ma dowód (zrzut albo odhaczony wpis listy kontrolnej) |
 | testsuite PHPUnit | jeden na katalog: `unit` (`tests/Unit`), `property` (`tests/Property`), `contract` (`tests/Contract`), `xsd` (`tests/Xsd`), `integration` (`tests/Integration`), `security` (`tests/Security`), `live` (`tests/Live`); domyślny przebieg bez `live` |
-| `.github/workflows/ci.yml` | id jobów: `lint`, `unit_property` (`name: unit+property`), `contract`, `xsd`, `integration`, `security`, `mutation`, `evidence`; `live` tylko ręcznie (`workflow_dispatch`), nigdy PROD |
+| `.github/workflows/ci.yml` | id jobów: `lint`, `unit_property` (`name: unit+property`), `contract`, `xsd`, `integration`, `security`, `images` (D-93), `mutation`, `evidence`; `live` tylko ręcznie (`workflow_dispatch`), nigdy PROD |
 | `mutation` | Infection doradczo, bez blokowania merge, do powstania `src/Tax` w F2 (D-28) |
 | faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` i gałąź bez prefiksu `f` pomijają `evidence` (D-43) |
 | `infection.json5` | zakres mutacji i progi `minMsi`, `minCoveredMsi`; wartości w [testing.md](testing.md) |
@@ -913,7 +913,11 @@ Paczka dowodów dodaje do katalogu minutowego losowy sufiks, aby nie nadpisać p
 - `FailureNotificationHandler::sweep` — heartbeat kolejkuje identyfikatory niepowiadomionych wierszy `failed`, gdy konektory są włączone; znacznik `X-Kokpit-Notified` powstaje tylko po udanym push.
 - `DeploymentTest`, `check-fpm.sh`, `check-compose.php`, `check-assets.php` — kontrole konfiguracji FPM, izolacji montowań i zasobów logowania bez debugowania.
 - `base`, `development`, `production`, `proxy` — etapy Dockerfile: wspólne PHP 8.4, narzędzia dev, aplikacja z zależnościami bez dev i zasobami, nginx z zasobami tej samej wersji.
-- `help`, `deploy`, `rollback` — cele Makefile: pomoc (domyślnie), wdrożenie kroków 1–7 i wycofanie do poprzednich obrazów; dwa ostatnie tylko dla `KOKPIT_DEPLOYMENT=prod`.
+- `help`, `deploy`, `rollback` — cele Makefile: pomoc (domyślnie), wdrożenie kroków 1–7 i wycofanie do obrazów commita `KOKPIT_COMMIT`; dwa ostatnie tylko dla `KOKPIT_DEPLOYMENT=prod`.
+- `verify-images`, `update-check` — cele Makefile kanału aktualizacji (D-93): weryfikacja podpisu lokalnych obrazów commita i sprawdzenie nowego commita `main` z podpisanymi obrazami.
+- `images` — job CI (D-93): budowa obrazów przy PR, push do GHCR i podpis `cosign` bez klucza tylko z push do `main`.
+- `app`, `proxy` — nazwy obrazów w rejestrze: `<KOKPIT_REGISTRY>/app:<sha>` (etap `production`) i `<KOKPIT_REGISTRY>/proxy:<sha>`.
+- `KOKPIT_REGISTRY`, `KOKPIT_SIGNER` — zmienne Makefile: repozytorium obrazów (`ghcr.io/good-yellow-bee/kokpit-jdg-public`) i tożsamość certyfikatu podpisu (`…/.github/workflows/ci.yml@refs/heads/main`).
 - `MakefileTest` — kolejność wdrożenia, odmowa poza PROD, zatrzymanie po błędzie, kontrola HTTP 200, wycofanie oraz brak przypisywania celów konektorów; komendy zewnętrzne zastąpione fikcyjnymi programami.
 
 ### Kolumny tabel F0a
