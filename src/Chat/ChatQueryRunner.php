@@ -21,8 +21,12 @@ final readonly class ChatQueryRunner
     /** Stany sprzedaży wystawionej, które liczą się do sum sprzedaży (D-59). */
     private const ISSUED_SALES = "('accepted','corrected','offline_issued')";
     private const OBLIGATION_STATUSES = ['open', 'done', 'not_applicable'];
-    private const DECIMALS = ['amount_pln', 'net_total', 'vat_total', 'gross_total', 'net_pln', 'vat_pln', 'amount_due', 'amount_paid', 'mid'];
-    private const INTEGERS = ['entries', 'invoices', 'age_days'];
+    /** Faktury sprzedaży, które są należnością, i koszty do zapłaty: te same warunki co `CashFlow` (D-88). */
+    private const RECEIVABLE = "i.direction = 'sale' AND i.kind IN ('VAT','ZAL','ROZ','UPR') AND i.status IN ('accepted','corrected')";
+    private const PAYABLE = "direction = 'cost' AND paid_on IS NULL AND (cost_review IS NULL OR cost_review IN ('business','disputed'))";
+    private const DECIMALS = ['amount_pln', 'net_total', 'vat_total', 'gross_total', 'net_pln', 'vat_pln', 'amount_due', 'amount_paid', 'mid', 'amount', 'revenue_pln', 'sales_net_pln', 'costs_net_pln',
+        'sales_net', 'vat_due', 'vat_input', 'k11', 'k12', 'p51', 'p62', 'advance_due', 'zus_due'];
+    private const INTEGERS = ['entries', 'invoices', 'age_days', 'items', 'sales_invoices', 'cost_invoices'];
 
     /** @param list<string> $currencies */
     public function __construct(private Connection $chat, private ConnectorConfiguration $configuration, private BusinessDate $businessDate, private PolishCalendar $calendar, private int $rowLimit, private array $currencies)
@@ -86,13 +90,19 @@ final readonly class ChatQueryRunner
                 throw new ChatQueryRejected('missing_parameter', sprintf('Brak parametru %s.', $name));
             }
         }
-        foreach (['date_from', 'date_to', 'date'] as $name) {
+        if (isset($valid['month']) && !self::isDate($valid['month'] . '-01')) {
+            throw new ChatQueryRejected('invalid_month', 'Parametr month nie jest miesiącem RRRR-MM.');
+        }
+        foreach (['date_from', 'date_to', 'date', 'compare_from', 'compare_to'] as $name) {
             if (isset($valid[$name]) && !self::isDate($valid[$name])) {
                 throw new ChatQueryRejected('invalid_date', sprintf('Parametr %s nie jest datą RRRR-MM-DD.', $name));
             }
         }
         if (isset($valid['date_from'], $valid['date_to']) && $valid['date_from'] > $valid['date_to']) {
             throw new ChatQueryRejected('date_range', 'date_from jest po date_to.');
+        }
+        if (isset($valid['compare_from'], $valid['compare_to']) && $valid['compare_from'] > $valid['compare_to']) {
+            throw new ChatQueryRejected('date_range', 'compare_from jest po compare_to.');
         }
         if (isset($valid['currency']) && !in_array($valid['currency'], $this->currencies, true)) {
             throw new ChatQueryRejected('invalid_currency', 'Waluta spoza listy chat.currencies.');
@@ -162,6 +172,38 @@ final readonly class ChatQueryRunner
             ChatQuery::GetFxRate => [
                 "SELECT currency, table_no, effective_date::text AS effective_date, mid FROM chat_fx_rate WHERE source = 'nbp' AND currency = ? AND effective_date = ?" . $limit,
                 [$p['currency'], $this->calendar->previousWorkingDay((string) $p['date'])],
+            ],
+            // Miesiąc: K_8 z ewidencji, liczby z najnowszego przyjętego JPK_V7M i kwoty obowiązków za ten okres (D-95).
+            ChatQuery::PeriodSummary => [
+                "SELECT to_char(m.start, 'YYYY-MM') AS month, r.revenue_pln, r.entries, f.status AS jpk_v7m_status, f.purpose AS jpk_v7m_purpose, f.sales_net, f.vat_due, f.vat_input, f.k11, f.k12, f.p51, f.p62,"
+                . " (SELECT sum(amount_due) FROM chat_obligation WHERE type = 'ryczalt_advance' AND period_start = m.start) AS advance_due,"
+                . " (SELECT sum(amount_due) FROM chat_obligation WHERE type = 'zus' AND period_start = m.start) AS zus_due"
+                . ' FROM (SELECT ?::date AS start) m'
+                . " CROSS JOIN LATERAL (SELECT sum(amount_pln) AS revenue_pln, count(*) AS entries FROM chat_revenue WHERE revenue_date >= m.start AND revenue_date < m.start + interval '1 month') r"
+                . " LEFT JOIN LATERAL (SELECT status, purpose::text AS purpose, sales_net, vat_due, vat_input, k11, k12, p51, p62 FROM chat_filing WHERE type = 'JPK_V7M' AND status = 'accepted' AND period_start = m.start ORDER BY seq DESC, accepted_at DESC LIMIT 1) f ON true",
+                [$p['month'] . '-01'],
+            ],
+            // Otwarte obowiązki z kwotą do `date_to` (z zaległymi), należności po płatnościach i koszty do zapłaty per waluta (D-88, D-95).
+            ChatQuery::Cashflow => [
+                "SELECT 'obligations' AS kind, 'PLN' AS currency, sum(greatest(amount_due - COALESCE(amount_paid, 0), 0)) AS amount, count(*) AS items"
+                . " FROM chat_obligation WHERE status = 'open' AND amount_due IS NOT NULL AND due_date <= ? HAVING count(*) > 0"
+                . " UNION ALL SELECT 'receivables', i.currency, sum(i.gross_total - COALESCE(p.paid, 0)), count(*) FROM chat_invoice i"
+                . ' LEFT JOIN (SELECT invoice_id, currency, sum(amount) AS paid FROM chat_payment WHERE invoice_id IS NOT NULL GROUP BY invoice_id, currency) p ON p.invoice_id = i.id AND p.currency = i.currency'
+                . ' WHERE ' . self::RECEIVABLE . ' AND i.gross_total - COALESCE(p.paid, 0) > 0 GROUP BY i.currency'
+                . " UNION ALL SELECT 'payables', currency, sum(gross_total), count(*) FROM chat_invoice WHERE " . self::PAYABLE . ' GROUP BY currency'
+                . ' ORDER BY 1, 2' . $limit,
+                [$p['date_to']],
+            ],
+            ChatQuery::ComparePeriods => [
+                'SELECT p.period, p.date_from::text AS date_from, p.date_to::text AS date_to,'
+                . ' (SELECT sum(amount_pln) FROM chat_revenue WHERE revenue_date BETWEEN p.date_from AND p.date_to) AS revenue_pln,'
+                . ' (SELECT count(*) FROM chat_revenue WHERE revenue_date BETWEEN p.date_from AND p.date_to) AS entries,'
+                . " (SELECT sum(net_pln) FROM chat_invoice WHERE direction = 'sale' AND status IN " . self::ISSUED_SALES . ' AND issue_date BETWEEN p.date_from AND p.date_to) AS sales_net_pln,'
+                . " (SELECT count(*) FROM chat_invoice WHERE direction = 'sale' AND status IN " . self::ISSUED_SALES . ' AND issue_date BETWEEN p.date_from AND p.date_to) AS sales_invoices,'
+                . " (SELECT sum(net_pln) FROM chat_invoice WHERE direction = 'cost' AND cost_review = 'business' AND issue_date BETWEEN p.date_from AND p.date_to) AS costs_net_pln,"
+                . " (SELECT count(*) FROM chat_invoice WHERE direction = 'cost' AND cost_review = 'business' AND issue_date BETWEEN p.date_from AND p.date_to) AS cost_invoices"
+                . " FROM (VALUES (1, 'current', ?::date, ?::date), (2, 'compare', ?::date, ?::date)) AS p(ord, period, date_from, date_to) ORDER BY p.ord",
+                [$p['date_from'], $p['date_to'], $p['compare_from'], $p['compare_to']],
             ],
             ChatQuery::VerifyCounterparty => [
                 'SELECT DISTINCT ON (v.source) v.counterparty_id::text AS counterparty_id, c.country, c.is_client, c.is_supplier, c.is_natural_person, v.source, v.result, v.checked_for_date::text AS checked_for_date, v.checked_at'

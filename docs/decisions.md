@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-95 | nowe narzędzia czatu z fazy F2: `get_period_summary` (K_8 z ewidencji, najnowszy przyjęty JPK_V7M, zaliczka i ZUS okresu), `get_cashflow` (reguły `/cashflow`, sumy per waluta), `compare_periods` (dwa okresy: przychód, sprzedaż i koszty netto PLN); widoki `chat_filing` (tylko liczby z `filing.totals`) i `chat_payment` (bez identyfikatorów FreshBooks) dla `chat_ro`; nowy `tool_set`, więc tylko nowe rozmowy; `explain_filing` zostaje w roadmapie | przyjęta 2026-10-18 | F6 |
 | D-93 | podpisane obrazy i kanał aktualizacji: job CI `images` buduje `app` i `proxy`, z push do `main` publikuje je w GHCR z tagiem sha i podpisuje digest cosign bez klucza (OIDC GitHub Actions, Sigstore); `make deploy` pobiera obrazy commita zamiast budować, weryfikuje tożsamość `ci.yml@refs/heads/main`, wyzwalacz push i sha commita, przypina digest; `make rollback KOKPIT_COMMIT=<sha>`, `make verify-images` i `make update-check`; cosign i dostęp do GHCR na VPS robi właściciel | przyjęta 2026-10-18 | po F0a |
 | D-94 | drugi punkt cache w żądaniach czatu: automatyczny `cache_control` (`ephemeral`, 5 min) na poziomie żądania obok jawnego punktu na snapshocie prawa; API stawia go na ostatnim bloku historii, więc kolejne żądania pętli narzędzi i kolejne pytania czytają historię z cache; zapisane `chat_message` bez znaczników | przyjęta 2026-10-18 | po F6 |
 | D-91 | kreator pierwszego uruchomienia `/setup` (tylko stan i linki): kroki od passkeyów, `company.identity`, rachunków, wariantu i parametrów ZUS na bieżący rok, zaliczek, mapy usług i dnia przejścia KSeF po bilans otwarcia, poświadczenia `ksef_token_read`, `auth_data`, `freshbooks_oauth` i test push z e-mailem; zapis zostaje w istniejących formularzach i komendach; liczba kroków do zrobienia na pulpicie | przyjęta 2026-10-18 | po F1 |
@@ -1411,6 +1412,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
 
+### D-95 Narzędzia okresu w czacie
+
+- **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Nowe narzędzia czatu” z tabeli „Warstwa AI” w [roadmap.md](roadmap.md) nie wymaga niczego od właściciela. Czat odpowiadał na pytania o miesiąc i przepływy tylko przez kilka wywołań `query_invoices` i `get_obligations`, a liczb z przyjętego JPK_V7M ani płatności nie widział wcale.
+- **Decyzja:**
+  - Trzy nowe narzędzia w `ChatToolRegistry`, z fazą `F2` w `chat.phases_live`, jako nazwane zapytania `ChatQuery` na widokach `chat_*`; model dalej nie pisze SQL, a parametry przechodzą tę samą walidację przed SQL (`invalid_month` dla `month` spoza RRRR-MM).
+  - `get_period_summary` (`month`): suma i liczba wierszy `chat_revenue` miesiąca (K_8), liczby z najnowszego przyjętego JPK_V7M okresu (`seq`, potem `accepted_at`) oraz suma `amount_due` obowiązków `ryczalt_advance` i `zus` z `period_start` równym początkowi miesiąca. Zaliczka kwartalna stoi w pierwszym miesiącu kwartału.
+  - `get_cashflow` (`date_to`): wiersze `obligations` (PLN), `receivables` i `payables` per waluta, z tymi samymi warunkami co `CashFlow` (D-88); wynik bez identyfikatorów faktur.
+  - `compare_periods` (`date_from`, `date_to`, `compare_from`, `compare_to`): wiersze `current` i `compare` z przychodem z ewidencji, sprzedażą netto PLN (stany jak w `sales_by_currency`) i kosztami firmowymi netto PLN.
+  - Nowe widoki z migracją `Version20261027000900`, na zasadach D-59: `chat_filing` niesie z `filing.totals` tylko `sales_net`, `vat_due`, `vat_input`, `k11`, `k12`, `p51`, `p62` (bez XML, list DI i pozycji VAT-UE); `chat_payment` bez `freshbooks_*`, bramki i wypłat. Migracja nadaje `SELECT` roli `chat_ro`, gdy rola istnieje; przy go-live czatu na PROD `GRANT` obejmuje wszystkie widoki `chat_*` jak dotąd.
+  - Zmiana listy daje nowy `tool_set`, więc narzędzia działają tylko w nowych rozmowach. Na PROD `chat.phases_live` jest puste do go-live czatu.
+  - `explain_filing` (pole pliku → wiersze źródłowe) zostaje w [roadmap.md](roadmap.md): wymaga mapy pól JPK do wierszy, której baza dziś nie trzyma.
+- **Skutki:** `src/Chat/ChatQuery.php`, `src/Chat/ChatQueryRunner.php`, `src/Chat/ChatToolRegistry.php`, `src/Chat/ChatToolExecutor.php`, `migrations/Version20261027000900.php`; testy `ChatPeriodToolsTest`, aktualizacja `ChatNamedQueriesTest`, `ChatToolSchemaTest`, `ChatViewsMinimalTest`, `ChatRoDeniedTest`, dane `ChatTestTools::seed`; [modules/czat.md](modules/czat.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
+
 ### D-93 Podpisane obrazy i kanał aktualizacji
 
 - **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
@@ -1423,6 +1439,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Brak `cosign` na hoście zatrzymuje cele przed pierwszym poleceniem; ścieżki bez podpisu nie ma.
 - **Skutki:** `Makefile`, `.github/workflows/ci.yml`; testy `MakefileTest`, `CiWorkflowTest`; [operations.md](operations.md) (sekcja „Podpisane obrazy i kanał aktualizacji”), [security.md](security.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
 - **Kroki tylko dla Ciebie:** `cosign` 2.x na VPS; `docker login ghcr.io` tokenem z `read:packages` albo publiczne pakiety `app` i `proxy`. Kroki w [operations.md](operations.md).
+
 ### D-94 Cache historii rozmowy w czacie
 
 - **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).

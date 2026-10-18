@@ -59,7 +59,7 @@ final class ChatTestTools
             'prod_client' => self::counterparty($db, $clock, 'prod', 'Fikcyjny Klient PROD', 'PL', ['nip' => FictionalIdentifiers::NIPS[2], 'is_client' => 'true']),
         ];
         // Sprzedaż: tylko accepted, corrected i offline_issued liczą się do sum (D-59).
-        self::sale($db, $clock, 'test', $ids['client_pl'], 'FIKC/2026/07/1', '2026-07-10', 'PLN', '1000.00', '230.00', '1000.00', 'accepted', ['buyer_snapshot' => json_encode(['address' => self::ADDRESS], JSON_THROW_ON_ERROR)]);
+        $paidSale = self::sale($db, $clock, 'test', $ids['client_pl'], 'FIKC/2026/07/1', '2026-07-10', 'PLN', '1000.00', '230.00', '1000.00', 'accepted', ['buyer_snapshot' => json_encode(['address' => self::ADDRESS], JSON_THROW_ON_ERROR)]);
         self::sale($db, $clock, 'test', $ids['client_eu'], 'FIKC/2026/08/1', '2026-08-05', 'EUR', '2000.00', '0.00', '8513.40', 'accepted');
         self::sale($db, $clock, 'test', $ids['client_eu'], 'FIKC/2026/09/1', '2026-09-20', 'EUR', '500.50', '0.00', '2130.13', 'offline_issued');
         self::sale($db, $clock, 'test', $ids['person'], 'FIKC/2026/09/2', '2026-09-22', 'PLN', '300.33', '69.08', '300.33', 'accepted');
@@ -86,6 +86,12 @@ final class ChatTestTools
         self::obligation($db, $clock, 'test', 'ryczalt_advance', '2026-10-20', '312.00', 'open', ['credential_state_id' => $credential]);
         self::obligation($db, $clock, 'test', 'vat_jpk_v7m', '2026-09-25', null, 'done', ['done_at' => '2026-09-24T08:00:00Z']);
         self::obligation($db, $clock, 'prod', 'zus', '2026-10-20', '5555.55', 'open');
+        // Płatność częściowa i JPK_V7M za wrzesień (D-95): widoki `chat_payment` i `chat_filing` bez identyfikatorów FreshBooks.
+        $db->insert('payment', ['id' => (string) UuidV7::generate($clock->now()), 'environment' => 'test', 'invoice_id' => $paidSale, 'freshbooks_payment_id' => 'FIKC-PAY-1', 'paid_on' => '2026-07-20', 'amount' => '230.00', 'currency' => 'PLN', 'matched_at' => $stamp, 'created_at' => $stamp, 'updated_at' => $stamp]);
+        foreach (['test' => ['1300.33', '299.08', '34.53', '265'], 'prod' => ['99999.99', '0.00', '0.00', '0']] as $environment => [$salesNet, $vatDue, $vatInput, $p51]) {
+            $db->insert('filing', ['id' => (string) UuidV7::generate($clock->now()), 'environment' => $environment, 'type' => 'JPK_V7M', 'period_start' => '2026-09-01', 'period_end' => '2026-09-30', 'purpose' => 1, 'seq' => 0, 'status' => 'accepted', 'schema_version' => 'JPK_V7M(3)',
+                'totals' => json_encode(['sales_net' => $salesNet, 'vat_due' => $vatDue, 'vat_input' => $vatInput, 'k11' => '0.00', 'k12' => '0.00', 'p51' => $p51, 'p62' => '0'], JSON_THROW_ON_ERROR), 'accepted_at' => '2026-10-20T10:00:00+00:00', 'created_at' => $stamp, 'updated_at' => $stamp]);
+        }
         // Kurs z dnia roboczego przed datą zdarzenia (reguła FxRateProvider::getRate).
         $fxDate = '2026-08-05';
         $effective = (new PolishCalendar())->previousWorkingDay($fxDate);

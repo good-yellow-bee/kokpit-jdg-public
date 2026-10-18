@@ -60,6 +60,9 @@ Narzędzie to nazwane zapytanie: wyliczenie plus parametry w JSON Schema, z `str
 | `get_fx_rate` | F1 | `currency`, `date` (data zdarzenia) | zapisany kurs z `fx_rate` według reguły `FxRateProvider::getRate`, numer i data tabeli; bez zapytania do NBP |
 | `verify_counterparty` | F1 | `counterparty` (pseudonim `K-NN`) | zapisany snapshot weryfikacji i jego wiek; odświeżenie to przycisk w panelu |
 | `render_chart` | F1 | `query` (to samo wyliczenie), `chart_type` (`bar`, `line`), parametry zapytania | specyfikacja wykresu; dane pobiera i rysuje panel |
+| `get_period_summary` | F2 (D-95) | `month` (RRRR-MM) | przychód K_8 z ewidencji, liczby najnowszego przyjętego JPK_V7M okresu (`sales_net`, `vat_due`, `vat_input`, K_11, K_12, P_51, P_62) i kwoty `ryczalt_advance` oraz `zus` z `period_start` = początek miesiąca; bez przyjętego JPK pola JPK są puste |
+| `get_cashflow` | F2 (D-95) | `date_to` | sumy per rodzaj i waluta: otwarte obowiązki z kwotą do `date_to` (z zaległymi), należności z faktur sprzedaży po płatnościach, koszty do zapłaty; reguły jak strona `/cashflow` (D-88), bez przeliczania walut |
+| `compare_periods` | F2 (D-95) | `date_from`, `date_to`, `compare_from`, `compare_to` | dwa wiersze (`current`, `compare`): przychód z ewidencji, sprzedaż netto PLN i koszty firmowe netto PLN z liczbą dokumentów |
 | `get_edelivery_message` | po powrocie F4 (D-29) | `message` (pseudonim `P-NN`) | tylko pismo z zapisaną treścią: `received` albo `received_elsewhere` po udanym „Pobierz kopię”; w innym stanie tylko metadane; forma z tabeli „Dane do modelu” |
 | `draft_document` | F6 | `kind`, `recipient` (pseudonim `K-NN`; po powrocie F4 także `S-NN`), `subject`, `body`, `source_refs` (pseudonimy) | potwierdzenie zapisu szkicu `draft` w stanie `pending`, bez identyfikatora z bazy |
 

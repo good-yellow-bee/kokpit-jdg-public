@@ -6,7 +6,8 @@ namespace App\Chat;
 
 /**
  * Nazwane zapytania czatu (docs/modules/czat.md, „Narzędzia”): wartości `query` narzędzia `query_invoices`
- * oraz zapytania narzędzi `get_obligations`, `get_fx_rate` i `verify_counterparty`. Model nigdy nie pisze SQL.
+ * oraz zapytania narzędzi `get_obligations`, `get_fx_rate`, `verify_counterparty` i narzędzi okresu z D-95
+ * (`get_period_summary`, `get_cashflow`, `compare_periods`). Model nigdy nie pisze SQL.
  */
 enum ChatQuery: string
 {
@@ -18,6 +19,9 @@ enum ChatQuery: string
     case GetObligations = 'get_obligations';
     case GetFxRate = 'get_fx_rate';
     case VerifyCounterparty = 'verify_counterparty';
+    case PeriodSummary = 'get_period_summary';
+    case Cashflow = 'get_cashflow';
+    case ComparePeriods = 'compare_periods';
 
     /** Wartość parametru `query` narzędzi `query_invoices` i `render_chart`. */
     public function isInvoiceQuery(): bool
@@ -32,6 +36,9 @@ enum ChatQuery: string
             self::GetObligations => ['status', 'date_from', 'date_to'],
             self::GetFxRate => ['currency', 'date'],
             self::VerifyCounterparty => ['counterparty'],
+            self::PeriodSummary => ['month'],
+            self::Cashflow => ['date_to'],
+            self::ComparePeriods => ['date_from', 'date_to', 'compare_from', 'compare_to'],
             default => ['date_from', 'date_to'],
         };
     }

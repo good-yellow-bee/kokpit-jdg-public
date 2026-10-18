@@ -126,6 +126,9 @@ final readonly class ChatToolExecutor
             'query_invoices' => $this->rows($this->runner->run($this->query($text('query')), $range), $map),
             'get_fx_rate' => $this->rows($this->runner->run(ChatQuery::GetFxRate, ['currency' => $text('currency'), 'date' => $text('date')]), $map),
             'verify_counterparty' => $this->rows($this->runner->run(ChatQuery::VerifyCounterparty, ['counterparty' => $this->counterparty($text('counterparty'), $map)]), $map),
+            'get_period_summary' => $this->rows($this->runner->run(ChatQuery::PeriodSummary, ['month' => $text('month')]), $map),
+            'get_cashflow' => $this->rows($this->runner->run(ChatQuery::Cashflow, ['date_to' => $text('date_to')]), $map),
+            'compare_periods' => $this->rows($this->runner->run(ChatQuery::ComparePeriods, ['date_from' => $text('date_from'), 'date_to' => $text('date_to'), 'compare_from' => $text('compare_from'), 'compare_to' => $text('compare_to')]), $map),
             'render_chart' => $this->chart($this->query($text('query')), (string) $text('chart_type'), $range),
             // Szkic tylko przy fladze `draft_requested` bieżącej rozmowy (F6.4, D-62); bez rozmowy i narzędzia zero SQL.
             'draft_document' => $this->drafts !== null && $sessionId !== null ? $this->drafts->create($sessionId, $input, $map) : throw new ChatQueryRejected('draft_not_requested', 'Szkic powstaje tylko na prośbę z przełącznika „Szkic” w panelu.'),

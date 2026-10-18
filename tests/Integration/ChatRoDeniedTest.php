@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 /** chat-ro-denied (cc-28): połączenie `chat` z rolą chat_ro czyta tylko widoki `chat_*`; zapisy i tabele kończą się błędem bazy. */
 final class ChatRoDeniedTest extends DatabaseTestCase
 {
-    private const VIEWS = ['chat_counterparty', 'chat_fx_rate', 'chat_invoice', 'chat_obligation', 'chat_revenue', 'chat_verification'];
+    private const VIEWS = ['chat_counterparty', 'chat_filing', 'chat_fx_rate', 'chat_invoice', 'chat_obligation', 'chat_payment', 'chat_revenue', 'chat_verification'];
 
     public function testChatConnectionIsReadOnlyAndSeesOnlyViews(): void
     {

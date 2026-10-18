@@ -141,6 +141,9 @@ final class ChatNamedQueriesTest extends DatabaseTestCase
             ChatQuery::GetObligations->value => ['status' => 'open'] + self::Q3,
             ChatQuery::GetFxRate->value => ['currency' => 'EUR', 'date' => '2026-08-05'],
             ChatQuery::VerifyCounterparty->value => ['counterparty' => '00000000-0000-7000-8000-000000000001'],
+            ChatQuery::PeriodSummary->value => ['month' => '2026-09'],
+            ChatQuery::Cashflow->value => ['date_to' => '2026-10-31'],
+            ChatQuery::ComparePeriods->value => self::Q3 + ['compare_from' => '2025-07-01', 'compare_to' => '2025-09-30'],
         ];
         foreach (ChatQuery::cases() as $query) {
             $result = $runner->run($query, $parameters[$query->value] ?? self::Q3);

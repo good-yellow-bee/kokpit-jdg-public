@@ -597,7 +597,7 @@ Część b: sekcja niżej.
 | Części | `F6.1` dane czatu i rola `chat_ro`, `F6.2` konektor `claude` i pętla narzędzi, `F6.3` panel czatu i wykresy, `F6.4` szkice `draft_document`, `F6.5` Claude API na danych fikcyjnych; rejestr `tests/Acceptance/f6.yaml`, lista `docs/evidence/f6.md` |
 | Konektor `claude` (`src/Connector/Claude`) | `ClaudeClientFactory` (klient `anthropic-ai/sdk` z `transporter` = dekorowany `Psr18Client`, ponowienia wyłączone), `ChatRequestProfile` (profil żądania Haiku 5.5), `ClaudeError` (wyliczenie kodów: `connectors_disabled`, `host_not_allowed`, `rate_limited`, `timeout`, `api_error`, `refusal`, `max_tokens`, `budget_exceeded`, `context_limit`, `invalid_response`); `connector_call.operation` = `messages.create` |
 | Czat (`src/Chat`) | `ChatTurn` (pętla narzędzi), `ChatToolRegistry` (lista narzędzi i `tool_set`), `ChatToolExecutor`, `ChatQuery` (wyliczenie nazwanych zapytań), `ChatQueryRunner` (połączenie `chat`), `PseudonymMap`, `ChatBudget`, `ChatContextGuard`, `ChartSpec`, `DraftDocumentTool`, `DraftSubject` (`ApprovalSubject` dla `subject_type` = `draft`; usługa `draft.subject`); Symfony Workflow `draft` |
-| Widoki `chat_*` | `chat_obligation`, `chat_invoice`, `chat_revenue`, `chat_counterparty`, `chat_fx_rate`, `chat_verification`; połączenie Doctrine `chat` z rolą `chat_ro` |
+| Widoki `chat_*` | `chat_obligation`, `chat_invoice`, `chat_revenue`, `chat_counterparty`, `chat_fx_rate`, `chat_verification`, od D-95 `chat_filing`, `chat_payment`; połączenie Doctrine `chat` z rolą `chat_ro` |
 | Konfiguracja aplikacji | `chat.max_tokens`, `chat.max_iterations` (8), `chat.timeout_s`, `chat.row_limit` (200), `chat.context_warn_tokens` (80 000), `chat.context_max_tokens` (100 000), `chat.budget_daily_usd`, `chat.budget_monthly_usd`, `chat.budget_alert_ratio` (0,8), `chat.pricing` (USD za MTok: wejście, wyjście, odczyt i zapis cache, próg 100 tys. tokenów), `chat.phases_live` (fazy po go-live, z których czat bierze narzędzia i wartości `query`), `chat.live_run_budget_usd` (tylko testsuite `live`); obok istniejących `chat.model` i `chat.effort` |
 | Panel | trasa `/chat` (`ChatController`), token CSRF `chat`, ramka Turbo `chat-turn`, przełącznik „Szkic”, etykieta „asystent AI”, przycisk „Skopiowano” przy szkicu; biblioteka `symfony/ux-chartjs` (`render_chart()`, `ChatChartData::chart`, D-73); JavaScript panelu: `importmap.php`, `assets/app.js`, `assets/vendor`, `assets/styles/chat.css`; nonce CSP `CspNonce` (funkcja Twig `csp_nonce()`, atrybut żądania `_csp_nonce`, `meta csp-nonce`); test `PanelImportmapTest` (D-73) |
 | Fixtures | `tests/Fixtures/Claude/messages-*.json` (ręcznie pisane odpowiedzi Messages API z danymi fikcyjnymi, potem nagrania F6.5); scenariusze `app:fixtures:record claude <scenariusz>` |
@@ -677,6 +677,17 @@ Część b: sekcja niżej.
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+
+### Narzędzia okresu w czacie (D-95): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Narzędzia czatu | `get_period_summary` (`month`), `get_cashflow` (`date_to`), `compare_periods` (`date_from`, `date_to`, `compare_from`, `compare_to`); faza w `chat.phases_live`: `F2` |
+| Czat (`src/Chat`) | `ChatQuery::PeriodSummary`, `ChatQuery::Cashflow`, `ChatQuery::ComparePeriods`; stała `ChatToolRegistry::MONTH_PATTERN` |
+| `ChatQueryRejected.reason` | `invalid_month` |
+| Widoki | `chat_filing` (`type`, `period_start`, `purpose`, `seq`, `status`, `accepted_at` i z `filing.totals`: `sales_net`, `vat_due`, `vat_input`, `k11`, `k12`, `p51`, `p62`), `chat_payment` (`invoice_id`, `paid_on`, `amount`, `currency`, `matched_at`); migracja `Version20261027000900` |
+| Kolumny wyników | `revenue_pln`, `jpk_v7m_status`, `jpk_v7m_purpose`, `advance_due`, `zus_due` (`get_period_summary`); `kind` (`obligations`, `receivables`, `payables`), `amount`, `items` (`get_cashflow`); `period` (`current`, `compare`), `sales_net_pln`, `sales_invoices`, `costs_net_pln`, `cost_invoices` (`compare_periods`) |
+| Testy | `ChatPeriodToolsTest` |
 
 ### Kreator pierwszego uruchomienia (D-91): nazwy
 
