@@ -50,7 +50,7 @@ Cele konektorów są niezależne od `APP_ENV` ([architecture.md](architecture.md
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `kokpit-prod` | VPS | `prod` | sejf `prod`; klucz 0400 na hoście ([security.md](security.md)) | każdy cel zmieniany osobno według checklisty go-live | nazwa DNS w Tailscale, port 443 | wszystkie z tabeli wyżej | checki PROD |
 | `kokpit-dev` | laptop | `dev` | sejf `dev` tylko z sekretami celów testowych | testowe; `CONNECTORS_ENABLED` według potrzeby | `localhost` | bez `backup` i `vpn` | brak |
-| `kokpit-restore` | laptop, jednorazowy | `prod` | sejf `prod`; klucz z menedżera haseł tylko na czas testu | testowe; `CONNECTORS_ENABLED=0` | `localhost` | bez `backup` i `vpn`; usuwany po teście | brak |
+| `kokpit-restore` | laptop, jednorazowy | `prod` | bez sejfu PROD; plik hasła bazy projektu i jednorazowy sekret frameworka (D-89) | testowe; `CONNECTORS_ENABLED=0` | brak | tylko `db` i kontenery jednorazowe `scripts/restore-test.sh`; usuwany po teście | brak |
 | CI | GitHub Actions | `test` | sejf tymczasowy z fikcyjnymi wartościami; job `live` czyta sejf `dev` ([security.md](security.md), [testing.md](testing.md)) | testowe | – | joby z [testing.md](testing.md) | brak |
 
 - Na VPS działa tylko `kokpit-prod` (D-28): bez drugiego klucza sejfu, drugiej nazwy DNS i drugiego węzła Tailscale.
@@ -203,14 +203,20 @@ Backup obejmuje bazę i pliki `FileStore` w jednym snapshocie. Cel jest poza ser
 | Kotwica audytu | przed zrzutem `backup.run` czyta głowę łańcucha `audit_log` i zapisuje ją w tagu snapshotu `audit-head:<sequence>:<hash>` (pusty łańcuch: `0` i 64 zera); tagi pokazuje `restic snapshots`, a `app:audit:verify --anchor=<tag>` sprawdza, że wpis o tym numerze ma w bazie ten sam hash (D-79) |
 | Znacznik sukcesu | po udanym `restic backup` kontener `backup` zapisuje plik `var/run/backup/last_success` na wolumenie montowanym w `app` tylko do odczytu; `/health` czyta jego czas modyfikacji |
 
-**Test odtworzenia** w jednorazowym projekcie `kokpit-restore` na laptopie (D-28)
+**Test odtworzenia** w jednorazowym projekcie `kokpit-restore` na laptopie (D-28), jednym poleceniem (D-89)
 
-1. Postaw `kokpit-restore` (`KOKPIT_DEPLOYMENT=restore`) bez usług `backup` i `vpn`, z `CONNECTORS_ENABLED=0` i wszystkimi `*_TARGET` na wartościach testowych. Pingi dead-man nie wychodzą („Monitoring”).
-2. Odtwórz `var/data` i bazę z jednego snapshotu (`restic restore`, `pg_restore`). Klucz restic, poświadczenia celu backupu i klucz sejfu PROD weź z menedżera haseł.
-3. Uruchom `app:files:verify` i `app:audit:verify --anchor=<tag audit-head odtworzonego snapshotu> --anchor=<tag najstarszego snapshotu>`. Oczekiwany wynik: zero niezgodnych hashy, łańcuch poprawny, obie kotwice zgodne.
-4. Porównaj liczby `approval`, `filing` i `revenue_entry` z ostatniego miesiąca z panelem PROD.
-5. Zapisz wynik wpisem `ops.restored` w `kokpit-prod` i w dowodzie `cc-14` ([testing.md](testing.md)).
-6. Usuń projekt razem z wolumenami (`docker compose -f compose.yaml down -v`), katalog odtworzenia i pliki kluczy. W tym katalogu nie działa sesja Claude Code ([security.md](security.md)).
+1. Na VPS: `docker compose -f compose.yaml exec -T app bin/console app:ops:restore-check --counts-only > restore-counts.json`. Plik ma liczby `approval` (`requested_at`), `filing` (`created_at`) i `revenue_entry` (`recorded_at`) z poprzedniego miesiąca w Europe/Warsaw; skopiuj go na laptop.
+2. Na laptopie, w checkoucie commita z ostatniego `ops.deployed`: połóż kopie `restic-password`, `restic-repository`, `s3-access-key` i `s3-secret-key` z menedżera haseł w katalogu poza checkoutem i uruchom `scripts/restore-test.sh --secrets <katalog> --expected restore-counts.json`. Skrypt odmawia w sesji Claude Code (`CLAUDECODE`) i przy katalogu wewnątrz checkoutu.
+3. Skrypt sam robi kroki runbooka:
+   - stawia `kokpit-restore` (`KOKPIT_DEPLOYMENT=restore`, `APP_ENV=prod`, `CONNECTORS_ENABLED=0`, wszystkie `*_TARGET` testowe) tylko z usługą `db`; bez `backup`, `vpn`, `proxy`, workerów i `scheduler`, więc nic nie wychodzi do sieci, a pingi dead-man nie wychodzą („Monitoring”);
+   - odtwarza bazę i `var/data` z jednego snapshotu (domyślnie `latest`, `--snapshot <id>` dla innego): `restic --no-lock` tylko czyta repozytorium, `pg_restore --single-transaction` ładuje zrzut do pustej bazy, pliki trafiają do wolumenu `runtime`;
+   - uruchamia `app:ops:restore-check`: `app:audit:verify` z kotwicami `audit-head:` snapshotu odtworzonego i najstarszego, `app:files:verify` i porównanie liczb z plikiem z kroku 1;
+   - zapisuje raport JSON w `var/evidence/restore/` (poza repo) i usuwa projekt razem z wolumenami (`--keep` zostawia go do obejrzenia).
+4. Oczekiwany wynik: `Test odtworzenia: pass.` i kod wyjścia 0, czyli zero niezgodnych hashy, łańcuch poprawny, obie kotwice zgodne, liczby zgodne z PROD. Inny wynik czytasz w raporcie i w podsumowaniu na stderr.
+5. Na VPS: `docker compose -f compose.yaml exec -T app bin/console app:ops:record-restore - < raport.json` zapisuje wpis `ops.restored`. Raport dołączasz do dowodu `cc-14` ([testing.md](testing.md)).
+6. Usuń katalog z kopiami plików backupu i raport z laptopa po dołączeniu do dowodu. W tym katalogu nie działa sesja Claude Code ([security.md](security.md)).
+
+Test nie potrzebuje klucza sejfu PROD: aplikacja w `kokpit-restore` łączy się z bazą plikiem hasła tego projektu, a sekret frameworka jest jednorazowy. Sprawdzenia czytają tylko bazę i pliki. Klucz sejfu PROD z menedżera haseł potrzebny jest dopiero przy prawdziwej awarii (niżej).
 
 Test odtworzenia robisz na koniec F0a, a potem raz na kwartał (`[manual]`, [testing.md](testing.md)).
 

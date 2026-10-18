@@ -438,7 +438,7 @@ Nawias przy kluczu podaje fazę albo część F2, od której kryterium obowiązu
 | `cc-11` (F0a) fixtures czyste | skaner fixtures i sekretów | zero trafień | `cmd/cc-11.txt` |
 | `cc-12` (F0a) licencje | sprawdzenie licencji Composer z listą dozwolonych | brak GPL | `cmd/cc-12.txt` |
 | `cc-13` (F0a) analiza statyczna i testy | `phpstan` z regułami architektury, `php-cs-fixer --dry-run`, `phpunit`; wymagane joby CI | zielone | `junit.xml`, `cmd/cc-13.txt`, adres przebiegu CI |
-| `cc-14` (F0a, potem raz na kwartał) backup | `[manual]` odtworzenie w jednorazowym projekcie lokalnym (`KOKPIT_DEPLOYMENT=restore`, D-28); `app:files:verify` i `app:audit:verify` na kopii | hashe plików i łańcuch `audit_log` zgodne | `manual/cc-14.txt`, odhaczony wpis |
+| `cc-14` (F0a, potem raz na kwartał) backup | `[manual]` odtworzenie w jednorazowym projekcie lokalnym (`KOKPIT_DEPLOYMENT=restore`, D-28) poleceniem `scripts/restore-test.sh` (D-89); `app:files:verify`, `app:audit:verify` z kotwicami i liczby z PROD na kopii | hashe plików, łańcuch `audit_log`, obie kotwice i liczby zgodne (`passed` w raporcie) | `manual/cc-14.txt` z raportem `var/evidence/restore/kokpit-restore-*.json`, wpis `ops.restored`, odhaczony wpis |
 | `cc-15` (F0a) paczka dowodów | `bin/console kokpit:evidence <phase> --only=ci` w jobie `evidence` | `manifest.json` z każdym wierszem `ci` i `manual` fazy; `pending` przy `manual` bez pliku; skaner bez trafień | `manifest.json` i jego sha256 |
 | `cc-16` (F0b) step-up | zatwierdzenie bez świeżej asercji passkeya | odmowa | `junit.xml` |
 | `cc-17` (F0b) hash payloadu | payload zmieniony po zatwierdzeniu | `cancelled` z `hash_mismatch`; zero wywołań urzędu | `junit.xml` |
