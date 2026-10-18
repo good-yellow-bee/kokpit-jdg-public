@@ -159,6 +159,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
 | D-89 | test odtworzenia jednym poleceniem: `scripts/restore-test.sh` na laptopie stawia jednorazowy `kokpit-restore` tylko z `db`, odtwarza bazę i `var/data` z jednego snapshotu (`restic --no-lock`, `pg_restore`), `app:ops:restore-check` sprawdza łańcuch z kotwicami snapshotu odtworzonego i najstarszego, hashe plików i liczby `approval`, `filing`, `revenue_entry` z miesiąca wobec `--counts-only` z PROD; raport JSON poza repo, `app:ops:record-restore` zapisuje `ops.restored`; bez sejfu PROD na laptopie, odmowa w sesji Claude Code | przyjęta 2026-10-18 | po F0a |
+| D-87 | raport rok do roku w panelu `/reports`: przychód z ewidencji, VAT (należny, naliczony, P_51) z najnowszego przyjętego JPK_V7M, koszty netto firmowe i średni kurs NBP z tabel w bazie per miesiąc roku wobec poprzedniego, z wierszem roku i okresem porównywalnym; eksport CSV; bez nowego narzędzia czatu (`tool_set` bez zmian) | przyjęta 2026-10-18 | po F2.1 |
 | D-86 | kreator zamknięcia roku `/year-close` (tylko odczyt): obowiązki roczne za rok N z terminem w N+1, stan 12 miesięcy (`period`), złożenia roku z liczbą plików XML i UPO, przychód per miesiąc i stawka, klucze `setting` bez wiersza od 1.01 N+1; ZIP roku `kokpit-rok-<N>.zip` z zestawieniami CSV, ewidencją i plikami złożeń sprawdzonymi sha256 | przyjęta 2026-10-18 | po F5 |
 | D-85 | panel zdrowia konektorów `/connectors` (tylko odczyt): podsumowanie `connector_call` per konektor (wywołania, błędy, 429 i limit, średni i p95 czas, ostatnie wywołanie i błąd) za dziś, 7 albo 30 dni, wykres dzienny wywołań i błędów, aktywne blokady `rate_counter`, kursory `sync_cursor` i ostatnie 50 błędów bez ścieżek żądań; indeks `connector_call (environment, started_at)` | przyjęta 2026-10-18 | po F1 |
 | D-84 | lista płatności klientów w panelu `/payments` (tylko odczyt): data, id płatności i faktury FreshBooks, dokument (faktura albo wiersz ewidencji), kwota, bramka, prowizja, wypłata, kurs faktyczny, przypisanie i stan różnic kursowych; filtr `?unmatched=1` (link z liczby nieprzypisanych na stronie FreshBooks) i eksport CSV | przyjęta 2026-10-18 | po F2.2/F2.3 |
@@ -1424,6 +1425,23 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Klucz sejfu PROD nie trafia na laptop; potrzebny jest tylko przy prawdziwej awarii na nowym VPS ([security.md](security.md)).
 - **Skutki:** `scripts/restore-test.sh`, `docker/db/start-db.sh`, `src/Ops/RestoreCheck.php`, `src/Command/{RestoreCheckCommand,RecordRestoreCommand}.php`; testy `RestoreCheckTest`, `RestoreScriptTest`; [operations.md](operations.md), [security.md](security.md), [testing.md](testing.md) (`cc-14`), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
 - **Pytania:** brak. Pierwszy przebieg na prawdziwym snapshocie robisz Ty po starcie `kokpit-prod` (`cc-14`).
+
+### D-87 Raport rok do roku w panelu
+
+- **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Raporty rok do roku” w [roadmap.md](roadmap.md) („Produkt i UX”) chce przychodu, VAT, kosztów i kursów per miesiąc rok do roku z eksportem CSV oraz nowego `query` dla `render_chart`. Strona panelu nie potrzebuje drugiego roku danych, żeby działać: rok bez danych pokazuje „–”. Nowe zapytanie czatu to nowa wersja `tool_set` ([modules/czat.md](modules/czat.md)), a zestaw ewaluacyjny z „Warstwa AI” w [roadmap.md](roadmap.md) ma chodzić przy każdej zmianie `tool_set`.
+- **Decyzja:**
+  - Strona `/reports` (`ReportController`, `YearOverYearReport`), tylko do odczytu, parametry `year` (od 2026 do bieżącego, inaczej bieżący) i `currency` (waluta z tabel NBP w bazie, domyślnie EUR).
+  - Przychód: suma `revenue_entry.amount_pln` wszystkich rodzajów wierszy (z korektami i różnicami kursowymi) według miesiąca `revenue_date`, jak suma K_8 ewidencji.
+  - VAT: `totals` (`vat_due`, `vat_input`, `p51`) najnowszego przyjętego JPK_V7M okresu (najwyższy `seq`, jak P_39 w `JpkV7mBuilder`). Raport nie liczy VAT od nowa: bez przyjętego złożenia miesiąc ma „–”.
+  - Koszty: suma `invoice.net_pln` faktur kosztowych z `cost_review` = `business` według miesiąca `issue_date`, liczba faktur i liczba faktur bez kwoty w zł.
+  - Kurs: średnia `fx_rate.mid` tabel NBP zapisanych w kokpicie (pobranych do faktur i limitów), z liczbą tabel; to nie średnia wszystkich tabel miesiąca.
+  - Różnica rok do roku: dla przychodu i kosztów brak w jednym roku liczy się jako 0; dla P_51 i kursu tylko przy obu wartościach.
+  - Wiersz „cały rok” i, dla roku bieżącego, „styczeń do bieżącego miesiąca” obu lat, bo pełny rok poprzedni zawyża różnicę. Kurs w tych wierszach to średnia ze wszystkich tabel okresu.
+  - Eksport `?format=csv` (D-78): `raport-rok-do-roku-<rok>-<waluta>.csv`, kolumny `<miara>_<rok poprzedni>`, `<miara>_<rok>` i `<miara>_diff`; wiersze `01`–`12`, `rok` i `od-01-do-<miesiąc>`.
+  - Wykres i `query` dla `render_chart` zostają przy „Nowe narzędzia czatu” w [roadmap.md](roadmap.md), razem ze zmianą `tool_set` i zestawem ewaluacyjnym.
+- **Skutki:** `src/Ledger/YearOverYearReport.php`, `src/Controller/ReportController.php`, `templates/panel/reports.html.twig`, `templates/panel/dashboard.html.twig`; test `YearOverYearReportPanelTest`; [modules/ewidencja.md](modules/ewidencja.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-86 Kreator zamknięcia roku
 

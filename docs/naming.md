@@ -689,6 +689,15 @@ Część b: sekcja niżej.
 | Pliki | `var/evidence/restore/kokpit-restore-<RRRRMMDD>T<GGMMSS>Z.json` (0600, poza repo); w wolumenie `backup_state` projektu `kokpit-restore`: `snapshots.json`, `target.json`, `restore/` |
 | Testy | `RestoreCheckTest`, `RestoreScriptTest` |
 
+### Raport rok do roku (D-87): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Usługa | `YearOverYearReport` (`src/Ledger`): miary `revenue_pln`, `vat_due`, `vat_input`, `vat_payable`, `costs_net_pln`, `costs_documents`, `costs_without_pln`, `fx_mid`, `fx_tables` |
+| Panel | `ReportController`: trasa `panel_reports` (`GET /reports`, parametry `year`, `currency`, `format=csv`); plik `raport-rok-do-roku-<rok>-<waluta>.csv`; kolumny `<miara>_<rok>`, `<miara>_diff`; wiersze `01`–`12`, `rok`, `od-01-do-<miesiąc>`; link `#reports-csv` |
+| Szablon | `templates/panel/reports.html.twig`; identyfikatory `#reports-filter`, `#report-revenue`, `#report-vat`, `#report-costs`, `#report-fx`, wiersze `#revenue-<wiersz>`, `#vat-<wiersz>`, `#costs-<wiersz>`, `#fx-<wiersz>` |
+| Testy | `YearOverYearReportPanelTest` |
+
 ### Kreator zamknięcia roku (D-86): nazwy
 
 | Rodzaj | Nazwy |
