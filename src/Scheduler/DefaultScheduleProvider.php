@@ -60,6 +60,8 @@ final class DefaultScheduleProvider implements ScheduleProviderInterface
             // Latarnia KSeF co 5 min (F3.3); przy `CONNECTORS_ENABLED=0` i celu `demo` handler kończy się bez wywołań.
             ->add(RecurringMessage::cron('*/5 * * * *', new RedispatchMessage(new LatarniaStatusMessage('latarnia.status'), 'reads'), $timezone))
             // Obserwacja prawa raz w tygodniu, w poniedziałek rano (D-75); API Sejmu bez okna przerw.
-            ->add(RecurringMessage::cron('30 6 * * 1', new RedispatchMessage(new LegalWatchMessage('legal_watch.check'), 'reads'), $timezone));
+            ->add(RecurringMessage::cron('30 6 * * 1', new RedispatchMessage(new LegalWatchMessage('legal_watch.check'), 'reads'), $timezone))
+            // Przegląd tygodnia mailem po `obligations.recompute` i `credentials.check_expiry` (D-82); wysyła `notifications.dispatch`.
+            ->add(RecurringMessage::cron('30 7 * * 1', new RedispatchMessage(new NotificationDispatchMessage('notifications.weekly_digest'), 'notifications'), $timezone));
     }
 }

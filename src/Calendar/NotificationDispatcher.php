@@ -134,13 +134,16 @@ final readonly class NotificationDispatcher
         $failed = 0;
         foreach ($ids as $id) {
             $result = $this->db->transactional(function () use ($id, $now): ?bool {
-                $row = $this->db->fetchAssociative('SELECT channel,category,deep_link,sent_at FROM notification WHERE id=? FOR UPDATE SKIP LOCKED', [$id]);
-                if ($row === false || $row['sent_at'] !== null || !is_string($row['channel']) || !is_string($row['category']) || !is_string($row['deep_link'])) {
+                $row = $this->db->fetchAssociative('SELECT channel,category,body,deep_link,sent_at FROM notification WHERE id=? FOR UPDATE SKIP LOCKED', [$id]);
+                if ($row === false || $row['sent_at'] !== null || !is_string($row['channel']) || !is_string($row['category']) || !is_string($row['body']) || !is_string($row['deep_link'])) {
                     return null;
                 }
                 try {
                     if ($row['channel'] === 'push') {
                         $this->push->send($row['category'], 1, $row['deep_link']);
+                    } elseif ($row['category'] === WeeklyDigest::CATEGORY) {
+                        $digest = WeeklyDigest::parse($row['body']);
+                        $this->mail->digest($digest['week'], $digest['counts'], $row['deep_link']);
                     } else {
                         $this->mail->send($row['category'], 1, $row['deep_link']);
                     }

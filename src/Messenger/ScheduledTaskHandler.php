@@ -11,6 +11,7 @@ use App\Messenger\Message\FileVerifyMessage;
 use App\Messenger\Message\ObligationRecomputeMessage;
 use App\Calendar\ObligationEngine;
 use App\Calendar\NotificationDispatcher;
+use App\Calendar\WeeklyDigest;
 use App\Messenger\Message\NotificationDispatchMessage;
 use App\Messenger\Message\CredentialExpiryMessage;
 use App\Security\CredentialExpiryChecker;
@@ -23,7 +24,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 final readonly class ScheduledTaskHandler
 {
-    public function __construct(private FileStore $files, private AuditLog $audit, private HeartbeatStore $heartbeat, private ClockInterface $clock, private \App\Connector\DeadMan\DeadManNotifier $deadman, private ObligationEngine $obligations, private NotificationDispatcher $notifications, private CredentialExpiryChecker $credentials, private ChatRetention $chatRetention) {}
+    public function __construct(private FileStore $files, private AuditLog $audit, private HeartbeatStore $heartbeat, private ClockInterface $clock, private \App\Connector\DeadMan\DeadManNotifier $deadman, private ObligationEngine $obligations, private NotificationDispatcher $notifications, private CredentialExpiryChecker $credentials, private ChatRetention $chatRetention, private WeeklyDigest $weeklyDigest) {}
 
     #[AsMessageHandler]
     public function heartbeat(ConnectorCallMessage $message): void
@@ -76,6 +77,8 @@ final readonly class ScheduledTaskHandler
     {
         if ($message->id === 'notifications.dispatch') {
             $this->notifications->run();
+        } elseif ($message->id === 'notifications.weekly_digest') {
+            $this->weeklyDigest->plan();
         }
     }
 

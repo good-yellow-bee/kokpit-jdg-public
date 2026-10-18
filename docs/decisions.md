@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-82 | przegląd tygodnia mailem: zadanie `notifications.weekly_digest` w poniedziałek 7:30 planuje jeden mail `weekly_digest` na tydzień ISO z liczbami otwartych, zaległych i bliskich obowiązków, zatwierdzeń `pending` i `unknown` oraz poświadczeń `expiring` i `expired` środowiska; tylko klucze i liczby, bez kwot, nazw i terminów (D-19); wysyła `notifications.dispatch` | przyjęta 2026-10-18 | po F0b |
 | D-81 | widżet „Najbliższe terminy” na pulpicie panelu: trzy najbliższe otwarte obowiązki środowiska z kalendarza (zaległe na początku), liczba otwartych i link do kalendarza; bez nowej tabeli i ustawienia | przyjęta 2026-10-17 | po F0b |
 | D-80 | paczka diagnostyczna `kokpit:diagnostics`: jeden plik JSON w `var/diagnostics` (wersje, migracje, `/health`, kolejki, poświadczenia bez sekretów, blokady, `connector_call`, logi z wejścia), maskowanie `Redactor` i NIP, skaner fixtures blokuje zapis | przyjęta 2026-10-17 | po F0a |
 | D-79 | kotwica łańcucha `audit_log` poza serwerem: `backup.run` zapisuje głowę łańcucha przed zrzutem w tagu snapshotu restic `audit-head:<sequence>:<hash>`, a `app:audit:verify --anchor` sprawdza bazę wobec tagów | przyjęta 2026-10-17 | po F0a |
@@ -1399,6 +1400,18 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-82 Przegląd tygodnia mailem
+
+- **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Poniedziałkowy przegląd mailem” z listy „Szybkie wygrane” w [roadmap.md](roadmap.md) nie wymaga niczego od właściciela. Push i mail przypomnień dotyczą pojedynczych obowiązków; nic nie zbierało stanu kokpitu w jednym miejscu poza panelem.
+- **Decyzja:**
+  - Zadanie `notifications.weekly_digest` w poniedziałek 7:30 Europe/Warsaw na transporcie `notifications`, po `obligations.recompute` i `credentials.check_expiry`. Wstawia jeden wiersz `notification` (`channel` = `mail`, `category` = `weekly_digest`, bez `obligation_id` i `approval_id`) z kluczem `weekly_digest:<środowisko>:<tydzień ISO>:mail` przez `ON CONFLICT (dedupe_key) DO NOTHING`. Wysyła go `notifications.dispatch`, więc przy `CONNECTORS_ENABLED=0` wiersz czeka jak inne.
+  - Liczby środowiska (`WeeklyDigest::KEYS`): `obligations_open`, `obligations_overdue` (termin przed dziś), `obligations_due_soon` (termin od dziś do 7 dni), `approvals_pending`, `approvals_unknown`, `credentials_expiring`, `credentials_expired` (bez `revoked_at`). Okno 7 dni to stała przeglądu (`WeeklyDigest::DUE_SOON_DAYS`), nie parametr podatkowy.
+  - Treść wiersza: `weekly_digest <tydzień>: klucz=liczba,…; /`. Dispatcher parsuje ją ściśle (`WeeklyDigest::parse`: znane klucze w stałej kolejności, liczby nieujemne) i wysyła `MailNotifier::digest`: temat „Kokpit: przegląd tygodnia <tydzień>”, wiersze `klucz: liczba` i link `/`. Bez kwot, nazw, terminów i treści pism (D-19). Mail idzie także przy samych zerach, jako znak, że zadanie działa.
+  - Tylko mail, bez push: przegląd zastępuje przeglądanie panelu raz w tygodniu, a pilne sprawy mają własne przypomnienia.
+- **Skutki:** `src/Calendar/WeeklyDigest.php`, `src/Calendar/NotificationDispatcher.php`, `src/Connector/Mail/MailNotifier.php`, `src/Messenger/ScheduledTaskHandler.php`, `src/Scheduler/DefaultScheduleProvider.php`; migracja `Version20261025000100` (kategoria `weekly_digest`); testy `WeeklyDigestTest`, `SchedulerTest`; [operations.md](operations.md), [compliance-calendar.md](compliance-calendar.md), [data-model.md](data-model.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-81 Widżet „Najbliższe terminy”
 

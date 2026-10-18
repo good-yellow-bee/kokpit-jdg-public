@@ -126,7 +126,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `approval.subject_type` | `sales_invoice`, `correction_invoice`, `filing`, `draft`; `edelivery_outbound` odłożone (D-29) |
 | `approval.cancel_reason` | `user`, `hash_mismatch`, `manual_filing`, `manual_invoice` |
 | `obligation.type` | `zus`, `ryczalt_advance`, `vat_jpk_v7m`, `vat_ue`, `jpk_ewp`, `jpk_st`, `pit_28`, `invoice_issue`, `ledger_entry`, `wht_payment`, `wht_certificate`, `ift_2r`, `cit_10z`, `health_reconciliation`, `tax_form_choice`, `edelivery_deemed`, `edelivery_reply_due`, `credential_expiry`, `manual_channel_check`, `wl_notice`; `edelivery_deemed` z API F4 odłożony (D-29); `edelivery_reply_due` do powrotu F4 wpisywany ręcznie z pisma (D-29) |
-| `notification.category` | wartości `obligation.type` przy przypomnieniu oraz `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `legal_change` (D-75); `edelivery_new` odłożone (D-29) |
+| `notification.category` | wartości `obligation.type` przy przypomnieniu oraz `approval_pending`, `connector_failure`, `budget_alert`, `freshbooks_bypass`, `legal_change` (D-75), `weekly_digest` (D-82); `edelivery_new` odłożone (D-29) |
 | `invoice.direction` | `sale`, `cost` |
 | `invoice.kind` | `RodzajFaktury` z FA(3): `VAT`, `KOR`, `ZAL`, `ROZ`, `UPR`, `KOR_ZAL`, `KOR_ROZ` |
 | `invoice.tax_scenario` | `eu_b2b`, `eu_b2b_unidentified` (do potwierdzenia przez doradcę, Q-29), `non_eu_b2b`, `pl_b2b` |
@@ -676,6 +676,17 @@ Część b: sekcja niżej.
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+
+### Przegląd tygodnia mailem (D-82): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Kalendarz (`src/Calendar`) | `WeeklyDigest` (`counts`, `plan`, `body`, `parse`; stałe `CATEGORY`, `LINK` = `/`, `KEYS`, `DUE_SOON_DAYS`) |
+| Klucze przeglądu | `obligations_open`, `obligations_overdue`, `obligations_due_soon`, `approvals_pending`, `approvals_unknown`, `credentials_expiring`, `credentials_expired` |
+| Konektor `mail` | `MailNotifier::digest` |
+| Zadanie | `notifications.weekly_digest` (`NotificationDispatchMessage`, transport `notifications`) |
+| Mail | `notification.category` = `weekly_digest`, `dedupe_key` `weekly_digest:<environment>:<RRRR-Wtt>:mail` |
+| Testy | `WeeklyDigestTest` |
 
 ### Widżet „Najbliższe terminy” (D-81): nazwy
 
