@@ -678,6 +678,17 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Kreator pierwszego uruchomienia (D-91): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Ustawienia (`src/Setting`) | `SetupChecklist` (`steps`, `pending`, `sendTest`; stałe `IDENTITY_REQUIRED`, `CREDENTIALS`, `TEST_ACTION`) |
+| Panel | `SetupController`: trasy `panel_setup` (`GET /setup`), `panel_setup_notification_test` (`POST /setup/notification-test`, token CSRF `setup`) |
+| Klucze kroków | `passkeys`, `company_identity`, `company_tax_micro_account`, `company_zus_account`, `zus_variant`, `ryczalt_advance_frequency`, `ryczalt_service_map`, `ksef_sales_transition_on`, `zus_parameters`, `opening_balance`, `credential_ksef_token_read`, `credential_auth_data`, `credential_freshbooks_oauth`, `notification_test` |
+| Akcje audytu | `notification.test_sent` |
+| Szablon | `templates/panel/setup.html.twig`; identyfikatory `#setup-summary`, `#setup-steps`, `#setup-step-<klucz>` (klasa `setup-done` albo `setup-pending`), `#setup-notification-test`; na pulpicie `#setup-pending` |
+| Testy | `SetupPanelTest` |
+
 ### Test odtworzenia jednym poleceniem (D-89): nazwy
 
 | Rodzaj | Nazwy |

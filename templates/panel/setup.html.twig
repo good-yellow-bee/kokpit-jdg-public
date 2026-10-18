@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pierwsze uruchomienie – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Pierwsze uruchomienie</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_settings') }}">Ustawienia</a> · <a href="{{ path('panel_opening') }}">Otwarcie</a> · <a href="{{ path('panel_connectors') }}">Konektory</a> · <a href="{{ path('panel_passkeys') }}">Passkeye</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
+    {% for message in app.flashes('error') %}<p role="alert">{{ message }}</p>{% endfor %}
+    <p id="setup-summary">{% if pending == 0 %}Wszystkie kroki są zrobione.{% else %}Do zrobienia: {{ pending }} z {{ steps|length }} kroków.{% endif %} Każdy krok zapisujesz w jego formularzu; ta strona tylko sprawdza stan.</p>
+
+    <ol id="setup-steps">
+        {% for step in steps %}
+            <li id="setup-step-{{ step.key }}" class="{{ step.done ? 'setup-done' : 'setup-pending' }}">
+                <strong>{{ step.done ? 'zrobione' : 'do zrobienia' }}</strong>:
+                <a href="{{ path(step.route) }}{% if step.anchor %}#{{ step.anchor }}{% endif %}">{{ step.label }}</a>
+                <span class="detail">({{ step.detail }})</span>
+            </li>
+        {% endfor %}
+    </ol>
+
+    <section id="setup-notification-test">
+        <h2>Test powiadomień</h2>
+        <p>Wysyła powiadomienie testowe push i e-mail, jak <code>app:push:test</code>. Przy wyłączonych konektorach nic nie wychodzi.</p>
+        <form method="post" action="{{ path('panel_setup_notification_test') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setup') }}">
+            <button type="submit">Wyślij test push i e-mail</button>
+        </form>
+    </section>
+{% endblock %}
