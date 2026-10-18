@@ -18,11 +18,11 @@ final class PanelController extends AbstractController
     private const UPCOMING_LIMIT = 3;
 
     #[Route('/', name: 'panel_dashboard', methods: ['GET'])]
-    public function dashboard(\App\Config\ConnectorConfiguration $configuration, \App\Passkey\PasskeyManager $passkeys, \App\Counterparty\SelfCheck $selfCheck, \App\Security\CredentialValidity $validity, Connection $db, BusinessDate $date): Response
+    public function dashboard(\App\Config\ConnectorConfiguration $configuration, \App\Passkey\PasskeyManager $passkeys, \App\Counterparty\SelfCheck $selfCheck, \App\Security\CredentialValidity $validity, \App\Setting\SetupChecklist $setup, Connection $db, BusinessDate $date): Response
     {
         $user = $this->getUser();
         $warning = $user instanceof \App\Passkey\AppUser && $passkeys->warning($user->id());
-        return $this->render('panel/dashboard.html.twig', ['banner' => new TargetBanner(['KSeF' => $configuration->ksefTarget,'JPK' => $configuration->jpkTarget,'e-Deklaracje' => $configuration->edeklaracjeTarget], $configuration->enabled),'passkey_warning' => $warning,'registry_alerts' => $selfCheck->alerts(),'credentials' => $validity->rows()] + $this->upcoming($db, $date, $configuration->environment()));
+        return $this->render('panel/dashboard.html.twig', ['banner' => new TargetBanner(['KSeF' => $configuration->ksefTarget,'JPK' => $configuration->jpkTarget,'e-Deklaracje' => $configuration->edeklaracjeTarget], $configuration->enabled),'passkey_warning' => $warning,'registry_alerts' => $selfCheck->alerts(),'credentials' => $validity->rows(),'setup_pending' => $setup->pending($user instanceof \App\Passkey\AppUser ? $user->id() : null)] + $this->upcoming($db, $date, $configuration->environment()));
     }
 
     /**
