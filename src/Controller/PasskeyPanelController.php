@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Passkey\AppUser;
+use App\Passkey\AuthenticatorKind;
 use App\Passkey\PasskeyManager;
 use App\Passkey\StepUpVerifier;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 /** Passkeye w panelu i ceremonia step-up; ścieżki `/passkey/step-up/*` mają CSRF z `PasskeyAccessSubscriber`. */
@@ -21,7 +23,8 @@ final class PasskeyPanelController extends AbstractController
     public function index(PasskeyManager $passkeys): Response
     {
         $user = $this->user();
-        return $this->render('panel/passkeys.html.twig', ['passkeys' => $passkeys->active($user->id()),'warning' => $passkeys->warning($user->id())]);
+        $active = $passkeys->active($user->id());
+        return $this->render('panel/passkeys.html.twig', ['passkeys' => $active,'warning' => $passkeys->warning($user->id()),'security_key' => in_array(AuthenticatorKind::SecurityKey, array_column($active, 'kind'), true)]);
     }
 
     #[Route('/passkey/step-up/options', name: 'passkey_step_up_options', methods: ['POST'])]
@@ -41,7 +44,8 @@ final class PasskeyPanelController extends AbstractController
     public function add(Request $request, PasskeyManager $passkeys): Response
     {
         $this->csrf($request);
-        return $this->redirectToRoute('passkey_enrol', ['token' => $passkeys->enrolmentToken($this->user())]);
+        $kind = AuthenticatorKind::tryFrom($request->request->getString('kind', AuthenticatorKind::Passkey->value)) ?? throw new BadRequestHttpException('Nieznany rodzaj uwierzytelniacza.');
+        return $this->redirectToRoute('passkey_enrol', ['token' => $passkeys->enrolmentToken($this->user(), $kind)]);
     }
 
     #[Route('/passkeys/{id}/revoke', name: 'panel_passkey_revoke', methods: ['POST'], requirements: ['id' => '[0-9a-f-]{36}'])]

@@ -50,14 +50,27 @@ final class PasskeyStepUpTest extends WebTestCase
         $body = json_decode($this->client->getResponse()->getContent() ?: '{}', true);
         return is_array($body) ? $body : [];
     }
-    private function enrol(VirtualAuthenticator $authenticator, string $path): void
+    /** @param list<string> $transports
+     * @return array<string,mixed> opcje ceremonii rejestracji */
+    private function enrol(VirtualAuthenticator $authenticator, string $path, array $transports = []): array
     {
         $this->client->request('GET', $path);
         self::assertResponseIsSuccessful();
         $csrf = $this->attribute('#passkey-enrol', 'data-csrf');
-        $options = $this->post('/passkey/enrol/options', [], $csrf);
+        $result = $this->attribute('#passkey-enrol', 'data-result');
+        $options = $this->post($this->attribute('#passkey-enrol', 'data-options'), [], $csrf);
         self::assertIsString($options['challenge']);
-        $this->post('/passkey/enrol/result', $authenticator->register($options['challenge']), $csrf);
+        $this->post($result, $authenticator->register($options['challenge'], $transports), $csrf);
+        self::assertResponseIsSuccessful();
+        return $options;
+    }
+    private function login(VirtualAuthenticator $authenticator, string $user, int $count): void
+    {
+        $this->client->request('GET', '/login');
+        $csrf = $this->attribute('#passkey-login', 'data-csrf');
+        $options = $this->post('/passkey/login/options', ['username' => 'owner'], $csrf);
+        self::assertIsString($options['challenge']);
+        $this->post('/passkey/login', $authenticator->assertion($options['challenge'], $user, $count), $csrf);
         self::assertResponseIsSuccessful();
     }
     private function stepUp(VirtualAuthenticator $authenticator, string $user, int $count): void
@@ -132,5 +145,57 @@ final class PasskeyStepUpTest extends WebTestCase
         self::assertIsString($audit[3]['details']);
         self::assertStringContainsString('step_up_credential_id', $audit[3]['details']);
         EvidenceArtefacts::write('db/passkey-step-up-audit_log.csv', EvidenceArtefacts::csv($audit));
+    }
+    public function testSecurityKeyEnrolsAsCrossPlatformSecondPasskeyAndSignsIn(): void
+    {
+        $service = self::getContainer()->get(PasskeyEnrollmentService::class);
+        self::assertInstanceOf(PasskeyEnrollmentService::class, $service);
+        $issued = $service->issue('owner', 'Fikcyjny właściciel');
+        $user = $issued['user_id'];
+        $phone = new VirtualAuthenticator();
+        $options = $this->enrol($phone, '/passkey/enrol/' . $issued['token']);
+        self::assertIsArray($options['authenticatorSelection']);
+        self::assertArrayNotHasKey('authenticatorAttachment', $options['authenticatorSelection']);
+        $this->login($phone, $user, 1);
+        $this->client->request('GET', '/passkeys');
+        self::assertSelectorExists('#security-key-hint');
+        // Nieznany rodzaj: 400 po step-upie, bez linku.
+        $this->stepUp($phone, $user, 2);
+        $this->client->request('POST', '/passkeys/add', ['_token' => $this->formToken('#passkey-add'),'kind' => 'platform']);
+        self::assertResponseStatusCodeSame(400);
+        $this->client->request('POST', '/passkeys/add', ['_token' => $this->formToken('#passkey-add'),'kind' => 'security_key']);
+        self::assertResponseRedirects();
+        $location = $this->client->getResponse()->headers->get('Location');
+        self::assertIsString($location);
+        // Link na klucz nie rusza ceremonii passkeya (profil `panel`).
+        $this->client->request('GET', $location);
+        self::assertSelectorExists('#security-key-hint');
+        $this->post('/passkey/enrol/options', [], $this->attribute('#passkey-enrol', 'data-csrf'));
+        self::assertGreaterThanOrEqual(400, $this->client->getResponse()->getStatusCode());
+        $key = new VirtualAuthenticator();
+        $options = $this->enrol($key, $location, ['usb','nfc']);
+        self::assertSame(['authenticatorAttachment' => 'cross-platform','userVerification' => 'required','residentKey' => 'discouraged'], array_intersect_key(is_array($options['authenticatorSelection']) ? $options['authenticatorSelection'] : [], array_flip(['authenticatorAttachment','userVerification','residentKey'])));
+        self::assertIsArray($options['excludeCredentials']);
+        self::assertCount(1, $options['excludeCredentials']);
+        $row = $this->db->fetchAssociative("SELECT id,label,transports FROM webauthn_credential WHERE kind='security_key' AND revoked_at IS NULL");
+        self::assertIsArray($row);
+        self::assertSame('Klucz FIDO2', $row['label']);
+        self::assertSame(['usb','nfc'], json_decode(is_string($row['transports']) ? $row['transports'] : '', true));
+        self::assertNull($this->db->fetchOne('SELECT enrollment_kind FROM app_user WHERE id=?', [$user]));
+        $this->client->request('GET', '/passkeys');
+        self::assertSelectorExists('li[data-kind=security_key]');
+        self::assertSelectorTextContains('li[data-kind=security_key]', 'Klucz FIDO2 (usb, nfc)');
+        self::assertSelectorNotExists('#security-key-hint');
+        self::assertSelectorNotExists('#passkey-warning');
+        // Klucz loguje i daje step-up; użyty klucz trafia do wpisu `auth.step_up`.
+        $this->login($key, $user, 1);
+        $this->stepUp($key, $user, 2);
+        $audit = $this->db->fetchAllAssociative("SELECT action,details FROM audit_log WHERE action IN ('auth.step_up','auth.passkey_enrolled') ORDER BY sequence");
+        self::assertSame(['auth.passkey_enrolled','auth.step_up','auth.passkey_enrolled','auth.step_up'], array_column($audit, 'action'));
+        $enrolled = json_decode(is_string($audit[2]['details']) ? $audit[2]['details'] : '', true);
+        self::assertEquals(['credential_id' => $row['id'],'kind' => 'security_key','transports' => ['usb','nfc']], $enrolled);
+        $stepUp = json_decode(is_string($audit[3]['details']) ? $audit[3]['details'] : '', true);
+        self::assertSame(['credential_id' => $row['id']], $stepUp);
+        EvidenceArtefacts::write('db/passkey-security-key-audit_log.csv', EvidenceArtefacts::csv($audit));
     }
 }

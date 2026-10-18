@@ -9,6 +9,14 @@ webauthn:
       authenticator_selection_criteria:
         user_verification: required
         resident_key: preferred
+    # Klucz FIDO2 jako drugi passkey (D-90): `cross-platform` filtruje do kluczy USB/NFC/BLE; bez wpisu rezydentnego,
+    # bo logowanie podaje `allowCredentials` z bazy, a klucze mają mało miejsca na wpisy.
+    security_key:
+      rp: { name: 'Kokpit JDG' }
+      authenticator_selection_criteria:
+        authenticator_attachment: cross-platform
+        user_verification: required
+        resident_key: discouraged
   request_profiles:
     panel:
       user_verification: required
@@ -18,6 +26,11 @@ webauthn:
         options_path: /passkey/enrol/options
         result_path: /passkey/enrol/result
         profile: panel
+        user_entity_guesser: App\Passkey\EnrollmentUserEntityGuesser
+      enrolment_security_key:
+        options_path: /passkey/enrol/security-key/options
+        result_path: /passkey/enrol/security-key/result
+        profile: security_key
         user_entity_guesser: App\Passkey\EnrollmentUserEntityGuesser
   passkey_endpoints:
     enabled: true

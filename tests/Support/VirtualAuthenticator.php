@@ -30,12 +30,13 @@ final class VirtualAuthenticator
     {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
-    /** @return array<string,mixed> */
-    public function register(string $challenge): array
+    /** @param list<string> $transports transporty z `getTransports()` przeglądarki
+     * @return array<string,mixed> */
+    public function register(string $challenge, array $transports = []): array
     {
         $auth = hash('sha256', 'localhost', true) . "\x45" . pack('N', 0) . str_repeat("\0", 16) . pack('n', strlen($this->id)) . $this->id . $this->cose;
         $attestation = "\xa3\x63fmt\x64none\x68authData\x59" . pack('n', strlen($auth)) . $auth . "\x67attStmt\xa0";
-        return ['id' => self::base64($this->id),'rawId' => self::base64($this->id),'type' => 'public-key','response' => ['clientDataJSON' => self::base64(json_encode(['type' => 'webauthn.create','challenge' => $challenge,'origin' => 'http://localhost'], JSON_THROW_ON_ERROR)),'attestationObject' => self::base64($attestation)]];
+        return ['id' => self::base64($this->id),'rawId' => self::base64($this->id),'type' => 'public-key','response' => ['clientDataJSON' => self::base64(json_encode(['type' => 'webauthn.create','challenge' => $challenge,'origin' => 'http://localhost'], JSON_THROW_ON_ERROR)),'attestationObject' => self::base64($attestation),'transports' => $transports]];
     }
     /** @return array<string,mixed> */
     public function assertion(string $challenge, string $userId, int $count = 1, string $origin = 'http://localhost'): array

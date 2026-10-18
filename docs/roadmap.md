@@ -83,7 +83,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 
 | Propozycja | Co i po co | Wartość | Wysiłek | Ryzyko | Wymaga | Najwcześniej |
 | --- | --- | --- | --- | --- | --- | --- |
-| Klucz sprzętowy do step-upu | Rejestracja passkeya z `authenticatorAttachment` = `cross-platform` filtruje do kluczy FIDO2 ([WebAuthn L3](https://www.w3.org/TR/webauthn-3/)); zatwierdzenia kluczem, logowanie telefonem | M | S | L: utrata klucza → `app:passkey:reset` przez SSH | F0b (`StepUpVerifier` i drugi passkey, D-28) | po F0b |
+| Klucz sprzętowy do step-upu | Rejestracja passkeya z `authenticatorAttachment` = `cross-platform` filtruje do kluczy FIDO2 ([WebAuthn L3](https://www.w3.org/TR/webauthn-3/)): rejestracja klucza jako drugiego passkeya zrobiona (D-90); zostaje wymóg klucza do zatwierdzeń przy logowaniu telefonem | M | S | L: utrata klucza → `app:passkey:reset` przez SSH | F0b (`StepUpVerifier` i drugi passkey, D-28) | po F0b |
 | Sandbox Claude Code | Sandbox systemowy poleceń powłoki z pustą listą domen plus hosty testowe; uzupełnia deny w `.claude/settings.json`, ochroną zostaje `HostAllowlist` ([security.md](security.md)) | M | S | L | F0a | przed F1 |
 | SBOM i skan zależności | `composer audit --locked` w jobie `lint` zrobiony (D-77); SBOM CycloneDX jako artefakt `sbom` zrobiony (D-78, własny `tools/sbom.php` zamiast wtyczki `CycloneDX:make-sbom`, także pakiety JS z importmap); zostaje Dependabot dla Composer w repo prywatnym ([GitHub](https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories)) | M | S | L: plan GitHub (Q-43) | F0a (CI) | po F0a |
 | Test odtworzenia jednym poleceniem | Zrobione (D-89): `scripts/restore-test.sh` stawia jednorazowy projekt lokalny (D-28) z ostatniego snapshotu, `app:ops:restore-check` sprawdza pliki, łańcuch z kotwicami i liczby z PROD, raport JSON w `var/evidence/restore/` (poza repo), `app:ops:record-restore` zapisuje `ops.restored`. Ręcznie zostaje uruchomienie, czytanie raportu i dowód `cc-14` | H (R-26) | M | L: bez sejfu PROD na laptopie; `CONNECTORS_ENABLED=0` | F0a, pierwszy test ręczny | po F0a |
@@ -113,7 +113,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - Kotwica hasha `audit_log` w tagu snapshotu restic: zrobione (D-79).
 - `cache_control` na stałym prefiksie czatu od pierwszej wersji F6: zrobione w F6 (`ChatRequestProfile`). Drugi punkt cache na rosnącej historii rozmowy: zrobione (D-94).
 - Paczka diagnostyczna `kokpit:diagnostics`: zrobione (D-80).
-- Klucz FIDO2 jako drugi passkey, gdy F0b doda drugi passkey (D-28).
+- Klucz FIDO2 jako drugi passkey: zrobione (D-90).
 - Widżet „najbliższe 3 terminy” na stronie startowej panelu: zrobione (D-81).
 - Poniedziałkowy przegląd mailem: liczby otwartych obowiązków, zatwierdzeń i poświadczeń `expiring`, bez kwot (D-19): zrobione (D-82).
 - Eksport CSV każdej listy panelu: ewidencja, obowiązki, faktury sprzedaży i złożenia zrobione (D-78), koszty zrobione (D-83), płatności razem z ich listą `/payments` zrobione (D-84).

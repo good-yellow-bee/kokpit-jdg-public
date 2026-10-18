@@ -7,7 +7,8 @@ for (const mode of Object.keys(paths)) {
         const result = document.getElementById('passkey-result');
         const headers = {'Content-Type': 'application/json', 'X-CSRF-Token': button.dataset.csrf};
         try {
-            const optionsResponse = await fetch(paths[mode][0], {method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify({username: 'owner'})});
+            const [optionsPath, resultPath] = mode === 'enrol' && button.dataset.options ? [button.dataset.options, button.dataset.result] : paths[mode];
+            const optionsResponse = await fetch(optionsPath, {method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify({username: 'owner'})});
             if (!optionsResponse.ok) throw new Error('Nie można rozpocząć uwierzytelnienia.');
             const options = await optionsResponse.json();
             options.challenge = toBuffer(options.challenge);
@@ -15,13 +16,15 @@ for (const mode of Object.keys(paths)) {
             for (const key of ['excludeCredentials', 'allowCredentials']) if (options[key]) options[key] = options[key].map(item => ({...item, id: toBuffer(item.id)}));
             const credential = mode === 'enrol' ? await navigator.credentials.create({publicKey: options}) : await navigator.credentials.get({publicKey: options});
             const payload = {id: credential.id, rawId: toBase64Url(credential.rawId), type: credential.type, response: {clientDataJSON: toBase64Url(credential.response.clientDataJSON)}};
-            if (mode === 'enrol') payload.response.attestationObject = toBase64Url(credential.response.attestationObject);
-            else {
+            if (mode === 'enrol') {
+                payload.response.attestationObject = toBase64Url(credential.response.attestationObject);
+                payload.response.transports = credential.response.getTransports?.() ?? [];
+            } else {
                 payload.response.authenticatorData = toBase64Url(credential.response.authenticatorData);
                 payload.response.signature = toBase64Url(credential.response.signature);
                 payload.response.userHandle = credential.response.userHandle ? toBase64Url(credential.response.userHandle) : null;
             }
-            const saved = await fetch(paths[mode][1], {method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify(payload)});
+            const saved = await fetch(resultPath, {method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify(payload)});
             if (!saved.ok) throw new Error('Uwierzytelnienie nie powiodło się.');
             if (mode === 'step-up') { result.textContent = 'Potwierdzono. Masz 5 minut na akcję.'; return; }
             location.href = mode === 'enrol' ? (button.dataset.next || '/login') : '/';

@@ -1,11 +1,12 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Rejestracja passkeya{% endblock %}
+{% block title %}{{ security_key ? 'Rejestracja klucza FIDO2' : 'Rejestracja passkeya' }}{% endblock %}
 
 {% block body %}
-    <h1>Rejestracja passkeya</h1>
-    <p>Dodajesz passkey dla: {{ display_name }}.</p>
-    <button id="passkey-enrol" data-csrf="{{ csrf_token('passkey') }}" data-next="{{ app.user ? path('panel_passkeys') : path('panel_login') }}" type="button">Dodaj passkey</button>
+    <h1>{{ security_key ? 'Rejestracja klucza FIDO2' : 'Rejestracja passkeya' }}</h1>
+    <p>Dodajesz {{ security_key ? 'klucz sprzętowy FIDO2' : 'passkey' }} dla: {{ display_name }}.</p>
+    {% if security_key %}<p id="security-key-hint">Podłącz klucz do USB albo przyłóż go przez NFC. Przeglądarka poprosi o PIN klucza i dotknięcie.</p>{% endif %}
+    <button id="passkey-enrol" data-csrf="{{ csrf_token('passkey') }}" data-options="{{ kind.enrolPaths.options }}" data-result="{{ kind.enrolPaths.result }}" data-next="{{ app.user ? path('panel_passkeys') : path('panel_login') }}" type="button">{{ security_key ? 'Dodaj klucz FIDO2' : 'Dodaj passkey' }}</button>
     <p id="passkey-result" role="status"></p>
     <script src="{{ asset('passkey.js') }}" defer></script>
 {% endblock %}

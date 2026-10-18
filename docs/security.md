@@ -153,6 +153,7 @@ Panel działa tylko w Tailscale, bez publicznego portu. Uwierzytelnienie nie ufa
 | Utrata urządzeń | komenda `app:passkey:reset` przez SSH unieważnia wszystkie passkeye i wydaje nowy link | F0a, wersja minimalna |
 | Kanał ICS obowiązków | jedyny adres panelu bez passkeya: `GET /calendar-feed/{token}.ics`, token 256 bitów z `app:calendar:feed-link` przez SSH, w bazie tylko sha256; nowy token unieważnia stary, `--revoke` wyłącza kanał; zły token daje 404. Treść jak push: rodzaj i okres obowiązku, bez kwot, notatek i kontrahentów; adres działa tylko w VPN jak panel (D-77) | po F0b |
 | Drugi passkey | co najmniej 2 passkeye na różnych urządzeniach; panel ostrzega, gdy jest jeden; dodanie i unieważnienie ze step-up w `/passkeys`; ostatniego aktywnego panel nie unieważnia (D-40) | F0b |
+| Klucz FIDO2 | „Dodaj klucz FIDO2” w `/passkeys` po step-upie albo `--security-key` w `app:passkey:enrol-link` i `app:passkey:reset`; ceremonia `cross-platform` z PIN-em klucza, bez wpisu rezydentnego; wiersz `kind` = `security_key` z transportami; loguje i daje step-up jak każdy passkey (D-90) | po F0b |
 | Sesja | bezczynność 30 minut, limit bezwzględny 12 godzin; ciasteczko `Secure`, `HttpOnly`, `SameSite=Strict` | F0a |
 | CSRF | token Symfony w każdym formularzu zmieniającym stan, także w formularzach Turbo | F0a |
 | Nagłówki | CSP bez zewnętrznych skryptów, HSTS na nazwie panelu; skrypty i style inline tylko z nonce żądania (`CspNonce`, D-73), bez `unsafe-inline` | F0a, F6 |
