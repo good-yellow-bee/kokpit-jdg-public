@@ -677,6 +677,15 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Cash-flow na 90 dni (D-88): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Ewidencja (`src/Ledger`) | `CashFlow` (`summary`; stałe `HORIZON_DAYS`, `MAX_ROWS`) |
+| Panel | `CashFlowController`: trasa `panel_cashflow` (`GET /cashflow`) |
+| Szablon | `templates/panel/cashflow.html.twig`; identyfikatory `#cashflow-balance`, `#cashflow-receivables-pln`, `#cashflow-obligations-pln`, `#cashflow-payables-pln`, `#cashflow-balance-pln`, `#cashflow-obligations`, `#cashflow-obligation-<id>`, `#cashflow-without-amount`, `#cashflow-receivables`, `#cashflow-receivable-<id>`, `#cashflow-payables`, `#cashflow-payable-<id>` |
+| Testy | `CashFlowPanelTest` |
+
 ### Raport rok do roku (D-87): nazwy
 
 | Rodzaj | Nazwy |

@@ -253,6 +253,10 @@ JPK_EWP(4) powstaje tylko z `revenue_entry`, więc nie czeka na bilans otwarcia.
 
 Strona `/year-close` panelu (D-86) zbiera rok N w jednym miejscu: obowiązki roczne z terminem w roku N+1, stan 12 miesięcy, złożenia z plikami XML i UPO, przychód per miesiąc i stawka oraz klucze `setting` bez wiersza od 1.01 roku N+1. Strona tylko pokazuje stan. Archiwum `kokpit-rok-<N>.zip` ma zestawienia CSV, ewidencję roku i pliki złożeń sprawdzone sha256.
 
+## Cash-flow
+
+Strona `/cashflow` panelu (D-88) zestawia na 90 dni otwarte obowiązki z kwotą (z zaległymi) z należnościami z faktur sprzedaży i kosztami do zapłaty. Saldo liczy tylko kwoty w PLN; inne waluty stoją osobno, bez przeliczania.
+
 ## Blokada okresu
 
 Okres to miesiąc z kluczem `period_start`. Stan zmienia się według tabeli.

@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-88 | cash-flow na 90 dni `/cashflow` (tylko odczyt): otwarte obowiązki z kwotą do końca horyzontu (z zaległymi, po wpłatach częściowych) wobec należności z przyjętych faktur sprzedaży po dopasowanych `payment` i kosztów bez `paid_on`; saldo tylko w PLN, inne waluty osobno, bez przeliczania; rezerwa „do odłożenia dziś” zostaje na panelu „Podatki” (D-76) | przyjęta 2026-10-18 | po F5 |
 | D-87 | raport rok do roku w panelu `/reports`: przychód z ewidencji, VAT (należny, naliczony, P_51) z najnowszego przyjętego JPK_V7M, koszty netto firmowe i średni kurs NBP z tabel w bazie per miesiąc roku wobec poprzedniego, z wierszem roku i okresem porównywalnym; eksport CSV; bez nowego narzędzia czatu (`tool_set` bez zmian) | przyjęta 2026-10-18 | po F2.1 |
 | D-86 | kreator zamknięcia roku `/year-close` (tylko odczyt): obowiązki roczne za rok N z terminem w N+1, stan 12 miesięcy (`period`), złożenia roku z liczbą plików XML i UPO, przychód per miesiąc i stawka, klucze `setting` bez wiersza od 1.01 N+1; ZIP roku `kokpit-rok-<N>.zip` z zestawieniami CSV, ewidencją i plikami złożeń sprawdzonymi sha256 | przyjęta 2026-10-18 | po F5 |
 | D-85 | panel zdrowia konektorów `/connectors` (tylko odczyt): podsumowanie `connector_call` per konektor (wywołania, błędy, 429 i limit, średni i p95 czas, ostatnie wywołanie i błąd) za dziś, 7 albo 30 dni, wykres dzienny wywołań i błędów, aktywne blokady `rate_counter`, kursory `sync_cursor` i ostatnie 50 błędów bez ścieżek żądań; indeks `connector_call (environment, started_at)` | przyjęta 2026-10-18 | po F1 |
@@ -1405,6 +1406,19 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-88 Cash-flow na 90 dni
+
+- **Status:** przyjęta 2026-10-18 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:** pozycja „Cash-flow i rezerwa podatkowa” z tabeli „Produkt i UX” w [roadmap.md](roadmap.md) nie wymaga niczego od właściciela. Rezerwę „do odłożenia dziś” daje już panel „Podatki” (D-76); brakowało zestawienia wypływów do urzędów i ZUS z należnościami i kosztami do zapłaty.
+- **Decyzja:**
+  - Strona `/cashflow` (`CashFlowController`, usługa `CashFlow`), tylko do odczytu, dla środowiska wdrożenia; horyzont `CashFlow::HORIZON_DAYS` = 90 dni od dziś (stała panelu, nie parametr podatkowy). Link „Cash-flow” na pulpicie.
+  - Wypływy: otwarte `obligation` z `amount_due` i terminem do końca horyzontu, także zaległe, w kwocie `amount_due` − `amount_paid`; grupy per miesiąc terminu i typ, zaległe osobno na górze. Otwarte obowiązki płatnicze (`zus`, `ryczalt_advance`, `vat_jpk_v7m`, `wht_payment`, `health_reconciliation`) bez kwoty stoją na liście „bez kwoty jeszcze”, poza saldem.
+  - Należności: faktury sprzedaży `VAT`, `ZAL`, `ROZ`, `UPR` w stanie `accepted` albo `corrected`, pomniejszone o `payment` przypisane do faktury w tej samej walucie; korekty `KOR` nie są należnością.
+  - Koszty do zapłaty: faktury kosztowe bez `paid_on` z `cost_review` pustym, `business` albo `disputed`.
+  - Saldo tylko w PLN (należności PLN − obowiązki − koszty PLN), w `brick/math`. Kwoty w innych walutach stoją osobno, bez przeliczania kursem, bo kurs wpływu nie jest znany. Opis „prognoza, nie porada”; listy do 200 najstarszych pozycji, sumy z wszystkich.
+- **Skutki:** `src/Ledger/CashFlow.php`, `src/Controller/CashFlowController.php`, `templates/panel/cashflow.html.twig`, `templates/panel/dashboard.html.twig`; test `CashFlowPanelTest`; [compliance-calendar.md](compliance-calendar.md), nazwy w [naming.md](naming.md), [roadmap.md](roadmap.md).
+- **Pytania:** brak.
 
 ### D-87 Raport rok do roku w panelu
 
