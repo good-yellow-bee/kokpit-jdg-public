@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Faktury kosztowe – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Faktury kosztowe</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a> · <a id="costs-csv" href="{{ path('panel_costs', {format: 'csv'}) }}">Eksport CSV</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status" id="cost-notice">{{ message }}</p>{% endfor %}
+    {% for message in app.flashes('error') %}<p role="alert" id="cost-error">{{ message }}</p>{% endfor %}
+    {% if check_error %}<p role="alert" id="cost-error">{{ check_error }}</p>{% endif %}
+
+    {% if outcome %}
+    <section id="pre-payment-result">
+        <h2>Sprawdzenie przed przelewem na {{ outcome.order_date }}</h2>
+        {% if outcome.transfer %}
+            <p role="status">Biała lista: TAK. Rachunek należy do czynnego podatnika VAT na dzień zlecenia przelewu.</p>
+            <dl id="transfer-details" data-controller="clipboard">
+                {% for field, label in {recipient: 'Odbiorca', account: 'Rachunek', amount: 'Kwota', title: 'Tytuł'} %}
+                    <dt><label for="transfer-{{ field }}">{{ label }}</label></dt>
+                    <dd><input type="text" readonly size="60" id="transfer-{{ field }}" value="{{ outcome.transfer[field] }}">{% if field == 'amount' %} {{ outcome.transfer.currency }}{% endif %} <button type="button" data-action="clipboard#copy" data-clipboard-source-param="transfer-{{ field }}">Kopiuj</button></dd>
+                {% endfor %}
+                <dt><label for="transfer-all">Wszystko</label></dt>
+                <dd><textarea readonly rows="4" cols="60" id="transfer-all">{{ outcome.transfer.recipient }}
+{{ outcome.transfer.account }}
+{{ outcome.transfer.amount }} {{ outcome.transfer.currency }}
+{{ outcome.transfer.title }}</textarea> <button type="button" data-action="clipboard#copy" data-clipboard-source-param="transfer-all">Kopiuj wszystko</button> <span data-clipboard-target="status" role="status"></span></dd>
+            </dl>
+            <p>Przelew zlecasz sam w banku; kokpit niczego nie wysyła. {% if outcome.ksef_number is null %}Faktura nie ma numeru KSeF, więc tytuł ma tylko jej numer.{% endif %}</p>
+        {% else %}
+            <p role="alert" id="pre-payment-warning">Biała lista: {{ outcome.result == 'invalid' ? 'NIE' : 'brak wyniku (' ~ outcome.result ~ ')' }}. Rachunek nie jest potwierdzony na dzień zlecenia przelewu; danych do przelewu kokpit nie pokazuje.</p>
+            {% if outcome.exits is not empty %}
+                <p>Wartość transakcji {{ outcome.value_pln }} zł przekracza próg <code>white_list.pre_payment_threshold_pln</code>. Wyjścia (art. 117ba § 3 Ordynacji podatkowej):</p>
+                <ul id="pre-payment-exits">
+                    <li>zmień rachunek: poproś dostawcę o rachunek z wykazu i sprawdź go ponownie formularzem przy fakturze;</li>
+                    <li>zapłać w mechanizmie podzielonej płatności;</li>
+                    <li>złóż zawiadomienie ZAW-NR w 7 dni od zlecenia przelewu:
+                        <form method="post" action="{{ path('panel_cost_notice', {id: checked_invoice}) }}" id="pre-payment-notice">
+                            <input type="hidden" name="_token" value="{{ csrf_token('costs') }}">
+                            <input type="hidden" name="order_date" value="{{ outcome.order_date }}">
+                            <button type="submit">Dodaj obowiązek zawiadomienia</button>
+                        </form>
+                    </li>
+                </ul>
+            {% else %}
+                <p>Wartość transakcji {{ outcome.value_pln }} zł nie przekracza progu, więc zadania z wyjściami nie ma.</p>
+            {% endif %}
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% if costs is empty %}<p>Brak faktur kosztowych.</p>{% else %}
+    <table id="cost-invoices">
+        <thead><tr><th>Faktura</th><th>Data wystawienia</th><th>Dostawca</th><th>Kwota brutto</th><th>Numer KSeF</th><th>Stan</th><th>Zapłacono</th><th>Sprawdź przed przelewem</th></tr></thead>
+        <tbody>
+        {% for cost in costs %}
+            <tr id="cost-{{ cost.id }}">
+                <td>{{ cost.invoice_number }}</td>
+                <td>{{ cost.issue_date }}</td>
+                <td>{{ cost.counterparty_name }} ({{ cost.counterparty_country }})</td>
+                <td>{{ cost.gross_total }} {{ cost.currency }}</td>
+                <td>{{ cost.ksef_number ?? '–' }}</td>
+                <td>{{ cost.cost_status }}{{ cost.cost_review ? ', ' ~ cost.cost_review : '' }}</td>
+                <td>{{ cost.paid_on ?? '–' }}</td>
+                <td>
+                    {% if cost.checkable %}
+                        <form method="post" action="{{ path('panel_cost_check', {id: cost.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('costs') }}">
+                            <label>Rachunek <input type="text" name="account" size="32" value="{{ cost.account }}" required></label>
+                            <label>Dzień zlecenia <input type="date" name="order_date" value="{{ today }}" required></label>
+                            <button type="submit">Sprawdź przed przelewem</button>
+                        </form>
+                    {% else %}
+                        <span>tylko dostawca z PL z NIP</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

@@ -107,7 +107,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 
 - Eksport ICS obowiązków z tabeli integracji: zrobione (D-77).
 - Liczby pod kreator Twój e-PIT: przychód i ryczałt per miesiąc i stawka, do przepisania; wpłaty kreator ma z urzędu.
-- Przycisk kopiowania danych przelewu przy „Sprawdź przed przelewem”: rachunek, kwota, tytuł z numerem KSeF od 1.01.2027.
+- Przycisk kopiowania danych przelewu przy „Sprawdź przed przelewem”: rachunek, kwota, tytuł z numerem KSeF od 1.01.2027: zrobione (D-83, strona `/costs`).
 - `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt (zrobione, D-78).
 - Sandbox Claude Code z pustą listą domen przed F1.
 - Kotwica hasha `audit_log` w tagu snapshotu restic: zrobione (D-79).
@@ -116,7 +116,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - Klucz FIDO2 jako drugi passkey, gdy F0b doda drugi passkey (D-28).
 - Widżet „najbliższe 3 terminy” na stronie startowej panelu: zrobione (D-81).
 - Poniedziałkowy przegląd mailem: liczby otwartych obowiązków, zatwierdzeń i poświadczeń `expiring`, bez kwot (D-19): zrobione (D-82).
-- Eksport CSV każdej listy panelu: ewidencja, obowiązki, faktury sprzedaży i złożenia zrobione (D-78); koszty i płatności razem z ich listami w panelu.
+- Eksport CSV każdej listy panelu: ewidencja, obowiązki, faktury sprzedaży i złożenia zrobione (D-78), koszty zrobione (D-83); płatności razem z ich listą w panelu.
 
 ## Świadomie odrzucone
 

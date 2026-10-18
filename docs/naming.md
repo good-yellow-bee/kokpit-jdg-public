@@ -677,6 +677,16 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Faktury kosztowe w panelu i dane do przelewu (D-83): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Panel | `CostController`: trasy `panel_costs` (`GET /costs`, parametry `invoice`, `check`, `format=csv`), `panel_cost_check` (`POST /costs/{id}/check`, pola `account`, `order_date`), `panel_cost_notice` (`POST /costs/{id}/notice`, pole `order_date`); token CSRF `costs`; plik `koszty.csv`; link `#costs-csv` |
+| Szablon | `templates/panel/costs.html.twig`; identyfikatory `#cost-invoices`, `#cost-<id>`, `#cost-notice`, `#cost-error`, `#pre-payment-result`, `#transfer-details`, `#transfer-recipient`, `#transfer-account`, `#transfer-amount`, `#transfer-title`, `#transfer-all`, `#pre-payment-warning`, `#pre-payment-exits`, `#pre-payment-notice` |
+| Rejestry (`src/Counterparty`) | `PrePaymentCheck::outcome`, `PrePaymentCheck::title`; pole wyniku `transfer` (`recipient`, `account`, `amount`, `currency`, `title`) i `order_date` |
+| Stimulus | kontroler `clipboard` (`assets/controllers/clipboard_controller.js`): akcja `clipboard#copy`, parametr `source` (id pola), cel `status` |
+| Testy | `CostPanelTest` |
+
 ### Przegląd tygodnia mailem (D-82): nazwy
 
 | Rodzaj | Nazwy |
