@@ -49,6 +49,7 @@ else
   done
 fi
 [ -z "$expected" ] || [ -s "$expected" ] || { echo 'Brak pliku --expected.' >&2; exit 2; }
+[ -z "$expected" ] || expected=$(cd "$(dirname "$expected")" && pwd -P)/$(basename "$expected")
 
 cd "$root"
 # Jednorazowy projekt: APP_ENV=prod jak PROD, ale konektory wyłączone, cele testowe, bez backup, vpn, proxy i workerów.
