@@ -76,7 +76,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 | Streszczenie pisma po odbiorze | Po `receive()` zadanie `letter_analysis` daje streszczenie maskowanej treści, terminy z cytatem zdania i propozycję `reply_due_date`; potwierdzasz Ty. Dziś analiza tylko na pytanie w czacie | H | S | M: zakres treści (Q-34); wstrzyknięcia (R-38), wynik to tylko tekst i data | powrót F4 PROD („Odłożone z planu faz”), F6, Q-34 | po powrocie F4 PROD i po F6 |
 | Nowe narzędzia czatu | `get_period_summary` (K_8, K_12, P_51, zaliczka), `get_cashflow`, `explain_filing` (pole pliku → wiersze źródłowe), `compare_periods`; każde jako nazwane zapytanie na `chat_ro`, nowy `tool_set` | M | S na narzędzie | L | F5, F6 | po F6 |
 | Zestaw ewaluacyjny czatu | 50–100 pytań z oczekiwanymi wywołaniami narzędzi i liczbami (historia `chat_message`, złote przypadki z [testing.md](testing.md)); uruchamiany przy zmianie `chat.model`, `chat.effort`, promptu i `tool_set`; raport jako artefakt przebiegu CI (D-28) | H (R-41) | M | L: koszt; Batch API daje 50% zniżki ([cennik](https://platform.claude.com/docs/en/about-claude/pricing)) | F6 | po F6, przed pierwszą zmianą modelu |
-| Koszt czatu: cache i uzgodnienie | `cache_control` na stałym prefiksie (system, narzędzia, snapshot prawa): odczyt z cache to 0,1× ceny wejścia Haiku 5.5. Miesięczne porównanie sum `cost_usd` z Cost API; Admin API tylko dla konta organizacji, nie indywidualnego ([Usage and Cost API](https://platform.claude.com/docs/en/manage-claude/usage-cost-api)) | M | S | L | F6 | cache w F6, uzgodnienie po F6 |
+| Koszt czatu: cache i uzgodnienie | `cache_control` na stałym prefiksie (system, narzędzia, snapshot prawa): odczyt z cache to 0,1× ceny wejścia Haiku 5.5. Miesięczne porównanie sum `cost_usd` z Cost API; Admin API tylko dla konta organizacji, nie indywidualnego ([Usage and Cost API](https://platform.claude.com/docs/en/manage-claude/usage-cost-api)) | M | S | L | F6 | cache prefiksu w F6, cache historii rozmowy D-94; uzgodnienie po F6 |
 | Tryb bez chmury | Ten sam tool runner na lokalnym modelu przez llama.cpp, np. Bielik-11B-v3.0-Instruct (Apache-2.0, kwantyzacje dostępne, [HF](https://huggingface.co/speakleash/Bielik-11B-v3.0-Instruct)); te same narzędzia i `Redactor`. Jakość oceniona zestawem ewaluacyjnym | M (Q-33 bez transferu do USA) | L | M: jakość; VPS ma 2 GB (D-28), więc inny host (Q-14) | F6, zestaw ewaluacyjny, Q-14 | 2028 |
 
 ### Ops, bezpieczeństwo, jakość
@@ -111,7 +111,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 - `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt (zrobione, D-78).
 - Sandbox Claude Code z pustą listą domen przed F1.
 - Kotwica hasha `audit_log` w tagu snapshotu restic: zrobione (D-79).
-- `cache_control` na stałym prefiksie czatu od pierwszej wersji F6: zrobione w F6 (`ChatRequestProfile`).
+- `cache_control` na stałym prefiksie czatu od pierwszej wersji F6: zrobione w F6 (`ChatRequestProfile`). Drugi punkt cache na rosnącej historii rozmowy: zrobione (D-94).
 - Paczka diagnostyczna `kokpit:diagnostics`: zrobione (D-80).
 - Klucz FIDO2 jako drugi passkey, gdy F0b doda drugi passkey (D-28).
 - Widżet „najbliższe 3 terminy” na stronie startowej panelu: zrobione (D-81).
