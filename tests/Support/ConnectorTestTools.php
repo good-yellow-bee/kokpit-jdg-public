@@ -20,9 +20,9 @@ use Symfony\Component\HttpClient\MockHttpClient;
 final class ConnectorTestTools
 {
     /** @param array<string,int> $limits */
-    public static function configuration(bool $enabled = true, string $appEnvironment = 'test', array $limits = [], string $ksefTarget = 'test'): ConnectorConfiguration
+    public static function configuration(bool $enabled = true, string $appEnvironment = 'test', array $limits = [], string $ksefTarget = 'test', string $mailInHost = ''): ConnectorConfiguration
     {
-        return new ConnectorConfiguration($appEnvironment, 'dev', $enabled, $ksefTarget, 'test', 'test', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', $limits);
+        return new ConnectorConfiguration($appEnvironment, 'dev', $enabled, $ksefTarget, 'test', 'test', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', $limits, $mailInHost);
     }
     public static function http(Connection $db, MockClock $clock, MockHttpClient $mock, ?Redactor $redactor = null, bool $enabled = true, string $ksefTarget = 'test'): ConnectorHttpClient
     {

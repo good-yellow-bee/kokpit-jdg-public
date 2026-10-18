@@ -37,6 +37,23 @@ final class HostAllowlistTest extends TestCase
         $guard->assertAllowed('mail', 'default', 'https://smtp.example.invalid', 'SMTP');
         self::addToAssertionCount(1);
     }
+    public function testMailInReachesOnlyTheConfiguredMailbox(): void
+    {
+        $guard = new HostAllowlist(ConnectorHosts::HOSTS, ConnectorTestTools::configuration(mailInHost: 'imap.example.invalid'), new MockHttpClient(new MockResponse('fictional')));
+        $guard->assertAllowed('mail_in', 'default', 'https://imap.example.invalid', 'IMAP');
+        self::addToAssertionCount(1);
+        foreach ([['mail_in','https://imap.example.invalid.evil.invalid'],['mail_in','https://smtp.example.invalid'],['mail','https://imap.example.invalid'],['dummy','https://imap.example.invalid']] as [$connector,$url]) {
+            try {
+                $guard->assertAllowed($connector, 'default', $url, 'IMAP');
+                self::fail('Skrzynka dopuszczona: ' . $connector . ' ' . $url);
+            } catch (ConnectorException) {
+                self::addToAssertionCount(1);
+            }
+        }
+        // Bez `MAIL_IN_HOST` konektor nie ma żadnego hosta.
+        $this->expectException(ConnectorException::class);
+        $this->guard()->assertAllowed('mail_in', 'default', 'https://imap.example.invalid', 'IMAP');
+    }
     public function testRejectsMalformedOffTargetAndRedirectableRequests(): void
     {
         foreach (['http://dummy.invalid','https://dummy.invalid.evil.invalid','https://user:pass@dummy.invalid','https://dummy.invalid:444','https://dummy.invalid#secret','https://127.0.0.1','file:///tmp/data'] as $url) {

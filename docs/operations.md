@@ -173,9 +173,23 @@ Jeden harmonogram `default` z `stateful(cache)`, `processOnlyLastMissedRun(true)
 | `latarnia.status` | co 5 min | `reads` | ostatni status | – | F3 | [modules/ksef.md](modules/ksef.md) |
 | `jpk.replace_di` | codziennie 09:00 | `reads` | idempotentne przypisanie numeru KSeF | – | F5 | [modules/jpk.md](modules/jpk.md) |
 | `legal_watch.check` | poniedziałek 06:30 | `reads` | `legal_watch.snapshot_sha256` i klucz push ze stanem | – | po F6 (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
+| `mail_in.fetch` | co 30 min | `reads` | kursor UID w `mail_in_message`, `UNIQUE (environment, uid_validity, uid)` | – | po F1 (D-92) | niżej, „Skrzynka dokumentów kosztowych” |
 
 - Przypomnienia o ręcznym przeglądzie kanałów doręczeń tworzy `obligations.recompute` jako obowiązek `manual_channel_check` ([compliance-calendar.md](compliance-calendar.md), [modules/e-doreczenia.md](modules/e-doreczenia.md)).
 - Polling skrzynki e-Doręczeń jest odłożony razem z F4 (D-29). Skrzynkę ADE firmy sprawdzasz w aplikacji e-Doręczeń.
+
+### Skrzynka dokumentów kosztowych
+
+Konektor `mail_in` (D-92) czyta jedną dedykowaną skrzynkę tylko do odczytu. Bez `MAIL_IN_HOST` zadanie `mail_in.fetch` kończy się bez połączenia. Uruchomienie robisz Ty:
+
+1. Załóż osobną skrzynkę (albo alias z osobnym kontem) tylko na faktury i paragony; nie podłączaj głównej skrzynki. Włącz w niej IMAP i utwórz hasło aplikacji, jeśli dostawca je ma.
+2. Ustaw `MAIL_IN_HOST` (host IMAP dostawcy, port 993) w zmiennych wdrożenia `kokpit-prod`; compose przekazuje go do usług aplikacji.
+3. Zapisz poświadczenie w sejfie wdrożenia: `bin/console secrets:set MAIL_IN_PROD_DSN` z wartością `imaps://<użytkownik>:<hasło>@<host>/INBOX` (znaki `@`, `:` i `/` w użytkowniku i haśle zakodowane jak w URL, np. `%40`). Host musi być ten sam co w `MAIL_IN_HOST`.
+4. Restart workerów, potem `bin/console app:mail-in:fetch`: wynik `"status":"ok"` i wiersz `connector_call` konektora `mail_in` bez `error_code`.
+5. Dokumenty są na stronie „Dokumenty z poczty” (`/mail-in`, link na stronie kosztów).
+
+- Rotacja: nowe hasło u dostawcy → `secrets:set MAIL_IN_PROD_DSN` → restart workerów → `app:mail-in:fetch`.
+- Błąd sesji daje push `connector_failure` (`mail_in`, np. `login_failed`) raz na dobę; kod jest też na stronie `/mail-in` i w `/connectors`.
 
 ## Monitoring
 
@@ -266,7 +280,7 @@ Inwentarz i stany są w [security.md](security.md). Zakończenie rotacji zależy
 | --- | --- |
 | rodzaj statyczny z `credential_state.kind`: `ksef_token_read`, `ksef_token_write`, `ksef_auth_cert`, `ksef_offline_cert`, `auth_data` | `app:credential:register <kind> --valid-until=…`, `app:credential:smoke <kind>` i wpis `credential.rotated` |
 | `auth_data` | test dymny to lokalna walidacja XSD SIG-2008, bez wysyłki |
-| sekret bez `credential_state.kind` (klucz Claude API, ntfy, SMTP, restic, sejf PROD) | wywołanie testowe i wpis `credential.rotated` |
+| sekret bez `credential_state.kind` (klucz Claude API, ntfy, SMTP, skrzynka `mail_in`, restic, sejf PROD) | wywołanie testowe i wpis `credential.rotated` |
 | rodzaj rotujący (`ksef_jwt_*`, `freshbooks_oauth`) | zapis przez `SecretStore::put`, bez Twojego udziału |
 
 | Rodzaj | Kiedy | Kroki |

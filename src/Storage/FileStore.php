@@ -14,7 +14,7 @@ final readonly class FileStore
     private const EXTENSIONS = ['application/xml' => 'xml','text/xml' => 'xml','application/pdf' => 'pdf','application/json' => 'json','text/plain' => 'txt','text/csv' => 'csv','image/jpeg' => 'jpg','image/png' => 'png'];
     private const KINDS = ['xml_sent','upo','pdf','evidence','verification_raw','cost_document','outbound_payload'];
     public function __construct(private Connection $db, private ClockInterface $clock, private LockFactory $locks, private AuditLog $audit, private string $root) {}
-    public function put(string $bytes, string $environment, string $kind, string $mediaType, string $ownerTable, string $ownerId, int $paymentDueYear, bool $legalHold = false): string
+    public function put(string $bytes, string $environment, string $kind, string $mediaType, string $ownerTable, string $ownerId, int $paymentDueYear, bool $legalHold = false, ?string $originalName = null): string
     {
         if (!in_array($environment, ['test','demo','prod'], true) || !in_array($kind, self::KINDS, true) || !isset(self::EXTENSIONS[$mediaType]) || !preg_match('/^[a-z][a-z_]*$/D', $ownerTable) || !Uuid::isValid($ownerId) || $paymentDueYear < 2000 || $paymentDueYear > 9994) {
             throw new \InvalidArgumentException('Niepoprawne metadane pliku.');
@@ -23,7 +23,7 @@ final readonly class FileStore
         $lock = $this->locks->createLock('files.storage');
         $lock->acquire(true);
         try {
-            return $this->db->transactional(function () use ($bytes, $environment, $kind, $mediaType, $ownerTable, $ownerId, $paymentDueYear, $legalHold, $sha): string {
+            return $this->db->transactional(function () use ($bytes, $environment, $kind, $mediaType, $ownerTable, $ownerId, $paymentDueYear, $legalHold, $originalName, $sha): string {
                 $existing = $this->db->fetchAssociative('SELECT id,path,deleted_at FROM stored_file WHERE environment=? AND owner_table=? AND owner_id=? AND kind=? AND sha256=?', [$environment,$ownerTable,$ownerId,$kind,$sha]);
                 if ($existing !== false && is_string($existing['id'])) {
                     if ($existing['deleted_at'] !== null) {
@@ -79,7 +79,7 @@ final readonly class FileStore
                 }
                 $id = UuidV7::generate($this->clock->now());
                 $now = $this->clock->now()->format('c');
-                $this->db->insert('stored_file', ['id' => $id,'environment' => $environment,'kind' => $kind,'sha256' => $sha,'path' => $path,'size_bytes' => strlen($bytes),'media_type' => $mediaType,'owner_table' => $ownerTable,'owner_id' => $ownerId,'retention_until' => sprintf('%04d-12-31', $paymentDueYear + 5),'legal_hold' => $legalHold ? 'true' : 'false','created_at' => $now,'updated_at' => $now]);
+                $this->db->insert('stored_file', ['id' => $id,'environment' => $environment,'kind' => $kind,'sha256' => $sha,'path' => $path,'size_bytes' => strlen($bytes),'media_type' => $mediaType,'original_name' => $originalName,'owner_table' => $ownerTable,'owner_id' => $ownerId,'retention_until' => sprintf('%04d-12-31', $paymentDueYear + 5),'legal_hold' => $legalHold ? 'true' : 'false','created_at' => $now,'updated_at' => $now]);
                 return $id;
             });
         } finally {

@@ -90,6 +90,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | Panel | `app_user`, `webauthn_credential` | [data-model.md](data-model.md) |
 | Czat | `chat_session`, `chat_message` | [data-model.md](data-model.md) |
 | Obserwacja prawa | `legal_watch`, `legal_watch_hit` (D-75) | [data-model.md](data-model.md) |
+| Poczta przychodząca | `mail_in_message` (D-92) | [data-model.md](data-model.md) |
 | basal | `classification`: odłożone (D-29), poza schematem F0a | [modules/basal.md](modules/basal.md) |
 
 - `app_user` i `edelivery_case` zamiast `user` i `case`, bo to słowa zastrzeżone w PostgreSQL.
@@ -144,7 +145,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `stored_file.kind` | `xml_sent`, `upo`, `pdf`, `evidence`, `attachment`, `verification_raw`, `cost_document`, `outbound_payload` |
 | `credential_state.kind` | `ksef_token_read`, `ksef_token_write`, `ksef_auth_cert`, `ksef_offline_cert`, `ksef_jwt_read`, `ksef_jwt_write`, `auth_data`, `freshbooks_oauth`, `dummy_token` (tylko konektor `dummy`); `edoreczenia_qualified_cert` i `edoreczenia_access_token` odłożone (D-29) |
 | `sync_cursor.stream` | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments`; e-Doręczenia `inbox`, `outbox` odłożone (D-29) |
-| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md) (w tym `ksef.export_part`, D-71), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `eli.read`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
+| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md) (w tym `ksef.export_part`, D-71), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `eli.read`, `mail_in.fetch`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
 | `ryczalt.advance_frequency` (`setting`) | `monthly`, `quarterly` (Q-17) |
 | `zus.variant` (`setting`) | `full`, `preferential`, `start_relief`; F0b implementuje `full` (Q-16) |
 | `environment` | `test`, `demo`, `prod`; `int` odłożone (D-29) |
@@ -180,6 +181,7 @@ Nazwy przyjęte 8.10.2026 z plików-domów i z przeglądu. Pełna tabela kluczy 
 | `jpk`, `edeklaracje` | `Jpk`, `EDeklaracje` |
 | `vies`, `white_list`, `nbp` | `Vies`, `WhiteList`, `Nbp` |
 | `eli` | `Eli`; API Sejmu dla obserwacji prawa, tylko odczyt (D-75) |
+| `mail_in` | `MailIn`; dedykowana skrzynka na dokumenty kosztowe, IMAP tylko do odczytu (D-92) |
 | `freshbooks` | `FreshBooks` |
 | `claude` | `Claude` |
 | `basal` | `Basal`; odłożone (D-29) |
@@ -260,6 +262,7 @@ Cele są niezależne od `APP_ENV`, mają osobne zestawy poświadczeń i osobną 
 | `app:ledger:import <źródło> <rok> [--file=<plik>]` | idempotentny import ewidencji ze źródła `import`, `freshbooks` albo `ksef_subject1`; `import` wymaga `--file` z eksportem narzędzia (XML JPK_EWP(4) albo CSV); `freshbooks` i `ksef_subject1` od F2.2 | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) |
 | `app:jpk:dry-run <typ> <rok> --until=<data>` | JPK bez zatwierdzenia i bez konektora `jpk` | [phases/f2-ewidencja.md](phases/f2-ewidencja.md) |
 | `app:ksef:parallel-compare <rok-miesiąc>` | okres równoległy F3: mapuje fakturę FreshBooks połączoną z fakturą Subject1 na FA(3) i porównuje; bez zatwierdzenia i wysyłki | [modules/ksef.md](modules/ksef.md) |
+| `app:mail-in:fetch` | jedna sesja skrzynki dokumentów kosztowych teraz, wynik JSON (`status`, `messages`, `documents`) (D-92) | [operations.md](operations.md) |
 | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` | obserwacja prawa teraz; szkic wierszy do tabeli „Obserwacja prawa” w [facts.md](facts.md) z niesprawdzonych trafień (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
 | `kokpit:diagnostics [--days=1..90] [--logs=<plik>\|-]` | paczka diagnostyczna JSON w `var/diagnostics` bez sekretów, logi po `Redactor` (D-80) | [operations.md](operations.md) |
 | `kokpit:evidence <phase>` | uruchamia komendy kryteriów `ci` albo `live` fazy i zbiera artefakty z `manifest.json`, zamaskowane przez `Redactor`; powstaje w F0a | [testing.md](testing.md) |
@@ -711,6 +714,23 @@ Część b: sekcja niżej.
 | Klucze raportu | `kind`, `checked_at`, `commit`, `schema_version`, `snapshot`, `oldest_snapshot`, `files`, `audit` (`chain_valid`, `head`, `anchors`), `counts` (`month`, `restored`, `expected`, `matches`), `passed` |
 | Pliki | `var/evidence/restore/kokpit-restore-<RRRRMMDD>T<GGMMSS>Z.json` (0600, poza repo); w wolumenie `backup_state` projektu `kokpit-restore`: `snapshots.json`, `target.json`, `restore/` |
 | Testy | `RestoreCheckTest`, `RestoreScriptTest` |
+
+### Poczta przychodząca (D-92): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Konektor (`src/Connector/MailIn`) | `mail_in`, `MailInConnector` (`fetch`, `configured`), `ImapClient` (`assertReadOnly`, `connect`, `login`, `examine`, `uidsFrom`, `sizes`, `message`, `logout`, `sentDigest`, `receivedDigest`), `ImapStream`, `TlsImapStream`, `MimeParser`, `ParsedMail`, `MailAttachment`, `FetchedMail`, `MailInError`, `MailInException`; operacja `connector_call` `fetch`; licznik `mail_in.fetch` |
+| `MailInError` | `network_error`, `login_failed`, `mailbox_unavailable`, `protocol_error`, `write_refused`, `invalid_credential`, `import_failed`; nowe kody dopuszcza CHECK `connector_call_error_code` |
+| Koszty (`src/Cost`) | `MailInbox` (`run`, wynik `status`: `ok`, `failed`, `rate_limited`, `disabled`, `not_configured`; `mediaType`) |
+| Tabela | `mail_in_message` (`uid_validity`, `uid`, `message_id_sha256`, `from_address`, `subject`, `sent_at`, `size_bytes`, `status`, `documents`, `skipped`, `fetched_at`, `handled_at`, `handled_by`); indeksy `mail_in_message_open`, `mail_in_message_message_id` |
+| `mail_in_message.status` | `new` (są dokumenty), `no_document`, `too_large`, `duplicate`, `unreadable` |
+| Pliki | `stored_file` `cost_document` z `owner_table` = `mail_in_message`; `original_name` z nagłówka nadawcy po oczyszczeniu |
+| Audyt | `mail_in.received`, `mail_in.handled` |
+| Konfiguracja | `MAIL_IN_HOST` (`app.mail_in.default_host`, pusty = skrzynka wyłączona), `ConnectorConfiguration::mailInHost`, `mail_in.timeout_s`, `mail_in.max_message_bytes`, `mail_in.max_messages_per_run`; sekrety `MAIL_IN_TEST_DSN`, `MAIL_IN_PROD_DSN` (`imaps://użytkownik:hasło@host/folder`) |
+| Messenger | `MailInFetchMessage` (`mail_in.fetch`, transport `reads`), handler `MailInFetchHandler` |
+| Panel | `MailInController`: trasy `panel_mail_in` (`GET /mail-in`), `panel_mail_in_file` (`GET /mail-in/files/{id}`), `panel_mail_in_handled` (`POST /mail-in/{id}/handled`, token CSRF `mail_in`); szablon `templates/panel/mail_in.html.twig`; identyfikatory `#mail-in-status`, `#mail-in-open`, `#mail-in-error`, `#mail-in-notice`, `#mail-in-messages`, `#mail-in-<id>` |
+| Komenda | `app:mail-in:fetch` (`MailInFetchCommand`) |
+| Testy | `MailInboxTest`, `MailInPanelTest`, `MimeParserTest`, `ImapClientTest`, `ScriptedImapStream`; fixtures `tests/Fixtures/MailIn/invoice-pdf.eml`, `nested-forward.eml`, `no-attachment.eml`, `session-first.txt`, `session-second.txt`, `session-new-validity.txt`, `session-login-failed.txt` |
 
 ### Cash-flow na 90 dni (D-88): nazwy
 

@@ -1,0 +1,4 @@
+# Fictional IMAP session: wrong fictional password.
+S: * OK fictional IMAP server ready
+C: K001 LOGIN "koszty@example.invalid" "fictional-mail-in-password"
+S: K001 NO [AUTHENTICATIONFAILED] Invalid credentials (fictional)

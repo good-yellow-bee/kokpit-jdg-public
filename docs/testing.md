@@ -56,6 +56,7 @@ Odłożone testy F4 są w [modules/e-doreczenia.md](modules/e-doreczenia.md); ni
 | `white_list` | `wykazpodatnikowvat-test.mf.gov.pl`, dawny `wl-test.mf.gov.pl` ([API wykazu](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat)) | nagrania; liczniki `white_list.search` i `white_list.check` osobno | host testowy | – |
 | `nbp` | brak; PROD tylko do odczytu | nagrania | PROD przez licznik, ręcznie | kursy publiczne |
 | `eli` | brak; jeden publiczny host, tylko odczyt | nagrania `tests/Fixtures/Eli` i ręcznie zmienione warianty fikcyjne | `app:legal-watch check` ręcznie, nigdy z testów | dane publiczne, bez danych osobowych (D-75) |
+| `mail_in` | brak; dedykowana skrzynka właściciela tylko na PROD | fikcyjne sesje IMAP i wiadomości `tests/Fixtures/MailIn` odtwarzane przez `ScriptedImapStream`; test listy poleceń tylko do odczytu | `app:mail-in:fetch` ręcznie na `kokpit-prod`, nigdy z testów | wyłącznie fikcyjne wiadomości i załączniki (D-92) |
 | `freshbooks` | brak sandboxu i firmy testowej (D-35, [FreshBooks API, 8.10.2026](https://www.freshbooks.com/api/start)) | ręcznie pisane fixtures i nagrania oczyszczone | brak; prawdziwa firma tylko odczytem, ręcznie przez `app:fixtures:record` | fikcyjni klienci i faktury |
 | `claude` | brak | nagrane odpowiedzi Messages API | tak, z budżetem przebiegu | tylko dane fikcyjne |
 | `push`, `mail`, `deadman` | brak | transport i Symfony Mailer w pamięci; ping przez `MockHttpClient` | `[manual]` push na telefon, mail, alert dead-man | – |

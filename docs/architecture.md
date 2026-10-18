@@ -99,6 +99,7 @@ Wspólny kontrakt konektora jest w [../.claude/rules/integrations.md](../.claude
 | `white_list` | `WhiteList` | API wykazu podatników VAT | brak, tylko odczyt | bez klucza | weryfikacja NIP i rachunków | F1 |
 | `nbp` | `Nbp` | API NBP, tabela A | brak, tylko odczyt | bez klucza | kursy średnie | F1 |
 | `eli` | `Eli` | API Sejmu: ELI i procesy legislacyjne | brak, tylko odczyt | bez klucza | obserwacja prawa ([modules/obserwacja-prawa.md](modules/obserwacja-prawa.md)) | po F6 (D-75) |
+| `mail_in` | `MailIn` | IMAPS dedykowanej skrzynki na dokumenty kosztowe | brak; testy na fikcyjnych sesjach | hasło skrzynki w `MAIL_IN_<ENV>_DSN` | tylko odczyt: `EXAMINE`, `BODY.PEEK[]`, załączniki do `FileStore` (`cost_document`) | po F1 (D-92) |
 | `freshbooks` | `FreshBooks` | FreshBooks API | brak; bez firmy testowej (D-35) | OAuth, aplikacja per wdrożenie | polling faktur i płatności tylko do odczytu; od F3 zapis zwrotny numeru KSeF, pierwszy raz na PROD (D-35) | F2.2/F2.3, F3 |
 | `claude` | `Claude` | Claude API (Messages) | brak | klucz osobnego workspace z limitem wydatków | tylko odczyt danych przez narzędzia; synchronicznie w żądaniu panelu | F6 |
 | `push` | `Push` | ntfy (D-19, Q-15) | brak | token tematu | powiadomienia | F0a |
@@ -142,9 +143,10 @@ Nazwy zmiennych i wartości domyślne są w [naming.md](naming.md). Decyzje: D-1
 | `vies` | `ec.europa.eu`, ścieżka `…/rest-api/check-vat-test-service` | – | `ec.europa.eu`, ścieżka `…/rest-api/check-vat-number` | [VIES test](https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service) |
 | `nbp` | – | – | `api.nbp.pl` | [API NBP](https://api.nbp.pl/en.html) |
 | `eli` | – | – | `api.sejm.gov.pl` | [API Sejmu](https://api.sejm.gov.pl/) |
+| `mail_in` | – | – | host z `MAIL_IN_HOST`, port 993 | D-92 |
 
 - Hosty e-Doręczeń (UA API, SE API, INT i PROD) wracają z F4 (D-29), według [modules/e-doreczenia.md](modules/e-doreczenia.md).
-- `freshbooks`, `claude`, `push`, `mail` i `deadman` mają po jednym hoście z konfiguracji. `dummy` ma tylko `dummy.invalid` w `MockHttpClient`.
+- `freshbooks`, `claude`, `push`, `mail`, `mail_in` i `deadman` mają po jednym hoście z konfiguracji. `dummy` ma tylko `dummy.invalid` w `MockHttpClient`.
 
 **Wyjścia poza PHP**
 
@@ -174,6 +176,7 @@ Allowlista w kodzie jest prawdziwą ochroną przed przypadkowym wywołaniem PROD
 - NBP ma tylko host PROD `api.nbp.pl`. `kokpit-dev` dopuszcza go tylko dla konektora `nbp`, tylko `GET` i przez licznik `nbp.rates`.
 - Testy automatyczne NBP zostają na nagraniach przy `CONNECTORS_ENABLED=0` ([testing.md](testing.md)).
 - API Sejmu ma jeden publiczny host `api.sejm.gov.pl`. Dopuszcza go tylko konektor `eli`, tylko `GET` i przez licznik `eli.read`; testy automatyczne idą na nagraniach (D-75).
+- `mail_in` nie idzie przez HttpClient: `MailInConnector` sprawdza host `MAIL_IN_HOST` w `HostAllowlist` przed połączeniem TLS, a host z sekretu musi być ten sam. Bez `MAIL_IN_HOST` konektor nie ma hosta. Polecenia IMAP ogranicza lista tylko do odczytu w `ImapClient` (D-92).
 - `CONNECTORS_ENABLED=0` blokuje wszystkie konektory, także `push`, `mail`, `claude` i `deadman`.
 - Test jednostkowy przechodzi przez każdy konektor z celem innym niż `prod` i pada, jeśli host PROD jest osiągalny. Przy `JPK_TARGET=test` sprawdza też, że host magazynu PROD jest odrzucany.
 - Ten sam test sprawdza rejestry przy `APP_ENV` `dev` i `test`. Pada, jeśli adres PROD białej listy albo VIES jest osiągalny.
@@ -205,6 +208,7 @@ Ta sekcja to dom semantyki `rate_counter`. Kolumny są w [data-model.md](data-mo
 | `white_list` | dwa liczniki: `white_list.search` i `white_list.check` | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) |
 | `vies`, `nbp` | `vies.check`, `nbp.rates` | [modules/rejestry-kursy.md](modules/rejestry-kursy.md) |
 | `eli` | `eli.read` (100 na dobę) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
+| `mail_in` | `mail_in.fetch` (100 na dobę), jedna sesja IMAP na zużycie | [decisions.md](decisions.md), D-92 |
 | `freshbooks` | `freshbooks.api`; 429 z backoffem i `Retry-After`; bez obsługi 409, bo kokpit nie tworzy faktur | [modules/freshbooks.md](modules/freshbooks.md) |
 | `claude` | `claude.messages` (D-34): 429 i `blocked_until`; budżety USD liczy kod z sum `chat_message.cost_usd` | [modules/czat.md](modules/czat.md) |
 | `jpk` | `jpk.init_upload` | [modules/jpk.md](modules/jpk.md) |

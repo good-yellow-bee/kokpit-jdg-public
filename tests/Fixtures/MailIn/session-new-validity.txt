@@ -1,0 +1,20 @@
+# Fictional IMAP session: the mailbox was recreated (new UIDVALIDITY) and still holds the first fictional invoice.
+S: * OK fictional IMAP server ready
+C: K001 LOGIN "koszty@example.invalid" "fictional-mail-in-password"
+S: K001 OK LOGIN completed
+C: K002 EXAMINE "INBOX"
+S: * 1 EXISTS
+S: * OK [UIDVALIDITY 1700000002] UIDs valid
+S: K002 OK [READ-ONLY] EXAMINE completed
+C: K003 UID SEARCH UID 1:*
+S: * SEARCH 7
+S: K003 OK SEARCH completed
+C: K004 UID FETCH 7 (UID RFC822.SIZE)
+S: * 1 FETCH (UID 7 RFC822.SIZE @size:invoice-pdf.eml)
+S: K004 OK FETCH completed
+C: K005 UID FETCH 7 (UID BODY.PEEK[])
+S: * 1 FETCH (UID 7 BODY[] @literal:invoice-pdf.eml)
+S: K005 OK FETCH completed
+C: K006 LOGOUT
+S: * BYE fictional IMAP server logging out
+S: K006 OK LOGOUT completed

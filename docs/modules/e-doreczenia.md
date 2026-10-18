@@ -57,7 +57,7 @@ Każdy kanał ma swój skutek prawny. Kokpit nie monitoruje żadnego kanału prz
 | skrzynka eZUS | powiadomienie mailem albo SMS-em; każdy płatnik ją ma; czy działa fikcja – niezweryfikowane | przypomnienie `manual_channel_check` raz w tygodniu | bez zmian; API brak | Ty |
 
 - Przypomnienia `manual_channel_check` tworzy `ObligationEngine` od F0b, jedno na kanał i tydzień.
-- Odczyt maili z powiadomieniami do kalendarza jest poza zakresem: kokpit nie ma konektora poczty przychodzącej (propozycja w [../roadmap.md](../roadmap.md)).
+- Konektor poczty przychodzącej `mail_in` (D-92) czyta tylko dedykowaną skrzynkę na dokumenty kosztowe, tylko do odczytu, i nie dotyczy kanałów doręczeń. Rozpoznawanie maili z powiadomieniami e-US, eZUS i e-Doręczeń jest dalej poza zakresem (propozycja w [../roadmap.md](../roadmap.md)). Mail z powiadomieniem nie jest treścią pisma ani jego odbiorem, a kokpit nie otwiera linków z maili.
 - Aktywność prywatnego ADE i zgoda na e-Korespondencję: Q-13. Domyślnie oba kanały sprawdzasz ręcznie.
 - Reguł automatycznego przekazywania pism do innych systemów (art. 19 ust. 6 pkt 1 lit. b [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)) nie ustawiasz: przekazanie treści może oznaczać odbiór (art. 41 ust. 2).
 

@@ -6,8 +6,8 @@ namespace App\Config;
 
 final readonly class ConnectorConfiguration
 {
-    /** @param array<string,int> $dailyLimits */
-    public function __construct(public string $appEnvironment, public string $deployment, public bool $enabled, public string $ksefTarget, public string $jpkTarget, public string $edeklaracjeTarget, public string $pushEndpoint, public string $mailHost, public string $deadmanHost, public array $dailyLimits)
+    /** @param array<string,int> $dailyLimits `mailInHost` pusty: skrzynka `mail_in` nieskonfigurowana (D-92) */
+    public function __construct(public string $appEnvironment, public string $deployment, public bool $enabled, public string $ksefTarget, public string $jpkTarget, public string $edeklaracjeTarget, public string $pushEndpoint, public string $mailHost, public string $deadmanHost, public array $dailyLimits, public string $mailInHost = '')
     {
         if (!in_array($deployment, ['dev','prod','restore'], true) || (in_array($deployment, ['prod','restore'], true) && $appEnvironment !== 'prod')) {
             throw new \InvalidArgumentException('Wdrożenie prod/restore wymaga APP_ENV=prod.');
