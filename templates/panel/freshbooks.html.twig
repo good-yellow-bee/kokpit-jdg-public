@@ -30,7 +30,7 @@
             </tbody>
         </table>
         {% endif %}
-        <p>Płatności bez przypisanej faktury: {{ unmatched }}.</p>
+        <p>Płatności bez przypisanej faktury: <a id="payments-unmatched" href="{{ path('panel_payments', {unmatched: '1'}) }}">{{ unmatched }}</a>.</p>
     </section>
     <section id="sales-tasks">
         <h2>Zadania sprzedaży</h2>

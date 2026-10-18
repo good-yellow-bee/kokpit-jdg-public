@@ -677,6 +677,14 @@ Część b: sekcja niżej.
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
 | Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
 
+### Płatności klientów w panelu (D-84): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Panel | `PaymentController`: trasa `panel_payments` (`GET /payments`, parametry `unmatched=1`, `format=csv`); pliki `platnosci.csv`, `platnosci-nieprzypisane.csv`; linki `#payments-csv`, `#payments-unmatched` (strona FreshBooks) |
+| Szablon | `templates/panel/payments.html.twig`; identyfikatory `#payments`, `#payment-<id>`, `#payments-filter` |
+| Testy | `PaymentPanelTest` |
+
 ### Faktury kosztowe w panelu i dane do przelewu (D-83): nazwy
 
 | Rodzaj | Nazwy |

@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Płatności – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Płatności klientów</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a id="payments-csv" href="{{ path('panel_payments', unmatched_only ? {format: 'csv', unmatched: '1'} : {format: 'csv'}) }}">Eksport CSV</a></nav>
+    <p>Płatności z FreshBooks, tylko do odczytu. Przypisanie do faktury i różnice kursowe robi synchronizacja FreshBooks.</p>
+    <p id="payments-filter">
+        {% if unmatched_only %}
+            Tylko nieprzypisane ({{ unmatched_count }}). <a href="{{ path('panel_payments') }}">Wszystkie</a>
+        {% else %}
+            Nieprzypisanych: {{ unmatched_count }}. <a href="{{ path('panel_payments', {unmatched: '1'}) }}">Tylko nieprzypisane</a>
+        {% endif %}
+    </p>
+    {% if payments is empty %}<p>Brak płatności.</p>{% else %}
+    <table id="payments">
+        <thead><tr><th>Data</th><th>Płatność FreshBooks</th><th>Dokument</th><th>Kwota</th><th>Bramka</th><th>Prowizja</th><th>Wypłata</th><th>Kurs faktyczny</th><th>Przypisana</th><th>Różnice kursowe</th></tr></thead>
+        <tbody>
+        {% for payment in payments %}
+            <tr id="payment-{{ payment.id }}">
+                <td>{{ payment.paid_on }}</td>
+                <td>{{ payment.freshbooks_payment_id }}{% if payment.freshbooks_invoice_id %} (faktura {{ payment.freshbooks_invoice_id }}){% endif %}</td>
+                <td>{{ payment.document_number ?? '–' }}</td>
+                <td>{{ payment.amount }} {{ payment.currency }}</td>
+                <td>{{ payment.gateway ?? '–' }}</td>
+                <td>{{ payment.fee_amount is not null ? payment.fee_amount ~ ' ' ~ payment.fee_currency : '–' }}</td>
+                <td>{{ payment.payout_amount is not null ? payment.payout_amount ~ ' ' ~ payment.payout_currency ~ (payment.payout_on ? ', ' ~ payment.payout_on : '') : '–' }}</td>
+                <td>{{ payment.actual_rate ?? '–' }}</td>
+                <td class="matched">{{ payment.matched_at ? 'tak' : 'nie' }}</td>
+                <td>{{ payment.currency == 'PLN' ? 'nie dotyczy' : (payment.fx_posted_at ? 'zaksięgowane' : 'czeka') }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endblock %}
