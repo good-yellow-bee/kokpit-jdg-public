@@ -14,7 +14,7 @@ final class CiWorkflowTest extends TestCase
         $root = dirname(__DIR__, 2);
         $content = file_get_contents($root . '/.github/workflows/ci.yml');
         self::assertIsString($content);
-        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,uses?:string,with?:array<string,string>}>}>} $workflow */
+        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,uses?:string,env?:array<string,string>,with?:array<string,string>}>}>} $workflow */
         $workflow = Yaml::parse($content);
         self::assertSame(['push','pull_request','workflow_dispatch'], array_keys($workflow['on']));
         // D-43: gałąź PR liczy minuty raz (pull_request), push tylko na main, starsze przebiegi PR anulowane.
@@ -34,6 +34,12 @@ final class CiWorkflowTest extends TestCase
                 self::assertStringContainsString('--testsuite ' . $suite, implode("\n", array_column($jobs[$job]['steps'], 'run')));
             }
         }
+        // Certyfikat testowy MF dla JPK live ze zmiennej repozytorium, przed testsuite `live` (D-97).
+        $liveRuns = array_map(static fn(array $step): string => $step['run'] ?? '', $jobs['live']['steps']);
+        $certificate = array_search('sh scripts/ci-mf-test-cert.sh', $liveRuns, true);
+        self::assertIsInt($certificate);
+        self::assertLessThan(array_key_last(array_filter($liveRuns, static fn(string $run): bool => str_contains($run, '--testsuite live'))), $certificate);
+        self::assertSame(['MF_TEST_CERT_PEM' => '${{ vars.MF_TEST_CERT_PEM }}'], $jobs['live']['steps'][$certificate]['env'] ?? null);
         // Skan podatności zależności w jobie lint (D-77).
         self::assertStringContainsString('composer audit --locked', implode("\n", array_column($jobs['lint']['steps'], 'run')));
         // SBOM jako artefakt joba lint (D-78).
