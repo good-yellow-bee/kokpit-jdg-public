@@ -11,6 +11,7 @@ Decyzja przyjęta 2026-10-09: Q-14, D-18. Na VPS działa tylko projekt `kokpit-p
 | nazwa DNS w VPN z zaufanym certyfikatem | passkey i przekierowanie OAuth FreshBooks wymagają HTTPS | [security.md](security.md) |
 | brak publicznych portów | panel, baza i workery tylko w Tailscale albo w sieci compose | [security.md](security.md) |
 | lokalizacja w UE | dane podatkowe i RODO; przechowywanie poza Polską sprawdzasz z art. 112a ustawy o VAT | [security.md](security.md) |
+| architektura x86_64 (amd64), KVM z `/dev/net/tun` | job CI `images` buduje obrazy tylko dla amd64; sidecar Tailscale potrzebuje `/dev/net/tun`, więc kontenery LXC i OpenVZ odpadają | `.github/workflows/ci.yml`, `compose.yaml` (usługa `vpn`) |
 | zegar przez NTP | ważność tokenów KSeF; P_1 to dzień wysyłki w Europe/Warsaw (D-16) | [uwierzytelnianie KSeF](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/uwierzytelnianie.md) |
 | stały publiczny IPv4 | teraz niepotrzebny; dostęp INT e-Doręczeń działa tylko ze zgłoszonych adresów, więc wymóg wraca z F4 (D-29) | [regulamin INT](https://www.gov.pl/attachment/f8d3d63b-74ca-4c89-b35b-773eaf2a924a) |
 
@@ -123,7 +124,7 @@ Decyzja: D-98. Na świeżym VPS `scripts/prod-install.sh` przygotowuje wszystko,
 
 | Krok | Co robi | Gdzie zostaje |
 | --- | --- | --- |
-| 1 | sprawdza `docker compose`, `git`, `make`, `cosign`, `/dev/net/tun` i pamięć | – |
+| 1 | odmawia na hoście innym niż x86_64; sprawdza `docker compose`, `git`, `make`, `cosign`, `/dev/net/tun` i pamięć | – |
 | 2 | pyta bez echa o brakujące pliki hosta: klucz Tailscale, repozytorium restic `s3:https://…`, klucze S3, adres pingu `backup.run`; generuje hasło restic; zakłada plik wdrożenia | `/etc/kokpit/secrets/` (0400), `/etc/kokpit/prod.env` |
 | 3 | pobiera obrazy `app` i `proxy` commita i sprawdza podpis jak `make verify-images` | lokalne obrazy |
 | 4 | przy pustej bazie generuje hasła ról `postgres`, `kokpit_owner`, `kokpit_app`, `kokpit_backup`, `chat_ro`; przy istniejącej bazie brak pliku zatrzymuje skrypt; zapisuje `pgpass` dla `kokpit_backup` | wolumeny `owner_credentials`, `app_credentials`; `secrets/pgpass` |

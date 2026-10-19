@@ -96,6 +96,15 @@ jobs:
           done
       # Próba pierwszej instalacji na właśnie zbudowanych obrazach, dane fikcyjne, bez Tailscale, rejestru i S3 (D-98).
       - run: APP_IMAGE="$REGISTRY/app:$GITHUB_SHA" PROXY_IMAGE="$REGISTRY/proxy:$GITHUB_SHA" scripts/prod-install.sh --rehearsal
+      # Instalacja PROD odmawia na hoście innym niż x86_64, zanim cokolwiek zapisze.
+      - run: |
+          fake=$(mktemp -d)
+          printf '#!/bin/sh\necho aarch64\n' > "$fake/uname"
+          chmod +x "$fake/uname"
+          status=0
+          sudo env PATH="$fake:$PATH" scripts/prod-install.sh --node proba --host-dir "$fake/host" 2> "$fake/err" < /dev/null || status=$?
+          cat "$fake/err"
+          [ "$status" = 2 ] && grep -q 'Host aarch64: obrazy kokpitu są tylko dla x86_64' "$fake/err" && [ ! -e "$fake/host" ]
       - if: env.PUBLISH == 'true'
         env:
           REGISTRY_TOKEN: ${{ github.token }}
