@@ -86,7 +86,9 @@ if [ "$rehearsal" = 1 ]; then
   trap cleanup EXIT
 fi
 
-step '1/8 Host: narzędzia, urządzenie VPN, pamięć.'
+step '1/8 Host: architektura, narzędzia, urządzenie VPN, pamięć.'
+# CI buduje obrazy tylko dla amd64; na innej architekturze make deploy padłby na exec format error.
+[ "$rehearsal" = 1 ] || [ "$(uname -m)" = x86_64 ] || die "Host $(uname -m): obrazy kokpitu są tylko dla x86_64 (docs/operations.md, „Hosting”)."
 command -v docker > /dev/null || die 'Brak docker.'
 docker compose version > /dev/null || die 'Brak wtyczki docker compose.'
 command -v git > /dev/null || die 'Brak git.'
