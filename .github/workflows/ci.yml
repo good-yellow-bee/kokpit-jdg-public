@@ -89,7 +89,7 @@ jobs:
       - run: cosign version
       - run: |
           for target in production:app proxy:proxy; do
-            docker build --target "${target%%:*}" \
+            docker build --platform linux/amd64 --target "${target%%:*}" \
               --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
               --label "org.opencontainers.image.revision=$GITHUB_SHA" \
               -t "$REGISTRY/${target##*:}:$GITHUB_SHA" .
