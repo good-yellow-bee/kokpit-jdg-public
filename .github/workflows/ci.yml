@@ -144,6 +144,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sh scripts/ci-bootstrap.sh
+      # Certyfikat testowy MF dla testów JPK live ze zmiennej repozytorium (D-97); bez niego job kończy się przed testami.
+      - env:
+          MF_TEST_CERT_PEM: ${{ vars.MF_TEST_CERT_PEM }}
+        run: sh scripts/ci-mf-test-cert.sh
       - run: docker compose exec -T -e CONNECTORS_ENABLED=1 -e CHAT_LIVE_RUN_BUDGET_USD app vendor/bin/phpunit --testsuite live --fail-on-empty-test-suite
       - run: sh scripts/ci-evidence.sh
       - uses: actions/upload-artifact@v4

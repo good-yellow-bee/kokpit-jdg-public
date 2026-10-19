@@ -158,6 +158,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-68 | F5.6 e-Deklaracje na bramce testowej: VAT-UE(5) i VAT-UEK(5) z `DaneAutoryzujace` przyjęte z UPO (bez 418 i 410), D-27 i Q-32 potwierdzone; testy live przez bramkę zatwierdzeń z prawdziwym klientem pod `HostAllowlist`, nagrania z przebiegu live przez `Scrubber` (zapis urzędowy nie idzie przez `app:fixtures:record`) | przyjęta 2026-10-15 | F5.6 |
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
+| D-97 | job `live` bierze publiczny certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` (nie sekretu), sprawdza go `openssl x509` z ważnością i zapisuje do `var/jpk/mf-test.crt` w kontenerze `app` przed testsuite `live`; bez zmiennej job kończy się przed testami | przyjęta 2026-10-19 | F5.3 |
 | D-96 | PIT-28 przez e-Deklaracje: złożenie `PIT_28` za rok przez bramkę zatwierdzeń i konektor `edeklaracje` z `DaneAutoryzujace` z `auth_data`; generator per wariant formularza z opublikowanego XSD w `resources/xsd`, bez wariantu dla roku prośba odmawia; bramki JPK_EWP roku i przyjęty JPK_EWP z tymi samymi sumami per stawka; na PROD dodatkowo zapis przeglądu doradcy wariantu (`pit_28.review`); najpierw bramka testowa; tylko pierwsze złożenie, korekta ręcznie | przyjęta 2026-10-18 | Q-02 |
 | D-95 | nowe narzędzia czatu z fazy F2: `get_period_summary` (K_8 z ewidencji, najnowszy przyjęty JPK_V7M, zaliczka i ZUS okresu), `get_cashflow` (reguły `/cashflow`, sumy per waluta), `compare_periods` (dwa okresy: przychód, sprzedaż i koszty netto PLN); widoki `chat_filing` (tylko liczby z `filing.totals`) i `chat_payment` (bez identyfikatorów FreshBooks) dla `chat_ro`; nowy `tool_set`, więc tylko nowe rozmowy; `explain_filing` zostaje w roadmapie | przyjęta 2026-10-18 | F6 |
 | D-93 | podpisane obrazy i kanał aktualizacji: job CI `images` buduje `app` i `proxy`, z push do `main` publikuje je w GHCR z tagiem sha i podpisuje digest cosign bez klucza (OIDC GitHub Actions, Sigstore); `make deploy` pobiera obrazy commita zamiast budować, weryfikuje tożsamość `ci.yml@refs/heads/main`, wyzwalacz push i sha commita, przypina digest; `make rollback KOKPIT_COMMIT=<sha>`, `make verify-images` i `make update-check`; cosign i dostęp do GHCR na VPS robi właściciel | przyjęta 2026-10-18 | po F0a |
@@ -1392,7 +1393,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 - **Skutki:**
   - Kod testów: `tests/Live/JpkLiveRun.php`, `JpkLiveTestCase`, `JpkTeEwpUpoTest`, `JpkTeStUpoTest`, `JpkTeDuplicateTest`, `JpkTeTlsTest`, `JpkTeV7mUpoTest`, `tests/Integration/JpkLiveRecordingTest.php`; parametr `live` w `FakeJpkGateway`, `JpkSendTestCase` i `JpkV7mTestCase`; kod aplikacji bez zmian.
   - Rejestr `tests/Acceptance/f5.yaml`: wiersze F5.3 i `jpk-te-v7m-upo`.
-  - Job `live` w CI potrzebuje pliku `var/jpk/mf-test.crt`; bez niego testy JPK live kończą się komunikatem o braku certyfikatu.
+  - Job `live` w CI potrzebuje pliku `var/jpk/mf-test.crt`; bez niego testy JPK live kończą się komunikatem o braku certyfikatu. Od D-97 job bierze go ze zmiennej repozytorium `MF_TEST_CERT_PEM`.
 
 ### D-70 F3.5: KSeF na api-test, własny klient zamiast biblioteki
 
@@ -1414,6 +1415,18 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-97 Certyfikat testowy MF w jobie `live`
+
+- **Status:** przyjęta 2026-10-19 (Twoje polecenie „go” w wątku z instrukcjami dla właściciela).
+- **Kontekst:** testy `tests/Live/JpkTe*` wymagają pliku `var/jpk/mf-test.crt` (D-69). Job `live` startuje z czystego checkoutu, a `var/` i `*.crt` są poza repo, więc pierwszy ręczny przebieg kończyłby się brakiem certyfikatu. `CiWorkflowTest` wyklucza `secrets.` w workflow.
+- **Decyzja:**
+  - Certyfikat klucza publicznego MF jest publiczny, więc trafia do zmiennej repozytorium GitHub `MF_TEST_CERT_PEM` (Settings → Secrets and variables → Actions → Variables), nie do sekretu.
+  - Krok joba `live` po `ci-bootstrap.sh` uruchamia `scripts/ci-mf-test-cert.sh`: usuwa znaki CR, sprawdza plik `openssl x509` (podmiot, ważność i odcisk SHA-256 w logu) oraz `-checkend 0`, potem zapisuje go do `var/jpk/mf-test.crt` w kontenerze `app`.
+  - Bez zmiennej, z treścią, która nie jest certyfikatem PEM, albo z wygasłym certyfikatem krok kończy job kodem 2 przed testami.
+- **Skutki:** `.github/workflows/ci.yml`, `scripts/ci-mf-test-cert.sh`, `tests/Unit/CiWorkflowTest.php`; [testing.md](testing.md), nazwa w [naming.md](naming.md), D-69.
+- **Kroki tylko dla Ciebie:** zmienna `MF_TEST_CERT_PEM` z treścią PEM certyfikatu testowego MF przed pierwszym przebiegiem `live`.
+- **Pytania:** brak.
 
 ### D-96 PIT-28 przez e-Deklaracje
 
