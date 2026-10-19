@@ -72,7 +72,7 @@ Cele konektorów są niezależne od `APP_ENV` ([architecture.md](architecture.md
 | 4 | `pg_dump` przed migracją | punkt powrotu |
 | 5 | `docker compose -f compose.yaml run --rm app bin/console doctrine:migrations:migrate --no-interaction`, następnie `docker compose -f compose.yaml run --rm app bin/console cache:clear` | schemat i cache na nowym obrazie |
 | 6 | `docker compose -f compose.yaml up -d` | nowe kontenery |
-| 7 | `/health` zwraca 200; `docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy` | potwierdzenie; wpis `ops.deployed` ze szczegółami: commit, digest obrazu `app` w rejestrze, `*_TARGET`, `CONNECTORS_ENABLED` |
+| 7 | pierwszy backup, gdy `last_success` jeszcze nie istnieje; `/health` zwraca 200 (z kontenera `app` przez adres VPN, do 28 prób co 15 s); `docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy` | potwierdzenie; wpis `ops.deployed` ze szczegółami: commit, digest obrazu `app` w rejestrze, `*_TARGET`, `CONNECTORS_ENABLED` |
 
 - Bez `messenger:stop-workers`: przy `restart: unless-stopped` Compose podniósłby workery na starych kontenerach zaraz po wyjściu.
 - Stan `dispatching` ustawia tylko worker, więc po kroku 2 nowa wysyłka nie startuje. Zatwierdzenie z panelu czeka w kolejce w stanie `approved` ([approval-gate.md](approval-gate.md)).
@@ -82,7 +82,9 @@ Cele konektorów są niezależne od `APP_ENV` ([architecture.md](architecture.md
 - Zmiana `*_TARGET` albo `CONNECTORS_ENABLED` to osobne wdrożenie z checklisty go-live, nigdy przy okazji.
 - Krok 7 porównuje szczegóły z poprzednim `ops.deployed`. Każda różnica daje jeden wpis `connector.target_changed` albo `connector.enabled_changed` ([architecture.md](architecture.md)). Pierwsze wdrożenie zapisuje tylko `ops.deployed`.
 - Wpisy zmian celu powstają tylko w kroku 7, nie przy starcie kontenerów, więc nie mają duplikatów.
-- Makefile wymaga jawnego `KOKPIT_DEPLOYMENT=prod`; `deploy` wymaga też `PANEL_ORIGIN` (adres HTTPS panelu w VPN). Ustawia `APP_ENV=prod`, `APP_DEBUG=0` i `COMPOSE_PROFILES=prod`, pomija `COMPOSE_PROJECT_NAME` i używa tylko `compose.yaml`. Nie ustawia celów konektorów ani `CONNECTORS_ENABLED`: operator wybiera je ręcznie. Zrzut przed migracją trafia do lokalnego `backups/deploy-<sha>-<sufiks>` z uprawnieniami 0600; plik `.partial` oznacza przerwany zrzut. Wrapper migracji kopiuje poświadczenie `kokpit_owner` z wolumenu tylko do odczytu do pliku tymczasowego 0400 w kontenerze i uruchamia PHP jako `www-data`, aby zachować właściciela cache; pozostałe komendy aplikacji używają roli `kokpit_app`.
+- `deploy` i `rollback` najpierw czytają plik wdrożenia `KOKPIT_ENV_FILE` (domyślnie `/etc/kokpit/prod.env`, D-98), jeśli istnieje; jego wartości wygrywają ze zmiennymi powłoki. Bez pliku zmienne podajesz w powłoce jak dotąd.
+- `/health` w kroku 7 idzie z kontenera `app` na nazwę panelu z `PANEL_ORIGIN` przez adres `tailscale ip -4` sidecara `vpn` (`curl --resolve`), bo host nie jest w tailnecie. Pierwsze wdrożenie czeka na pierwszy przebieg harmonogramu (co 5 min), stąd ponowienia (`HEALTH_ATTEMPTS`, `HEALTH_INTERVAL`). Pierwszy backup w kroku 7 sprawdza od razu pliki hosta backupu i ping `backup.run`.
+- Makefile wymaga `KOKPIT_DEPLOYMENT=prod` (z pliku wdrożenia albo z powłoki); `deploy` wymaga też `PANEL_ORIGIN` (adres HTTPS panelu w VPN). Ustawia `APP_ENV=prod`, `APP_DEBUG=0` i `COMPOSE_PROFILES=prod`, pomija `COMPOSE_PROJECT_NAME` i używa tylko `compose.yaml`. Nie ustawia celów konektorów ani `CONNECTORS_ENABLED`: operator wybiera je ręcznie. Zrzut przed migracją trafia do lokalnego `backups/deploy-<sha>-<sufiks>` z uprawnieniami 0600; plik `.partial` oznacza przerwany zrzut. Wrapper migracji kopiuje poświadczenie `kokpit_owner` z wolumenu tylko do odczytu do pliku tymczasowego 0400 w kontenerze i uruchamia PHP jako `www-data`, aby zachować właściciela cache; pozostałe komendy aplikacji używają roli `kokpit_app`.
 - `make rollback KOKPIT_COMMIT=<sha>` bierze commit z poprzedniego `ops.deployed`. Obrazy `app` i `proxy` tego commita muszą być lokalnie; przed startem przechodzą tę samą weryfikację podpisu co przy wdrożeniu. Cel czyści cache i uruchamia je bez budowy ani pobierania. Odtworzenie zrzutu przy niezgodnej migracji pozostaje osobnym krokiem operatora.
 
 ### Podpisane obrazy i kanał aktualizacji
@@ -110,6 +112,32 @@ Decyzja: D-93. Na VPS nic się nie buduje: `make deploy` uruchamia tylko obrazy,
 - Na laptopie `kokpit-dev` startuje przez `docker compose up -d` (oba pliki z `COMPOSE_FILE`) z `KOKPIT_DEPLOYMENT=dev` i migracją z kroku 5. Kroki 3, 4 i 7 odpadają.
 - Po zmianie zasobów w dev przebuduj i odtwórz `proxy` (`docker compose up -d --build proxy`), żeby nginx serwował aktualne skompilowane pliki.
 - Po pierwszym wdrożeniu i po odtworzeniu na nowym hoście strona `/setup` panelu („Pierwsze uruchomienie”, D-91) pokazuje brakujące ustawienia, poświadczenia i test powiadomień, z linkami do formularzy.
+
+### Pierwsza instalacja
+
+Decyzja: D-98. Na świeżym VPS `scripts/prod-install.sh` przygotowuje wszystko, czego `make deploy` nie tworzy, i kończy się listą dalszych komend. Uruchamiasz go raz jako root w checkoucie `main`; każdy krok pomija to, co już istnieje, więc po błędzie poprawiasz przyczynę i uruchamiasz go ponownie. W sesji Claude Code odmawia.
+
+**Przed uruchomieniem (Ty):** VPS z tabeli „Hosting” z Dockerem i wtyczką compose, `git`, `make` i `cosign` („Podpisane obrazy”); `docker login ghcr.io`, jeśli pakiety są prywatne; w konsoli Tailscale klucz uwierzytelniania (wygasanie klucza węzła wyłączysz po pierwszym logowaniu) oraz MagicDNS i HTTPS Certificates w ustawieniach DNS; bucket S3 w UE z kluczami dostępu; w healthchecks.io checki z tabeli „Monitoring”.
+
+`sudo scripts/prod-install.sh --node <nazwa> [--mail-host <host> --mail-from <adres> --mail-to <adres>]`
+
+| Krok | Co robi | Gdzie zostaje |
+| --- | --- | --- |
+| 1 | sprawdza `docker compose`, `git`, `make`, `cosign`, `/dev/net/tun` i pamięć | – |
+| 2 | pyta bez echa o brakujące pliki hosta: klucz Tailscale, repozytorium restic `s3:https://…`, klucze S3, adres pingu `backup.run`; generuje hasło restic; zakłada plik wdrożenia | `/etc/kokpit/secrets/` (0400), `/etc/kokpit/prod.env` |
+| 3 | pobiera obrazy `app` i `proxy` commita i sprawdza podpis jak `make verify-images` | lokalne obrazy |
+| 4 | przy pustej bazie generuje hasła ról `postgres`, `kokpit_owner`, `kokpit_app`, `kokpit_backup`, `chat_ro`; przy istniejącej bazie brak pliku zatrzymuje skrypt; zapisuje `pgpass` dla `kokpit_backup` | wolumeny `owner_credentials`, `app_credentials`; `secrets/pgpass` |
+| 5 | konfiguracja ntfy: `deny-all`, użytkownik `kokpit` publikuje w temacie `kokpit` tokenem, użytkownik `telefon` tylko czyta | `/etc/kokpit/ntfy/server.yml`, `ntfy/phone-password` |
+| 6 | sejf PROD: klucze, `APP_SECRET`, `SECRETBOX_KEY_current`, `DB_KOKPIT_APP_PASSWORD`, `DB_CHAT_RO_PASSWORD`, `PUSH_PROD_TOKEN` (`scripts/init-prod-vault.php`) | wolumen `vault`, katalog `prod/` |
+| 7 | startuje `vpn` z `TS_HOSTNAME` = `--node`, czeka na tailnet, bierze nazwę z `CertDomains`, zapisuje `PANEL_ORIGIN`, wystawia certyfikat (`scripts/prod-cert.sh`) i zakłada cron odnowienia | wolumen `certificates`, `/etc/cron.d/kokpit-panel-cert` |
+| 8 | `restic init`, jeśli repozytorium nie istnieje | bucket S3 |
+
+- `--node` to nazwa węzła w Tailscale i pierwsza część adresu panelu, czyli RP ID passkeyów. Trafia do publicznych logów certyfikatów, więc nie zdradza firmy ani celu ([security.md](security.md)). Gdy Tailscale nada inną nazwę (np. z sufiksem `-1`), skrypt ostrzega i zapisuje tę, którą tailnet wydał.
+- Plik wdrożenia `/etc/kokpit/prod.env` nie ma sekretów. Trzyma `KOKPIT_DEPLOYMENT`, `PANEL_ORIGIN`, `TS_HOSTNAME`, `HOST_SECRETS_DIR`, `NTFY_CONFIG_FILE`, `MAIL_HOST`, `MAIL_FROM`, `MAIL_TO`, `MAIL_IN_HOST`, cele i `CONNECTORS_ENABLED`. Instalacja zapisuje cele `test` i `CONNECTORS_ENABLED=0`; zmiana celu to edycja tego pliku i osobne wdrożenie według „Go-live”.
+- Po instalacji: `make deploy` (pierwszy backup i czekanie na harmonogram), `export KOKPIT_DEPLOYMENT=prod`, link passkeya `docker compose -f compose.yaml exec app bin/console app:passkey:enrol-link`, kopie klucza sejfu (`docker compose -f compose.yaml exec -T app base64 -w0 /run/kokpit/vault/prod/prod.decrypt.private.php`) i hasła restic do menedżera haseł i na papier, aplikacja ntfy na telefonie (serwer `PANEL_ORIGIN` + `/ntfy`, użytkownik `telefon`), sekrety z „Rotacje poświadczeń” i [security.md](security.md), strona `/setup`.
+- `docker compose` bez `-f compose.yaml` i bez `KOKPIT_DEPLOYMENT=prod` czyta `.env` repozytorium i trafia w projekt `kokpit-dev`, dlatego komendy PROD zaczynasz od `export KOKPIT_DEPLOYMENT=prod`.
+
+**Próba.** `scripts/prod-install.sh --rehearsal` przechodzi te same kroki na danych fikcyjnych w projekcie `kokpit-rehearsal`: obrazy lokalne `APP_IMAGE` i `PROXY_IMAGE`, atrapa interfejsu `tailscale0` i certyfikat self-signed zamiast Tailscale, bez rejestru, cosign i S3. Potem migruje bazę, startuje usługi, czeka na heartbeat w `/health` przez proxy, sprawdza link passkeya z `PANEL_ORIGIN` oraz publikację ntfy tokenem i bez tokenu, a na końcu usuwa projekt (`--keep` go zostawia). Job CI `images` uruchamia próbę na obrazach, które właśnie zbudował. Próba nie sprawdza prawdziwego Tailscale, rejestru, S3, healthchecks.io, crona hosta ani dostępu telefonu do ntfy.
 
 ## Messenger
 
@@ -204,7 +232,7 @@ Pingi wysyła tylko `kokpit-prod`: adresy pingu są w jego sejfie i w pliku host
 | `heartbeat` | 5 min | 15 min |
 | `backup.run` | 1 dzień | 6 h |
 | `notifications.dispatch` | 5 min | 30 min |
-| `ksef.sync` | 1 h | 3 h |
+| `ksef.sync` | 1 h | 3 h; ping po udanym eksporcie na celu `prod` (D-98), więc check zakładasz przy go-live odczytu KSeF |
 
 **`/health`** zwraca 200 albo 503 i JSON bez danych osobowych. Dostęp tylko w VPN.
 
@@ -233,7 +261,7 @@ Backup obejmuje bazę i pliki `FileStore` w jednym snapshocie. Cel jest poza ser
 
 | Element | Reguła |
 | --- | --- |
-| Narzędzie | `pg_dump -Fc`, potem restic snapshot zrzutu i `var/data` ([restic](https://restic.readthedocs.io/)) |
+| Narzędzie | `pg_dump -Fc`, potem restic snapshot zrzutu, `var/data` i zaszyfrowanego sejfu `prod/` bez klucza deszyfrującego (D-98) ([restic](https://restic.readthedocs.io/)) |
 | Spójność | najpierw zrzut bazy, potem pliki; pliki są zapisywane raz, więc plik nowszy niż zrzut nie psuje odtworzenia |
 | Szyfrowanie | restic szyfruje repozytorium kluczem z pliku hosta ([security.md](security.md)) |
 | Klucze | klucz repozytorium i klucz deszyfrujący sejfu PROD w menedżerze haseł i na papierze, nigdy w tym samym backupie |
@@ -264,7 +292,7 @@ Test odtworzenia robisz na koniec F0a, a potem raz na kwartał (`[manual]`, [tes
 
 Krok 4 używa przejścia `approved` → `unknown` z wyzwalaczem „odtworzenie z backupu” i aktorem Ty. Przejście definiuje [approval-gate.md](approval-gate.md), nazwę stanu [naming.md](naming.md).
 
-1. Postaw `kokpit-prod` z `CONNECTORS_ENABLED=0`. Plik klucza sejfu PROD z menedżera haseł połóż z uprawnieniami 0400 ([security.md](security.md)). Panel dostaje tę samą nazwę DNS, bo passkey jest związany z nią jako RP ID; inaczej `app:passkey:reset`.
+1. Postaw `kokpit-prod` z `CONNECTORS_ENABLED=0`. Zaszyfrowany sejf `prod/` z tego samego snapshotu połóż w wolumenie `vault`, a obok plik klucza sejfu PROD z menedżera haseł, z uprawnieniami 0400 dla `www-data` ([security.md](security.md)); dopiero potem `scripts/prod-install.sh`, który wtedy nie tworzy nowych kluczy. Panel dostaje tę samą nazwę DNS, bo passkey jest związany z nią jako RP ID; inaczej `app:passkey:reset`.
 2. Odtwórz bazę i `var/data` z jednego snapshotu. Uruchom `app:files:verify` i `app:audit:verify --anchor=<tag audit-head tego snapshotu>`.
 3. Ustaw cele PROD z ostatniego `ops.deployed` i `CONNECTORS_ENABLED=1`. Startuj usługi bez `worker_official_writes` i `scheduler`.
 4. Każde `approved` z odtworzonej bazy przestaw na `unknown` (odtworzenie z backupu) poleceniem `bin/console app:approval mark-restored`, bo mogło wyjść po zrzucie. Nie anulujesz go: anulowanie zamyka fakturę jako `cancelled_before_send`.
@@ -323,7 +351,7 @@ Właścicielem każdej checklisty jesteś Ty. Do go-live obowiązek składasz we
 | JPK_EWP(4), JPK_ST(1) | F5 | do 31.03.2027 | dry run zgodny z XSD; dane autoryzujące N−2; klucz MF PROD | JPK_EWP za 2026 przez bramkę, UPO zapisane | XML z kokpitu przez Klient JPK WEB albo Formularz uproszczony do 30.04.2027 ([narzędzia MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_pd/bezplatne-narzedzia)) |
 | JPK_V7M(3) | F5 | po JPK_EWP | bilans otwarcia (`setting` `opening.*`) potwierdzony; dwa miesiące zgodne z Twoim obecnym narzędziem | pierwszy miesiąc przez bramkę | e-mikrofirma albo Klient JPK WEB |
 | VAT-UE | F5 | razem z JPK_V7M | rejestracja VAT-UE sprawdzona; kanał D-27 potwierdzony | pierwszy VAT-UE przez bramkę; suma równa K_12 | e-Deklaracje ręcznie |
-| czat | F6 | po kryteriach F6 | klucz z limitem wydatków; budżety w kodzie; `[manual]` DPA z SCC z Anthropic zawarte (D-22, [modules/czat.md](modules/czat.md)); rola `chat_ro`: plik hosta `chat-ro-password` w `app_credentials`, rola jak w `docker/db/init-db.sh` (jako `postgres`), sekret `DB_CHAT_RO_PASSWORD` w sejfie PROD, `GRANT SELECT` na widokach `chat_*` rolą `kokpit_owner` (D-59) | pierwsza rozmowa | konektor `claude` wyłączony w konfiguracji |
+| czat | F6 | po kryteriach F6 | klucz z limitem wydatków; budżety w kodzie; `[manual]` DPA z SCC z Anthropic zawarte (D-22, [modules/czat.md](modules/czat.md)); rola `chat_ro`: plik hosta `chat-ro-password` w `app_credentials`, rola jak w `docker/db/init-db.sh` (jako `postgres`), sekret `DB_CHAT_RO_PASSWORD` w sejfie PROD (przy instalacji według D-98 plik, rola i sekret już są), `GRANT SELECT` na widokach `chat_*` rolą `kokpit_owner` (D-59) | pierwsza rozmowa | konektor `claude` wyłączony w konfiguracji |
 
 Kolejność wierszy idzie za D-30. e-Doręczenia API (F4) i basal (F7) są odłożone (D-29); e-Doręczenia obsługujesz według „Teraz – zgodność” w [README.md](README.md).
 

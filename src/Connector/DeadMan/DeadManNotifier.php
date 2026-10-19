@@ -14,10 +14,13 @@ use App\Security\SecretStore;
 final readonly class DeadManNotifier
 {
     public function __construct(private ConnectorHttpClient $http, private SecretStore $secrets, private ConnectorConfiguration $configuration) {}
-    /** Check dead-man z docs/operations.md, „Monitoring”: `heartbeat` albo `notifications` (zadanie `notifications.dispatch`). */
+    /**
+     * Check dead-man z docs/operations.md, „Monitoring”: `heartbeat`, `notifications` (zadanie `notifications.dispatch`)
+     * albo `ksef_sync` (udany eksport `ksef.sync` na celu `prod`, D-98).
+     */
     public function ping(string $check = 'heartbeat'): void
     {
-        if (!in_array($check, ['heartbeat', 'notifications'], true)) {
+        if (!in_array($check, ['heartbeat', 'notifications', 'ksef_sync'], true)) {
             throw new \InvalidArgumentException('Nieznany check dead-man.');
         }
         if ($this->configuration->deployment !== 'prod' || !$this->configuration->enabled) {

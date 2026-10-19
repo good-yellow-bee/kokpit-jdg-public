@@ -14,7 +14,8 @@ trap 'rm -f /state/work/kokpit.dump' EXIT
 audit_head=$(psql -h db -U kokpit_backup -d kokpit -AtX -v ON_ERROR_STOP=1 -c "SELECT coalesce((SELECT sequence || ':' || hash FROM audit_log ORDER BY sequence DESC LIMIT 1), '0:' || repeat('0', 64))")
 [[ "$audit_head" =~ ^[0-9]+:[0-9a-f]{64}$ ]] || { echo 'Niepoprawna głowa łańcucha audit_log.' >&2; exit 2; }
 pg_dump -h db -U kokpit_backup -d kokpit -Fc -f /state/work/kokpit.dump
-restic backup --quiet --tag backup.run --tag "audit-head:$audit_head" /state/work/kokpit.dump /app/var/data
+# Sejf PROD idzie do snapshotu zaszyfrowany, bez klucza deszyfrującego, który ma tylko menedżer haseł i papier (D-98).
+restic backup --quiet --tag backup.run --tag "audit-head:$audit_head" --exclude '*.decrypt.private.php' /state/work/kokpit.dump /app/var/data /run/kokpit/vault/prod
 restic forget --quiet --prune --keep-daily 30 --keep-monthly 12 --keep-yearly 7
 if [ "$(TZ=Europe/Warsaw date +%u)" = 7 ]; then restic check --quiet; fi
 touch /state/last_success

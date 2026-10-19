@@ -94,6 +94,8 @@ jobs:
               --label "org.opencontainers.image.revision=$GITHUB_SHA" \
               -t "$REGISTRY/${target##*:}:$GITHUB_SHA" .
           done
+      # Próba pierwszej instalacji na właśnie zbudowanych obrazach, dane fikcyjne, bez Tailscale, rejestru i S3 (D-98).
+      - run: APP_IMAGE="$REGISTRY/app:$GITHUB_SHA" PROXY_IMAGE="$REGISTRY/proxy:$GITHUB_SHA" scripts/prod-install.sh --rehearsal
       - if: env.PUBLISH == 'true'
         env:
           REGISTRY_TOKEN: ${{ github.token }}

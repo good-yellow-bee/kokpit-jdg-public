@@ -16,6 +16,13 @@ x-app: &app
     EDEKLARACJE_TARGET: ${EDEKLARACJE_TARGET:-test}
     CONNECTORS_ENABLED: ${CONNECTORS_ENABLED:-0}
     MAIL_IN_HOST: ${MAIL_IN_HOST:-}
+    # Adres panelu i hosty powiadomień (D-98): na PROD z pliku wdrożenia `prod.env`; puste wartości dają domyślne z config/.
+    PANEL_ORIGIN: ${PANEL_ORIGIN:-}
+    MAIL_HOST: ${MAIL_HOST:-}
+    MAIL_FROM: ${MAIL_FROM:-}
+    MAIL_TO: ${MAIL_TO:-}
+    PUSH_ENDPOINT: ${PUSH_ENDPOINT:-}
+    DEADMAN_HOST: ${DEADMAN_HOST:-}
     KOKPIT_COMMIT: ${KOKPIT_COMMIT:-}
     KOKPIT_IMAGE_DIGEST: ${KOKPIT_IMAGE_DIGEST:-}
     VAULT_DIRECTORY: /run/kokpit/vault
@@ -100,6 +107,8 @@ services:
       TS_STATE_DIR: /var/lib/tailscale
       TS_USERSPACE: 'false'
       TS_AUTHKEY: file:/run/tailscale-auth
+      # Stała, neutralna nazwa węzła (D-98): bez niej Tailscale bierze nazwę kontenera, a nazwa panelu to RP ID passkeyów.
+      TS_HOSTNAME: ${TS_HOSTNAME:-}
     cap_add: [NET_ADMIN, NET_RAW]
     devices: [/dev/net/tun:/dev/net/tun]
     volumes:
@@ -117,6 +126,7 @@ services:
       TZ: Europe/Warsaw
     volumes:
       - runtime:/app/var:ro
+      - vault:/run/kokpit/vault:ro
       - backup_state:/state
       - ${HOST_SECRETS_DIR:-/tmp/kokpit-host-secrets}:/run/host:ro
     depends_on: [db]

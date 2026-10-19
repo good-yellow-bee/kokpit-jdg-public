@@ -17,7 +17,7 @@ final class MakefileTest extends TestCase
     {
         [$status, $commands, $output] = $this->runMake('deploy');
         self::assertSame(0, $status, $output);
-        self::assertCount(16, $commands);
+        self::assertCount(18, $commands);
         foreach ([
             'git pull --ff-only',
             'git rev-parse HEAD',
@@ -30,7 +30,9 @@ final class MakefileTest extends TestCase
             'docker compose -f compose.yaml run --rm --user root -v kokpit-prod_owner_credentials:/run/migration:ro -e DB_ROLE=kokpit_owner app sh -ec',
             'docker compose -f compose.yaml run --rm app bin/console cache:clear',
             'docker compose -f compose.yaml up -d',
-            'curl --silent --show-error --output /dev/null --write-out %{http_code} --connect-timeout 10 --max-time 30 https://panel.invalid/health',
+            "docker compose -f compose.yaml exec -T backup sh -c [ -e /state/last_success ] || exec run-backup",
+            'docker compose -f compose.yaml exec -T vpn tailscale ip -4',
+            'docker compose -f compose.yaml exec -T app curl --silent --output /dev/null --write-out %{http_code} --connect-timeout 10 --max-time 30 --resolve panel.invalid:443:100.64.0.1 https://panel.invalid/health',
             'docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy',
         ] as $index => $command) {
             self::assertStringStartsWith($command, $commands[$index]);
@@ -74,9 +76,12 @@ final class MakefileTest extends TestCase
     /** @return iterable<string, array{string, int}> */
     public static function deployFailures(): iterable
     {
-        foreach (['deploy' => 16, 'rollback' => 6] as $target => $count) {
+        foreach (['deploy' => 18, 'rollback' => 6] as $target => $count) {
             foreach (range(1, $count) as $step) {
-                yield $target . '-command-' . $step => [$target, $step];
+                // Polecenie 17 to pierwsze sprawdzenie /health, które wdrożenie ponawia (testHealthIsRetriedUntil200).
+                if ($target !== 'deploy' || $step !== 17) {
+                    yield $target . '-command-' . $step => [$target, $step];
+                }
             }
         }
     }
@@ -91,9 +96,33 @@ final class MakefileTest extends TestCase
 
     public function testDoesNotRecordDeployUnlessHealthReturnsExactly200(): void
     {
-        [$status, $commands] = $this->runMake('deploy', ['HEALTH_STATUS' => '503']);
+        [$status, $commands, $output] = $this->runMake('deploy', ['HEALTH_STATUS' => '503']);
         self::assertNotSame(0, $status);
-        self::assertCount(15, $commands);
+        // 16 poleceń przed /health i dwie próby (HEALTH_ATTEMPTS), bez app:ops:record-deploy.
+        self::assertCount(18, $commands);
+        self::assertStringContainsString(' exec -T app curl ', $commands[17]);
+        self::assertStringContainsString('Sprawdzenie /health zwróciło HTTP 503.', $output);
+    }
+
+    public function testHealthIsRetriedUntil200(): void
+    {
+        // Pierwsze wdrożenie: /health czeka na pierwszy przebieg harmonogramu, więc nieudana próba nie kończy wdrożenia.
+        [$status, $commands, $output] = $this->runMake('deploy', ['FAIL_AT' => '17']);
+        self::assertSame(0, $status, $output);
+        self::assertCount(19, $commands);
+        self::assertSame($commands[16], $commands[17]);
+        self::assertStringStartsWith('docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy', $commands[18]);
+    }
+
+    public function testDeploymentFileWinsOverTheShell(): void
+    {
+        // Plik wdrożenia z scripts/prod-install.sh (D-98): adres panelu i projekt bez eksportu w powłoce.
+        $file = "KOKPIT_DEPLOYMENT=prod\nPANEL_ORIGIN='https://from-file.invalid'\n";
+        [$status, $commands, $output] = $this->runMake('deploy', ['KOKPIT_DEPLOYMENT' => '', 'PANEL_ORIGIN' => 'https://shell.invalid'], $file);
+        self::assertSame(0, $status, $output);
+        self::assertStringContainsString('--resolve from-file.invalid:443:100.64.0.1 https://from-file.invalid/health', $commands[16]);
+        [$status, , $output] = $this->runMake('rollback', ['KOKPIT_DEPLOYMENT' => ''], $file);
+        self::assertSame(0, $status, $output);
     }
 
     public function testDeployStopsBeforeTouchingServicesWithoutAValidSignature(): void
@@ -198,10 +227,13 @@ final class MakefileTest extends TestCase
      * @param array<string, string> $environment
      * @return array{int|null, list<string>, string}
      */
-    private function runMake(string $target, array $environment = []): array
+    private function runMake(string $target, array $environment = [], ?string $deploymentFile = null): array
     {
         $directory = sys_get_temp_dir() . '/kokpit-make-' . bin2hex(random_bytes(5));
         mkdir($directory, 0700);
+        if ($deploymentFile !== null) {
+            file_put_contents($directory . '/prod.env', $deploymentFile);
+        }
         $stub = <<<'SH'
 #!/bin/sh
 set -eu
@@ -214,14 +246,17 @@ printf '%s %s\n' "$tool" "$*" >> "$COMMAND_LOG"
 [ "$(wc -l < "$COMMAND_LOG")" -ne "$FAIL_AT" ] || exit 9
 case "$tool $*" in
     'docker compose '*)
-        [ "${APP_IMAGE:-}" = "$KOKPIT_REGISTRY/app@sha256:fictional" ] && [ "${PROXY_IMAGE:-}" = "$KOKPIT_REGISTRY/proxy@sha256:fictional" ] && [ "${KOKPIT_IMAGE_DIGEST:-}" = sha256:fictional ] || exit 7;;
+        [ "${APP_IMAGE:-}" = "$KOKPIT_REGISTRY/app@sha256:fictional" ] && [ "${PROXY_IMAGE:-}" = "$KOKPIT_REGISTRY/proxy@sha256:fictional" ] && [ "${KOKPIT_IMAGE_DIGEST:-}" = sha256:fictional ] || exit 7
+        case "$*" in
+            *' exec -T vpn tailscale ip -4') echo 100.64.0.1;;
+            *' exec -T app curl '*) printf '%s' "$HEALTH_STATUS";;
+        esac;;
     'git rev-parse HEAD') echo fictional-commit;;
     'git rev-parse origin/main') echo "$LATEST_COMMIT";;
     'docker image inspect '*) image=$3; printf 'other.invalid/mirror@sha256:other %s@sha256:fictional\n' "${REPO_DIGEST_PREFIX:-${image%:*}}";;
-    'curl '*) printf '%s' "$HEALTH_STATUS";;
 esac
 SH;
-        $tools = ($environment['WITHOUT_COSIGN'] ?? '') === '1' ? ['git', 'docker', 'curl'] : ['git', 'docker', 'curl', 'cosign'];
+        $tools = ($environment['WITHOUT_COSIGN'] ?? '') === '1' ? ['git', 'docker'] : ['git', 'docker', 'cosign'];
         foreach ($tools as $tool) {
             file_put_contents($directory . '/' . $tool, $stub);
             chmod($directory . '/' . $tool, 0700);
@@ -246,6 +281,9 @@ SH;
                 'COMMAND_LOG' => $directory . '/commands',
                 'FAIL_AT' => '0',
                 'HEALTH_STATUS' => '200',
+                'HEALTH_ATTEMPTS' => '2',
+                'HEALTH_INTERVAL' => '0',
+                'KOKPIT_ENV_FILE' => $directory . '/prod.env',
             ], $environment));
             $process->run();
             $commands = is_file($directory . '/commands') ? file($directory . '/commands', FILE_IGNORE_NEW_LINES) : [];
