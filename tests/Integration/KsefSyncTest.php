@@ -183,7 +183,7 @@ final class KsefSyncTest extends DatabaseTestCase
                 return $this->sent[] = new \Symfony\Component\Messenger\Envelope($message, $stamps);
             }
         };
-        $handler = new \App\Messenger\KsefSyncHandler($this->sync(new FakeKsefGateway($clock, [$empty, $empty]), $clock), $bus, $clock);
+        $handler = new \App\Messenger\KsefSyncHandler($this->sync(new FakeKsefGateway($clock, [$empty, $empty]), $clock), $bus, $clock, $this->deadman($clock, new MockHttpClient()), ConnectorTestTools::configuration(false), new MemoryLogger($clock));
         $handler(new \App\Messenger\Message\KsefSyncMessage('ksef.backfill', 'subject2'));
         self::assertCount(1, $bus->sent);
         self::assertSame(900000, $bus->sent[0]->last(\Symfony\Component\Messenger\Stamp\DelayStamp::class)?->getDelay());
@@ -191,6 +191,55 @@ final class KsefSyncTest extends DatabaseTestCase
         $clock->modify('2026-10-09T03:50:00Z');
         $handler(new \App\Messenger\Message\KsefSyncMessage('ksef.backfill', 'subject2'));
         self::assertCount(1, $bus->sent);
+    }
+
+    public function testExportOnProdTargetPingsKsefSyncDeadManAndPingFailureKeepsTheExport(): void
+    {
+        // Check dead-man `ksef.sync` (D-98): tylko udany eksport na celu `prod`; nieudany ping zostaje w logu.
+        $clock = new MockClock('2026-10-08T10:00:00Z');
+        $this->doneBackfill('subject2', '2026-10-08T08:00:00Z', $clock);
+        $package = new KsefExportPackage([], false, null, new \DateTimeImmutable('2026-10-08T09:30:00Z'));
+        $bus = new class implements \Symfony\Component\Messenger\MessageBusInterface {
+            public function dispatch(object $message, array $stamps = []): \Symfony\Component\Messenger\Envelope
+            {
+                return new \Symfony\Component\Messenger\Envelope($message, $stamps);
+            }
+        };
+        $prod = new \App\Config\ConnectorConfiguration('prod', 'prod', true, 'prod', 'test', 'test', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', []);
+        $urls = [];
+        $mock = new MockHttpClient(static function (string $method, string $url) use (&$urls): MockResponse {
+            $urls[] = $method . ' ' . $url;
+            return new MockResponse('fictional ok', ['http_code' => count($urls) === 1 ? 200 : 500]);
+        });
+        $sync = $this->sync(new FakeKsefGateway($clock, [$package, $package, $package]), $clock);
+        $logger = new MemoryLogger($clock);
+        $handler = new \App\Messenger\KsefSyncHandler($sync, $bus, $clock, $this->deadman($clock, $mock), $prod, $logger);
+        $handler(new \App\Messenger\Message\KsefSyncMessage('ksef.sync', 'subject2'));
+        self::assertSame(['GET https://hc-ping.com/fictional-ksef-sync-check'], $urls);
+        // Odstęp eksportów: bez eksportu nie ma pingu.
+        $handler(new \App\Messenger\Message\KsefSyncMessage('ksef.sync', 'subject2'));
+        self::assertCount(1, $urls);
+        $clock->modify('+20 minutes');
+        $handler(new \App\Messenger\Message\KsefSyncMessage('ksef.sync', 'subject2'));
+        self::assertCount(2, $urls);
+        self::assertNotNull($this->cursorRow('subject2')['last_success_at']);
+        self::assertStringContainsString('deadman.ksef_sync ping failed', implode("\n", $logger->lines));
+        // Cel testowy KSeF na PROD: eksport bez pingu.
+        $clock->modify('+20 minutes');
+        $test = new \App\Config\ConnectorConfiguration('prod', 'prod', true, 'test', 'test', 'test', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', []);
+        (new \App\Messenger\KsefSyncHandler($sync, $bus, $clock, $this->deadman($clock, $mock), $test, $logger))(new \App\Messenger\Message\KsefSyncMessage('ksef.sync', 'subject2'));
+        self::assertCount(2, $urls);
+    }
+
+    private function deadman(MockClock $clock, MockHttpClient $mock): \App\Connector\DeadMan\DeadManNotifier
+    {
+        $redactor = new \App\Security\Redactor();
+        $vault = $this->createStub(\Symfony\Bundle\FrameworkBundle\Secrets\AbstractVault::class);
+        $vault->method('reveal')->willReturnCallback(static fn(string $name): ?string => $name === 'DEADMAN_PROD_KSEF_SYNC_URL' ? 'https://hc-ping.com/fictional-ksef-sync-check' : null);
+        $secrets = new \App\Security\SecretStore(new \App\Security\Vault($vault, $redactor, 'prod'), $this->db(), new LockFactory(new DoctrineDbalPostgreSqlStore($this->db())), $clock, $redactor, new \App\Audit\AuditLog($this->db(), $clock, $redactor), 'prod');
+        $prod = new \App\Config\ConnectorConfiguration('prod', 'prod', true, 'prod', 'test', 'test', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', []);
+
+        return new \App\Connector\DeadMan\DeadManNotifier(ConnectorTestTools::http($this->db(), $clock, $mock, $redactor), $secrets, $prod);
     }
 
     private function sync(KsefGateway $gateway, MockClock $clock): KsefSync

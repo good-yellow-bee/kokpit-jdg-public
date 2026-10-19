@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Messenger;
 
+use App\Config\ConnectorConfiguration;
+use App\Connector\DeadMan\DeadManNotifier;
 use App\Invoice\KsefSync;
 use App\Messenger\Message\KsefSyncMessage;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -14,12 +17,14 @@ use Symfony\Component\Messenger\Stamp\DelayStamp;
 /**
  * `ksef.sync` robi jeden eksport roli. `ksef.backfill` po eksporcie planuje kolejne okno za 15 minut, dopóki trwa noc
  * (do 06:00 w Warszawie) i backfill nie ustawił `backfill_done_at` (docs/modules/ksef.md, „Harmonogram i backfill”).
+ * Udany eksport na celu `prod` pinguje check dead-man `ksef.sync` (D-98); nieudany ping nie cofa eksportu, bo brak
+ * pingu i tak alarmuje w serwisie dead-man.
  */
 final readonly class KsefSyncHandler
 {
     public const NIGHT_ENDS_AT = '06:00';
 
-    public function __construct(private KsefSync $sync, private MessageBusInterface $bus, private ClockInterface $clock) {}
+    public function __construct(private KsefSync $sync, private MessageBusInterface $bus, private ClockInterface $clock, private DeadManNotifier $deadman, private ConnectorConfiguration $configuration, private LoggerInterface $logger) {}
 
     #[AsMessageHandler]
     public function __invoke(KsefSyncMessage $message): void
@@ -29,6 +34,13 @@ final readonly class KsefSyncHandler
         }
         $backfill = $message->id === 'ksef.backfill';
         $result = $this->sync->run($message->stream, $backfill);
+        if ($result['status'] === 'exported' && $this->configuration->ksefTarget === 'prod') {
+            try {
+                $this->deadman->ping('ksef_sync');
+            } catch (\Throwable $exception) {
+                $this->logger->warning('deadman.ksef_sync ping failed', ['error' => $exception::class]);
+            }
+        }
         if (!$backfill || !in_array($result['status'], ['exported', 'spacing'], true)) {
             return;
         }

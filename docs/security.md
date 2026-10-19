@@ -44,7 +44,7 @@ Symfony ma osobny sejf i klucz na środowisko. Sejf wybiera `APP_RUNTIME_ENV`, a
 
 | Wdrożenie | `APP_ENV` | Katalog sejfu | Klucz deszyfrujący | Dozwolone cele |
 | --- | --- | --- | --- | --- |
-| `kokpit-prod` na VPS | `prod` | `config/secrets/prod/` | plik 0400 montowany tylko do usług `kokpit-prod`; kopie w menedżerze haseł i na papierze | wszystkie |
+| `kokpit-prod` na VPS | `prod` | `prod/` w wolumenie `vault` (`VAULT_DIRECTORY`, D-98) | plik 0400 w wolumenie `vault`, montowanym tylko do usług aplikacji `kokpit-prod`; kopie w menedżerze haseł i na papierze | wszystkie |
 | `kokpit-dev` na laptopie | `dev` | `config/secrets/dev/` | plik 0400 na laptopie, poza git; sekret środowiska GitHub joba `live` ([testing.md](testing.md)); kopia w menedżerze haseł | `test`, `demo` |
 | `kokpit-restore`, jednorazowy na laptopie | `prod` | brak; sprawdzenia czytają tylko bazę i pliki (D-89) | niepotrzebny | test odtworzenia: żadne, `CONNECTORS_ENABLED=0`; prawdziwa awaria: nowy VPS z sejfem PROD według [operations.md](operations.md) |
 | CI | `test` | sejf tymczasowy z fikcyjnymi wartościami, tworzony na starcie joba | brak klucza poza jobem `live` | `test` |
@@ -56,8 +56,8 @@ Symfony ma osobny sejf i klucz na środowisko. Sejf wybiera `APP_RUNTIME_ENV`, a
 **Klucze sejfu**
 
 - Klucz deszyfrujący sejfu PROD nigdy nie trafia do repo ani do backupu bazy i restic. Kopia jest w menedżerze haseł i na papierze.
-- Na VPS klucz leży jako plik `config/secrets/prod/prod.decrypt.private.php` z uprawnieniami 0400, poza git ([Symfony](https://symfony.com/doc/current/configuration/secrets.html)). Montują go tylko kontenery aplikacji `kokpit-prod`, tylko do odczytu.
-- Plik kopiujesz ręcznie przez SSH przy pierwszym wdrożeniu i po rotacji klucza. `git pull` z kroku 1 wdrożenia go nie dotyka ([operations.md](operations.md)).
+- Na VPS sejf leży w wolumenie `vault` (`/run/kokpit/vault/prod/`), a klucz jako `prod.decrypt.private.php` z uprawnieniami 0400 dla `www-data` ([Symfony](https://symfony.com/doc/current/configuration/secrets.html)). Wolumen montują tylko kontenery aplikacji `kokpit-prod`; `git pull` i obraz go nie dotykają ([operations.md](operations.md)).
+- Klucze sejfu i sekrety startowe (`APP_SECRET`, `SECRETBOX_KEY_current`, hasła ról bazy, token ntfy) zakłada `scripts/prod-install.sh` (D-98). Kopię klucza bierzesz zaraz po instalacji: `base64 -w0` pliku klucza z kontenera `app` do menedżera haseł i na papier. Na nowym VPS po awarii wkładasz klucz z kopii do wolumenu przed `make deploy`.
 - Klucz secretbox dla `credential_state` jest sekretem statycznym. Kolumna `key_id` pozwala go wymienić bez utraty wierszy.
 - Zewnętrzne szyfrowanie plików sekretów odpada; zmienne środowiskowe nie przenoszą sekretów. Zmienna `*_FILE` niesie tylko ścieżkę do pliku.
 - Jedna aplikacja OAuth FreshBooks na wdrożenie, bo nowy grant unieważnia poprzedni ([FreshBooks](https://www.freshbooks.com/api/authentication)). Firmy testowej nie ma (D-35).
@@ -139,7 +139,8 @@ Panel działa tylko w Tailscale, bez publicznego portu. Uwierzytelnienie nie ufa
 - Panel PROD działa na nazwie DNS w Tailscale z zaufanym certyfikatem: `tailscale cert` albo własna domena z wyzwaniem DNS-01 (Q-14).
 - Nazwy z `tailscale cert` trafiają do publicznych logów Certificate Transparency ([Tailscale](https://tailscale.com/kb/1153/enabling-https)). Nazwa nie może zdradzać firmy ani celu.
 - Nazwa panelu jest RP ID passkeyów. Zmiana nazwy, np. przy nowym hoście, wymaga `app:passkey:reset`.
-- Certyfikat odnawia się automatycznie: proxy z ACME i DNS-01 albo cron z `tailscale cert` i przeładowaniem proxy. Certyfikat Let's Encrypt jest ważny najwyżej 90 dni ([Let's Encrypt](https://letsencrypt.org/docs/faq/)).
+- Certyfikat odnawia się automatycznie: cron hosta raz na dobę uruchamia `scripts/prod-cert.sh` (`tailscale cert` w sidecarze `vpn`, przeładowanie proxy przy nowym pliku; D-98). Certyfikat Let's Encrypt jest ważny najwyżej 90 dni ([Let's Encrypt](https://letsencrypt.org/docs/faq/)).
+- Nazwę węzła podajesz w `prod-install.sh --node`; nazwa panelu to `<node>.<tailnet>.ts.net` z `CertDomains` Tailscale i trafia do `PANEL_ORIGIN` w pliku wdrożenia.
 - Węzeł Tailscale serwera ma wyłączone wygasanie klucza ([Tailscale](https://tailscale.com/kb/1028/key-expiry)). Wygasły klucz albo certyfikat odcina panel i zatwierdzenia.
 - `/health` zwraca 503 i wysyła push, gdy certyfikat panelu wygasa za mniej niż 14 dni ([operations.md](operations.md)).
 - `trusted_proxies` wskazuje tylko proxy TLS w compose. Workery i baza nie mają publikowanych portów.

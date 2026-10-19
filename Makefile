@@ -15,6 +15,13 @@ VERIFY_IMAGE = verify_image() { \
 		|| { echo "Podpis obrazu $$1 commita $$KOKPIT_COMMIT nie przeszedł weryfikacji." >&2; return 1; }; \
 	printf '%s\n' "$$ref"; \
 }
+# Plik wdrożenia na VPS (D-98): adres panelu, hosty powiadomień, katalog plików hosta, cele i CONNECTORS_ENABLED.
+# Zapisuje go scripts/prod-install.sh; wartości z pliku mają pierwszeństwo przed zmiennymi powłoki.
+KOKPIT_ENV_FILE ?= /etc/kokpit/prod.env
+LOAD_ENV_FILE = if [ -f '$(KOKPIT_ENV_FILE)' ]; then set -a; . '$(KOKPIT_ENV_FILE)'; set +a; fi
+# Sprawdzenie /health po starcie: pierwsze wdrożenie czeka na pierwszy przebieg harmonogramu (co 5 min).
+HEALTH_ATTEMPTS ?= 28
+HEALTH_INTERVAL ?= 15
 REQUIRE_COSIGN = command -v cosign > /dev/null || { echo 'Brak cosign: podpisu obrazów nie da się sprawdzić (docs/operations.md).' >&2; exit 2; }
 PULL_IMAGES = for image in app proxy; do \
 		docker pull --quiet "$(KOKPIT_REGISTRY)/$$image:$$KOKPIT_COMMIT" \
@@ -26,6 +33,7 @@ help:
 
 deploy:
 	@set -eu; \
+	$(LOAD_ENV_FILE); \
 	[ "$${KOKPIT_DEPLOYMENT:-}" = prod ] || { echo 'Wdrożenie działa tylko w kokpit-prod.' >&2; exit 2; }; \
 	: "$${PANEL_ORIGIN:?Ustaw PANEL_ORIGIN panelu w VPN}"; \
 	$(REQUIRE_COSIGN); \
@@ -52,12 +60,23 @@ deploy:
 	docker compose -f compose.yaml run --rm --user root -v kokpit-prod_owner_credentials:/run/migration:ro -e DB_ROLE=kokpit_owner app sh -ec 'credential=$$(mktemp); install -o 33 -g 33 -m 0400 /run/migration/owner-password "$$credential"; export DB_OWNER_PASSWORD_FILE="$$credential"; exec su -s /bin/sh www-data -c "bin/console doctrine:migrations:migrate --no-interaction"'; \
 	docker compose -f compose.yaml run --rm app bin/console cache:clear; \
 	docker compose -f compose.yaml up -d; \
-	status=$$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --connect-timeout 10 --max-time 30 "$${PANEL_ORIGIN%/}/health"); \
-	[ "$$status" = 200 ] || { echo "Sprawdzenie /health zwróciło HTTP $$status." >&2; exit 1; }; \
+	docker compose -f compose.yaml exec -T backup sh -c '[ -e /state/last_success ] || exec run-backup'; \
+	panel_host=$${PANEL_ORIGIN#https://}; \
+	panel_host=$${panel_host%%/*}; \
+	vpn_address=$$(docker compose -f compose.yaml exec -T vpn tailscale ip -4); \
+	attempt=0; \
+	while :; do \
+		attempt=$$((attempt + 1)); \
+		status=$$(docker compose -f compose.yaml exec -T app curl --silent --output /dev/null --write-out '%{http_code}' --connect-timeout 10 --max-time 30 --resolve "$$panel_host:443:$$vpn_address" "$${PANEL_ORIGIN%/}/health") || status=000; \
+		[ "$$status" != 200 ] || break; \
+		[ "$$attempt" -lt $(HEALTH_ATTEMPTS) ] || { echo "Sprawdzenie /health zwróciło HTTP $$status." >&2; exit 1; }; \
+		sleep $(HEALTH_INTERVAL); \
+	done; \
 	docker compose -f compose.yaml run --rm app bin/console app:ops:record-deploy
 
 rollback:
 	@set -eu; \
+	$(LOAD_ENV_FILE); \
 	[ "$${KOKPIT_DEPLOYMENT:-}" = prod ] || { echo 'Wycofanie działa tylko w kokpit-prod.' >&2; exit 2; }; \
 	: "$${KOKPIT_COMMIT:?Ustaw KOKPIT_COMMIT z poprzedniego wpisu ops.deployed}"; \
 	$(REQUIRE_COSIGN); \

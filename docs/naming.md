@@ -391,7 +391,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Konsola bramki | `app:approval idle` (krok 3 `make deploy`), `app:approval mark-restored` (krok 4 runbooka odtworzenia), `app:approval dummy-request` (fixtures dev, nigdy przy `APP_ENV=prod`) |
 | Atrapa bramki (`src/Connector/Dummy`) | `DummyWriter` (operacje `submit`, `status`), `DummySubject` (usługi `dummy.subject.filing`, `dummy.subject.draft`), `DummySubjects`; scenariusze `accept`, `reject`, `duplicate`, `timeout`, `poll_reject`, `poll_pending` |
 | `/health` od F0b | sprawdzenie `approval_unknown` |
-| Dead-man | `DeadManNotifier::ping('heartbeat'\|'notifications')`; sekret `DEADMAN_PROD_NOTIFICATIONS_URL` |
+| Dead-man | `DeadManNotifier::ping('heartbeat'\|'notifications'\|'ksef_sync')`; sekrety `DEADMAN_PROD_NOTIFICATIONS_URL`, `DEADMAN_PROD_KSEF_SYNC_URL` (D-98) |
 | Wpis ręczny | znak pisma bez spacji na brzegach i wielkimi literami; bez znaku `brak-{n}` |
 | `setting` od F0b | `company.tax_micro_account`, `company.zus_account` (NRB, 26 cyfr), `zus.parameters`, `zus.variant`, `ryczalt.advance_frequency`; domyślne `monthly` i `full` od 2026-01-01 z migracji |
 | Tytuł ZUS | `Składki ZUS {okres}` (D-39) |
@@ -716,6 +716,20 @@ Część b: sekcja niżej.
 | Akcje audytu | `notification.test_sent` |
 | Szablon | `templates/panel/setup.html.twig`; identyfikatory `#setup-summary`, `#setup-steps`, `#setup-step-<klucz>` (klasa `setup-done` albo `setup-pending`), `#setup-notification-test`; na pulpicie `#setup-pending` |
 | Testy | `SetupPanelTest` |
+
+### Pierwsza instalacja na VPS (D-98): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Skrypty | `scripts/prod-install.sh --node <nazwa> [--host-dir <katalog>] [--mail-host <host>] [--mail-from <adres>] [--mail-to <adres>]` albo `--rehearsal [--keep]`; `scripts/prod-cert.sh` (certyfikat panelu, cron odnowienia); `scripts/init-prod-vault.php` (sejf PROD) |
+| Plik wdrożenia | `/etc/kokpit/prod.env` (bez sekretów); zmienna Makefile `KOKPIT_ENV_FILE`; cron hosta `/etc/cron.d/kokpit-panel-cert`, znacznik logu `kokpit-cert` |
+| Pliki hosta | `secrets/tailscale-auth`, `restic-password`, `restic-repository`, `s3-access-key`, `s3-secret-key`, `deadman-backup-url`, `pgpass`; `ntfy/server.yml`, `ntfy/phone-password` |
+| Pliki haseł bazy | `owner_credentials`: `postgres-password`, `owner-password`, `backup-password`; `app_credentials`: `app-password`, `chat-ro-password` |
+| ntfy | użytkownicy `kokpit` (publikacja tokenem w temacie `kokpit`) i `telefon` (tylko odczyt); `auth-default-access: deny-all` |
+| Zmienne | `TS_HOSTNAME` (nazwa węzła Tailscale), `HEALTH_ATTEMPTS`, `HEALTH_INTERVAL` (ponowienia `/health` w `make deploy`) |
+| Sekret | `DEADMAN_PROD_KSEF_SYNC_URL`; check `ksef.sync` pingowany po udanym eksporcie na celu `prod` |
+| Próba | projekt compose `kokpit-rehearsal`; nazwa panelu `<node>.rehearsal.invalid`; zmienne `APP_IMAGE`, `PROXY_IMAGE` (domyślnie `kokpit-app:local`, `kokpit-proxy:local`) |
+| Testy | `MakefileTest::testHealthIsRetriedUntil200`, `MakefileTest::testDeploymentFileWinsOverTheShell`, `SchedulerTest::testScheduledMessagesSurviveTheTransportSerializer`, `KsefSyncTest::testExportOnProdTargetPingsKsefSyncDeadManAndPingFailureKeepsTheExport` |
 
 ### Test odtworzenia jednym poleceniem (D-89): nazwy
 
