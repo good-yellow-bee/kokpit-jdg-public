@@ -60,8 +60,8 @@ Osobisty kokpit jednej JDG: automatyzuje KSeF i JPK, weryfikuje kontrahentów i 
 | --- | --- | --- |
 | Właściciel | Ty | jedyny użytkownik panelu; zatwierdzasz każdy zapis, odbierasz pisma, płacisz ręcznie |
 | Doradca podatkowy | zewnętrzny, jednorazowo | przegląd mapowania FA(3) i PKWiU→ryczałt; zakres w Q-29, wynik w [decisions.md](decisions.md) przed go-live F3 |
-| Administrator skrzynki ADE | nieustalony (Q-18) | zastępca przy odbiorze pism w skrzynce e-Doręczeń |
-| Zastępca poza skrzynką | nieustalony (Q-18) | przejmuje terminy, gdy Cię nie ma; procedura break-glass w [operations.md](operations.md) |
+| Administrator skrzynki ADE | wyznaczasz w aplikacji e-Doręczeń; imię tylko na karcie awaryjnej (D-99) | jedyny zastępca: odbiera pisma w skrzynce e-Doręczeń i przekazuje Ci termin; bez dostępu do kokpitu |
+| Zastępca poza skrzynką | brak (D-99) | bez UPL-1 i bez drugiego loginu; przed nieobecnością składasz z wyprzedzeniem, procedura break-glass w [operations.md](operations.md) |
 
 ## Teraz – zgodność
 

@@ -329,7 +329,7 @@ Kolejność wierszy idzie za D-30. e-Doręczenia API (F4) i basal (F7) są odło
 
 ## Break-glass i zastępca
 
-Decyzja: D-03. Administrator skrzynki ADE zastępuje Cię przy odbiorze pism (Q-18). Poza skrzynką zastępcy brak; UPL-1 jest do rozważenia (Q-18).
+Decyzje: D-03, D-99. Administrator skrzynki ADE zastępuje Cię przy odbiorze pism. Poza skrzynką zastępcy brak: bez UPL-1 i bez drugiego loginu w kokpicie (D-99).
 
 | Sytuacja | Procedura |
 | --- | --- |
@@ -337,7 +337,6 @@ Decyzja: D-03. Administrator skrzynki ADE zastępuje Cię przy odbiorze pism (Q-
 | utrata dostępu SSH | konsola dostawcy hostingu; dane dostępowe w karcie awaryjnej |
 | serwer niedostępny przy terminie | narzędzia MF z sekcji „Teraz – zgodność” w [README.md](README.md); po powrocie rekoncyliacja otwartych wysyłek |
 | pismo w skrzynce ADE pod Twoją nieobecność | administrator skrzynki odbiera je w aplikacji e-Doręczeń i przekazuje Ci termin; do kokpitu nie ma dostępu; termin wpisujesz do kalendarza ([compliance-calendar.md](compliance-calendar.md)) |
-| Twoja nieobecność przy terminie, z UPL-1 | zastępca składa przez narzędzia MF: JPK podpisem kwalifikowanym albo zaufanym ([modules/jpk.md](modules/jpk.md)); VAT-UE i PIT-28 przez e-Deklaracje tylko podpisem kwalifikowanym ([e-Deklaracje, pytania i odpowiedzi](https://podatki.gov.pl/e-deklaracje-zloz-deklaracje-podatkowa-online/pytania-i-odpowiedzi)); danych autoryzujących używasz tylko Ty; do kokpitu nie ma dostępu |
 | Twoja nieobecność, bez zastępcy | terminy biegną dalej; przed dłuższą nieobecnością składasz z wyprzedzeniem |
 
 **Karta awaryjna** w menedżerze haseł i na papierze:
@@ -346,5 +345,4 @@ Decyzja: D-03. Administrator skrzynki ADE zastępuje Cię przy odbiorze pism (Q-
 - miejsce klucza sejfu PROD, klucza restic i poświadczeń celu backupu;
 - lista obowiązków z terminami i narzędziem MF dla każdego;
 - kontakt do doradcy podatkowego;
-- administrator skrzynki ADE: kto i od kiedy (Q-18);
-- zastępca z UPL-1, jeśli go ustanowisz, ma własny podpis kwalifikowany.
+- administrator skrzynki ADE: kto i od kiedy (D-99); tylko tutaj, nigdy w repo.
