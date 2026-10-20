@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Invoice;
 
+use App\Calendar\IsoDate;
 use App\Approval\ApprovalTransitions;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
@@ -97,7 +98,7 @@ final readonly class Subject1Importer
                     'vat_code' => $line->vatCode,'vat_amount' => $line->vatAmount,'gtu' => $line->gtu,'created_at' => $now,'updated_at' => $now,
                 ]);
             }
-            $this->files->put($xml, $environment, 'xml_sent', 'application/xml', 'invoice', $id, (int) substr($document->issueDate, 0, 4));
+            $this->files->put($xml, $environment, 'xml_sent', 'application/xml', 'invoice', $id, IsoDate::year($document->issueDate));
             $this->audit->append('sale.imported_subject1', ['ksef_number' => $ksefNumber] + ($draft === false ? [] : ['freshbooks_draft_id' => $draft['id']]), $environment, 'invoice', $id);
             if ($document->kind === 'KOR') {
                 // KOR ze skutkiem w zamkniętym M wymaga korekty JPK_V7M: TypKorekty 1 to okres faktury pierwotnej, inaczej okres KOR.

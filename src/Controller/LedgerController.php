@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Connector\FreshBooks\FreshBooksConnector;
 use App\Connector\FreshBooks\FreshBooksException;
@@ -108,7 +109,7 @@ final class LedgerController extends AbstractController
 
     private function year(Request $request): int
     {
-        $current = (int) substr($this->date->today(), 0, 4);
+        $current = IsoDate::year($this->date->today());
         $year = $request->query->getInt('year', $current);
         return $year >= 2020 && $year <= $current ? $year : $current;
     }
@@ -130,7 +131,7 @@ final class LedgerController extends AbstractController
     {
         $environment = $this->configuration->environment();
         $today = $this->date->today();
-        $year = (int) substr($today, 0, 4);
+        $year = IsoDate::year($today);
         $alerts = $this->db->fetchAllAssociative(
             "SELECT i.invoice_number, i.ksef_number, CASE WHEN i.revenue_date IS NULL THEN 'revenue_date_manual' WHEN EXISTS (SELECT 1 FROM invoice_line l WHERE l.invoice_id=i.id AND NOT l.state_before AND l.ryczalt_rate_pct IS NULL) THEN 'rate_missing' ELSE 'fx_rate_pending' END AS reason
              FROM invoice i WHERE i.environment=? AND i.direction='sale' AND i.kind='VAT' AND i.status IN ('accepted','corrected','superseded')

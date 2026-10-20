@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cost;
 
+use App\Calendar\IsoDate;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Counterparty\CounterpartyDirectory;
@@ -137,7 +138,7 @@ final readonly class CostImporter
                 'self_assessed_vat_pln' => $selfAssessed,'deductible' => $cost->deductible ? 'true' : 'false','jpk_doc_type' => $cost->jpkDocType,'is_fixed_asset' => $cost->fixedAsset ? 'true' : 'false',
                 'created_at' => $now,'updated_at' => $now,
             ]);
-            $this->files->put($file, $environment, 'cost_document', $mediaType, 'invoice', $id, (int) substr($cost->issueDate, 0, 4));
+            $this->files->put($file, $environment, 'cost_document', $mediaType, 'invoice', $id, IsoDate::year($cost->issueDate));
             $this->audit->append('cost.imported', ['source' => $cost->source], $environment, 'invoice', $id, $userId);
             return $id;
         });
@@ -157,7 +158,7 @@ final readonly class CostImporter
 
     private function store(string $xml, string $invoiceId, string $issueDate): void
     {
-        $this->files->put($xml, $this->configuration->environment(), 'cost_document', 'application/xml', 'invoice', $invoiceId, (int) substr($issueDate, 0, 4));
+        $this->files->put($xml, $this->configuration->environment(), 'cost_document', 'application/xml', 'invoice', $invoiceId, IsoDate::year($issueDate));
     }
 
     /** @param array<string,mixed> $row */

@@ -113,6 +113,6 @@ final class ObligationActionsBoundaryTest extends DatabaseTestCase
     public function testLetterDeadlineWaitsForLock(): void
     {
         $actions = ObligationTestTools::actions($this->db(), new MockClock('2026-10-12T08:00:00Z'));
-        LedgerTestTools::assertWaitsForLock($this->db(), 'SELECT pg_advisory_lock(hashtext(?))', ['obligation.edelivery_reply_due'], fn() => $actions->addLetterDeadline(self::USER, '2026-10-12', 'FIKC/1', '2026-10-12', 'fikcyjne pismo'));
+        LedgerTestTools::assertWaitsForNamedLock($this->db(), 'obligation.edelivery_reply_due', fn() => $actions->addLetterDeadline(self::USER, '2026-10-12', 'FIKC/1', '2026-10-12', 'fikcyjne pismo'));
     }
 }

@@ -1434,18 +1434,18 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Idiom `(int) substr($date, 0, 4)` dawał mutant równoważny (dłuższy wycinek, ten sam rok) w tej samej linii co zabijalny (przesunięty początek). Wzorzec linii nie odróżnia ich, bo Infection porównuje tylko linię sprzed mutacji.
 - **Decyzja:**
   - `(string)` przy `UuidV7::generate()` usunięte w całym `src/` (57 miejsc): metoda zwraca już `string`.
-  - Rok i miesiąc daty prawnej w zakresie mutacji liczy `App\Calendar\IsoDate` (`year`: `(int) $date`, `month`: `explode`), bez literałów długości; 25 miejsc zamiast `substr`. Poza zakresem idiom zostaje.
-  - `phpunit.xml` ma `executionOrder="default"`: Infection zachowuje kolejność, pokrycie trafia zawsze do tych samych testów, pomiar jest powtarzalny.
+  - Rok i miesiąc daty prawnej liczy `App\Calendar\IsoDate` (wyrażenie `^(\d{4})-(\d{2})-\d{2}$`, inny format daje `\InvalidArgumentException`) zamiast `substr` w całym `src/` (40 miejsc). Klasa leży w `src/Calendar`, bo ten katalog jest w zakresie mutacji.
+  - `phpunit.xml` ma `executionOrder="default"`: bez jawnej wartości Infection uruchamia testy losowo, a z nią zachowuje kolejność, więc pokrycie trafia zawsze do tych samych testów i pomiar jest powtarzalny.
   - `infection.json5` ignoruje mutanty tylko według wzorca linii źródła per mutator (`ignoreSourceCodeByRegex`), każdy z komentarzem-uzasadnieniem:
-    - Throw_ w `?? throw new \LogicException` i `is_*() ? … : throw new \LogicException`, także w jednolinijkowych pomocnikach `str()`/`int()`. Umowa kokpitu: `\LogicException` oznacza naruszenie niezmiennika; nowe strażniki tej postaci są poza pomiarem Throw_.
-    - LogicalOr i negacje w `if (!is_string($row['…']) || …)`: czyste zawężenie typów kolumn NOT NULL.
+    - Throw_ w `?? throw new \LogicException` i `is_*() ? … : throw new \LogicException`, także w pomocnikach `str()`/`int()`. Umowa kokpitu: `\LogicException` oznacza naruszenie niezmiennika; nowe strażniki tej postaci są poza pomiarem Throw_.
+    - LogicalOr i negacje w `if (!is_string($row['…']) || …)`: czyste zawężenie typów kolumn NOT NULL albo odfiltrowanych w zapytaniu.
     - BitwiseOr we flagach `JSON_UNESCAPED_*` dla `totals jsonb` (bez `JSON_FORCE_OBJECT`; zrzut kanoniczny ewidencji pod sha256 nie jest objęty).
     - IncrementInteger i DecrementInteger w głębokości `json_decode`.
   - Rzutowania w pomocnikach `str()`/`int()` nie są ignorowane: przy `strict_types` wartość innego typu z bazy daje `TypeError`.
-  - Testy blokad advisory (`LedgerTestTools::assertWaitsForLock`): korekta wpisu, bilans otwarcia, przeliczenie obowiązków, termin z pisma. Inny klucz blokady nie wywołuje czekania, więc test pada na `fail`.
+  - Testy blokad advisory (`LedgerTestTools::assertWaitsForNamedLock`, `assertWaitsForYearLock`): korekta wpisu, bilans otwarcia, przeliczenie obowiązków, termin z pisma. Inny klucz blokady nie wywołuje czekania, więc test pada na `fail`.
   - Bez ignorowania całych metod i numerów linii. Progi 85/95 bez zmian.
 - **Ryzyka:** wzorce ukrywają też zabijalne mutanty pasujących linii (71 ignorowanych w pomiarze). Pokrycie pętli `static $names` w `countryCode` należy do pierwszego testu w kolejności zestawu; nowy wcześniejszy test może je przejąć. Zapas pomiaru lokalnego: 213 ocalałych przy limicie 228.
-- **Skutki:** pomiar lokalny 2026-10-20 (8 wątków, 7 min): 4641 mutantów, 4354 zabite, 213 ocalałych, 71 ignorowanych, 3 limity czasu, 0 błędów, MSI i covered MSI 95,34%; Infection kończy się kodem 0. `infection.json5`, `phpunit.xml`, `src/Calendar/IsoDate.php`, `src/` (rzutowania, rok i miesiąc), `tests/Support/LedgerTestTools.php`, testy blokad i `IsoDateTest`; [testing.md](testing.md), [naming.md](naming.md).
+- **Skutki:** pomiar lokalny 2026-10-20 (8 wątków, 7 min): 4641 mutantów, 4354 zabite, 213 ocalałych, 71 ignorowanych, 3 limity czasu, 0 błędów, MSI i covered MSI 95,34%; Infection kończy się kodem 0. `infection.json5`, `phpunit.xml`, `src/Calendar/IsoDate.php`, `src/` (rzutowania, rok i miesiąc, także `JpkV7mBuilder` i `VatUeBuilder`), `tests/Support/LedgerTestTools.php`, testy blokad i `IsoDateTest`; [testing.md](testing.md), [naming.md](naming.md).
 - **Pytania:** brak.
 
 ### D-104 Pomiar mutacyjny w CI

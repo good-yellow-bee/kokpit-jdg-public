@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Calendar\IsoDate;
 use App\Ledger\YearClose;
 use App\Time\BusinessDate;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -52,6 +53,6 @@ final class YearCloseController extends AbstractController
 
     private function currentYear(): int
     {
-        return (int) substr($this->date->today(), 0, 4);
+        return IsoDate::year($this->date->today());
     }
 }

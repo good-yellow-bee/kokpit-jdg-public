@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Xml;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Ledger\Periods;
 use App\Setting\SettingKeys;
@@ -101,8 +102,8 @@ final readonly class JpkV7mBuilder
         self::child($header, 'DataWytworzeniaJPK', $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z'));
         self::child($header, 'CelZlozenia', (string) $purpose)->setAttribute('poz', 'P_7');
         self::child($header, 'KodUrzedu', $identity['tax_office_code']);
-        self::child($header, 'Rok', substr($month, 0, 4));
-        self::child($header, 'Miesiac', (string) (int) substr($month, 5, 2));
+        self::child($header, 'Rok', (string) IsoDate::year($month));
+        self::child($header, 'Miesiac', (string) IsoDate::month($month));
         $subject = self::child($root, 'Podmiot1');
         $subject->setAttribute('rola', 'Podatnik');
         JpkTaxpayer::appendPerson($subject, self::TNS, self::ETD, $identity, $birthDate);

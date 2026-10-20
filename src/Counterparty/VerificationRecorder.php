@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Counterparty;
 
+use App\Calendar\IsoDate;
 use App\Connector\RegistryResult;
 use App\Storage\FileStore;
 use Doctrine\DBAL\Connection;
@@ -58,6 +59,6 @@ final readonly class VerificationRecorder
     /** Dowód weryfikacji kontrahenta trzymamy jak dokumenty VAT: 5 lat od końca roku terminu płatności podatku. */
     private static function retentionYear(string $checkedForDate): int
     {
-        return (int) substr($checkedForDate, 0, 4) + 1;
+        return IsoDate::year($checkedForDate) + 1;
     }
 }

@@ -28,26 +28,24 @@
     },
     "LogicalOr": {
       "ignoreSourceCodeByRegex": [
-        // Czysty strażnik typów kolumn NOT NULL z wiersza bazy (zawężenie dla PHPStan).
+        // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
         "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
       ]
     },
     "LogicalOrAllSubExprNegation": {
       "ignoreSourceCodeByRegex": [
-        // Czysty strażnik typów kolumn NOT NULL z wiersza bazy (zawężenie dla PHPStan).
+        // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
         "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
       ]
     },
     "LogicalOrSingleSubExprNegation": {
       "ignoreSourceCodeByRegex": [
-        // Czysty strażnik typów kolumn NOT NULL z wiersza bazy (zawężenie dla PHPStan).
+        // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
         "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
       ]
     },
     "Throw_": {
       "ignoreSourceCodeByRegex": [
-        // Jednolinijkowy pomocnik `is_scalar|is_numeric($value) ? … : throw new \LogicException`: `throw` nieosiągalny, wartości z bazy mają typ skalarny.
-        "return is_(scalar|numeric)\\(\\$value\\) \\? \\((string|int)\\) \\$value : throw new \\\\LogicException\\(.*\\);",
         // `?? throw new \LogicException`: strażnik niezmiennika (wiersz z bazy albo klucz stałej reguły zawsze jest).
         ".*\\?\\? throw new \\\\LogicException\\(.*",
         // `is_*() ? … : throw new \LogicException`: strażnik typu wartości z bazy, gałąź `throw` nieosiągalna.

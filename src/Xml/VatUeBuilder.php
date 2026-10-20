@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Xml;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Ledger\Periods;
 use Brick\Math\BigDecimal;
@@ -196,8 +197,8 @@ final readonly class VatUeBuilder
         $code->setAttribute('kodSystemowy', $systemCode);
         $code->setAttribute('wersjaSchemy', $schemaVersion);
         self::child($header, 'WariantFormularza', '5');
-        self::child($header, 'Rok', substr($month, 0, 4));
-        self::child($header, 'Miesiac', (string) (int) substr($month, 5, 2));
+        self::child($header, 'Rok', (string) IsoDate::year($month));
+        self::child($header, 'Miesiac', (string) IsoDate::month($month));
         self::child($header, 'CelZlozenia', '1');
         self::child($header, 'KodUrzedu', $identity['tax_office_code']);
         $subject = self::child($root, 'Podmiot1');

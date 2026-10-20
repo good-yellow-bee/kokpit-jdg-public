@@ -181,6 +181,6 @@ final class ObligationEngineHorizonTest extends DatabaseTestCase
     public function testRecomputeWaitsForRunLock(): void
     {
         $engine = ObligationTestTools::engine($this->db(), new MockClock('2026-09-18T04:00:00Z'));
-        LedgerTestTools::assertWaitsForLock($this->db(), 'SELECT pg_advisory_lock(hashtext(?))', ['obligations.recompute'], fn() => $engine->recompute());
+        LedgerTestTools::assertWaitsForNamedLock($this->db(), 'obligations.recompute', fn() => $engine->recompute());
     }
 }

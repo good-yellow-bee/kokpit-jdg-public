@@ -56,6 +56,12 @@ final class LedgerTestTools
         self::assertWaitsForLock($db, 'SELECT pg_advisory_lock(?, ?)', [\App\Ledger\RevenueEntryWriter::LOCK_NAMESPACE, $year], $write);
     }
 
+    /** Blokada `pg_advisory_xact_lock(hashtext($key))` trzymana przez drugie połączenie. */
+    public static function assertWaitsForNamedLock(Connection $db, string $key, callable $write): void
+    {
+        self::assertWaitsForLock($db, 'SELECT pg_advisory_lock(hashtext(?))', [$key], $write);
+    }
+
     /**
      * Blokada advisory `$lock` trzymana przez drugie połączenie: `$write` musi na nią czekać i paść po `lock_timeout`.
      *

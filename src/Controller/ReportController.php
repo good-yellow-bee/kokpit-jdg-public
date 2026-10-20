@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Ledger\YearOverYearReport;
 use App\Panel\CsvExport;
@@ -25,7 +26,7 @@ final class ReportController extends AbstractController
     public function index(Request $request): Response
     {
         $today = $this->date->today();
-        $current = (int) substr($today, 0, 4);
+        $current = IsoDate::year($today);
         $year = $request->query->getInt('year', $current);
         $year = $year >= 2026 && $year <= $current ? $year : $current;
         $currencies = $this->report->currencies();
