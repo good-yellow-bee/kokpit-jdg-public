@@ -17,13 +17,16 @@ final class IsoDateTest extends TestCase
 
     public function testOtherFormatIsRefused(): void
     {
-        foreach (['20260131', '2026-01', 'x2026-01-31', '2026-01-31x', "2026-01-31\n", '2026-01-31T10:00:00'] as $date) {
-            try {
-                IsoDate::year($date);
-                self::fail('Przyjęto ' . $date);
-            } catch (\InvalidArgumentException $exception) {
-                self::assertSame('Data poza formatem RRRR-MM-DD.', $exception->getMessage());
+        foreach (['20260131', '2026-01', 'x2026-01-31', '2026-01-31x', "2026-01-31\n", '2026-01-31T10:00:00', '2026-13-01', '2026-00-10', '2026-02-29', '2026-04-31'] as $date) {
+            foreach ([IsoDate::year(...), IsoDate::month(...)] as $part) {
+                try {
+                    $part($date);
+                    self::fail('Przyjęto ' . $date);
+                } catch (\InvalidArgumentException $exception) {
+                    self::assertSame('Data poza formatem RRRR-MM-DD.', $exception->getMessage());
+                }
             }
         }
+        self::assertSame(2, IsoDate::month('2028-02-29'));
     }
 }

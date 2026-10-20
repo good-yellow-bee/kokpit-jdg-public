@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Tests\Support\LedgerTestTools;
 use App\Ledger\OpeningBalance;
 use App\Setting\SettingKeys;
+use App\Tests\Support\LedgerTestTools;
 use Symfony\Component\Uid\Uuid;
 
 /** Bilans otwarcia (D-65): data przejścia, powód poprawki i wpis `opening_balance.confirmed`. Dane fikcyjne. */

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Tests\Support\LedgerTestTools;
 use App\Fixtures\FictionalIdentifiers;
 use App\Setting\SettingKeys;
+use App\Tests\Support\LedgerTestTools;
 use App\Tests\Support\ObligationTestTools;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\UuidV7;

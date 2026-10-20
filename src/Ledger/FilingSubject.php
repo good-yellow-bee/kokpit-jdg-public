@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
-use App\Calendar\IsoDate;
 use App\Approval\ApprovalPayload;
 use App\Approval\ApprovalSubject;
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
