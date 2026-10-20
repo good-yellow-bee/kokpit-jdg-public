@@ -14,7 +14,7 @@ final class CiWorkflowTest extends TestCase
         $root = dirname(__DIR__, 2);
         $content = file_get_contents($root . '/.github/workflows/ci.yml');
         self::assertIsString($content);
-        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,uses?:string,env?:array<string,string>,with?:array<string,string>}>}>} $workflow */
+        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,shell?:string,uses?:string,env?:array<string,string>,with?:array<string,string>}>}>} $workflow */
         $workflow = Yaml::parse($content);
         self::assertSame(['push','pull_request','workflow_dispatch'], array_keys($workflow['on']));
         // D-43: gałąź PR liczy minuty raz (pull_request), push tylko na main, starsze przebiegi PR anulowane.
@@ -26,6 +26,10 @@ final class CiWorkflowTest extends TestCase
         self::assertSame('unit+property', $jobs['unit_property']['name'] ?? null);
         self::assertTrue($jobs['mutation']['continue-on-error'] ?? null);
         self::assertSame("github.event_name != 'pull_request'", $jobs['mutation']['if'] ?? null);
+        // Kod wyjścia Infection przechodzi przez `tee` tylko z pipefail (`shell: bash`, D-103).
+        $mutation = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => str_contains($step['run'] ?? '', 'run-mutation.sh')));
+        self::assertCount(1, $mutation);
+        self::assertSame('bash', $mutation[0]['shell'] ?? null);
         self::assertSame("github.event_name == 'workflow_dispatch'", $jobs['live']['if'] ?? null);
         self::assertStringContainsString("github.ref_name != 'main'", $jobs['evidence']['if'] ?? '');
         self::assertStringContainsString("startsWith(github.head_ref || github.ref_name, 'f')", $jobs['evidence']['if'] ?? '');
