@@ -310,7 +310,7 @@ GitHub Actions w prywatnym repo `good-yellow-bee/kokpit-jdg`. Żaden job nie ma 
 | `xsd` | testsuite `xsd` (`tests/Xsd`) z `LIBXML_NONET`; sumy kontrolne `resources/xsd` | tak |
 | `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi | tak |
 | `security` | testsuite `security` (`tests/Security`), skaner fixtures i sekretów | tak |
-| `mutation` | Infection według „Testów mutacyjnych”, cały zakres także przy `pull_request` (ok. 17 min, D-106) | tak |
+| `mutation` | Infection według „Testów mutacyjnych”, cały zakres także przy `pull_request` (17–26 min, D-106) | tak |
 | `evidence` | po pozostałych: `kokpit:evidence <phase> --only=ci`, upload `var/evidence/**` jako artefakt przebiegu; pomijany przy push do `main` i na gałęziach bez prefiksu fazy (D-43) | tak |
 | `live` | tylko `workflow_dispatch` z wymaganym wejściem `phase`; testsuite `live` na celach testowych, potem `kokpit:evidence <phase> --only=live` i upload paczki; przed testami certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` w `var/jpk/mf-test.crt` (D-97); paczka także po czerwonym teście (D-102); klucz sejfu testowego jako sekret środowiska GitHub; nigdy PROD | nie; faza z kryteriami live wymaga udanego przebiegu |
 

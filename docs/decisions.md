@@ -1438,7 +1438,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - PR i `main` sprawdzają cały zakres. Próg dotyczy całego zakresu (zapas 221 ocalałych przy limicie 230), a MSI kilku mutantów zmienionego pliku jest niestabilne; `--git-diff-filter` zostaje poza zakresem.
   - Progi 85/95 bez zmian.
 - **Skutki:**
-  - PR czeka ok. 17–20 min na `mutation` (job bez `needs`, rusza od razu); `concurrency` anuluje starszy przebieg PR.
+  - PR czeka 17–26 min na `mutation` (job bez `needs`, rusza od razu); `concurrency` anuluje starszy przebieg PR. Pierwszy przebieg PR (39423896948): 25m41s, 222 ocalałe (na `main` 221), covered MSI 95%; różnica jednego mutanta między przebiegami zjada zapas do limitu 230.
   - `main` nie ma ochrony gałęzi ani reguł, więc blokada to czerwony check i zasada merge tylko po zielonym CI, nie wymuszenie GitHub.
   - `run-mutation.sh` bez gałęzi z progami 0 dla zakresu bez `src/Tax`: blokujący job nie może przejść bez progów. `CiWorkflowTest` pilnuje progów 85/95 w skrypcie.
   - `.github/workflows/ci.yml`, `scripts/run-mutation.sh`, `tests/Unit/CiWorkflowTest.php`; [testing.md](testing.md), [naming.md](naming.md), `.claude/rules/zasady-twarde.md`.
