@@ -31,7 +31,7 @@
 | `failed-retry` | pass | junit.xml: `FailedRetryTest` (1 test); `cmd/failed-retry.txt` sha256 `1645755f7e02…` |
 | `payload-immutable` | pass | junit.xml: `ApprovalGateTest` (1 test); `cmd/payload-immutable.txt` sha256 `d96fc383c2ee…` |
 | `gate-panel` [manual] | [ ] pending | czeka na Ciebie: plik w `var/evidence/f0b/inbox/` albo odhaczony wpis |
-| `mutation-report` [manual] | [ ] pending | brak raportu: job `mutation` nie liczył mutacji (D-103) |
+| `mutation-report` [manual] | [ ] pending | raport do odhaczenia: https://github.com/good-yellow-bee/kokpit-jdg-public/actions/runs/39419058617, artefakt `mutation` (`mutation.json`), MSI 95,20% |
 | `ci-green` [manual] | [ ] pending | czeka na Ciebie: plik w `var/evidence/f0b/inbox/` albo odhaczony wpis |
 | `cc-01` | pass | junit.xml: `ConnectorsDisabledTest` (2 testy); `cmd/cc-01.txt` sha256 `5efa4687b980…` |
 | `cc-02` | pass | junit.xml: `HostAllowlistTest` (6 testów); `cmd/cc-02.txt` sha256 `9c81dd5d1e69…` |
@@ -61,7 +61,6 @@ Kryteria przekrojowe spoza rejestru `tests/Acceptance/f0b.yaml` (zakres z pliku 
 
 | Kryterium | Wynik | Artefakt |
 | --- | --- | --- |
-| `cc-23` | fail | job `mutation` w https://github.com/good-yellow-bee/kokpit-jdg-public/actions/runs/39385540766 bez raportu MSI: obraz bez sterownika pokrycia, Infection kończy się błędem, a `tee` ukrywał kod wyjścia (D-103) |
+| `cc-23` | pass | job `mutation` w https://github.com/good-yellow-bee/kokpit-jdg-public/actions/runs/39419058617 (commit `c29d422`, artefakt `mutation`): `mutation.json` sha256 `83dfb6402c69…`; 4665 mutantów, 221 ocalałych, 62 ignorowane (D-105), MSI i covered MSI 95,20% przy progach 85/95 (D-104, D-105) |
 
 Otwarte [manual]: `setting-change`, `zus-payment`, `gate-panel`, `mutation-report`, `ci-green`, `cc-03`, `cc-04`, `cc-05`, `cc-14`.
-Fail: `cc-23` (D-103).
