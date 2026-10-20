@@ -30,6 +30,14 @@ final class CiWorkflowTest extends TestCase
         $mutation = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => str_contains($step['run'] ?? '', 'run-mutation.sh')));
         self::assertCount(1, $mutation);
         self::assertSame('bash', $mutation[0]['shell'] ?? null);
+        // Kopie bazy testowej przed Infection i raport JSON jako artefakt `cc-23` (D-104).
+        $mutationRuns = array_map(static fn(array $step): string => $step['run'] ?? '', $jobs['mutation']['steps']);
+        $databases = array_search('sh scripts/mutation-databases.sh "$(nproc)"', $mutationRuns, true);
+        self::assertIsInt($databases);
+        self::assertLessThan(array_key_first(array_filter($mutationRuns, static fn(string $run): bool => str_contains($run, 'run-mutation.sh'))), $databases);
+        $report = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => ($step['uses'] ?? '') === 'actions/upload-artifact@v4'));
+        self::assertCount(1, $report);
+        self::assertSame(['name' => 'mutation','path' => 'mutation.json','if-no-files-found' => 'error'], $report[0]['with'] ?? null);
         self::assertSame("github.event_name == 'workflow_dispatch'", $jobs['live']['if'] ?? null);
         self::assertStringContainsString("github.ref_name != 'main'", $jobs['evidence']['if'] ?? '');
         self::assertStringContainsString("startsWith(github.head_ref || github.ref_name, 'f')", $jobs['evidence']['if'] ?? '');

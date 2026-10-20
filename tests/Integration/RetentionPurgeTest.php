@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\TestFiles;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\Uuid;
 
@@ -9,7 +10,7 @@ final class RetentionPurgeTest extends DatabaseTestCase
 {
     protected function store(MockClock $clock): \App\Storage\FileStore
     {
-        return new \App\Storage\FileStore($this->connection, $clock, new \Symfony\Component\Lock\LockFactory(new \Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore($this->connection)), new \App\Audit\AuditLog($this->connection, $clock, new \App\Security\Redactor()), '/app/var/test-files/' . self::class);
+        return new \App\Storage\FileStore($this->connection, $clock, new \Symfony\Component\Lock\LockFactory(new \Symfony\Component\Lock\Store\DoctrineDbalPostgreSqlStore($this->connection)), new \App\Audit\AuditLog($this->connection, $clock, new \App\Security\Redactor()), TestFiles::root(self::class));
     }
 
     public function testExpiredFileAndLegalHoldSharedReference(): void

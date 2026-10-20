@@ -34,8 +34,6 @@ use Symfony\Component\Workflow\WorkflowInterface;
  */
 final class DraftTestTools
 {
-    public const FILES = '/app/var/test-files/draft';
-
     public readonly ApprovalGate $gate;
     public readonly DraftSubject $subject;
     public readonly Drafts $drafts;
@@ -49,7 +47,7 @@ final class DraftTestTools
     {
         $redactor = new Redactor();
         $audit = new AuditLog($db, $clock, $redactor);
-        $files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, self::FILES);
+        $files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, TestFiles::root('draft'));
         $this->subject = new DraftSubject($db, $workflow, $clock, new DummySubject(new DummySubjects(), 'draft'));
         $registry = new ApprovalSubjects([$this->subject]);
         $transitions = new ApprovalTransitions($db, $audit, $clock, $registry);
@@ -130,6 +128,6 @@ final class DraftTestTools
     public function payloadPath(string $approvalId): string
     {
         $path = $this->db->fetchOne('SELECT s.path FROM stored_file s JOIN approval a ON a.payload_file_id=s.id WHERE a.id=?', [$approvalId]);
-        return is_string($path) ? self::FILES . '/' . $path : throw new \LogicException('Brak pliku payloadu.');
+        return is_string($path) ? TestFiles::root('draft') . '/' . $path : throw new \LogicException('Brak pliku payloadu.');
     }
 }

@@ -79,7 +79,7 @@ final class F1TestTools
 
     public static function files(Connection $db, MockClock $clock): FileStore
     {
-        return new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), self::audit($db, $clock), '/app/var/test-files/f1');
+        return new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), self::audit($db, $clock), TestFiles::root('f1'));
     }
 
     /** @param array<string,array<string,string>> $rates */
