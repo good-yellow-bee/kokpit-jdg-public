@@ -70,8 +70,8 @@ final class Subject1LedgerOutcomesTest extends DatabaseTestCase
         $this->clock->modify('2026-12-11T08:30:00Z');
         $ledger = F1TestTools::ledger($this->db(), $this->clock, ['EUR' => ['2026-11-05' => '4.2500']]);
         self::assertSame('fields_only', $ledger->apply($id, false)->outcome);
-        $invoice = $this->db()->fetchAssociative('SELECT fx_pit_rate_id IS NOT NULL AS rate, updated_at FROM invoice WHERE id=?', [$id]);
-        self::assertSame(['rate' => true, 'updated_at' => '2026-12-11 08:30:00+00'], $invoice);
+        $invoice = $this->db()->fetchAssociative("SELECT fx_pit_rate_id IS NOT NULL AS rate, to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') AS updated_at FROM invoice WHERE id=?", [$id]);
+        self::assertSame(['rate' => true, 'updated_at' => '2026-12-11 08:30:00'], $invoice);
     }
 
     public function testCounterpartyReadsOnlyNonEmptyTextFields(): void

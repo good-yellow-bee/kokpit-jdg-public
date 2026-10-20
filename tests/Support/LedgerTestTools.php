@@ -56,6 +56,8 @@ final class LedgerTestTools
         $other = DriverManager::getConnection($db->getParams());
         $other->executeQuery('SELECT pg_advisory_lock(?, ?)', [\App\Ledger\RevenueEntryWriter::LOCK_NAMESPACE, $year]);
         try {
+            // `SET LOCAL` działa tylko w transakcji; bez niej zapis wisiałby na blokadzie bez limitu.
+            \PHPUnit\Framework\Assert::assertTrue($db->isTransactionActive());
             $db->executeStatement("SET LOCAL lock_timeout = '200ms'");
             $write();
             \PHPUnit\Framework\Assert::fail('Zapis nie czekał na blokadę roku.');

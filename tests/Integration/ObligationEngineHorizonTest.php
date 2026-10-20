@@ -53,7 +53,7 @@ final class ObligationEngineHorizonTest extends DatabaseTestCase
         ObligationTestTools::seed($this->db(), $clock);
         $engine = ObligationTestTools::engine($this->db(), $clock);
         $first = $engine->recompute();
-        $this->db()->executeStatement("UPDATE obligation SET status='done', done_at=now() WHERE dedupe_key='zus:2026-09-01'");
+        $this->db()->executeStatement("UPDATE obligation SET status='done', done_at='2026-10-01T08:00:00+00:00' WHERE dedupe_key='zus:2026-09-01'");
         self::assertSame(['inserted' => 0, 'updated' => 0, 'unchanged' => $first['inserted'] - 1, 'kept' => 1, 'retired' => 0], $engine->recompute());
 
         // Zmiana częstotliwości: miesięczne zaliczki spoza kwartałów wygasają, wspólne klucze dostają regułę kwartalną.

@@ -15,15 +15,13 @@ use Symfony\Component\Clock\MockClock;
 /** Liczniki bramek `MonthChecklist` i `V7mGates` z odpowiedzi sterownika: tekst liczbowy daje liczbę, inny wynik to błąd. */
 final class GateCountTest extends TestCase
 {
-    private const MONTH_GATES = 4;
-
     public function testNumericTextCountsAsInteger(): void
     {
         $result = $this->checklist('0')->evaluate('2026-11-01');
         self::assertTrue($result['ok']);
         self::assertSame(array_fill_keys(MonthChecklist::GATES, ['ok' => true, 'count' => 0]), $result['gates']);
         self::assertSame(['ok' => false, 'count' => 2], $this->checklist('2')->evaluate('2026-11-01')['gates']['sales_final']);
-        $result = $this->gates(array_fill(0, self::MONTH_GATES + 2, '0'))->evaluate('2026-11-01');
+        $result = $this->gates(array_fill(0, count(MonthChecklist::GATES) + 2, '0'))->evaluate('2026-11-01');
         self::assertSame([true, ['ok' => true, 'count' => 0]], [$result['ok'], $result['gates']['eu_b2b_unidentified']]);
     }
 
@@ -38,7 +36,7 @@ final class GateCountTest extends TestCase
     {
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage('Niepoprawny wynik bramki.');
-        $this->gates([...array_fill(0, self::MONTH_GATES, '0'), false])->evaluate('2026-11-01');
+        $this->gates([...array_fill(0, count(MonthChecklist::GATES), '0'), false])->evaluate('2026-11-01');
     }
 
     private function checklist(mixed $count): MonthChecklist

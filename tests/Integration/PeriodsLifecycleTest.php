@@ -90,7 +90,7 @@ final class PeriodsLifecycleTest extends DatabaseTestCase
         $this->filing('2026-11-01');
         $target = (string) UuidV7::generate();
         self::assertTrue($this->periods->correctionRequired('2026-11-20', 'cost', 'invoice', $target));
-        self::assertSame('2026-12-10 09:00:00+00', $this->db()->fetchOne("SELECT correction_required_at FROM period WHERE period_start='2026-11-01'"));
+        self::assertSame('2026-12-10 09:00:00', $this->db()->fetchOne("SELECT to_char(correction_required_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') FROM period WHERE period_start='2026-11-01'"));
         self::assertSame(['cause' => 'cost', 'period_start' => '2026-11-01', 'target_id' => $target, 'target_type' => 'invoice'], $this->details('period.correction_required'));
     }
 

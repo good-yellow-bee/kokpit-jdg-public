@@ -30,7 +30,7 @@ final class OpeningBalanceCorrectionTest extends DatabaseTestCase
         self::assertInstanceOf(OpeningBalance::class, $opening);
         $this->opening = $opening;
         $this->user = (string) Uuid::v7();
-        $now = (new \DateTimeImmutable())->format('c');
+        $now = '2026-10-01T08:00:00+00:00';
         $this->db()->insert('app_user', ['id' => $this->user, 'username' => 'fictional-owner', 'display_name' => 'Fikcyjny właściciel', 'created_at' => $now, 'updated_at' => $now]);
         foreach (OpeningBalance::EVIDENCE as $key => $field) {
             $this->evidence[$key] = ['bytes' => "%PDF-1.4\n% fikcyjny dowod " . $field . " (fictional)\n", 'media_type' => 'application/pdf'];

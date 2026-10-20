@@ -227,8 +227,9 @@ final class FilingSubjectStatusTest extends DatabaseTestCase
         $id = ApprovalTestTools::insert($this->db(), 'approved', $this->clock->now(), $filingId);
         $row = $this->db()->fetchAssociative('SELECT * FROM approval WHERE id=?', [$id]);
         self::assertIsArray($row);
-        $this->db()->update('approval', ['status' => 'superseded', 'superseded_by_id' => $id], ['id' => $id]);
-        $this->db()->insert('approval', ['id' => (string) UuidV7::generate($this->clock->now()), 'connector' => $connector, 'requested_at' => $this->clock->now()->modify('+1 second')->format('Y-m-d\TH:i:s.uP')] + $fields
+        $successor = (string) UuidV7::generate($this->clock->now());
+        $this->db()->update('approval', ['status' => 'superseded', 'superseded_by_id' => $successor], ['id' => $id]);
+        $this->db()->insert('approval', ['id' => $successor, 'connector' => $connector, 'requested_at' => $this->clock->now()->modify('+1 second')->format('Y-m-d\TH:i:s.uP')] + $fields
             + array_intersect_key($row, array_flip(['environment', 'subject_type', 'subject_id', 'payload_file_id', 'payload_sha256', 'source_version', 'summary', 'preconditions', 'expires_at', 'decided_at', 'status'])));
     }
 

@@ -244,6 +244,7 @@ final class ApprovalGateGuardsTest extends DatabaseTestCase
         $other = DriverManager::getConnection($this->db()->getParams());
         try {
             $other->executeQuery('SELECT pg_advisory_lock(hashtext(?))', ['approval:filing:' . $subject]);
+            self::assertTrue($this->db()->isTransactionActive());
             $this->db()->executeStatement("SET LOCAL lock_timeout = '200ms'");
             $this->tools->gate->request('filing', (string) UuidV7::generate());
             try {

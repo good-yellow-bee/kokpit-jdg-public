@@ -148,9 +148,10 @@ final class FilingRequestStateTest extends VatUeTestCase
     {
         try {
             $request();
-            self::fail('Prośba przeszła: ' . $message);
         } catch (\Throwable $refused) {
             self::assertSame([$class, $message], [$refused::class, $refused->getMessage()]);
+            return;
         }
+        self::fail('Prośba przeszła: ' . $message);
     }
 }

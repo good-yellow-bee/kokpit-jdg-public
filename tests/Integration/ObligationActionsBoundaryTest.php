@@ -98,7 +98,7 @@ final class ObligationActionsBoundaryTest extends DatabaseTestCase
 
     private function user(): void
     {
-        $this->db()->executeStatement("INSERT INTO app_user (id,username,display_name,created_at,updated_at) VALUES (?,'fictional-owner','Fikcyjny',now(),now())", [self::USER]);
+        $this->db()->executeStatement("INSERT INTO app_user (id,username,display_name,created_at,updated_at) VALUES (?,'fictional-owner','Fikcyjny','2026-10-01T08:00:00+00:00','2026-10-01T08:00:00+00:00')", [self::USER]);
     }
 
     private function obligation(string $id): string

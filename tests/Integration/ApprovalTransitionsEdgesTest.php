@@ -32,8 +32,9 @@ final class ApprovalTransitionsEdgesTest extends DatabaseTestCase
     public function testRequestAuditOnlyForPendingWithRequestedAction(): void
     {
         $id = $this->tools->request();
+        $approved = $this->tools->approved();
         $before = $this->tools->auditCount();
-        foreach ([['approval.approved', $id], ['approval.requested', $this->tools->approved()]] as [$action, $target]) {
+        foreach ([['approval.approved', $id], ['approval.requested', $approved]] as [$action, $target]) {
             try {
                 $this->tools->transitions->audit($action, $target, [], null);
                 self::fail('Wpis prośby przyjęty dla ' . $action . '.');
@@ -41,6 +42,6 @@ final class ApprovalTransitionsEdgesTest extends DatabaseTestCase
                 self::assertSame('Wpis prośby dotyczy tylko nowego zatwierdzenia.', $exception->getMessage());
             }
         }
-        self::assertSame($before + 2, $this->tools->auditCount());
+        self::assertSame($before, $this->tools->auditCount());
     }
 }
