@@ -115,12 +115,76 @@ final readonly class Pit28Builder
         return $summary + ['advances_paid' => (string) BigDecimal::of(is_scalar($paid) ? (string) $paid : '0')->toScale(2)];
     }
 
+    /**
+     * Kwoty zeznania bez pozycji formularza (D-101), także dla roku bez wariantu z XSD: `inputs()` oraz per stawka
+     * przychód, udział, odliczone składki społeczne i 50% zdrowotnej, przychód po odliczeniach, podstawa w pełnych
+     * złotych i ryczałt; razem odliczenia, podstawa, ryczałt i należny ryczałt w pełnych złotych. Metoda PIT-28(27).
+     *
+     * @return array{year:int,revenue:array<string,string>,revenue_total:string,social_paid:string,health_paid:string,health_deductible:string,advances_paid:string,
+     *     rates:array<string,array{revenue:string,share:string,social:string,health:string,net:string,base:string,ryczalt:string}>,
+     *     social_deductible:string,social_deducted:string,health_deducted:string,base:string,ryczalt:string,ryczalt_due:string}
+     */
+    public function amounts(int $year): array
+    {
+        $inputs = $this->inputs($year);
+        $revenue = [];
+        foreach ($inputs['revenue'] as $rate => $amount) {
+            $value = BigDecimal::of($amount);
+            if ($value->isZero()) {
+                continue;
+            }
+            if ($value->isNegative()) {
+                throw new JpkBuildRefused(sprintf('Przychód roku według stawki %s%% jest ujemny (%s); PIT-28 nie powstaje.', $rate, $amount));
+            }
+            $revenue[$rate] = $value->toScale(2);
+        }
+        $total = BigDecimal::zero();
+        foreach ($revenue as $amount) {
+            $total = $total->plus($amount);
+        }
+        if (!$total->isPositive()) {
+            throw new JpkBuildRefused(sprintf('Brak przychodu w ewidencji %d; PIT-28 bez przychodu składasz ręcznie.', $year));
+        }
+        uksort($revenue, static fn(string $a, string $b): int => BigDecimal::of($a)->compareTo($b));
+        $amount = static fn(BigDecimal $value): string => (string) $value->toScale(2, RoundingMode::HALF_UP);
+
+        // Składki społeczne zapłacone w roku, nie więcej niż przychód; 50% zapłaconej zdrowotnej (art. 11 ust. 1a).
+        $social = BigDecimal::of($inputs['social_paid'])->toScale(2);
+        $social = $social->isGreaterThan($total) ? $total : $social;
+        $health = BigDecimal::of($inputs['health_deductible'])->toScale(2);
+
+        // Społeczne według udziału stawki (do dwóch miejsc), zdrowotna według przychodu stawki; podstawa w pełnych złotych.
+        $rates = [];
+        $deducted = BigDecimal::zero();
+        $healthDeducted = BigDecimal::zero();
+        $base = BigDecimal::zero();
+        $ryczalt = BigDecimal::zero();
+        foreach ($revenue as $rate => $value) {
+            $share = $value->multipliedBy(100)->dividedBy($total, 2, RoundingMode::HALF_UP);
+            $first = $social->multipliedBy($share)->dividedBy(100, 2, RoundingMode::HALF_UP);
+            $first = $first->isGreaterThan($value) ? $value : $first;
+            $second = $health->multipliedBy($value)->dividedBy($total, 2, RoundingMode::HALF_UP);
+            $second = $second->isGreaterThan($value->minus($first)) ? $value->minus($first) : $second;
+            $net = $value->minus($first)->minus($second);
+            $rateBase = $net->toScale(0, RoundingMode::HALF_UP);
+            $tax = $rateBase->multipliedBy($rate)->dividedBy(100, 2, RoundingMode::HALF_UP);
+            $rates[$rate] = ['revenue' => $amount($value),'share' => (string) $share,'social' => $amount($first),'health' => $amount($second),'net' => $amount($net),'base' => (string) $rateBase,'ryczalt' => $amount($tax)];
+            $deducted = $deducted->plus($first);
+            $healthDeducted = $healthDeducted->plus($second);
+            $base = $base->plus($rateBase);
+            $ryczalt = $ryczalt->plus($tax);
+        }
+
+        return $inputs + ['rates' => $rates,'social_deductible' => $amount($social),'social_deducted' => $amount($deducted),'health_deducted' => $amount($healthDeducted),'base' => (string) $base,
+            'ryczalt' => $amount($ryczalt),'ryczalt_due' => (string) $ryczalt->toScale(0, RoundingMode::HALF_UP)];
+    }
+
     /** Zeznanie PIT-28 za rok przychodu; bez wariantu z XSD odmawia (D-96). */
     public function build(int $year): Pit28Document
     {
         $variant = $this->variant($year) ?? throw new JpkBuildRefused(self::variantMissing($year));
-        $inputs = $this->inputs($year);
-        [$fields, $totals] = $this->fields27($year, $inputs);
+        $amounts = $this->amounts($year);
+        [$fields, $totals] = $this->fields27($year, $amounts);
         $identity = $this->taxpayer->identity();
         $birthDate = $this->taxpayer->birthDate($this->configuration->environment());
         $address = $this->residence($year);
@@ -166,111 +230,69 @@ final readonly class Pit28Builder
         if ($xml === false) {
             throw new \RuntimeException('Nie można zserializować PIT-28.');
         }
-        return new Pit28Document($year, $variant['variant'], $variant['schema'], $xml, $inputs + $totals, $this->validator->validate($xml, $variant['schema']));
+        return new Pit28Document($year, $variant['variant'], $variant['schema'], $xml, array_intersect_key($amounts, array_flip(['year','revenue','revenue_total','social_paid','health_paid','health_deductible','advances_paid','social_deducted','health_deducted','base','ryczalt','ryczalt_due'])) + $totals, $this->validator->validate($xml, $variant['schema']));
     }
 
     /**
-     * Pozycje `PozycjeSzczegolowe` PIT-28(27) i kwoty wynikowe do `filing.totals`.
+     * Pozycje `PozycjeSzczegolowe` PIT-28(27) z `amounts()` i kwoty wynikowe do `filing.totals`.
      *
-     * @param array{year:int,revenue:array<string,string>,revenue_total:string,social_paid:string,health_paid:string,health_deductible:string,advances_paid:string} $inputs
+     * @param array{revenue_total:string,social_deductible:string,health_deductible:string,advances_paid:string,ryczalt:string,ryczalt_due:string,
+     *     rates:array<string,array{revenue:string,share:string,social:string,health:string,net:string,base:string,ryczalt:string}>} $amounts
      *
-     * @return array{array<int,string>,array{social_deducted:string,health_deducted:string,base:string,ryczalt:string,ryczalt_due:string,to_pay:string,overpaid:string,advances_computed:array<string,string>}}
+     * @return array{array<int,string>,array{to_pay:string,overpaid:string,advances_computed:array<string,string>}}
      */
-    private function fields27(int $year, array $inputs): array
+    private function fields27(int $year, array $amounts): array
     {
-        $revenue = [];
-        foreach ($inputs['revenue'] as $rate => $amount) {
-            $value = BigDecimal::of($amount);
-            if ($value->isZero()) {
-                continue;
-            }
+        foreach (array_keys($amounts['rates']) as $rate) {
             if (!isset(self::RATES_27[$rate])) {
                 throw new JpkBuildRefused(sprintf('Stawka %s%% nie ma pozycji w części D.1 PIT-28(27) (stawka 2%% dotyczy produktów rolnych); takie zeznanie składasz ręcznie.', $rate));
             }
-            if ($value->isNegative()) {
-                throw new JpkBuildRefused(sprintf('Przychód roku według stawki %s%% jest ujemny (%s); PIT-28 nie powstaje.', $rate, $amount));
-            }
-            $revenue[$rate] = $value->toScale(2);
         }
-        $total = BigDecimal::zero();
-        foreach ($revenue as $amount) {
-            $total = $total->plus($amount);
-        }
-        if (!$total->isPositive()) {
-            throw new JpkBuildRefused(sprintf('Brak przychodu w ewidencji %d; PIT-28 bez przychodu składasz ręcznie.', $year));
-        }
-        uksort($revenue, static fn(string $a, string $b): int => BigDecimal::of($a)->compareTo($b));
         $fields = [];
         $amount = static fn(BigDecimal $value): string => (string) $value->toScale(2, RoundingMode::HALF_UP);
+        $total = BigDecimal::of($amounts['revenue_total']);
+        $social = BigDecimal::of($amounts['social_deductible']);
+        $health = BigDecimal::of($amounts['health_deductible']);
 
-        // D.1 i D.5: przychód per stawka; D.7: udział w sumie z poz. 63 (do dwóch miejsc po przecinku).
-        $share = static fn(BigDecimal $value): BigDecimal => $value->multipliedBy(100)->dividedBy($total, 2, RoundingMode::HALF_UP);
-        foreach ($revenue as $rate => $value) {
-            $map = self::RATES_27[$rate];
-            $fields[$map['d1']] = $fields[$map['sum']] = $amount($value);
-            $fields[$map['share']] = (string) $share($value);
-        }
+        // D: przychód razem (poz. 35 i 63).
         $fields[35] = $fields[63] = $amount($total);
-
-        // E.1: składki społeczne zapłacone w roku, nie więcej niż przychód (poz. 63); E.3 = poz. 98.
-        $social = BigDecimal::of($inputs['social_paid'])->toScale(2);
-        $social = $social->isGreaterThan($total) ? $total : $social;
+        // E.1: składki społeczne, nie więcej niż przychód (poz. 63); E.3 = poz. 98. E.4: 50% zdrowotnej; E.5 = poz. 105.
         if ($social->isPositive()) {
             $fields[98] = $fields[104] = $amount($social);
         }
         $fields[100] = $amount($total->minus($social));
-        // E.4: 50% zapłaconej składki zdrowotnej (art. 11 ust. 1a); E.5 = poz. 105.
-        $health = BigDecimal::of($inputs['health_deductible'])->toScale(2);
         if ($health->isPositive()) {
             $fields[105] = $fields[107] = $amount($health);
         }
 
-        // F.1: poz. 104 × udział z D.7; F.2: poz. 107 × udział stawki w przychodzie z działalności (poz. 35); G = D.5 − F.
+        // Per stawka: D.1 i D.5 przychód, D.7 udział; F.1 = poz. 104 × D.7; F.2 = poz. 107 × przychód stawki / poz. 35; G = D.5 − F; K podstawa; L ryczałt.
         $after = BigDecimal::zero();
-        $deducted = BigDecimal::zero();
-        $healthDeducted = BigDecimal::zero();
-        $bases = [];
-        foreach ($revenue as $rate => $value) {
+        foreach ($amounts['rates'] as $rate => $row) {
             $map = self::RATES_27[$rate];
-            $first = $social->multipliedBy($share($value))->dividedBy(100, 2, RoundingMode::HALF_UP);
-            $first = $first->isGreaterThan($value) ? $value : $first;
-            $second = $health->multipliedBy($value)->dividedBy($total, 2, RoundingMode::HALF_UP);
-            $second = $second->isGreaterThan($value->minus($first)) ? $value->minus($first) : $second;
+            $fields[$map['d1']] = $fields[$map['sum']] = $row['revenue'];
+            $fields[$map['share']] = $row['share'];
             if ($social->isPositive()) {
-                $fields[$map['f1']] = $amount($first);
+                $fields[$map['f1']] = $row['social'];
             }
             if ($health->isPositive()) {
-                $fields[$map['f2']] = $amount($second);
+                $fields[$map['f2']] = $row['health'];
             }
-            $net = $value->minus($first)->minus($second);
-            $fields[$map['g']] = $fields[$map['i']] = $amount($net);
-            $bases[$rate] = $net->toScale(0, RoundingMode::HALF_UP);
-            $after = $after->plus($net);
-            $deducted = $deducted->plus($first);
-            $healthDeducted = $healthDeducted->plus($second);
+            $fields[$map['g']] = $fields[$map['i']] = $row['net'];
+            $fields[$map['k']] = $row['base'];
+            $fields[$map['l']] = $row['ryczalt'];
+            $after = $after->plus($row['net']);
         }
         // G (poz. 144) i I (poz. 183) bez części H: zwiększeń i zmniejszeń z art. 11 ust. 4 ewidencja nie prowadzi.
         $fields[144] = $fields[183] = $amount($after);
-
-        // K: podstawa per stawka w pełnych złotych; L: ryczałt per stawka; N: należny ryczałt w pełnych złotych.
-        $ryczalt = BigDecimal::zero();
-        $base = BigDecimal::zero();
-        foreach ($bases as $rate => $value) {
-            $map = self::RATES_27[$rate];
-            $fields[$map['k']] = (string) $value;
-            $tax = $value->multipliedBy($rate)->dividedBy(100, 2, RoundingMode::HALF_UP);
-            $fields[$map['l']] = $amount($tax);
-            $ryczalt = $ryczalt->plus($tax);
-            $base = $base->plus($value);
-        }
-        $fields[224] = $fields[228] = $fields[230] = $amount($ryczalt);
-        $due = $ryczalt->toScale(0, RoundingMode::HALF_UP);
+        // N: należny ryczałt w pełnych złotych.
+        $fields[224] = $fields[228] = $fields[230] = $amounts['ryczalt'];
+        $due = BigDecimal::of($amounts['ryczalt_due']);
         $fields[232] = (string) $due;
 
         // P: wpłacone zaliczki w pełnych złotych; ryczałt do zapłaty albo nadpłata.
-        $paid = BigDecimal::of($inputs['advances_paid']);
+        $paid = BigDecimal::of($amounts['advances_paid']);
         if (!$paid->isEqualTo($paid->toScale(0, RoundingMode::DOWN))) {
-            throw new JpkBuildRefused(sprintf('Wpłacone zaliczki roku %s nie są w pełnych złotych (poz. 236); sprawdź obligation.amount_paid.', $inputs['advances_paid']));
+            throw new JpkBuildRefused(sprintf('Wpłacone zaliczki roku %s nie są w pełnych złotych (poz. 236); sprawdź obligation.amount_paid.', $amounts['advances_paid']));
         }
         $paid = $paid->toScale(0);
         if ($paid->isPositive()) {
@@ -300,8 +322,7 @@ final readonly class Pit28Builder
             $fields[267] = '1';
         }
 
-        return [$fields, ['social_deducted' => $amount($deducted),'health_deducted' => $amount($healthDeducted),'base' => (string) $base,'ryczalt' => $amount($ryczalt),'ryczalt_due' => (string) $due,
-            'to_pay' => (string) $toPay,'overpaid' => (string) $overpaid,'advances_computed' => $computed]];
+        return [$fields, ['to_pay' => (string) $toPay,'overpaid' => (string) $overpaid,'advances_computed' => $computed]];
     }
 
     /**

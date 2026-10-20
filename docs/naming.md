@@ -351,7 +351,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | Tabela | `zus_payment` (migracja F2.3 część 1) |
 | Podatki (`src/Tax`) | `RyczaltAdvance` (`compute`; pola `shares`, `deductions`, `bases`, `taxes`, `advance`, `carryover`), `HealthContribution` (`bracket`, `amount`), `TaxCalculator` (`advance`, `zusAmount`, `healthReconciliation`, `pit28`, `eligibility`, `eurThresholdRate`, `zusParameters`, `revenueAfterSocial`, `revenueByRate`), `ZusPayments` (`record`), `ThresholdForecast` (D-76) |
 | Ustawienia | `ryczalt.eligibility`: `{limit_eur, watch_limit_eur, quarterly_limit_eur}` (D-47, `quarterly_limit_eur` z D-76), w `SettingKeys` i w panelu `/settings` |
-| Panel | `TaxController`: `/taxes?year=<rok>` (sekcje `ryczalt-eligibility-metric`, `threshold-forecast` z `tax-reserve` (D-76), `ryczalt-advances`, `zus-payments`, `health-reconciliation`, `pit28-summary`), `POST /taxes/zus-payment` (token CSRF `taxes`) |
+| Panel | `TaxController`: `/taxes?year=<rok>` (sekcje `ryczalt-eligibility-metric`, `threshold-forecast` z `tax-reserve` (D-76), `ryczalt-advances`, `zus-payments`, `health-reconciliation`, `pit28-summary` z `pit28-rates`, `pit28-due` i `pit28-refused` (D-101)), `POST /taxes/zus-payment` (token CSRF `taxes`) |
 | Akcje audytu | `zus.payment_recorded`, `period.correction_required`, `period.ledger_closed`, `period.closed` |
 | Tabela (część 2) | `period` (migracja F2.3 część 2, D-48) |
 | Okres (`src/Ledger`) | `Periods` (`ensure`, `closed`, `earliestOpen`, `assertOpen`, `correctionRequired`, `markLedgerClosed`, `close`, `corrections`, `month`), wyjątek `ClosedPeriod` (`period`, `proposed`), `LedgerEntryCheck` (`run`, `check`, `missing`, `closeIfComplete`), `LedgerEntryCheckResult` |
@@ -686,9 +686,10 @@ Część b: sekcja niżej.
 
 | Rodzaj | Nazwy |
 | --- | --- |
-| Generator (`src/Xml`) | `Pit28Builder` (`variants`, `schemas`, `variant`, `variantMissing`, `inputs`, `build`; `SCHEMA_VERSION_PREFIX` = `PIT-28`; wariant 2025: `VARIANT_27` = `PIT-28(27)`, `SCHEMA_27` = `PIT-28(27)_v1-1E.xsd`, `TNS_27`), `Pit28Document` (`valid`, `sha256`; `year`, `variant`, `schema`, `totals`) |
+| Generator (`src/Xml`) | `Pit28Builder` (`variants`, `schemas`, `variant`, `variantMissing`, `inputs`, `amounts` (D-101), `build`; `SCHEMA_VERSION_PREFIX` = `PIT-28`; wariant 2025: `VARIANT_27` = `PIT-28(27)`, `SCHEMA_27` = `PIT-28(27)_v1-1E.xsd`, `TNS_27`), `Pit28Document` (`valid`, `sha256`; `year`, `variant`, `schema`, `totals`) |
 | Bramka i zamknięcie (`src/Ledger`) | `FilingRequest::pit28`, `MonthClose::pit28Accepted`; konektor `edeklaracje` dla `filing.type` `PIT_28` |
 | Ustawienia | `pit_28.review` (`variant`, `reviewed_on`, `note`) w `SettingKeys::PIT_28_REVIEW` i w panelu `/settings`; `taxpayer.residence_address` (`province`, `county`, `municipality`, `street`, `building`, `unit`, `city`, `postal_code`) w `SettingKeys::TAXPAYER_RESIDENCE_ADDRESS`, sekcja `#taxpayer-residence_address` na `/settings` |
+| Kwoty `Pit28Builder::amounts` (D-101) | klucze `inputs` oraz `rates` (per stawka: `revenue`, `share`, `social`, `health`, `net`, `base`, `ryczalt`), `social_deductible`, `social_deducted`, `health_deducted`, `base`, `ryczalt`, `ryczalt_due` |
 | Klucze `filing.totals` (`PIT_28`) | kwoty z `Pit28Builder::inputs`: `revenue` (per stawka), `revenue_total`, `social_paid`, `health_paid`, `health_deductible`, `advances_paid`; z budowy: `social_deducted`, `health_deducted`, `base`, `ryczalt`, `ryczalt_due`, `to_pay`, `overpaid`, `advances_computed`; `jpk_ewp_filing_id`, `xml_sha256` |
 | Panel | trasa `panel_filings_request` (`POST /filings/request`, pola `type`, `period`, `reason`), sekcja `#filing-request` na `/filings`; `FilingController::REQUEST_TYPES` |
 | Testy | `Pit28RequestTest`, `Pit28ReviewSettingTest`, `FilingPanelTest::testFilingRequestValidatesPeriodAndRefusesWithoutConnectors`; `JpkSendTestTools::$pit28`; `Pit28GoldenTest`, `Pit28SendAcceptedTest`, `Pit28TestCase`, `Pit28TestTools`, `ResidenceAddressSettingTest`, live `EDeklaracjeTePit28Test`; złoty plik `tests/Fixtures/Jpk/golden/pit-28-golden.xml` |

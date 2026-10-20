@@ -93,6 +93,9 @@
 
     <section id="pit28-summary">
         <h2>Zestawienie PIT-28 {{ year }}</h2>
+        <p>Liczby do przepisania w Twój e-PIT albo w formularzu PIT-28, liczone metodą części D–N PIT-28(27) (D-101); przy nowym wzorze sprawdź numery pozycji. Wpłaty zaliczek kreator ma z urzędu, a ryczałt miesięcy (część Q) to kolumna „Zaliczka” w tabeli zaliczek. Zeznanie składasz sam od 15 lutego do 30 kwietnia.</p>
+        {% if pit28_refused %}
+        <p id="pit28-refused" role="status">{{ pit28_refused }}</p>
         <table>
             <thead><tr><th>Stawka</th><th>Przychód</th></tr></thead>
             <tbody>
@@ -100,6 +103,18 @@
             <tr><th>Razem</th><td>{{ pit28.revenue_total }}</td></tr>
             </tbody>
         </table>
-        <p>Składki społeczne zapłacone w roku: {{ pit28.social_paid }} zł; 50% zdrowotnej: {{ pit28.health_deductible }} zł. Zeznanie składasz sam od 15 lutego do 30 kwietnia.</p>
+        {% else %}
+        <table id="pit28-rates">
+            <thead><tr><th>Stawka</th><th>Przychód (D)</th><th>Udział % (D.7)</th><th>Społeczne (F.1)</th><th>50% zdrowotnej (F.2)</th><th>Po odliczeniach (G)</th><th>Podstawa w zł (K)</th><th>Ryczałt (L)</th></tr></thead>
+            <tbody>
+            {% for rate, row in pit28.rates %}
+                <tr><td>{{ rate }}%</td><td>{{ row.revenue }}</td><td>{{ row.share }}</td><td>{{ row.social }}</td><td>{{ row.health }}</td><td>{{ row.net }}</td><td>{{ row.base }}</td><td>{{ row.ryczalt }}</td></tr>
+            {% endfor %}
+            <tr><th>Razem</th><td>{{ pit28.revenue_total }}</td><td></td><td>{{ pit28.social_deducted }}</td><td>{{ pit28.health_deducted }}</td><td></td><td>{{ pit28.base }}</td><td>{{ pit28.ryczalt }}</td></tr>
+            </tbody>
+        </table>
+        <p id="pit28-due">Należny ryczałt (N): <strong>{{ pit28.ryczalt_due }} zł</strong>. Wpłacone zaliczki według kalendarza: {{ pit28.advances_paid }} zł; porównaj z wpłatami w kreatorze.</p>
+        {% endif %}
+        <p id="pit28-contributions">Składki społeczne zapłacone w roku: {{ pit28.social_paid }} zł{% if pit28.social_deductible is defined %}, do odliczenia (E.1, nie więcej niż przychód): {{ pit28.social_deductible }} zł{% endif %}; 50% zdrowotnej (E.4): {{ pit28.health_deductible }} zł.</p>
     </section>
 {% endblock %}

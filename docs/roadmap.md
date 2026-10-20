@@ -45,7 +45,7 @@ Wiersze obejmują sekcję „Odłożone” w [README.md](README.md) oraz cięcia
 | Obserwacja prawa automatyczna | Zrobione w części ELI i procesów Sejmu (D-75); zostają druki z Sejm process API spoza listy i changelog ksef-docs. Zadanie tygodniowe: ELI `/changes/acts?since=` i `/acts/.../references` dla aktów z tabeli „Akty prawne” w [facts.md](facts.md), Sejm process API dla druków, changelog ksef-docs. Wynik: push i szkic wiersza do [facts.md](facts.md) | H | M | L: szum (877 zmian od 1.10.2026); filtr po liście ELI i słowach | F0b; host `api.sejm.gov.pl` tylko `GET` w allowliście | po F0b, równolegle z F1 |
 
 - ELI API: `/changes/acts` ma `since`, `limit` do 500; `/acts/search` filtruje po datach ogłoszenia, wejścia w życie i publikacji ([OpenAPI](https://api.sejm.gov.pl/eli/openapi/)). Klucz „Akty zmieniające” w `/references` aktu bazowego: do weryfikacji (odpowiedź obcięta).
-- PIT-28 tańsza ścieżka: kreator Twój e-PIT obsługuje działalność; przychody i ryczałt wpisujesz sam, wpłaty są wstępnie wypełnione ([MF, 10.04.2024](https://www.gov.pl/web/finanse/twoj-e-pit-dla-przedsiebiorcow)). Patrz „Szybkie wygrane”.
+- PIT-28 tańsza ścieżka: kreator Twój e-PIT obsługuje działalność; przychody i ryczałt wpisujesz sam, wpłaty są wstępnie wypełnione ([MF, 10.04.2024](https://www.gov.pl/web/finanse/twoj-e-pit-dla-przedsiebiorcow)). Liczby do przepisania: `/taxes` (D-101).
 
 ### Integracje
 
@@ -106,7 +106,7 @@ Tylko tanie wzmocnienia z listy „Nie blokować później” w notatkach o plan
 ## Szybkie wygrane (do 1 dnia każda)
 
 - Eksport ICS obowiązków z tabeli integracji: zrobione (D-77).
-- Liczby pod kreator Twój e-PIT: przychód i ryczałt per miesiąc i stawka, do przepisania; wpłaty kreator ma z urzędu.
+- Liczby pod kreator Twój e-PIT: przychód i ryczałt per miesiąc i stawka, do przepisania; wpłaty kreator ma z urzędu: zrobione: roczne kwoty per stawka do należnego ryczałtu w sekcji „Zestawienie PIT-28” na `/taxes` (D-101), ryczałt okresów w tabeli zaliczek tej strony, przychód per miesiąc i stawka na `/year-close` (D-86).
 - Przycisk kopiowania danych przelewu przy „Sprawdź przed przelewem”: rachunek, kwota, tytuł z numerem KSeF od 1.01.2027: zrobione (D-83, strona `/costs`).
 - `composer audit --locked` w jobie `lint` (zrobione, D-77) i SBOM jako artefakt (zrobione, D-78).
 - Sandbox Claude Code z pustą listą domen przed F1.
