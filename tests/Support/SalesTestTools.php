@@ -70,7 +70,7 @@ final class SalesTestTools
             new SalesInvoiceSubject($db, $builder, $this->settings, $configuration, $dates, $clock, 'sales_invoice', 'P30D', $this->salesTasks),
             new SalesInvoiceSubject($db, $builder, $this->settings, $configuration, $dates, $clock, 'correction_invoice', 'P30D', $this->salesTasks),
         ]);
-        $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, '/app/var/test-files/sales');
+        $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, TestFiles::root('sales'));
         $this->transitions = new ApprovalTransitions($db, $audit, $clock, $registry);
         $notifications = $this->notifications = new ApprovalNotifications($db, $clock);
         $owner = new ApprovalTestTools($db, $clock);

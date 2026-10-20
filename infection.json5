@@ -1,7 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/infection/infection/0.31/resources/schema.json",
   "source": { "directories": ["src/Tax", "src/Ledger", "src/Calendar", "src/Approval"] },
-  "logs": { "json": "var/evidence/mutation.json" },
+  "logs": { "text": "var/evidence/mutation.txt", "json": "var/evidence/mutation.json" },
+  "timeout": 120,
   "minMsi": 85,
   "minCoveredMsi": 95
 }

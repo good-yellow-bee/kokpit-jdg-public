@@ -8,6 +8,8 @@ RUN git config --system --add safe.directory /app \
 WORKDIR /app
 
 FROM base AS development
+# Sterownik pokrycia dla Infection (D-104); obraz `production` go nie ma.
+RUN pecl install pcov-1.0.12 && docker-php-ext-enable pcov
 COPY . /app
 RUN composer install --no-interaction --prefer-dist --no-scripts
 CMD ["php-fpm"]

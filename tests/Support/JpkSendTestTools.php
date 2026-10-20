@@ -59,7 +59,6 @@ final class JpkSendTestTools
     public const ORIGINAL = 'fc000000000000000000000000000b02';
     public const PART_MAX_BYTES = 62914560;
     public const INIT_UPLOAD = ['document_type' => 'JPK', 'version' => '01.02.01.20160617', 'max_bytes' => 102400];
-    private const FILES = '/app/var/test-files/jpk';
     /** Certyfikat klucza publicznego MF celu `test` (podatki.gov.pl), ta sama ścieżka co `jpk.mf_certificates`. */
     public const LIVE_CERTIFICATE = '/app/var/jpk/mf-test.crt';
 
@@ -101,7 +100,7 @@ final class JpkSendTestTools
         $clock = $this->clock = new MockClock($now);
         $this->redactor = new Redactor();
         $this->audit = new AuditLog($db, $clock, $this->redactor);
-        $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $this->audit, self::FILES);
+        $this->files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $this->audit, TestFiles::root('jpk'));
         $configuration = ConnectorTestTools::configuration(limits: $limits);
         $this->fake = new FakeJpkGateway($db, $clock, $this->redactor, $limits, $live);
         $settings = JpkTestTools::settings($db, $clock);
@@ -153,7 +152,7 @@ final class JpkSendTestTools
 
     public static function emptyCatalog(): XsdCatalog
     {
-        $directory = '/app/var/test-files/xsd-empty';
+        $directory = TestFiles::root('xsd-empty');
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
             throw new \RuntimeException('Brak katalogu.');
         }
@@ -186,7 +185,7 @@ final class JpkSendTestTools
     /** Plik certyfikatu fikcyjnego klucza poza repo (`var/`), dla `jpk.mf_certificates`. */
     public static function certificateFile(): string
     {
-        $directory = '/app/var/test-files/jpk-mf';
+        $directory = TestFiles::root('jpk-mf');
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
             throw new \RuntimeException('Brak katalogu certyfikatu.');
         }

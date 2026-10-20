@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\TestFiles;
 use App\Audit\AuditLog;
 use App\Security\Redactor;
 use App\Storage\FileStore;
@@ -16,7 +17,7 @@ class FileStoreTest extends DatabaseTestCase
 {
     protected function store(MockClock $clock): FileStore
     {
-        return new FileStore($this->connection, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($this->connection)), new AuditLog($this->connection, $clock, new Redactor()), '/app/var/test-files/' . self::class);
+        return new FileStore($this->connection, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($this->connection)), new AuditLog($this->connection, $clock, new Redactor()), TestFiles::root(self::class));
     }
     public function testDeduplicatesOwnersAndDetectsChangedBytes(): void
     {
@@ -32,7 +33,7 @@ class FileStoreTest extends DatabaseTestCase
         self::assertCount(2, $rows);
         self::assertSame($rows[0]['path'], $rows[1]['path']);
         self::assertIsString($rows[0]['path']);
-        $path = '/app/var/test-files/' . self::class . '/' . $rows[0]['path'];
+        $path = TestFiles::root(self::class) . '/' . $rows[0]['path'];
         self::assertSame(0440, fileperms($path) & 0777);
         self::assertSame([], $store->verify()['failed']);
         chmod($path, 0640);

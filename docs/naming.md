@@ -953,6 +953,7 @@ Usługi monitoringu: `HealthResources`, `NativeHealthResources`; `health.queue_m
 - `NTFY_CONFIG_FILE` — plik konfiguracji ntfy poza repo dla prod; domyślnie konfiguracja lokalna bez sekretów.
 
 - `SOURCE_BRANCH`, `DISPATCH_PHASE`, `EVIDENCE_RUNNER` — lokalne wejścia skryptu CI do wyboru fazy i wykonawcy.
+- `MUTATION_THREADS`, `TEST_TOKEN`, `kokpit_test_<n>`, `var/test-files-<n>`, `scripts/mutation-databases.sh` — wątki joba `mutation`: liczba wątków Infection, numer wątku, kopia bazy testowej i katalog plików testów wątku (D-104); `TestFiles` — katalog plików testów.
 - `MF_TEST_CERT_PEM` — zmienna repozytorium GitHub (nie sekret) z publicznym certyfikatem testowym MF w PEM; job `live` zapisuje ją skryptem `scripts/ci-mf-test-cert.sh` do `var/jpk/mf-test.crt` (D-97).
 - `RESTIC_REPOSITORY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `TS_AUTHKEY` — wyłącznie środowisko narzędzi w kontenerach backup/VPN, odczyt z plików hosta.
 - `files.storage` — wspólna blokada zapisu i retencji FileStore.
