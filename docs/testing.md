@@ -22,7 +22,7 @@ Piramida testów, polityka per konektor, nagrania, złote przypadki, CI, dowód 
 | integracyjne i panel | migracje, triggery, stany Workflow, Messenger, `chat_ro`; logowanie, CSRF; step-up od F0b | PHPUnit, PostgreSQL, Zenstruck Foundry z generatorem fikcyjnych identyfikatorów, Symfony WebTestCase; Panther albo Playwright tylko przy JavaScript | `tests/Integration` | `integration` |
 | architektury | brak `float` w `src/Tax` i `src/Ledger`; zapisy tylko z workera bramki; konektory bez zmiennych środowiskowych | reguły PHPStan | konfiguracja PHPStan | `lint` |
 | bezpieczeństwa | „Testy bezpieczeństwa” | PHPUnit, skaner fixtures i sekretów | `tests/Security` | `security` |
-| mutacyjne | jakość testów logiki podatkowej, kalendarza i bramki; doradczo do powstania `src/Tax` (D-28) | Infection | `infection.json5` | `mutation` |
+| mutacyjne | jakość testów logiki podatkowej, kalendarza i bramki; blokuje merge (D-106) | Infection | `infection.json5` | `mutation` |
 | live (`@group live`) | żywe środowiska testowe | PHPUnit | `tests/Live` | `live`, tylko ręcznie |
 | akceptacyjne | kryteria fazy i przekrojowe | `kokpit:evidence <phase>` | `tests/Acceptance/<phase>.yaml` | `evidence`, `live` |
 
@@ -289,10 +289,10 @@ Każdy test zapisuje ziarno. Ziarno z porażki staje się nowym przypadkiem w `t
 ## Testy mutacyjne
 
 - Zakres to katalogi: `src/Tax`, `src/Ledger`, `src/Calendar` (`PolishCalendar`, `ObligationEngine`), `src/Approval` (`ApprovalGate`). Powstają w F0a, puste z `.gitkeep`.
-- PR sprawdza zmienione pliki z zakresu (`--git-diff-filter=AM`), `main` cały zakres.
+- PR i `main` sprawdzają cały zakres (D-106): progi dotyczą całego zakresu, więc pomiar samych zmienionych plików ich nie pilnuje.
 - Gdy zakres nie ma plików PHP do sprawdzenia, job pomija Infection. Zapisuje „brak kodu w zakresie” w podsumowaniu joba i kończy kodem 0.
 - Progi: `--min-msi=85` i `--min-covered-msi=95` ([Infection](https://infection.github.io/guide/command-line-options.html)). Progi tylko rosną; obniżenie wymaga wpisu D-xx.
-- Doradczo do powstania `src/Tax` w F2 (D-28). Bez pliku PHP w `src/Tax` job uruchamia Infection bez progów, zapisuje MSI i kończy kodem 0. Od pierwszego pliku w `src/Tax` progi blokują merge.
+- Progi blokują merge (D-106): job `mutation` biegnie przy `pull_request` i na `main`, bez `continue-on-error`.
 - Pomiar (D-104): pcov w obrazie `development` (nie w `production`), wątek Infection na rdzeń (`MUTATION_THREADS`), każdy z kopią bazy `kokpit_test_<n>` (`scripts/mutation-databases.sh`) i katalogiem plików `var/test-files-<n>` według `TEST_TOKEN`; `--only-covering-test-cases`, limit czasu mutanta 120 s, `memory_limit=2G` dla Infection.
 - `tests/bootstrap.php` wczytuje zmutowany plik od razu i wyłącza wrapper `file://` Infection: wrapper nie obsługuje `fsync`, więc każdy nowy zapis `FileStore` dawał fałszywe zabicie.
 - Stan 2026-10-20 (D-105): 4665 mutantów, 62 ignorowane według wzorców równoważności z `infection.json5`, MSI i covered MSI 95,20%, 221 ocalałych; progi spełnione. `phpunit.xml` ma `executionOrder="default"`, żeby pokrycie trafiało zawsze do tych samych testów.
@@ -310,7 +310,7 @@ GitHub Actions w prywatnym repo `good-yellow-bee/kokpit-jdg`. Żaden job nie ma 
 | `xsd` | testsuite `xsd` (`tests/Xsd`) z `LIBXML_NONET`; sumy kontrolne `resources/xsd` | tak |
 | `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi | tak |
 | `security` | testsuite `security` (`tests/Security`), skaner fixtures i sekretów | tak |
-| `mutation` | Infection według „Testów mutacyjnych”; pusty zakres pomija Infection; bez `pull_request`, póki doradczy (D-43) | nie do powstania `src/Tax` (D-28), potem tak |
+| `mutation` | Infection według „Testów mutacyjnych”, cały zakres także przy `pull_request` (17–26 min, D-106) | tak |
 | `evidence` | po pozostałych: `kokpit:evidence <phase> --only=ci`, upload `var/evidence/**` jako artefakt przebiegu; pomijany przy push do `main` i na gałęziach bez prefiksu fazy (D-43) | tak |
 | `live` | tylko `workflow_dispatch` z wymaganym wejściem `phase`; testsuite `live` na celach testowych, potem `kokpit:evidence <phase> --only=live` i upload paczki; przed testami certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` w `var/jpk/mf-test.crt` (D-97); paczka także po czerwonym teście (D-102); klucz sejfu testowego jako sekret środowiska GitHub; nigdy PROD | nie; faza z kryteriami live wymaga udanego przebiegu |
 
@@ -451,7 +451,7 @@ Nawias przy kluczu podaje fazę albo część F2, od której kryterium obowiązu
 | `cc-20` (F0b) zapisy tylko z bramki | reguły architektury PHPStan | metody zapisujące wołane wyłącznie z workera bramki | `cmd/cc-13.txt`, wspólny z `cc-13` |
 | `cc-21` (F0b) rekoncyliacja | konektor zapisujący (`dummy`, od F3 KSeF, od F5 JPK) zwraca timeout | `unknown`; `SubmissionReconciler` tylko odczytem; zero ponownych zapisów; `messenger:failed:retry` nie ponawia `official_writes` | `junit.xml` |
 | `cc-22` (F0b) kalendarz | testy `PolishCalendar` i testy własności | przesunięcia z „Czas, daty i kursy” | `junit.xml` z ziarnem |
-| `cc-23` (F0b) mutacje | Infection na zakresie z „Testów mutacyjnych” | raport MSI; od pierwszego pliku w `src/Tax` MSI i covered MSI co najmniej na progach (D-28) | `mutation.json`: raport JSON Infection |
+| `cc-23` (F0b) mutacje | Infection na zakresie z „Testów mutacyjnych” | raport MSI; MSI i covered MSI co najmniej na progach (D-28, D-106) | `mutation.json`: raport JSON Infection |
 | `cc-24` (F1) kurs NBP | testy na nagraniach NBP | 2.11.2026 → tabela z 30.10.2026; data z opublikowaną tabelą → tabela z poprzedniego dnia roboczego | `junit.xml` |
 | `cc-25` (F2.1) XSD offline | walidacja z `LIBXML_NONET` bez sieci | dokumenty z fixtures zgodne | `junit.xml` z joba `xsd` |
 | `cc-26` (F2.4) rozdział środowisk | plik do urzędu dla celu testowego | zero wierszy z `environment = prod` | `junit.xml` |

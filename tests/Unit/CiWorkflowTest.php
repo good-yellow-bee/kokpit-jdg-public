@@ -24,12 +24,15 @@ final class CiWorkflowTest extends TestCase
         $jobs = $workflow['jobs'];
         self::assertSame(['lint','unit_property','contract','xsd','integration','security','images','mutation','evidence','live'], array_keys($jobs));
         self::assertSame('unit+property', $jobs['unit_property']['name'] ?? null);
-        self::assertTrue($jobs['mutation']['continue-on-error'] ?? null);
-        self::assertSame("github.event_name != 'pull_request'", $jobs['mutation']['if'] ?? null);
+        // `mutation` blokuje: biegnie też przy `pull_request` i bez `continue-on-error` (D-106).
+        self::assertArrayNotHasKey('continue-on-error', $jobs['mutation']);
+        self::assertArrayNotHasKey('if', $jobs['mutation']);
+        self::assertStringContainsString('--min-msi=85 --min-covered-msi=95', (string) file_get_contents($root . '/scripts/run-mutation.sh'));
         // Kod wyjścia Infection przechodzi przez `tee` tylko z pipefail (`shell: bash`, D-103).
         $mutation = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => str_contains($step['run'] ?? '', 'run-mutation.sh')));
         self::assertCount(1, $mutation);
         self::assertSame('bash', $mutation[0]['shell'] ?? null);
+        self::assertArrayNotHasKey('continue-on-error', $mutation[0]);
         self::assertStringContainsString('-e MUTATION_THREADS="$(nproc)"', $mutation[0]['run']);
         // Kopie bazy testowej przed Infection i raport JSON jako artefakt `cc-23` (D-104).
         $mutationRuns = array_map(static fn(array $step): string => $step['run'] ?? '', $jobs['mutation']['steps']);

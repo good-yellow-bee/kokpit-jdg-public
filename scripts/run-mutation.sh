@@ -20,9 +20,4 @@ done
 # Katalog plików wątku `var/test-files-N` powstaje od nowa: mutant ubity w poprzednim przebiegu mógł zostawić zmieniony plik.
 rm -rf var/test-files-*
 # Główny proces Infection trzyma pokrycie każdego testu; limit 512M z `kokpit.ini` kończył go kodem 255.
-set -- -d memory_limit=2G vendor/bin/infection --configuration=infection.json5 --threads="$threads" --only-covering-test-cases --no-progress
-if [ -d src/Tax ] && find src/Tax -name '*.php' -print -quit | grep -q .; then
-  php "$@" --min-msi=85 --min-covered-msi=95
-else
-  php "$@" --min-msi=0 --min-covered-msi=0
-fi
+php -d memory_limit=2G vendor/bin/infection --configuration=infection.json5 --threads="$threads" --only-covering-test-cases --no-progress --min-msi=85 --min-covered-msi=95

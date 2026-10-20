@@ -139,7 +139,7 @@ Komendy docelowe. Powstają w F0a; do tego czasu to cel, nie stan repo.
 | nieudane wiadomości | `bin/console messenger:failed:show`; wiadomości z `official_writes` nie ponawiasz tą drogą |
 | narzędzia kokpitu | `app:credential:smoke <kind>`, `app:audit:verify`, `app:files:verify`, `app:fixtures:record <connector> <scenariusz>`, `app:ledger:import`, `app:jpk:dry-run`; pełna lista w [docs/naming.md](../../docs/naming.md) |
 | dowody fazy | `bin/console kokpit:evidence <phase> [--only=ci\|live]`: komendy kryteriów i artefakty z `manifest.json`, zamaskowane przez `Redactor` ([docs/testing.md](../../docs/testing.md)) |
-| CI | GitHub Actions, id jobów w [docs/naming.md](../../docs/naming.md), m.in. `lint`, `unit_property`, `contract`, `xsd`, `integration`, `security`. `mutation` (Infection) doradczo, bez blokowania merge, do powstania `src/Tax` w F2 (D-28). `live` tylko ręcznie, nigdy PROD |
+| CI | GitHub Actions, id jobów w [docs/naming.md](../../docs/naming.md), m.in. `lint`, `unit_property`, `contract`, `xsd`, `integration`, `security`. `mutation` (Infection) blokuje merge, także przy `pull_request` (D-106). `live` tylko ręcznie, nigdy PROD |
 | wdrożenie | `make deploy` na VPS, tylko projekt `kokpit-prod` ([docs/operations.md](../../docs/operations.md)) |
 
 ## Układ katalogów
@@ -171,7 +171,7 @@ Komendy docelowe. Powstają w F0a; do tego czasu to cel, nie stan repo.
 
 ## Definicja ukończenia
 
-- Testy zielone w CI (GitHub Actions, wszystkie joby poza `live`), nie tylko lokalnie; `mutation` doradczo do powstania `src/Tax` w F2 (D-28). Faza z kryteriami live ma udany przebieg joba `live`.
+- Testy zielone w CI (GitHub Actions, wszystkie joby poza `live`), nie tylko lokalnie, razem z `mutation` (D-106). Faza z kryteriami live ma udany przebieg joba `live`.
 - Każdy wiersz kryteriów fazy i przekrojowych ma klucz slug (D-33) i dowód w kolumnie „Dowód”.
 - `docs/evidence/<phase>.md` jest w commicie i ma pass w każdym wierszu fazy i przekrojowym z [docs/testing.md](../../docs/testing.md).
 - Wiersze `[manual]` odhaczyłeś Ty; każdy ma dowód (zrzut albo odhaczony wpis listy kontrolnej).
