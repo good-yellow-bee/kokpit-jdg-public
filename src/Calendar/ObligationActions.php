@@ -87,7 +87,7 @@ final readonly class ObligationActions
             if (is_string($existing)) {
                 return ['id' => $existing,'created' => false];
             }
-            $id = (string) UuidV7::generate($now);
+            $id = UuidV7::generate($now);
             $stamp = $now->format('Y-m-d\TH:i:s.uP');
             $this->db->insert('obligation', ['id' => $id,'environment' => $environment,'type' => 'edelivery_reply_due','rule_key' => 'edelivery_reply_due.manual','period_start' => $receivedOn,'nominal_due_date' => $dueDate,'due_date' => $dueDate,'status' => 'open','note' => $note,'dedupe_key' => $key,'created_at' => $stamp,'updated_at' => $stamp]);
             $this->audit->append('edelivery.deadline_confirmed', ['received_on' => $receivedOn,'due_date' => $dueDate,'set_by' => $userId], $environment, 'obligation', $id);

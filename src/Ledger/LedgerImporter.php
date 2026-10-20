@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ledger;
 
 use App\Audit\AuditLog;
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Storage\FileStore;
 use App\Time\BusinessDate;
@@ -33,7 +34,7 @@ final readonly class LedgerImporter
             $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [self::LOCK_NAMESPACE, $year]);
             $problems = [];
             foreach ($rows as $row) {
-                if ((int) substr($row->revenueDate, 0, 4) !== $year) {
+                if (IsoDate::year($row->revenueDate) !== $year) {
                     $problems[] = sprintf('K_1 %d: K_3 %s poza rokiem %d', $row->lp, $row->revenueDate, $year);
                 }
             }
@@ -74,7 +75,7 @@ final readonly class LedgerImporter
                 if (isset($known[$row->lp])) {
                     continue;
                 }
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 // Puste K_2 to dzień importu w Europe/Warsaw, nigdy wcześniejszy (D-23).
                 $this->db->insert('revenue_entry', ['id' => $id,'environment' => $environment,'year' => $year,'lp' => $row->lp,'entry_date' => $row->entryDate ?? $today,'revenue_date' => $row->revenueDate,'document_number' => $row->documentNumber,'ksef_number' => $row->ksefNumber,'counterparty_country' => $row->counterpartyCountry,'counterparty_tax_id' => $row->counterpartyTaxId,'amount_pln' => (string) $row->amountPln->toScale(2),'rate_pct' => (string) $row->ratePct->toScale(2),'remarks' => $row->remarks,'source' => 'import','kind' => 'regular','recorded_at' => $recordedAt]);
                 $added[] = $id;

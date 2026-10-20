@@ -163,6 +163,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-102 | pierwsze przebiegi joba `live`: `EDeklaracjeTePit28Test` z losowym NIP na przebieg, bo bramka testowa przyjmuje jeden PIT-28 roku na identyfikator podatkowy i kolejny odrzuca kodem 411; paczka dowodów joba `live` także po czerwonym teście (`if`: nie anulowany i testy nie pominięte) | przyjęta 2026-10-20 | D-96, D-97 |
 | D-103 | job `mutation` nigdy nie liczył mutacji w CI: obraz `development` bez sterownika pokrycia, a `tee` ukrywał kod wyjścia Infection; krok dostaje `shell: bash` (pipefail), więc job jest uczciwie czerwony i dalej doradczy; `cc-23` = fail do osobnej zmiany z pomiarem | przyjęta 2026-10-20 | D-28, D-43, D-47 |
 | D-104 | job `mutation` mierzy: pcov w obrazie `development`, wątek Infection na rdzeń z własną kopią bazy testowej i katalogiem plików (`TEST_TOKEN`), zmutowany plik wczytany przed wyłączeniem wrappera `file://` Infection (brak `fsync`), `memory_limit=2G` (kod 255), raport JSON jako artefakt `mutation`; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-43, D-103 |
+| D-105 | mutanty równoważne: wzorce linii źródła per mutator z uzasadnieniem w `infection.json5` (strażniki `\LogicException`, typy kolumn z wiersza, flagi i głębokość JSON dla `jsonb`); rok i miesiąc daty przez `IsoDate` zamiast `substr`; bez zbędnych `(string)` przy `UuidV7::generate()`; `executionOrder="default"` dla powtarzalnego pokrycia; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-104 |
 | D-99 | Q-18: zastępcą jest tylko administrator skrzynki ADE wyznaczony w aplikacji e-Doręczeń; bez drugiego `app_user`, bez UPL-1; imię administratora tylko na karcie awaryjnej, nigdy w repo; „Rola zastępcy” z [roadmap.md](roadmap.md) odrzucona | przyjęta 2026-10-19 | Q-18 |
 | D-98 | pierwsza instalacja `kokpit-prod`: `scripts/prod-install.sh --node <nazwa>` jako root na VPS tworzy pliki hosta (`/etc/kokpit/secrets`, pytanie o brakujące wartości bez echa), hasła ról bazy w wolumenach przy pustej bazie, `pgpass`, konfigurację ntfy z użytkownikami i tokenem, sejf PROD w wolumenie `vault` (`scripts/init-prod-vault.php`), nazwę węzła `TS_HOSTNAME`, certyfikat `tailscale cert` z cronem `scripts/prod-cert.sh`, repozytorium restic i plik wdrożenia `/etc/kokpit/prod.env`, który czytają `make deploy` i `make rollback`; `PANEL_ORIGIN` i hosty powiadomień trafiają do kontenerów; `/health` po wdrożeniu przez adres VPN z kontenera app z ponowieniami, pierwszy backup przy pierwszym wdrożeniu; check dead-man `ksef.sync`; `--rehearsal` na danych fikcyjnych w CI; serializer transportów pomija `ScheduledStamp` | przyjęta 2026-10-19 | po F0a |
 | D-97 | job `live` bierze publiczny certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` (nie sekretu), sprawdza go `openssl x509` z ważnością i zapisuje do `var/jpk/mf-test.crt` w kontenerze `app` przed testsuite `live`; bez zmiennej job kończy się przed testami | przyjęta 2026-10-19 | F5.3 |
@@ -1422,6 +1423,29 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-105 Mutanty równoważne i powtarzalny pomiar
+
+- **Status:** przyjęta 2026-10-20 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Po testach KOKPIT-82 pomiar lokalny: 4811 mutantów, 363 ocalałe, covered MSI 92,45% przy progu 95%. Raporty pięciu przeglądów grup wskazały, że większość ocalałych to mutanty równoważne: zachowanie identyczne przy typach kolumn, gwarancjach `pdo_pgsql` i formacie dat.
+  - [testing.md](testing.md): ocalały mutant to nowy test albo wpis ignorowania z uzasadnieniem w `infection.json5`.
+  - 18 mutantów `FreshBooksLedger::countryCode` przeżywało losowo: `static $names` buduje się raz na proces, a Infection uruchamia testy w losowej kolejności, jeśli `phpunit.xml` nie ustala `executionOrder`; pokrycie dostawał przypadkowy test.
+  - Idiom `(int) substr($date, 0, 4)` dawał mutant równoważny (dłuższy wycinek, ten sam rok) w tej samej linii co zabijalny (przesunięty początek). Wzorzec linii nie odróżnia ich, bo Infection porównuje tylko linię sprzed mutacji.
+- **Decyzja:**
+  - `(string)` przy `UuidV7::generate()` usunięte w całym `src/` (57 miejsc): metoda zwraca już `string`.
+  - Rok i miesiąc daty prawnej liczy `App\Calendar\IsoDate` (format `RRRR-MM-DD` i `checkdate`, inna wartość daje `\InvalidArgumentException`) zamiast `substr` w całym `src/` (40 miejsc). Klasa leży w `src/Calendar`, bo ten katalog jest w zakresie mutacji.
+  - `phpunit.xml` ma `executionOrder="default"`: bez jawnej wartości Infection uruchamia testy losowo, a z nią zachowuje kolejność, więc pokrycie trafia zawsze do tych samych testów i pomiar jest powtarzalny.
+  - `infection.json5` ignoruje mutanty tylko według wzorca linii źródła per mutator (`ignoreSourceCodeByRegex`), każdy z komentarzem-uzasadnieniem:
+    - Throw_ w `?? throw new \LogicException` i `is_*() ? … : throw new \LogicException`, także w pomocnikach `str()`/`int()`. Umowa kokpitu: `\LogicException` oznacza naruszenie niezmiennika; nowe strażniki tej postaci są poza pomiarem Throw_.
+    - LogicalOr i negacje w `if (!is_string($row['…']) || …)`: czyste zawężenie typów kolumn NOT NULL albo odfiltrowanych w zapytaniu; w zakresie mutacji każdy taki strażnik kończy się `\LogicException`.
+    - IncrementInteger i DecrementInteger w głębokości `json_decode`.
+  - Rzutowania w pomocnikach `str()`/`int()` i flagi `json_encode` nie są ignorowane: przy `strict_types` wartość innego typu z bazy daje `TypeError`, a `|`→`&` gubi też `JSON_THROW_ON_ERROR`.
+  - Testy blokad advisory (`LedgerTestTools::assertWaitsForNamedLock`, `assertWaitsForYearLock`): korekta wpisu, bilans otwarcia, przeliczenie obowiązków, termin z pisma. Inny klucz blokady nie wywołuje czekania, więc test pada na `fail`.
+  - Bez ignorowania całych metod i numerów linii. Progi 85/95 bez zmian.
+- **Ryzyka:** wzorce ukrywają też zabijalne mutanty pasujących linii (62 ignorowane w pomiarze). Pokrycie pętli `static $names` w `countryCode` należy do pierwszego testu w kolejności zestawu; nowy wcześniejszy test może je przejąć. Zapas pomiaru lokalnego: 221 ocalałych przy limicie 230.
+- **Skutki:** pomiar lokalny 2026-10-20 (8 wątków, 7 min): 4665 mutantów, 4379 zabitych, 221 ocalałych, 62 ignorowane, 3 limity czasu, 0 błędów, MSI i covered MSI 95,20%; Infection kończy się kodem 0. `infection.json5`, `phpunit.xml`, `src/Calendar/IsoDate.php`, `src/` (rzutowania, rok i miesiąc, także `JpkV7mBuilder` i `VatUeBuilder`), `tests/Support/LedgerTestTools.php`, testy blokad i `IsoDateTest`; [testing.md](testing.md), [naming.md](naming.md).
+- **Pytania:** brak.
 
 ### D-104 Pomiar mutacyjny w CI
 

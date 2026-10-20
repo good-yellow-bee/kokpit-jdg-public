@@ -182,10 +182,10 @@ final readonly class CorrectionDrafts
         foreach ($rows as $row) {
             $template ??= $row;
             $no = is_int($row['line_no']) ? $row['line_no'] : 0;
-            $this->db->insert('invoice_line', ['id' => (string) UuidV7::generate($this->clock->now()),'invoice_id' => $korId,'state_before' => 'true','created_at' => $now,'updated_at' => $now] + $row);
+            $this->db->insert('invoice_line', ['id' => UuidV7::generate($this->clock->now()),'invoice_id' => $korId,'state_before' => 'true','created_at' => $now,'updated_at' => $now] + $row);
             $line = $after[$no] ?? ['description' => self::string($row, 'description'),'quantity' => '0','unit_net_price' => is_string($row['unit_net_price']) ? $row['unit_net_price'] : self::string($row, 'net_amount'),'net' => '0.00'];
             $this->db->insert('invoice_line', [
-                'id' => (string) UuidV7::generate($this->clock->now()),'invoice_id' => $korId,'line_no' => $no,'state_before' => 'false','description' => $line['description'],
+                'id' => UuidV7::generate($this->clock->now()),'invoice_id' => $korId,'line_no' => $no,'state_before' => 'false','description' => $line['description'],
                 'service_type' => $row['service_type'],'pkwiu' => $row['pkwiu'],'quantity' => $line['quantity'],'unit' => $row['unit'],'unit_net_price' => $line['unit_net_price'],
                 'net_amount' => $line['net'],'vat_code' => $row['vat_code'],'ryczalt_rate_pct' => $row['ryczalt_rate_pct'],'gtu' => $row['gtu'],'created_at' => $now,'updated_at' => $now,
             ]);
@@ -195,7 +195,7 @@ final readonly class CorrectionDrafts
         $next = count($rows);
         foreach ($after as $line) {
             $this->db->insert('invoice_line', [
-                'id' => (string) UuidV7::generate($this->clock->now()),'invoice_id' => $korId,'line_no' => ++$next,'state_before' => 'false','description' => $line['description'],
+                'id' => UuidV7::generate($this->clock->now()),'invoice_id' => $korId,'line_no' => ++$next,'state_before' => 'false','description' => $line['description'],
                 'quantity' => $line['quantity'],'unit' => is_array($template) && is_string($template['unit']) ? $template['unit'] : 'usł.','unit_net_price' => $line['unit_net_price'],'net_amount' => $line['net'],
                 'vat_code' => is_array($template) && is_string($template['vat_code']) ? $template['vat_code'] : '','ryczalt_rate_pct' => is_array($template) ? $template['ryczalt_rate_pct'] : null,'created_at' => $now,'updated_at' => $now,
             ]);
@@ -205,7 +205,7 @@ final readonly class CorrectionDrafts
     /** @param array<string,mixed> $original */
     private function insert(array $original, ?string $number, ?string $creditId, ?string $currency): string
     {
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $now = $this->now();
         $this->db->insert('invoice', [
             'id' => $id,'environment' => self::string($original, 'environment'),'direction' => 'sale','kind' => 'KOR','invoice_number' => $number,'counterparty_id' => self::string($original, 'counterparty_id'),
@@ -224,7 +224,7 @@ final readonly class CorrectionDrafts
         if ($party === null || $document->clientId === null) {
             return null;
         }
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $now = $this->now();
         $this->db->insert('invoice', [
             'id' => $id,'environment' => $this->configuration->environment(),'direction' => 'sale','kind' => 'KOR','invoice_number' => $document->number,

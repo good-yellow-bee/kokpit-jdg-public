@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Counterparty;
 
+use App\Calendar\IsoDate;
 use App\Connector\RegistryResult;
 use App\Storage\FileStore;
 use Doctrine\DBAL\Connection;
@@ -46,7 +47,7 @@ final readonly class VerificationRecorder
 
     private function insert(string $environment, ?string $counterpartyId, ?string $source, string $subject, ?string $bankAccount, string $checkedForDate, string $result, ?string $requestIdentifier, ?string $sourceDatetime, ?string $connectorCallId, ?string $checkedBy): string
     {
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $this->db->insert('verification', [
             'id' => $id,'environment' => $environment,'counterparty_id' => $counterpartyId,'source' => $source,'subject' => $subject,'bank_account' => $bankAccount,
             'checked_for_date' => $checkedForDate,'checked_at' => $this->clock->now()->format('Y-m-d\TH:i:s.uP'),'result' => $result,
@@ -58,6 +59,6 @@ final readonly class VerificationRecorder
     /** Dowód weryfikacji kontrahenta trzymamy jak dokumenty VAT: 5 lat od końca roku terminu płatności podatku. */
     private static function retentionYear(string $checkedForDate): int
     {
-        return (int) substr($checkedForDate, 0, 4) + 1;
+        return IsoDate::year($checkedForDate) + 1;
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Ledger;
 
 use App\Audit\AuditLog;
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Fx\FxRateProvider;
 use App\Setting\SettingKeys;
@@ -59,7 +60,7 @@ final readonly class ManualRevenueEntry
                 throw new \DomainException(sprintf('Dowód %s jest już w ewidencji; błąd wpisu poprawiasz korektą.', $documentNumber));
             }
             $environment = $this->configuration->environment();
-            $year = (int) substr($revenueDate, 0, 4);
+            $year = IsoDate::year($revenueDate);
             $file = $this->files->put($evidence, $environment, 'evidence', $evidenceMediaType, 'revenue_entry', $result->written[0], $year + 1);
             $this->audit->append('ledger.manual_entry', ['document_number' => $documentNumber,'service_type' => $entry['service_type'],'rate_pct' => $entry['rate_pct'],'currency' => $currency,'net' => $net,'evidence_file_id' => $file], $environment, 'revenue_entry', $result->written[0], $userId);
             return $result->written;

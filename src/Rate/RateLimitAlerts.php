@@ -28,7 +28,7 @@ final readonly class RateLimitAlerts
         $until = $blockedUntil->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
         $this->db->executeStatement(
             'INSERT INTO notification (id,channel,category,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-            [(string) UuidV7::generate($this->clock->now()), 'push', 'connector_failure', sprintf('%s:%s:%s:%s:rate_limited:push', $environment, $connector, $bucket, $until), sprintf('connector_failure: %s 429, %s do %s; %s', $connector, $bucket, $until, self::LINK), self::LINK, $now, $now],
+            [UuidV7::generate($this->clock->now()), 'push', 'connector_failure', sprintf('%s:%s:%s:%s:rate_limited:push', $environment, $connector, $bucket, $until), sprintf('connector_failure: %s 429, %s do %s; %s', $connector, $bucket, $until, self::LINK), self::LINK, $now, $now],
         );
     }
 }

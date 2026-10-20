@@ -105,7 +105,7 @@ final readonly class PrePaymentCheck
             }
             $now = $this->clock->now();
             $stamp = $now->format('Y-m-d\TH:i:s.uP');
-            $id = (string) UuidV7::generate($now);
+            $id = UuidV7::generate($now);
             $this->db->update('invoice', ['paid_on' => $orderDate,'updated_at' => $stamp,'version' => (string) ($cost['version'] + 1)], ['id' => $invoiceId,'version' => $cost['version']]);
             $this->db->insert('obligation', ['id' => $id,'environment' => $cost['environment'],'type' => 'wl_notice','rule_key' => 'wl_notice.manual','period_start' => $orderDate,'nominal_due_date' => $nominal,'due_date' => $due,'status' => 'open','invoice_id' => $invoiceId,'counterparty_id' => $cost['counterparty_id'],'dedupe_key' => $key,'created_at' => $stamp,'updated_at' => $stamp]);
             $this->audit->append('cost.wl_notice_chosen', ['order_date' => $orderDate,'due_date' => $due], $cost['environment'], 'obligation', $id, $userId);

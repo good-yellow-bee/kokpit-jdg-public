@@ -6,6 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Ledger\OpeningBalance;
 use App\Setting\SettingKeys;
+use App\Tests\Support\LedgerTestTools;
 use Symfony\Component\Uid\Uuid;
 
 /** Bilans otwarcia (D-65): data przejścia, powód poprawki i wpis `opening_balance.confirmed`. Dane fikcyjne. */
@@ -81,5 +82,10 @@ final class OpeningBalanceCorrectionTest extends DatabaseTestCase
         $keys = array_map('strval', array_keys($decoded));
         sort($keys);
         return $keys;
+    }
+
+    public function testConfirmWaitsForEnvironmentLock(): void
+    {
+        LedgerTestTools::assertWaitsForNamedLock($this->db(), 'opening_balance:test', fn() => $this->opening->confirm($this->user, 'fictional-step-up-credential', '2026-11-01', self::VALUES, $this->evidence));
     }
 }

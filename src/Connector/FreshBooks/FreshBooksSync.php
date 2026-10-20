@@ -167,7 +167,7 @@ final readonly class FreshBooksSync
         $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
         $this->db->executeStatement(
             "INSERT INTO sync_cursor (id,environment,connector,stream,backfill_from,created_at,updated_at) VALUES (?,?,'freshbooks',?,?,?,?) ON CONFLICT (environment,connector,stream) DO NOTHING",
-            [(string) UuidV7::generate($this->clock->now()), $environment, $stream, self::BACKFILL_FROM, $now, $now],
+            [UuidV7::generate($this->clock->now()), $environment, $stream, self::BACKFILL_FROM, $now, $now],
         );
         $this->db->executeStatement("UPDATE sync_cursor SET last_run_at=?, updated_at=? WHERE environment=? AND connector='freshbooks' AND stream=?", [$now, $now, $environment, $stream]);
         $row = $this->db->fetchAssociative("SELECT id,last_value,backfill_from,backfill_done_at FROM sync_cursor WHERE environment=? AND connector='freshbooks' AND stream=?", [$environment, $stream]);

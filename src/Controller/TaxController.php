@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Fx\FxRateUnavailable;
 use App\Passkey\AppUser;
@@ -50,7 +51,7 @@ final class TaxController extends AbstractController
         try {
             $payments->record($user->id(), $request->request->getString('month'), trim($request->request->getString('social_pln')), trim($request->request->getString('health_pln')), trim($request->request->getString('other_pln')), $request->request->getString('paid_on'));
         } catch (\InvalidArgumentException | \DomainException $exception) {
-            return $this->page((int) substr($this->date->today(), 0, 4), $exception->getMessage());
+            return $this->page(IsoDate::year($this->date->today()), $exception->getMessage());
         }
         $this->addFlash('notice', 'Zapisano składki ZUS.');
         return $this->redirectToRoute('panel_taxes');
@@ -58,7 +59,7 @@ final class TaxController extends AbstractController
 
     private function year(Request $request): int
     {
-        $current = (int) substr($this->date->today(), 0, 4);
+        $current = IsoDate::year($this->date->today());
         $year = $request->query->getInt('year', $current);
         return $year >= 2026 && $year <= $current ? $year : $current;
     }
@@ -91,7 +92,7 @@ final class TaxController extends AbstractController
         $payments = $this->db->fetchAllAssociative("SELECT to_char(month,'YYYY-MM') AS month, social_pln, health_pln, other_pln, paid_on FROM zus_payment WHERE environment=? AND month BETWEEN ? AND ? ORDER BY month", [$this->configuration->environment(), sprintf('%04d-01-01', $year), sprintf('%04d-12-01', $year)]);
         return $this->render('panel/taxes.html.twig', [
             'year' => $year,'cadence' => $cadence,'advances' => $advances,'eligibility' => $eligibility,'forecast' => $this->forecast->forecast($year),'payments' => $payments,'pit28' => $pit28,'pit28_refused' => $pit28Refused,
-            'health' => $year < (int) substr($today, 0, 4) ? $this->tax->healthReconciliation($year) : null,'today' => $today,'error' => $error,
+            'health' => $year < IsoDate::year($today) ? $this->tax->healthReconciliation($year) : null,'today' => $today,'error' => $error,
         ], new Response(status: $error === null ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

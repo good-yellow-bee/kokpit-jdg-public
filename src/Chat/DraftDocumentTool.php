@@ -63,7 +63,7 @@ final readonly class DraftDocumentTool
         $provenance = $this->provenance($sessionId, is_array($refs) ? $refs : []);
         $flagged = $this->values->flag($environment, $recipient, $subject . "\n" . $body);
         $now = $this->clock->now();
-        $id = (string) UuidV7::generate($now);
+        $id = UuidV7::generate($now);
         $this->db->transactional(function () use ($id, $environment, $sessionId, $session, $recipient, $subject, $body, $provenance, $flagged, $now): void {
             $stamp = $now->format('Y-m-d\TH:i:s.uP');
             $this->db->insert('draft', [

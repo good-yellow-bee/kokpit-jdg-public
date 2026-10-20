@@ -79,7 +79,7 @@ final class ApprovalCommand extends Command
             $output->writeln('Atrapa dummy nie działa przy APP_ENV=prod.');
             return Command::FAILURE;
         }
-        $output->writeln($this->gate->request('filing', (string) UuidV7::generate($this->clock->now())));
+        $output->writeln($this->gate->request('filing', UuidV7::generate($this->clock->now())));
         return Command::SUCCESS;
     }
 }

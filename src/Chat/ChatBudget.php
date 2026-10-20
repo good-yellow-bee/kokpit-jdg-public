@@ -93,7 +93,7 @@ final readonly class ChatBudget
         $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
         $this->db->executeStatement(
             'INSERT INTO notification (id,channel,category,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-            [(string) UuidV7::generate($this->clock->now()), 'push', 'budget_alert', $dedupeKey, $body, self::LINK, $now, $now],
+            [UuidV7::generate($this->clock->now()), 'push', 'budget_alert', $dedupeKey, $body, self::LINK, $now, $now],
         );
     }
 }

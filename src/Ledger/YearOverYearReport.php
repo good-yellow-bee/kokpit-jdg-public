@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
 
@@ -39,8 +40,8 @@ final readonly class YearOverYearReport
         $total = self::row('rok', self::sum($data[$year], 12) + $this->fx($year, 12, $currency), self::sum($data[$previous], 12) + $this->fx($previous, 12, $currency));
         // Bieżący rok: te same miesiące roku poprzedniego (styczeń do bieżącego miesiąca), bo pełny rok poprzedni zawyża różnicę.
         $comparable = null;
-        if ((int) substr($today, 0, 4) === $year) {
-            $until = (int) substr($today, 5, 2);
+        if (IsoDate::year($today) === $year) {
+            $until = IsoDate::month($today);
             $comparable = self::row(sprintf('od-01-do-%02d', $until), self::sum($data[$year], $until) + $this->fx($year, $until, $currency), self::sum($data[$previous], $until) + $this->fx($previous, $until, $currency));
         }
         return ['year' => $year,'previous' => $previous,'currency' => $currency,'months' => $months,'total' => $total,'comparable' => $comparable];

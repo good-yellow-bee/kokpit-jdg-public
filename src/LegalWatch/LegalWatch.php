@@ -101,7 +101,7 @@ final readonly class LegalWatch
             /** @var array{id:string,snapshot:string,snapshot_sha256:string}|false $row */
             $row = $this->db->fetchAssociative('SELECT id, snapshot, snapshot_sha256 FROM legal_watch WHERE kind=? AND ref=? FOR UPDATE', [$item['kind'], $item['ref']]);
             if ($row === false) {
-                $this->db->insert('legal_watch', ['id' => (string) UuidV7::generate($this->clock->now()), 'kind' => $item['kind'], 'ref' => $item['ref'], 'label' => $item['label'], 'snapshot' => $json, 'snapshot_sha256' => $sha, 'checked_at' => $now, 'changed_at' => null, 'created_at' => $now, 'updated_at' => $now]);
+                $this->db->insert('legal_watch', ['id' => UuidV7::generate($this->clock->now()), 'kind' => $item['kind'], 'ref' => $item['ref'], 'label' => $item['label'], 'snapshot' => $json, 'snapshot_sha256' => $sha, 'checked_at' => $now, 'changed_at' => null, 'created_at' => $now, 'updated_at' => $now]);
                 return false;
             }
             if ($row['snapshot_sha256'] === $sha) {
@@ -116,10 +116,10 @@ final readonly class LegalWatch
                 return false;
             }
             $changes = array_map(static fn(string $key): array => $details[$key] ?? ['key' => $key], $added);
-            $this->db->insert('legal_watch_hit', ['id' => (string) UuidV7::generate($this->clock->now()), 'legal_watch_id' => $row['id'], 'snapshot_sha256' => $sha, 'changes' => json_encode($changes, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'detected_at' => $now, 'reviewed_at' => null]);
+            $this->db->insert('legal_watch_hit', ['id' => UuidV7::generate($this->clock->now()), 'legal_watch_id' => $row['id'], 'snapshot_sha256' => $sha, 'changes' => json_encode($changes, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'detected_at' => $now, 'reviewed_at' => null]);
             $this->db->executeStatement(
                 'INSERT INTO notification (id,channel,category,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-                [(string) UuidV7::generate($this->clock->now()), 'push', 'legal_change', sprintf('legal_watch:%s:%s:push', $row['id'], $sha), sprintf('legal_change: %s; %s', $item['label'], self::LINK), self::LINK, $now, $now],
+                [UuidV7::generate($this->clock->now()), 'push', 'legal_change', sprintf('legal_watch:%s:%s:push', $row['id'], $sha), sprintf('legal_change: %s; %s', $item['label'], self::LINK), self::LINK, $now, $now],
             );
             return true;
         });

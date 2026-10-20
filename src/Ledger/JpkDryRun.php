@@ -55,7 +55,7 @@ final readonly class JpkDryRun
                 $this->db->executeStatement('UPDATE filing SET schema_version=?,totals=?,version=version+1,updated_at=? WHERE id=?', [$document->schemaVersion, $totals, $now, $existing['id']]);
                 $id = $existing['id'];
             } else {
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 $this->db->insert('filing', ['id' => $id,'environment' => $environment,'type' => $type,'period_start' => $year . '-01-01','period_end' => $year . '-12-31','purpose' => 1,'seq' => 0,'status' => 'draft','schema_version' => $document->schemaVersion,'totals' => $totals,'created_at' => $now,'updated_at' => $now]);
             }
             $this->audit->append('jpk.dry_run', ['type' => $type,'year' => $year,'until' => $until,'rows' => $document->rows,'sum' => $document->sum,'xml_sha256' => $document->sha256()], $environment, 'filing', $id);

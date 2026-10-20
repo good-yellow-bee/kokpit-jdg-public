@@ -50,7 +50,7 @@ final readonly class ZusPayments
                 $this->db->update('zus_payment', $fields, ['id' => $existing]);
                 $id = $existing;
             } else {
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 $this->db->insert('zus_payment', $fields + ['id' => $id,'environment' => $environment,'month' => $monthStart,'created_at' => $now]);
             }
             $total = (string) BigDecimal::of($social)->plus($health)->plus($other)->toScale(2);

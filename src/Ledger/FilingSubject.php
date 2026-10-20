@@ -6,6 +6,7 @@ namespace App\Ledger;
 
 use App\Approval\ApprovalPayload;
 use App\Approval\ApprovalSubject;
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
@@ -104,7 +105,7 @@ final readonly class FilingSubject implements ApprovalSubject
         if ($type === 'PIT_28') {
             return $this->pit28Filing($subjectId, $filing, $environment);
         }
-        $year = (int) substr(self::string($filing, 'period_start'), 0, 4);
+        $year = IsoDate::year(self::string($filing, 'period_start'));
         $purpose = (int) self::string($filing, 'purpose');
         [$document, $summary, $preconditions] = $type === 'JPK_ST' ? $this->jpkSt($environment, $year, $purpose) : $this->jpkEwp($environment, $year, $purpose);
         $summary = ['type' => $type, 'period' => (string) $year, 'period_start' => self::string($filing, 'period_start'), 'period_end' => self::string($filing, 'period_end'), 'purpose' => $purpose, 'schema_version' => $document->schemaVersion] + $summary;
@@ -206,7 +207,7 @@ final readonly class FilingSubject implements ApprovalSubject
      */
     private function pit28Filing(string $subjectId, array $filing, string $environment): ApprovalPayload
     {
-        $year = (int) substr(self::string($filing, 'period_start'), 0, 4);
+        $year = IsoDate::year(self::string($filing, 'period_start'));
         $purpose = (int) self::string($filing, 'purpose');
         if ($purpose !== 1) {
             throw new JpkBuildRefused(sprintf('Korektę PIT-28 za %d składasz ręcznie i zapisujesz jako złożenie manual (D-96).', $year));

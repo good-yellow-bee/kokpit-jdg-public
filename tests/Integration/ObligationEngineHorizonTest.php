@@ -6,6 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Fixtures\FictionalIdentifiers;
 use App\Setting\SettingKeys;
+use App\Tests\Support\LedgerTestTools;
 use App\Tests\Support\ObligationTestTools;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\UuidV7;
@@ -175,5 +176,11 @@ final class ObligationEngineHorizonTest extends DatabaseTestCase
         $keys = array_column(array_filter($candidates, static fn(array $item): bool => $item['type'] === $type), 'dedupe_key');
         sort($keys);
         return $keys;
+    }
+
+    public function testRecomputeWaitsForRunLock(): void
+    {
+        $engine = ObligationTestTools::engine($this->db(), new MockClock('2026-09-18T04:00:00Z'));
+        LedgerTestTools::assertWaitsForNamedLock($this->db(), 'obligations.recompute', fn() => $engine->recompute());
     }
 }

@@ -110,7 +110,7 @@ final readonly class NotificationDispatcher
             foreach ($channels as $channel) {
                 $planned += (int) $this->db->executeStatement(
                     'INSERT INTO notification (id,channel,category,obligation_id,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-                    [(string) UuidV7::generate($now), $channel, $row['type'], $row['id'], sprintf('%s:%s:%s', $row['id'], $label, $channel), self::body($row['type']), self::LINK, $at->format('Y-m-d\TH:i:sP'), $now->format('Y-m-d\TH:i:s.uP')],
+                    [UuidV7::generate($now), $channel, $row['type'], $row['id'], sprintf('%s:%s:%s', $row['id'], $label, $channel), self::body($row['type']), self::LINK, $at->format('Y-m-d\TH:i:sP'), $now->format('Y-m-d\TH:i:s.uP')],
                 );
             }
         }

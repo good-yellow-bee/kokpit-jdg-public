@@ -249,7 +249,7 @@ final readonly class FreshBooksLedger
             return 'number_conflict';
         }
         $this->db->insert('invoice', [
-            'id' => (string) UuidV7::generate($this->clock->now()),'environment' => $environment,'direction' => 'sale','kind' => 'VAT','invoice_number' => $invoice->number,
+            'id' => UuidV7::generate($this->clock->now()),'environment' => $environment,'direction' => 'sale','kind' => 'VAT','invoice_number' => $invoice->number,
             'counterparty_id' => $this->counterparties->freshbooksClient($invoice->clientId, $party),'currency' => $invoice->currency,'issue_date' => $invoice->createDate,
             'net_total' => $invoice->net,'vat_total' => $invoice->vat,'gross_total' => $invoice->gross,'status' => 'draft','freshbooks_id' => $invoice->id,
             'freshbooks_status' => $invoice->status,'source_hash' => $invoice->sourceHash(),'created_at' => $now,'updated_at' => $now,

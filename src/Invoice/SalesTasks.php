@@ -42,7 +42,7 @@ final readonly class SalesTasks
         if ($notify) {
             $this->db->executeStatement(
                 'INSERT INTO notification (id,channel,category,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-                [(string) UuidV7::generate($now), 'push', $task, sprintf('%s:%s:push', $task, $dedupe ?? $invoiceId), sprintf('%s: 1; %s', $task, self::LINK), self::LINK, $stamp, $stamp],
+                [UuidV7::generate($now), 'push', $task, sprintf('%s:%s:push', $task, $dedupe ?? $invoiceId), sprintf('%s: 1; %s', $task, self::LINK), self::LINK, $stamp, $stamp],
             );
         }
         return $changed === 1;

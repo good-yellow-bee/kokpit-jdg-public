@@ -32,7 +32,7 @@ final readonly class ChatSessions
         if (!is_string($validFrom)) {
             throw new \DomainException('Brak ustawienia chat.law_snapshot: rozmowa nie startuje bez snapshotu prawa (D-60).');
         }
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
         $this->db->insert('chat_session', ['id' => $id, 'app_user_id' => $userId, 'model' => $this->profile->model, 'effort' => $this->profile->effort, 'tool_set' => $this->registry->toolSet(), 'system_prompt_sha256' => $this->systemPromptSha(), 'law_snapshot_from' => $validFrom, 'started_at' => $now, 'pseudonym_map' => '{}', 'created_at' => $now, 'updated_at' => $now]);
         return $id;

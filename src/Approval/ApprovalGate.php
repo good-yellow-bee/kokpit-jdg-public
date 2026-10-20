@@ -199,7 +199,7 @@ final readonly class ApprovalGate
             $payload = $subject->payload($subjectId);
             $now = $this->clock->now();
             $fileId = $this->files->put($payload->bytes, $this->configuration->environment(), $kind, $payload->mediaType, $owner, $subjectId, (int) $now->setTimezone(new \DateTimeZone('Europe/Warsaw'))->format('Y'));
-            $id = (string) UuidV7::generate($now);
+            $id = UuidV7::generate($now);
             if ($live !== null) {
                 // Klucz obcy `superseded_by_id` jest odroczony, więc stary wiersz opuszcza indeks żywych przed INSERT.
                 $this->transitions->apply($live, 'superseded', $event, ['superseded_by_id' => $id, 'finished_at' => $this->transitions->now()], ['superseded_by_id' => $id], $userId);

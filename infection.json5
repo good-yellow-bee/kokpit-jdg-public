@@ -4,5 +4,47 @@
   "logs": { "text": "var/evidence/mutation.txt", "json": "var/evidence/mutation.json" },
   "timeout": 120,
   "minMsi": 85,
-  "minCoveredMsi": 95
+  "minCoveredMsi": 95,
+  // Mutanty równoważne: wzorzec linii źródła na mutator, z uzasadnieniem (D-105). Nowy wpis tylko z uzasadnieniem.
+  "mutators": {
+    "@default": true,
+    "DecrementInteger": {
+      "ignoreSourceCodeByRegex": [
+        // Limit głębokości `json_decode` z zapasem względem płaskich struktur kokpitu.
+        ".*json_decode\\([^;]*, true, \\d+, JSON_THROW_ON_ERROR\\).*"
+      ]
+    },
+    "IncrementInteger": {
+      "ignoreSourceCodeByRegex": [
+        // Limit głębokości `json_decode` z zapasem względem płaskich struktur kokpitu.
+        ".*json_decode\\([^;]*, true, \\d+, JSON_THROW_ON_ERROR\\).*"
+      ]
+    },
+    "LogicalOr": {
+      "ignoreSourceCodeByRegex": [
+        // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
+        "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
+      ]
+    },
+    "LogicalOrAllSubExprNegation": {
+      "ignoreSourceCodeByRegex": [
+        // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
+        "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
+      ]
+    },
+    "LogicalOrSingleSubExprNegation": {
+      "ignoreSourceCodeByRegex": [
+        // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
+        "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
+      ]
+    },
+    "Throw_": {
+      "ignoreSourceCodeByRegex": [
+        // `?? throw new \LogicException`: strażnik niezmiennika (wiersz z bazy albo klucz stałej reguły zawsze jest).
+        ".*\\?\\? throw new \\\\LogicException\\(.*",
+        // `is_*() ? … : throw new \LogicException`: strażnik typu wartości z bazy, gałąź `throw` nieosiągalna.
+        ".*is_(string|scalar|numeric|int)\\([^)]*\\) \\? [^:]* : throw new \\\\LogicException\\(.*"
+      ]
+    }
+  }
 }

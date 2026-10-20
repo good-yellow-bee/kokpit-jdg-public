@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use App\Fx\FxRateProvider;
 use App\Fx\FxRateUnavailable;
 use Brick\Math\BigDecimal;
@@ -94,7 +95,7 @@ final readonly class FxDifference
                 ];
             }
             if ($rows !== []) {
-                $this->writer->append((int) substr($paidOn, 0, 4), $rows);
+                $this->writer->append(IsoDate::year($paidOn), $rows);
             }
             $this->db->update('payment', ['fx_posted_at' => $this->now(),'updated_at' => $this->now()], ['id' => $paymentId]);
             $this->writer->closeIfComplete($paidOn);

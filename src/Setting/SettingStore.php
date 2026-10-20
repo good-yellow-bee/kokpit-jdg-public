@@ -71,7 +71,7 @@ final readonly class SettingStore
             if ($this->db->fetchOne('SELECT 1 FROM setting WHERE key=? AND valid_from=?', [$key, $validFrom]) !== false) {
                 throw new \DomainException(sprintf('Ustawienie %s ma już wiersz od %s; zmiana to nowy wiersz z inną datą obowiązywania.', $key, $validFrom));
             }
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $this->db->insert('setting', ['id' => $id,'key' => $key,'value' => $json,'valid_from' => $validFrom,'legal_source' => $legalSource,'set_by' => $userId,'set_at' => $this->clock->now()->format('Y-m-d\TH:i:s.uP'),'note' => $note]);
             // Wartość może zawierać dane osobowe, więc audyt niesie tylko jej hash.
             $this->audit->append('setting.changed', ['key' => $key,'valid_from' => $validFrom,'value_sha256' => hash('sha256', $json),'set_by' => $userId], $this->configuration->environment(), 'setting', $id);
