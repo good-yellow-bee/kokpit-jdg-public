@@ -295,7 +295,7 @@ Każdy test zapisuje ziarno. Ziarno z porażki staje się nowym przypadkiem w `t
 - Doradczo do powstania `src/Tax` w F2 (D-28). Bez pliku PHP w `src/Tax` job uruchamia Infection bez progów, zapisuje MSI i kończy kodem 0. Od pierwszego pliku w `src/Tax` progi blokują merge.
 - Pomiar (D-104): pcov w obrazie `development` (nie w `production`), wątek Infection na rdzeń (`MUTATION_THREADS`), każdy z kopią bazy `kokpit_test_<n>` (`scripts/mutation-databases.sh`) i katalogiem plików `var/test-files-<n>` według `TEST_TOKEN`; `--only-covering-test-cases`, limit czasu mutanta 120 s, `memory_limit=2G` dla Infection.
 - `tests/bootstrap.php` wczytuje zmutowany plik od razu i wyłącza wrapper `file://` Infection: wrapper nie obsługuje `fsync`, więc każdy nowy zapis `FileStore` dawał fałszywe zabicie.
-- Stan 2026-10-20 (D-105): 4790 mutantów, 139 ignorowanych według wzorców równoważności z `infection.json5`, MSI i covered MSI 95,33%, 217 ocalałych; progi spełnione. `phpunit.xml` ma `executionOrder="default"`, żeby pokrycie trafiało zawsze do tych samych testów.
+- Stan 2026-10-20 (D-105): 4641 mutantów, 71 ignorowanych według wzorców równoważności z `infection.json5`, MSI i covered MSI 95,34%, 213 ocalałych; progi spełnione. `phpunit.xml` ma `executionOrder="default"`, żeby pokrycie trafiało zawsze do tych samych testów.
 - Ocalały mutant to nowy test albo wpis ignorowania z uzasadnieniem w `infection.json5`. Raport JSON trafia do paczki dowodów.
 
 ## CI

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Connector\FreshBooks\FreshBooksInvoice;
 use App\Fx\FxRateProvider;
@@ -99,7 +100,7 @@ final readonly class LedgerReconciliation
         $environment = $this->configuration->environment();
         $result = [];
         foreach ($invoices as $invoice) {
-            if ($invoice->isDraft() || $invoice->deleted || (int) substr($invoice->createDate, 0, 4) !== $year) {
+            if ($invoice->isDraft() || $invoice->deleted || IsoDate::year($invoice->createDate) !== $year) {
                 continue;
             }
             $ksef = $this->db->fetchAssociative("SELECT id, ksef_number FROM invoice WHERE environment=? AND direction='sale' AND freshbooks_id=? AND ksef_number IS NOT NULL", [$environment, $invoice->id]);

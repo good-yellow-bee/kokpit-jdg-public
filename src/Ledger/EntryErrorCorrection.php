@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Time\BusinessDate;
@@ -70,7 +71,7 @@ final readonly class EntryErrorCorrection
     /** @param array<string,mixed> $row */
     private function insert(array $row, string $correctsEntryId, string $userId): string
     {
-        $year = (int) substr(self::str($row['revenue_date']), 0, 4);
+        $year = IsoDate::year(self::str($row['revenue_date']));
         $environment = $this->configuration->environment();
         $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [RevenueEntryWriter::LOCK_NAMESPACE, $year]);
         $lp = $this->db->fetchOne('SELECT coalesce(max(lp),0) FROM revenue_entry WHERE environment=? AND year=?', [$environment, $year]);

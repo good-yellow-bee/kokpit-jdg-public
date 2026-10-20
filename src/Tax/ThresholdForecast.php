@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tax;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Fx\FxRateUnavailable;
 use App\Setting\SettingKeys;
@@ -36,11 +37,11 @@ final readonly class ThresholdForecast
     public function forecast(int $year): ?array
     {
         $today = $this->date->today();
-        $current = (int) substr($today, 0, 4);
+        $current = IsoDate::year($today);
         if ($year > $current) {
             throw new \InvalidArgumentException(sprintf('Rok %d jeszcze się nie zaczął.', $year));
         }
-        $basis = $year < $current ? 12 : (int) substr($today, 5, 2) - 1;
+        $basis = $year < $current ? 12 : IsoDate::month($today) - 1;
         if ($basis === 0) {
             return null;
         }
@@ -141,7 +142,7 @@ final readonly class ThresholdForecast
             $pln = BigDecimal::of($eur)->multipliedBy($rate->mid)->toScale(2, RoundingMode::HALF_UP);
             $crossed = $ytd->isGreaterThan($pln);
             // Przekroczenie w trwającym miesiącu nie ma jeszcze miesiąca w podstawie, więc to miesiąc dnia dzisiejszego.
-            $month = self::crossMonth($cumulative, (string) $pln) ?? ($crossed ? (int) substr($ytdEnd, 5, 2) : null);
+            $month = self::crossMonth($cumulative, (string) $pln) ?? ($crossed ? IsoDate::month($ytdEnd) : null);
             $limits[] = ['key' => $key,'limit_eur' => $eur,'limit_pln' => (string) $pln,'crossed' => $crossed,'projected_cross' => $projected->isGreaterThan($pln),
                 'cross_month' => $month === null ? null : sprintf('%04d-%02d', $year, $month)];
         }
@@ -194,7 +195,7 @@ final readonly class ThresholdForecast
             return [null, null];
         }
         $quarterly = $this->settings->value(SettingKeys::ADVANCE_FREQUENCY, sprintf('%04d-01-01', $year)) === 'quarterly';
-        $month = (int) substr($today, 5, 2);
+        $month = IsoDate::month($today);
         $start = sprintf('%04d-%02d-01', $year, $quarterly ? intdiv($month - 1, 3) * 3 + 1 : $month);
         $advance = $this->tax->advance($start, $quarterly ? 'quarterly' : 'monthly')['result']->advance;
         return [$start, (string) BigDecimal::of($advance)->toScale(2)];

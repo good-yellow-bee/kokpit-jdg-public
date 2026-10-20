@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
 use App\Invoice\VatFx;
 use App\Time\BusinessDate;
@@ -39,7 +40,7 @@ final readonly class RevenueEntryWriter
         if ($document->counterpartyCountry !== null && !$this->schema->isCountry($document->counterpartyCountry)) {
             throw new \DomainException(sprintf('Kod kraju %s spoza słownika K_6.', $document->counterpartyCountry));
         }
-        $year = (int) substr($document->revenueDate, 0, 4);
+        $year = IsoDate::year($document->revenueDate);
         $environment = $this->configuration->environment();
         return $this->db->transactional(function () use ($document, $rates, $year, $environment, $recordedBy): RevenueWriteResult {
             $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [self::LOCK_NAMESPACE, $year]);

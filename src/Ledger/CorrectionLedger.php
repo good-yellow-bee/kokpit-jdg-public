@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Invoice\VatFx;
@@ -104,7 +105,7 @@ final readonly class CorrectionLedger
                     $mid = is_string($found) ? $found : throw new \DomainException('Nieznany kurs PIT.');
                 }
                 $revenueDate = $reason === 'arithmetic_error' && $source !== null ? self::str($source['revenue_date']) : $issue;
-                $byYear[(int) substr($revenueDate, 0, 4)][] = [
+                $byYear[IsoDate::year($revenueDate)][] = [
                     'revenue_date' => $revenueDate,'document_number' => self::str($kor['invoice_number']),'ksef_number' => is_string($kor['ksef_number']) ? $kor['ksef_number'] : null,
                     'counterparty_country' => $source !== null && is_string($source['counterparty_country']) ? $source['counterparty_country'] : $country,
                     'counterparty_tax_id' => $source !== null && is_string($source['counterparty_tax_id']) ? $source['counterparty_tax_id'] : $taxId,

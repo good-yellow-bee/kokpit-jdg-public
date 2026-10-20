@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ledger;
 
+use App\Calendar\IsoDate;
 use App\Audit\AuditLog;
 use App\Config\ConnectorConfiguration;
 use App\Storage\FileStore;
@@ -33,7 +34,7 @@ final readonly class LedgerImporter
             $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [self::LOCK_NAMESPACE, $year]);
             $problems = [];
             foreach ($rows as $row) {
-                if ((int) substr($row->revenueDate, 0, 4) !== $year) {
+                if (IsoDate::year($row->revenueDate) !== $year) {
                     $problems[] = sprintf('K_1 %d: K_3 %s poza rokiem %d', $row->lp, $row->revenueDate, $year);
                 }
             }

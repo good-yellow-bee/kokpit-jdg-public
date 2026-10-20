@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tax;
 
+use App\Calendar\IsoDate;
 use App\Calendar\PolishCalendar;
 use App\Config\ConnectorConfiguration;
 use App\Fx\FxRate;
@@ -33,7 +34,7 @@ final readonly class TaxCalculator
      */
     public function advance(string $periodStart, string $cadence = 'monthly'): array
     {
-        $year = (int) substr($periodStart, 0, 4);
+        $year = IsoDate::year($periodStart);
         $months = $cadence === 'quarterly' ? 3 : 1;
         $carry = '0.00';
         for ($month = 1; $month <= 12; $month += $months) {
@@ -62,7 +63,7 @@ final readonly class TaxCalculator
         if ($parameters === null) {
             return null;
         }
-        $bracket = max($parameters['health_bracket_manual'], HealthContribution::bracket($parameters['health_brackets'], $this->revenueAfterSocial(substr($periodStart, 0, 4) . '-01-01', self::monthEnd($periodStart))));
+        $bracket = max($parameters['health_bracket_manual'], HealthContribution::bracket($parameters['health_brackets'], $this->revenueAfterSocial(IsoDate::year($periodStart) . '-01-01', self::monthEnd($periodStart))));
         return (string) BigDecimal::of($parameters['social_pln'])->plus($parameters['other_pln'])->plus($parameters['health_brackets'][$bracket - 1]['amount_pln'])->toScale(2);
     }
 
@@ -203,7 +204,7 @@ final readonly class TaxCalculator
     public function zusParameters(string $periodStart): ?array
     {
         $row = $this->settings->current(SettingKeys::ZUS_PARAMETERS, $periodStart);
-        if ($row === null || substr($row['valid_from'], 0, 4) !== substr($periodStart, 0, 4)) {
+        if ($row === null || IsoDate::year($row['valid_from']) !== IsoDate::year($periodStart)) {
             return null;
         }
         try {

@@ -10,20 +10,8 @@
     "@default": true,
     "BitwiseOr": {
       "ignoreSourceCodeByRegex": [
-        // Flagi `json_encode` dla kolumny `totals jsonb`: jsonb normalizuje zapis.
-        ".*\\$?totals'? =>? json_encode\\(.*"
-      ]
-    },
-    "CastInt": {
-      "ignoreSourceCodeByRegex": [
-        // Pomocnik zawężający typ wartości z bazy (DBAL zwraca mixed): kolumny i pdo_pgsql dają już string/int, `throw` jest nieosiągalny.
-        "return is_(scalar|numeric)\\(\\$value\\) \\? \\((string|int)\\) \\$value : throw new \\\\LogicException\\(.*\\);"
-      ]
-    },
-    "CastString": {
-      "ignoreSourceCodeByRegex": [
-        // Pomocnik zawężający typ wartości z bazy (DBAL zwraca mixed): kolumny i pdo_pgsql dają już string/int, `throw` jest nieosiągalny.
-        "return is_(scalar|numeric)\\(\\$value\\) \\? \\((string|int)\\) \\$value : throw new \\\\LogicException\\(.*\\);"
+        // Flagi `JSON_UNESCAPED_*` dla kolumny `totals jsonb`: jsonb normalizuje zapis (bez `JSON_FORCE_OBJECT`).
+        ".*\\$?totals'? =>? json_encode\\(.*JSON_UNESCAPED.*"
       ]
     },
     "DecrementInteger": {
@@ -35,9 +23,7 @@
     "IncrementInteger": {
       "ignoreSourceCodeByRegex": [
         // Limit głębokości `json_decode` z zapasem względem płaskich struktur kokpitu.
-        ".*json_decode\\([^;]*, true, \\d+, JSON_THROW_ON_ERROR\\).*",
-        // Rok albo miesiąc z daty ISO przez `(int) substr(…, 0, 4|5, 2)`: dłuższy wycinek albo bez `substr` daje tę samą liczbę.
-        "[^0-9]*\\(int\\) substr\\([^0-9;]*, (0, 4|5, 2)\\)[^0-9]*"
+        ".*json_decode\\([^;]*, true, \\d+, JSON_THROW_ON_ERROR\\).*"
       ]
     },
     "LogicalOr": {
@@ -60,18 +46,12 @@
     },
     "Throw_": {
       "ignoreSourceCodeByRegex": [
-        // Pomocnik zawężający typ wartości z bazy (DBAL zwraca mixed): kolumny i pdo_pgsql dają już string/int, `throw` jest nieosiągalny.
+        // Jednolinijkowy pomocnik `is_scalar|is_numeric($value) ? … : throw new \LogicException`: `throw` nieosiągalny, wartości z bazy mają typ skalarny.
         "return is_(scalar|numeric)\\(\\$value\\) \\? \\((string|int)\\) \\$value : throw new \\\\LogicException\\(.*\\);",
-        // `?? throw new \LogicException`: strażnik niezmiennika (wiersz albo klucz zawsze jest).
+        // `?? throw new \LogicException`: strażnik niezmiennika (wiersz z bazy albo klucz stałej reguły zawsze jest).
         ".*\\?\\? throw new \\\\LogicException\\(.*",
         // `is_*() ? … : throw new \LogicException`: strażnik typu wartości z bazy, gałąź `throw` nieosiągalna.
         ".*is_(string|scalar|numeric|int)\\([^)]*\\) \\? [^:]* : throw new \\\\LogicException\\(.*"
-      ]
-    },
-    "UnwrapSubstr": {
-      "ignoreSourceCodeByRegex": [
-        // Rok albo miesiąc z daty ISO przez `(int) substr(…, 0, 4|5, 2)`: dłuższy wycinek albo bez `substr` daje tę samą liczbę.
-        "[^0-9]*\\(int\\) substr\\([^0-9;]*, (0, 4|5, 2)\\)[^0-9]*"
       ]
     }
   }

@@ -163,7 +163,7 @@ final readonly class ObligationEngine
      */
     private function yearly(string $ruleKey, array $rule, string $today): array
     {
-        $year = (int) substr($today, 0, 4);
+        $year = IsoDate::year($today);
         $items = [];
         for ($period = $year - 2; $period <= $year + 2; $period++) {
             $nominal = sprintf('%04d-%s', ($rule['same_year'] ?? false) ? $period : $period + 1, $rule['date'] ?? throw new \LogicException($ruleKey));
@@ -221,7 +221,7 @@ final readonly class ObligationEngine
     private function applies(string $type, string $periodStart): bool
     {
         return match ($type) {
-            'jpk_st' => $this->settings->value(SettingKeys::JPK_ST_ENABLED, substr($periodStart, 0, 4) . '-12-31') === true,
+            'jpk_st' => $this->settings->value(SettingKeys::JPK_ST_ENABLED, IsoDate::year($periodStart) . '-12-31') === true,
             'vat_ue' => $this->vatUeApplies($periodStart),
             'cit_10z' => $this->cit10zApplies($periodStart),
             default => true,
@@ -337,7 +337,7 @@ final readonly class ObligationEngine
     private function cit10zApplies(string $periodStart): bool
     {
         $environment = $this->configuration->environment();
-        $year = (int) substr($periodStart, 0, 4);
+        $year = IsoDate::year($periodStart);
         $rows = $this->db->fetchAllAssociative("SELECT DISTINCT date_trunc('month', i.paid_on)::date AS period_start, c.id AS counterparty_id FROM invoice i JOIN counterparty c ON c.id=i.counterparty_id
             WHERE i.environment=? AND i.direction='cost' AND i.paid_on>=? AND i.paid_on<? AND i.cost_review IS DISTINCT FROM 'not_mine' AND c.wht_category IN ('license','services_21_2a') AND NOT c.is_natural_person AND c.country<>'PL'
             ORDER BY 1, 2", [$environment, sprintf('%04d-01-01', $year), sprintf('%04d-01-01', $year + 1)]);
@@ -438,8 +438,8 @@ final readonly class ObligationEngine
             $next = self::day($periodStart)->modify($quarterly ? '+3 months' : '+1 month')->format('Y-m-d');
             return $next <= $today ? $this->tax->advance($periodStart, $quarterly ? 'quarterly' : 'monthly')['result']->advance . '.00' : null;
         }
-        if ($rule['type'] === 'health_reconciliation' && substr($periodStart, 0, 4) < substr($today, 0, 4)) {
-            return $this->tax->healthReconciliation((int) substr($periodStart, 0, 4))['amount_due'] ?? null;
+        if ($rule['type'] === 'health_reconciliation' && IsoDate::year($periodStart) < IsoDate::year($today)) {
+            return $this->tax->healthReconciliation(IsoDate::year($periodStart))['amount_due'] ?? null;
         }
         return null;
     }
@@ -457,7 +457,7 @@ final readonly class ObligationEngine
         if ($symbol === null || !is_string($this->settings->value($account))) {
             return null;
         }
-        $month = (int) substr($periodStart, 5, 2);
+        $month = IsoDate::month($periodStart);
         $period = $ruleKey === 'ryczalt_advance.quarterly' ? sprintf('K%02d', intdiv($month - 1, 3) + 1) : sprintf('M%02d', $month);
         return sprintf('%s %s%s', $symbol, substr($periodStart, 2, 2), $period);
     }
@@ -480,7 +480,7 @@ final readonly class ObligationEngine
             if ($row['kind'] === 'auth_data') {
                 foreach ($this->yearly('credential_expiry.auth_data', ObligationRules::RULES['credential_expiry.auth_data'], $today) as $item) {
                     if ($item['due_date'] >= $today && $item['due_date'] <= $until) {
-                        $result[] = $base + ['dedupe_key' => 'credential_expiry:' . substr($item['period_start'], 0, 4) . ':auth_data','rule_key' => 'credential_expiry.auth_data'] + $item;
+                        $result[] = $base + ['dedupe_key' => 'credential_expiry:' . IsoDate::year($item['period_start']) . ':auth_data','rule_key' => 'credential_expiry.auth_data'] + $item;
                     }
                 }
                 continue;
