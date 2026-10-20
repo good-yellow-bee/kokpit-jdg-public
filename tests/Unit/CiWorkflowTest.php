@@ -14,7 +14,7 @@ final class CiWorkflowTest extends TestCase
         $root = dirname(__DIR__, 2);
         $content = file_get_contents($root . '/.github/workflows/ci.yml');
         self::assertIsString($content);
-        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,uses?:string,env?:array<string,string>,with?:array<string,string>}>}>} $workflow */
+        /** @var array{on:array<string,mixed>,concurrency:array{group:string,cancel-in-progress:string},jobs:array<string,array{if?:string,name?:string,continue-on-error?:bool,needs?:list<string>,permissions?:array<string,string>,env?:array<string,string>,steps:list<array{if?:string,run?:string,shell?:string,uses?:string,env?:array<string,string>,with?:array<string,string>}>}>} $workflow */
         $workflow = Yaml::parse($content);
         self::assertSame(['push','pull_request','workflow_dispatch'], array_keys($workflow['on']));
         // D-43: gałąź PR liczy minuty raz (pull_request), push tylko na main, starsze przebiegi PR anulowane.
