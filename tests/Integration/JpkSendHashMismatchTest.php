@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\TestFiles;
 use App\Tests\Support\EvidenceArtefacts;
 
 /**
@@ -19,7 +20,7 @@ final class JpkSendHashMismatchTest extends JpkSendTestCase
         $approvalId = $send->approved();
         $path = $this->db()->fetchOne('SELECT s.path FROM stored_file s JOIN approval a ON a.payload_file_id=s.id WHERE a.id=?', [$approvalId]);
         self::assertIsString($path);
-        $file = '/app/var/test-files/jpk/' . $path;
+        $file = TestFiles::root('jpk') . '/' . $path;
         $original = (string) file_get_contents($file);
         chmod($file, 0640);
         file_put_contents($file, str_replace('<KodUrzedu>', '<KodUrzedu> ', $original));

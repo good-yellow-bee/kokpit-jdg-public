@@ -25,7 +25,7 @@ final class LedgerTestTools
     public static function importer(Connection $db, MockClock $clock): LedgerImporter
     {
         $audit = new AuditLog($db, $clock, new Redactor());
-        $files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, '/app/var/test-files/ledger');
+        $files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, TestFiles::root('ledger'));
         return new LedgerImporter($db, $clock, new BusinessDate($clock), self::parser(), $files, $audit, ConnectorTestTools::configuration(false));
     }
     public static function parser(): LedgerFileParser

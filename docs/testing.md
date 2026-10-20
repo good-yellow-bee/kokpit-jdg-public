@@ -293,7 +293,9 @@ Każdy test zapisuje ziarno. Ziarno z porażki staje się nowym przypadkiem w `t
 - Gdy zakres nie ma plików PHP do sprawdzenia, job pomija Infection. Zapisuje „brak kodu w zakresie” w podsumowaniu joba i kończy kodem 0.
 - Progi: `--min-msi=85` i `--min-covered-msi=95` ([Infection](https://infection.github.io/guide/command-line-options.html)). Progi tylko rosną; obniżenie wymaga wpisu D-xx.
 - Doradczo do powstania `src/Tax` w F2 (D-28). Bez pliku PHP w `src/Tax` job uruchamia Infection bez progów, zapisuje MSI i kończy kodem 0. Od pierwszego pliku w `src/Tax` progi blokują merge.
-- Stan 2026-10-20 (D-103): obraz `development` nie ma sterownika pokrycia, więc Infection w CI kończy się błędem i job jest czerwony; zostaje doradczy, a progi nie blokują merge do zmiany z pomiarem.
+- Pomiar (D-104): pcov w obrazie `development` (nie w `production`), wątek Infection na rdzeń (`MUTATION_THREADS`), każdy z kopią bazy `kokpit_test_<n>` (`scripts/mutation-databases.sh`) i katalogiem plików `var/test-files-<n>` według `TEST_TOKEN`; `--only-covering-test-cases`, limit czasu mutanta 120 s, `memory_limit=2G` dla Infection.
+- `tests/bootstrap.php` wczytuje zmutowany plik od razu i wyłącza wrapper `file://` Infection: wrapper nie obsługuje `fsync`, więc każdy nowy zapis `FileStore` dawał fałszywe zabicie.
+- Stan 2026-10-20 (D-104): 4640 mutantów, MSI i covered MSI 72,7%, 1265 ocalałych; job jest czerwony i zostaje doradczy, dopóki testy nie dobiją progów.
 - Ocalały mutant to nowy test albo wpis ignorowania z uzasadnieniem w `infection.json5`. Raport JSON trafia do paczki dowodów.
 
 ## CI

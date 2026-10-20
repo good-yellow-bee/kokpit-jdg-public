@@ -58,7 +58,7 @@ final class ApprovalTestTools
     public function __construct(private readonly Connection $db, public readonly MockClock $clock, bool $enabled = true)
     {
         $audit = new AuditLog($db, $clock, new Redactor());
-        $files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, '/app/var/test-files/approval');
+        $files = new FileStore($db, $clock, new LockFactory(new DoctrineDbalPostgreSqlStore($db)), $audit, TestFiles::root('approval'));
         $this->subjects = new DummySubjects();
         $registry = new ApprovalSubjects([new DummySubject($this->subjects, 'filing'), new DummySubject($this->subjects, 'draft')]);
         $this->transitions = new ApprovalTransitions($db, $audit, $clock, $registry);

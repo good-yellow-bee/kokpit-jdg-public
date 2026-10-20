@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\TestFiles;
 use App\Approval\InvalidTransitionException;
 use App\Messenger\Message\ApprovalDispatchMessage;
 use App\Messenger\Message\ApprovalDispatchWaitingMessage;
@@ -139,7 +140,7 @@ final class ApprovalGateTest extends DatabaseTestCase
         $id = $this->tools->approved();
         $path = $this->db()->fetchOne('SELECT s.path FROM stored_file s JOIN approval a ON a.payload_file_id=s.id WHERE a.id=?', [$id]);
         self::assertIsString($path);
-        $file = '/app/var/test-files/approval/' . $path;
+        $file = TestFiles::root('approval') . '/' . $path;
         $original = file_get_contents($file);
         self::assertIsString($original);
         chmod($file, 0640);

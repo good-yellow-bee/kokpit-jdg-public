@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\TestFiles;
 use App\Approval\ApprovalTransitions;
 use App\Approval\InvalidTransitionException;
 use App\Tests\Support\ApprovalTestTools;
@@ -117,7 +118,7 @@ final class ApprovalGateTransitionsTest extends DatabaseTestCase
             'approved → cancelled dispatch.hash_mismatch' => [$id = $tools->approved(), function () use ($tools, $id): void {
                 $path = $this->db()->fetchOne('SELECT s.path FROM stored_file s JOIN approval a ON a.payload_file_id=s.id WHERE a.id=?', [$id]);
                 self::assertIsString($path);
-                $file = '/app/var/test-files/approval/' . $path;
+                $file = TestFiles::root('approval') . '/' . $path;
                 $original = (string) file_get_contents($file);
                 chmod($file, 0640);
                 file_put_contents($file, $original . ' ');

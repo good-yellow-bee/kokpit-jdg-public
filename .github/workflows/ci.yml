@@ -120,15 +120,27 @@ jobs:
   mutation:
     if: github.event_name != 'pull_request'
     continue-on-error: true
+    timeout-minutes: 90
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: sh scripts/ci-bootstrap.sh
+      # Wątek Infection na rdzeń, każdy z własną kopią bazy testowej (D-104).
+      - run: sh scripts/mutation-databases.sh "$(nproc)"
       # `shell: bash` daje pipefail: bez niego `tee` ukrywał kod wyjścia Infection (D-103).
       - shell: bash
-        run: docker compose exec -T app sh scripts/run-mutation.sh | tee mutation.txt
+        run: docker compose exec -T -e MUTATION_THREADS="$(nproc)" app sh scripts/run-mutation.sh | tee mutation.txt
       - if: always()
         run: cat mutation.txt >> "$GITHUB_STEP_SUMMARY"
+      # Raport JSON Infection to dowód `cc-23` (D-104).
+      - if: always()
+        run: docker compose cp app:/app/var/evidence/mutation.json mutation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation
+          path: mutation.json
+          if-no-files-found: error
   evidence:
     if: (github.event_name != 'push' || github.ref_name != 'main') && (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref || github.ref_name, 'f'))
     needs: [lint, unit_property, contract, xsd, integration, security]

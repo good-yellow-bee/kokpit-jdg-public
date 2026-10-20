@@ -162,6 +162,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-101 | liczby PIT-28 do przepisania w Twój e-PIT na `/taxes`: `Pit28Builder::amounts` liczy części D–N bez pozycji formularza, także dla roku bez wariantu z XSD; generator PIT-28(27) mapuje te same kwoty | przyjęta 2026-10-20 | D-96 |
 | D-102 | pierwsze przebiegi joba `live`: `EDeklaracjeTePit28Test` z losowym NIP na przebieg, bo bramka testowa przyjmuje jeden PIT-28 roku na identyfikator podatkowy i kolejny odrzuca kodem 411; paczka dowodów joba `live` także po czerwonym teście (`if`: nie anulowany i testy nie pominięte) | przyjęta 2026-10-20 | D-96, D-97 |
 | D-103 | job `mutation` nigdy nie liczył mutacji w CI: obraz `development` bez sterownika pokrycia, a `tee` ukrywał kod wyjścia Infection; krok dostaje `shell: bash` (pipefail), więc job jest uczciwie czerwony i dalej doradczy; `cc-23` = fail do osobnej zmiany z pomiarem | przyjęta 2026-10-20 | D-28, D-43, D-47 |
+| D-104 | job `mutation` mierzy: pcov w obrazie `development`, wątek Infection na rdzeń z własną kopią bazy testowej i katalogiem plików (`TEST_TOKEN`), zmutowany plik wczytany przed wyłączeniem wrappera `file://` Infection (brak `fsync`), `memory_limit=2G` (kod 255), raport JSON jako artefakt `mutation`; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-43, D-103 |
 | D-99 | Q-18: zastępcą jest tylko administrator skrzynki ADE wyznaczony w aplikacji e-Doręczeń; bez drugiego `app_user`, bez UPL-1; imię administratora tylko na karcie awaryjnej, nigdy w repo; „Rola zastępcy” z [roadmap.md](roadmap.md) odrzucona | przyjęta 2026-10-19 | Q-18 |
 | D-98 | pierwsza instalacja `kokpit-prod`: `scripts/prod-install.sh --node <nazwa>` jako root na VPS tworzy pliki hosta (`/etc/kokpit/secrets`, pytanie o brakujące wartości bez echa), hasła ról bazy w wolumenach przy pustej bazie, `pgpass`, konfigurację ntfy z użytkownikami i tokenem, sejf PROD w wolumenie `vault` (`scripts/init-prod-vault.php`), nazwę węzła `TS_HOSTNAME`, certyfikat `tailscale cert` z cronem `scripts/prod-cert.sh`, repozytorium restic i plik wdrożenia `/etc/kokpit/prod.env`, który czytają `make deploy` i `make rollback`; `PANEL_ORIGIN` i hosty powiadomień trafiają do kontenerów; `/health` po wdrożeniu przez adres VPN z kontenera app z ponowieniami, pierwszy backup przy pierwszym wdrożeniu; check dead-man `ksef.sync`; `--rehearsal` na danych fikcyjnych w CI; serializer transportów pomija `ScheduledStamp` | przyjęta 2026-10-19 | po F0a |
 | D-97 | job `live` bierze publiczny certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` (nie sekretu), sprawdza go `openssl x509` z ważnością i zapisuje do `var/jpk/mf-test.crt` w kontenerze `app` przed testsuite `live`; bez zmiennej job kończy się przed testami | przyjęta 2026-10-19 | F5.3 |
@@ -1421,6 +1422,24 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-104 Pomiar mutacyjny w CI
+
+- **Status:** przyjęta 2026-10-20 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - D-103: job `mutation` nigdy nie zmierzył MSI, obraz `development` nie miał sterownika pokrycia, a lokalna próba kończyła się kodem 255.
+  - Testy integracyjne cofają transakcję na jednej bazie `kokpit_test`, ale pliki `FileStore` w `var/test-files` zostają. Równoległe wątki na jednej bazie i jednym katalogu wpływają na siebie, a ubity mutant może zostawić zmieniony plik.
+- **Decyzja:**
+  - pcov 1.0.12 tylko w etapie `development` obrazu; `production` bez sterownika pokrycia.
+  - Infection biegnie w `MUTATION_THREADS` wątkach (w CI `nproc`). Wątek `n` (`TEST_TOKEN`) używa bazy `kokpit_test_<n>`, kopii `kokpit_test` z `scripts/mutation-databases.sh`, i katalogu plików `var/test-files-<n>` (`TestFiles::root`). `run-mutation.sh` przed startem sprawdza `doctrine:migrations:up-to-date` każdej kopii (brak albo stara kopia daje kod 2, nie fałszywe zabicia) i czyści katalogi wątków po poprzednim przebiegu.
+  - Kod 255: główny proces Infection przekraczał `memory_limit=512M` z `kokpit.ini` przy zapisie raportu JSON (`Allowed memory size … exhausted` w `JsonLogger`; przy 512M zależnie od przebiegu). Infection dostaje `-d memory_limit=2G`; szczyt w przebiegu lokalnym to 0,41 GB.
+  - Wrapper `file://` Infection (`IncludeInterceptor`) podmienia zmutowany plik, ale nie obsługuje `fsync`, więc każdy nowy zapis `FileStore` w procesie mutanta kończył się wyjątkiem, czyli fałszywym zabiciem. `tests/bootstrap.php` wczytuje zmutowany plik od razu i przywraca zwykły wrapper.
+  - `--only-covering-test-cases` i limit czasu mutanta 120 s (`infection.json5`): przy domyślnych 10 s 474 mutanty `PolishCalendar`, `ApprovalGate` i `ServiceMap` były pomijane i nie liczyły się do MSI.
+  - Raport JSON (`var/evidence/mutation.json`) jest artefaktem `mutation` przebiegu, także po czerwonym wyniku; to dowód `cc-23`. Job ma limit 90 min.
+  - Zakres bez zmian: całe katalogi z `infection.json5`. Progi 85/95 bez zmian.
+- **Ryzyka:** mutant ubity po limicie czasu w trakcie testu, który psuje plik payloadu i przywraca go w `finally`, zostawia zmieniony plik w katalogu wątku do końca przebiegu; kolejne mutanty tego wątku z tym payloadem padają (fałszywe zabicie). Limitów czasu jest kilka na przebieg. `InfectionInterceptorTest` pada, gdy nowa wersja Infection zmieni pole `intercept`. Pomiar lokalny 2026-10-20 (8 wątków, 17 min): 4640 mutantów, MSI i covered MSI 72,7%, 1265 ocalałych. Job zostaje czerwony i doradczy, dopóki testy nie dobiją progów (osobna zmiana).
+- **Skutki:** `Dockerfile`, `infection.json5`, `scripts/run-mutation.sh`, `scripts/mutation-databases.sh`, `.github/workflows/ci.yml`, `tests/bootstrap.php`, `tests/Support/TestFiles.php`, `tests/Unit/CiWorkflowTest.php`, `tests/Unit/InfectionInterceptorTest.php`; [testing.md](testing.md) („Testy mutacyjne”), [naming.md](naming.md).
+- **Pytania:** brak.
 
 ### D-103 Job `mutation` bez pomiaru w CI
 
