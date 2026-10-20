@@ -10,8 +10,12 @@ $input = stream_get_contents(STDIN);
 if ($input === false) {
     throw new RuntimeException('Cannot read Compose configuration.');
 }
+$project = $deployment === 'dev' ? ($argv[2] ?? 'kokpit-dev') : 'kokpit-prod';
+if ($deployment === 'dev' && $project === 'kokpit-prod') {
+    throw new InvalidArgumentException('Dev cannot use the kokpit-prod project.');
+}
 $config = json_decode($input, true, flags: JSON_THROW_ON_ERROR);
-if (!is_array($config) || ($config['name'] ?? null) !== 'kokpit-' . $deployment || !is_array($config['services'] ?? null)) {
+if (!is_array($config) || ($config['name'] ?? null) !== $project || !is_array($config['services'] ?? null)) {
     throw new RuntimeException('Invalid Compose deployment.');
 }
 foreach (['app', 'worker_reads', 'worker_official_writes', 'worker_notifications', 'scheduler', 'proxy'] as $name) {

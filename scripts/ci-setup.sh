@@ -20,8 +20,9 @@ docker compose exec -T db bash -c 'PGPASSWORD="$(cat /run/owner/postgres-passwor
 SELECT 'CREATE DATABASE kokpit_test OWNER kokpit_owner' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname='kokpit_test')
 \gexec
 SQL
+project="${COMPOSE_PROJECT_NAME:-kokpit-dev}"
 # Migracja używa osobnego połączenia właściciela tylko w tym jednorazowym kontenerze.
-docker compose run --rm -T --user root -v "kokpit-dev_owner_credentials:/run/migration:ro" -e APP_ENV=test -e DB_NAME=kokpit_test -e DB_ROLE=kokpit_owner -e DB_OWNER_PASSWORD_FILE=/run/migration/owner-password app bin/console doctrine:migrations:migrate --no-interaction
-docker compose run --rm -T --user root -v "kokpit-dev_owner_credentials:/run/migration:ro" -e DB_ROLE=kokpit_owner -e DB_OWNER_PASSWORD_FILE=/run/migration/owner-password app bin/console doctrine:migrations:migrate --no-interaction
+docker compose run --rm -T --user root -v "${project}_owner_credentials:/run/migration:ro" -e APP_ENV=test -e DB_NAME=kokpit_test -e DB_ROLE=kokpit_owner -e DB_OWNER_PASSWORD_FILE=/run/migration/owner-password app bin/console doctrine:migrations:migrate --no-interaction
+docker compose run --rm -T --user root -v "${project}_owner_credentials:/run/migration:ro" -e DB_ROLE=kokpit_owner -e DB_OWNER_PASSWORD_FILE=/run/migration/owner-password app bin/console doctrine:migrations:migrate --no-interaction
 
 docker compose exec -T --user root app find /app/var -path /app/var/run/backup -prune -o -exec chown 33:33 {} +

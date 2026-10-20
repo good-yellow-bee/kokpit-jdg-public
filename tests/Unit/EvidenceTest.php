@@ -22,6 +22,9 @@ final class EvidenceTest extends TestCase
     protected function setUp(): void
     {
         $this->directory = sys_get_temp_dir() . '/kokpit-evidence-' . bin2hex(random_bytes(5));
+        if (is_file(dirname(__DIR__, 2) . '/.git')) {
+            self::markTestSkipped('Git worktree: plik .git wskazuje ścieżkę hosta niewidoczną w kontenerze.');
+        }
         (new Process(['git','-c','protocol.allow=never','-c','protocol.file.allow=always','clone','--local','--shared','--quiet',dirname(__DIR__, 2),$this->directory]))->mustRun();
         $db = $this->createStub(Connection::class);
         $db->method('fetchOne')->willReturn('17.9');
