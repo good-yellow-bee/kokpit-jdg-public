@@ -251,7 +251,7 @@ Proporcja z art. 11 ust. 3 jest roczna. W ciągu roku kokpit używa proporcji na
 - Wpłata co miesiąc do 20. dnia za poprzedni miesiąc; za grudzień do 20 stycznia ([art. 21 ust. 1](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)). Terminy w [compliance-calendar.md](compliance-calendar.md).
 - Wpłata co kwartał tylko przy przychodzie z poprzedniego roku do 200 000 euro albo przy starcie działalności (art. 21 ust. 1a, 1b). Wybór pokazujesz w zeznaniu (ust. 1c).
 - Ustawienie `ryczalt.advance_frequency`, domyślnie co miesiąc (Q-17). Przy wpłacie co kwartał K_10 może zawierać datę otrzymania przychodu ([broszura JPK_EWP(4)](https://www.podatki.gov.pl/media/0qmfysqh/broszura_informacyjna_dot_jpk_ewp-4.pdf)).
-- Zeznanie PIT-28 składasz od 15 lutego do 30 kwietnia ([art. 21 ust. 2 pkt 2](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)). Kokpit daje zestawienie; wysyłka jest ręczna.
+- Zeznanie PIT-28 składasz od 15 lutego do 30 kwietnia ([art. 21 ust. 2 pkt 2](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)). Kokpit daje zestawienie z liczbami części D–N do przepisania w Twój e-PIT (D-101); wysyłka przez e-Deklaracje tylko dla roku z wariantem formularza (D-96), poza tym ręczna.
 
 ## Składki ZUS
 

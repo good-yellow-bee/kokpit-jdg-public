@@ -13,6 +13,8 @@ use App\Tax\TaxCalculator;
 use App\Tax\ThresholdForecast;
 use App\Tax\ZusPayments;
 use App\Time\BusinessDate;
+use App\Xml\JpkBuildRefused;
+use App\Xml\Pit28Builder;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,12 +24,12 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Podatki w panelu (F2.3): metryka limitu ryczałtu, prognoza progów z kwotą do odłożenia (D-76), zaliczki po zakończonych
- * okresach, składki ZUS wpisywane ręcznie, roczne rozliczenie zdrowotnej i zestawienie PIT-28 (docs/tax-rules.md).
+ * okresach, składki ZUS wpisywane ręcznie, roczne rozliczenie zdrowotnej i zestawienie PIT-28 z liczbami do przepisania w Twój e-PIT (D-101, docs/tax-rules.md).
  * Kokpit tylko liczy; wpłaty robisz sam.
  */
 final class TaxController extends AbstractController
 {
-    public function __construct(private readonly TaxCalculator $tax, private readonly ThresholdForecast $forecast, private readonly BusinessDate $date, private readonly SettingStore $settings, private readonly Connection $db, private readonly ConnectorConfiguration $configuration) {}
+    public function __construct(private readonly TaxCalculator $tax, private readonly ThresholdForecast $forecast, private readonly BusinessDate $date, private readonly SettingStore $settings, private readonly Connection $db, private readonly ConnectorConfiguration $configuration, private readonly Pit28Builder $pit28) {}
 
     #[Route('/taxes', name: 'panel_taxes', methods: ['GET'])]
     public function index(Request $request): Response
@@ -79,9 +81,16 @@ final class TaxController extends AbstractController
         } catch (FxRateUnavailable) {
             $eligibility = null;
         }
+        try {
+            $pit28 = $this->pit28->amounts($year);
+            $pit28Refused = null;
+        } catch (JpkBuildRefused $refused) {
+            $pit28 = $this->pit28->inputs($year);
+            $pit28Refused = $refused->getMessage();
+        }
         $payments = $this->db->fetchAllAssociative("SELECT to_char(month,'YYYY-MM') AS month, social_pln, health_pln, other_pln, paid_on FROM zus_payment WHERE environment=? AND month BETWEEN ? AND ? ORDER BY month", [$this->configuration->environment(), sprintf('%04d-01-01', $year), sprintf('%04d-12-01', $year)]);
         return $this->render('panel/taxes.html.twig', [
-            'year' => $year,'cadence' => $cadence,'advances' => $advances,'eligibility' => $eligibility,'forecast' => $this->forecast->forecast($year),'payments' => $payments,'pit28' => $this->tax->pit28($year),
+            'year' => $year,'cadence' => $cadence,'advances' => $advances,'eligibility' => $eligibility,'forecast' => $this->forecast->forecast($year),'payments' => $payments,'pit28' => $pit28,'pit28_refused' => $pit28Refused,
             'health' => $year < (int) substr($today, 0, 4) ? $this->tax->healthReconciliation($year) : null,'today' => $today,'error' => $error,
         ], new Response(status: $error === null ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }

@@ -55,6 +55,13 @@ final class Pit28GoldenTest extends Pit28TestCase
             array_intersect_key($document->totals, array_flip(['ryczalt_due', 'to_pay', 'overpaid', 'advances_paid', 'revenue_total'])),
         );
 
+        // Kwoty bez pozycji formularza (D-101) to te same liczby co pozycje PIT-28(27).
+        $amounts = $send->pit28->amounts(Pit28TestTools::YEAR);
+        self::assertSame(['8.50', '12.00'], array_keys($amounts['rates']));
+        self::assertSame(['revenue' => '180000.00','share' => '97.40','social' => '18704.54','health' => '4854.01','net' => '156441.45','base' => '156441','ryczalt' => '18772.92'], $amounts['rates']['12.00']);
+        self::assertSame([$fields['P_55'], $fields['P_79'], $fields['P_112'], $fields['P_123'], $fields['P_135'], $fields['P_200'], $fields['P_215']], array_values($amounts['rates']['8.50']));
+        self::assertSame([$fields['P_224'], $fields['P_232']], [$amounts['ryczalt'], $amounts['ryczalt_due']]);
+
         $golden = (string) file_get_contents(self::GOLDEN);
         EvidenceArtefacts::write('golden/pit-28-golden.diff', self::diff($golden, $xml));
         self::assertSame($golden, $xml);
