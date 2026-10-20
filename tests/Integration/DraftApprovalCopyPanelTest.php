@@ -39,7 +39,8 @@ final class DraftApprovalCopyPanelTest extends ChatWebTestCase
         self::assertSame(['4321,99', $iban, FictionalIdentifiers::NIPS[1]], $preview->filter('.draft-body mark.draft-flagged')->each(static fn($node): string => $node->text()));
         self::assertStringContainsString('wiadomość czatu nr 1', $preview->filter('.draft-sources')->text());
         self::assertCount(3, $preview->filter('.draft-confirm input[name="confirm[]"]'));
-        EvidenceArtefacts::write('screens/draft-approval-copy.html', (string) preg_replace('/name="_token" value="[^"]*"/', 'name="_token" value=""', $preview->outerHtml()));
+        // Rachunek zamaskowany, bo skaner paczki dowodów pada na każdym NRB (D-102).
+        EvidenceArtefacts::write('screens/draft-approval-copy.html', str_replace($iban, 'PL[FICTIONAL_IBAN]', (string) preg_replace('/name="_token" value="[^"]*"/', 'name="_token" value=""', $preview->outerHtml())));
 
         $confirm = $preview->filter('form.draft-confirm');
         $this->client->request('POST', (string) $confirm->attr('action'), ['_token' => (string) $confirm->filter('input[name=_token]')->attr('value'), 'confirm' => ['0', '1', '2']]);

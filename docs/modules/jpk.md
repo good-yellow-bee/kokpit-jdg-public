@@ -337,7 +337,7 @@ Do weryfikacji na bramce testowej w F5:
 | 301, 302, 303, 306 | dokument w trakcie przetwarzania | dalsze odpytywanie |
 | 401, 408, 409 | XSD, błędy przetwarzania, liczba elementów | `rejected` |
 | 410 | dokument bez podpisu nie może być korektą | `rejected`; sprawdzić przy VAT-UEK |
-| 411 | już złożono dokument z tym identyfikatorem | `unknown`; rekoncyliacja jak przy 300 |
+| 411 | w systemie jest już dokument z tym identyfikatorem podatkowym; przy PIT-28 zeznanie za ten rok (D-102) | `unknown`; rekoncyliacja jak przy 300 |
 | 412, 414 | dane autoryzujące niezgodne albo błędne | `rejected`; poprawa `auth_data` |
 | 418 | wymagany podpis kwalifikowany | `rejected`; nowy rekord D-xx |
 | 419 | brak celu korekty albo uzasadnienia | `rejected` |

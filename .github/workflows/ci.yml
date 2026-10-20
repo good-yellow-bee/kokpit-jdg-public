@@ -159,8 +159,11 @@ jobs:
       - env:
           MF_TEST_CERT_PEM: ${{ vars.MF_TEST_CERT_PEM }}
         run: sh scripts/ci-mf-test-cert.sh
-      - run: docker compose exec -T -e CONNECTORS_ENABLED=1 -e CHAT_LIVE_RUN_BUDGET_USD app vendor/bin/phpunit --testsuite live --fail-on-empty-test-suite
-      - run: sh scripts/ci-evidence.sh
+      - id: live_tests
+        run: docker compose exec -T -e CONNECTORS_ENABLED=1 -e CHAT_LIVE_RUN_BUDGET_USD app vendor/bin/phpunit --testsuite live --fail-on-empty-test-suite
+      # Paczka także po czerwonym teście (wiersz `fail` z artefaktem), ale nie po nieudanym bootstrapie albo certyfikacie (D-102).
+      - if: ${{ !cancelled() && steps.live_tests.outcome != 'skipped' }}
+        run: sh scripts/ci-evidence.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
