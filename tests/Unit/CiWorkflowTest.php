@@ -30,6 +30,7 @@ final class CiWorkflowTest extends TestCase
         $mutation = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => str_contains($step['run'] ?? '', 'run-mutation.sh')));
         self::assertCount(1, $mutation);
         self::assertSame('bash', $mutation[0]['shell'] ?? null);
+        self::assertStringContainsString('-e MUTATION_THREADS="$(nproc)"', $mutation[0]['run']);
         // Kopie bazy testowej przed Infection i raport JSON jako artefakt `cc-23` (D-104).
         $mutationRuns = array_map(static fn(array $step): string => $step['run'] ?? '', $jobs['mutation']['steps']);
         $databases = array_search('sh scripts/mutation-databases.sh "$(nproc)"', $mutationRuns, true);
