@@ -159,6 +159,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-69 | F5.3 i JPK_V7M z F5.6 na test-e-dokumenty: pełna ścieżka (`InitUploadSigned`, Put Blob do `taxdocumentstorageNNtst`, `FinishUpload`, `Status`) działa z opublikowanym certyfikatem testowym MF; bramka testowa weryfikuje dane autoryzujące, więc fikcyjne kończą się 419; kryteria TE sprawdzają stan końcowy (`accepted` z UPO albo `rejected` 419), a przyjęcie z UPO i duplikat po przyjęciu potwierdza pierwsze złożenie PROD; TLS 1.3 z listy sześciu | przyjęta 2026-10-15 | F5.3, F5.6 |
 | D-70 | F3.5 KSeF na api-test: własny cienki klient KSeF API 2.0 (`KsefApi`, `KsefAuthenticator`, `KsefCrypto`, `HttpKsefGateway`) zamiast biblioteki z D-14; TE zakładane w teście pieczęcią XAdES z losowym NIP; Latarnia TE zwraca dane statyczne, więc warunek wysyłki tylko na PROD; przyjęta KOR zmienia oryginał na `corrected`; nagrania z przebiegu live bez kroków uwierzytelnienia | przyjęta 2026-10-15 | F3.5 |
 | D-100 | dostawcy hostingu: OVHcloud VPS-1 w Warszawie (x86_64, KVM), Tailscale Standard (Personal odrzucony: regulamin tylko do użytku niekomercyjnego), backup restic w Scaleway Object Storage PL-WAW, mail zapasowy przez Scaleway Transactional Email, dead-man healthchecks.io Hobbyist, pakiety GHCR `app` i `proxy` publiczne | przyjęta 2026-10-20 | Q-40, Q-41, Q-42 |
+| D-102 | pierwsze przebiegi joba `live`: `EDeklaracjeTePit28Test` z losowym NIP na przebieg, bo bramka testowa przyjmuje jeden PIT-28 roku na identyfikator podatkowy i kolejny odrzuca kodem 411; paczka dowodów joba `live` także po czerwonym teście (`if: !cancelled()`) | przyjęta 2026-10-20 | D-96, D-97 |
 | D-101 | liczby PIT-28 do przepisania w Twój e-PIT na `/taxes`: `Pit28Builder::amounts` liczy części D–N bez pozycji formularza, także dla roku bez wariantu z XSD; generator PIT-28(27) mapuje te same kwoty | przyjęta 2026-10-20 | D-96 |
 | D-99 | Q-18: zastępcą jest tylko administrator skrzynki ADE wyznaczony w aplikacji e-Doręczeń; bez drugiego `app_user`, bez UPL-1; imię administratora tylko na karcie awaryjnej, nigdy w repo; „Rola zastępcy” z [roadmap.md](roadmap.md) odrzucona | przyjęta 2026-10-19 | Q-18 |
 | D-98 | pierwsza instalacja `kokpit-prod`: `scripts/prod-install.sh --node <nazwa>` jako root na VPS tworzy pliki hosta (`/etc/kokpit/secrets`, pytanie o brakujące wartości bez echa), hasła ról bazy w wolumenach przy pustej bazie, `pgpass`, konfigurację ntfy z użytkownikami i tokenem, sejf PROD w wolumenie `vault` (`scripts/init-prod-vault.php`), nazwę węzła `TS_HOSTNAME`, certyfikat `tailscale cert` z cronem `scripts/prod-cert.sh`, repozytorium restic i plik wdrożenia `/etc/kokpit/prod.env`, który czytają `make deploy` i `make rollback`; `PANEL_ORIGIN` i hosty powiadomień trafiają do kontenerów; `/health` po wdrożeniu przez adres VPN z kontenera app z ponowieniami, pierwszy backup przy pierwszym wdrożeniu; check dead-man `ksef.sync`; `--rehearsal` na danych fikcyjnych w CI; serializer transportów pomija `ScheduledStamp` | przyjęta 2026-10-19 | po F0a |
@@ -1419,6 +1420,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-102 Pierwsze przebiegi joba `live`: PIT-28 z losowym NIP i dowody po czerwonym teście
+
+- **Status:** przyjęta 2026-10-20 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Zmienna `MF_TEST_CERT_PEM` (D-97) jest ustawiona: certyfikat testowy MF z „Plików do pobrania JPK_VAT”, sha256 PEM zgodny z D-69. Pierwszy ręczny przebieg joba `live` (faza `f1`) dał 23 z 24 testów zielonych, także `white-list-live` z runnera GitHub.
+  - `EDeklaracjeTePit28Test` dostał z `requestUPO` status 411. Specyfikacja e-Deklaracji 2.4: „w systemie jest już złożony dokument z takim identyfikatorem podatkowym”. Test miał stały fikcyjny NIP `1111111111` z `Pit28TestTools::IDENTITY`; bramka testowa ma już PIT-28 za 2025 z tym NIP. VAT-UE i VAT-UEK z tym samym przebiegiem przechodzą wielokrotnie, więc ograniczenie dotyczy zeznania rocznego.
+  - Kokpit potraktował 411 zgodnie z [modules/jpk.md](modules/jpk.md): `unknown` i rekoncyliacja odczytem, bez ponownej wysyłki.
+  - Krok `ci-evidence.sh` joba `live` szedł po testach bez warunku, więc jeden czerwony test zostawiał przebieg bez paczki dowodów i bez artefaktu.
+- **Decyzja:**
+  - `EDeklaracjeTePit28Test` bierze losowy NIP z poprawną sumą kontrolną (`KsefTeProvision::randomNip`, jak testy KSeF TE) do `company.identity`, a więc do deklaracji i `DaneAutoryzujace`. Pozostałe testy PIT-28 zostają na stałej tożsamości i złotym pliku.
+  - Krok `ci-evidence.sh` joba `live` ma `if: ${{ !cancelled() }}`: paczka powstaje także po czerwonym teście, wiersz dostaje `fail` z artefaktem, a job zostaje czerwony. `CiWorkflowTest` tego pilnuje.
+- **Ryzyka:** losowy NIP może trafić na NIP z PIT-28 na bramce testowej; wtedy znów 411 i ponowny przebieg. Na PROD 411 przy PIT-28 oznacza złożone już zeznanie za rok, a kokpit daje `unknown` i rekoncyliację.
+- **Skutki:** `tests/Live/EDeklaracjeTePit28Test.php`, `tests/Integration/Pit28TestCase.php`, `tests/Support/Pit28TestTools.php`, `.github/workflows/ci.yml`, `tests/Unit/CiWorkflowTest.php`; [testing.md](testing.md), [modules/jpk.md](modules/jpk.md).
+- **Pytania:** brak.
 
 ### D-101 Liczby PIT-28 do przepisania w Twój e-PIT
 

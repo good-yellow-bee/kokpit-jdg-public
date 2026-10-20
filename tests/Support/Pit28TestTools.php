@@ -26,11 +26,11 @@ final class Pit28TestTools
     public const RESIDENCE = ['province' => 'FIKCYJNE','county' => 'FIKCYJNY','municipality' => 'FIKCYJNA','street' => 'Fikcyjna','building' => '1','unit' => '2','city' => 'Fikcyjne','postal_code' => '00-001'];
 
     /** @return array{ewp:string,obligation:string} identyfikatory złożenia JPK_EWP i obowiązku `pit_28` */
-    public static function seed(Connection $db, MockClock $clock, string $userId, bool $quarterly = false, bool $residence = true): array
+    public static function seed(Connection $db, MockClock $clock, string $userId, bool $quarterly = false, bool $residence = true, string $nip = self::IDENTITY['nip']): array
     {
         $stamp = $clock->now()->format('Y-m-d\TH:i:s.uP');
         $settings = JpkTestTools::settings($db, $clock);
-        $settings->set('company.identity', self::IDENTITY, '2025-01-01', null, 'fictional');
+        $settings->set('company.identity', ['nip' => $nip] + self::IDENTITY, '2025-01-01', null, 'fictional');
         if ($residence) {
             $settings->set('taxpayer.residence_address', self::RESIDENCE, '2025-01-01', null, 'fictional');
         }

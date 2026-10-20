@@ -6,6 +6,7 @@ namespace App\Tests\Live;
 
 use App\Tests\Integration\Pit28TestCase;
 use App\Tests\Support\EvidenceArtefacts;
+use App\Tests\Support\KsefTeProvision;
 use App\Tests\Support\LiveRecording;
 use App\Tests\Support\Pit28TestTools;
 use PHPUnit\Framework\Attributes\Group;
@@ -15,6 +16,7 @@ use Symfony\Component\HttpClient\HttpClient;
  * Kryterium `edeklaracje-te-pit-28` (live, D-96): fikcyjny PIT-28(27) za 2025 przez bramkę zatwierdzeń na
  * `test-bramka.edeklaracje.gov.pl` z fikcyjnymi danymi autoryzującymi z sejfu testowego, `sendUnsignDocument`, potem
  * `requestUPO` do stanu końcowego; przyjęty z UPO. Odpowiedzi po `Scrubber` trafiają do `var/live-recordings/EDeklaracje`.
+ * NIP losowy na przebieg: bramka przyjmuje jeden PIT-28 roku na identyfikator podatkowy, kolejny dostaje 411 (D-102).
  */
 #[Group('live')]
 final class EDeklaracjeTePit28Test extends Pit28TestCase
@@ -25,7 +27,7 @@ final class EDeklaracjeTePit28Test extends Pit28TestCase
 
     public function testPit28AcceptedWithUpoOnTestGateway(): void
     {
-        $send = $this->pit28(live: HttpClient::create(['timeout' => 60]));
+        $send = $this->pit28(live: HttpClient::create(['timeout' => 60]), nip: KsefTeProvision::randomNip());
         $approvalId = $send->request->pit28(Pit28TestTools::YEAR);
         $recordings = $send->edeklaracje->recordings;
         $send->gate->approve($approvalId, $send->userId);

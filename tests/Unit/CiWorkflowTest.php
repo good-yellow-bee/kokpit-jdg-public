@@ -40,6 +40,8 @@ final class CiWorkflowTest extends TestCase
         self::assertIsInt($certificate);
         self::assertLessThan(array_key_last(array_filter($liveRuns, static fn(string $run): bool => str_contains($run, '--testsuite live'))), $certificate);
         self::assertSame(['MF_TEST_CERT_PEM' => '${{ vars.MF_TEST_CERT_PEM }}'], $jobs['live']['steps'][$certificate]['env'] ?? null);
+        // Paczka dowodów live także po czerwonym teście (D-102).
+        self::assertSame('${{ !cancelled() }}', $jobs['live']['steps'][array_search('sh scripts/ci-evidence.sh', $liveRuns, true)]['if'] ?? null);
         // Skan podatności zależności w jobie lint (D-77).
         self::assertStringContainsString('composer audit --locked', implode("\n", array_column($jobs['lint']['steps'], 'run')));
         // SBOM jako artefakt joba lint (D-78).
