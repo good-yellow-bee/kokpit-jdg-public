@@ -164,6 +164,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-103 | job `mutation` nigdy nie liczył mutacji w CI: obraz `development` bez sterownika pokrycia, a `tee` ukrywał kod wyjścia Infection; krok dostaje `shell: bash` (pipefail), więc job jest uczciwie czerwony i dalej doradczy; `cc-23` = fail do osobnej zmiany z pomiarem | przyjęta 2026-10-20 | D-28, D-43, D-47 |
 | D-104 | job `mutation` mierzy: pcov w obrazie `development`, wątek Infection na rdzeń z własną kopią bazy testowej i katalogiem plików (`TEST_TOKEN`), zmutowany plik wczytany przed wyłączeniem wrappera `file://` Infection (brak `fsync`), `memory_limit=2G` (kod 255), raport JSON jako artefakt `mutation`; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-43, D-103 |
 | D-105 | mutanty równoważne: wzorce linii źródła per mutator z uzasadnieniem w `infection.json5` (strażniki `\LogicException`, typy kolumn z wiersza, flagi i głębokość JSON dla `jsonb`); rok i miesiąc daty przez `IsoDate` zamiast `substr`; bez zbędnych `(string)` przy `UuidV7::generate()`; `executionOrder="default"` dla powtarzalnego pokrycia; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-104 |
+| D-106 | job `mutation` blokuje merge: wraca do `pull_request` bez `continue-on-error`, cały zakres na PR i `main` (bez `--git-diff-filter`), bo warunek z D-47 jest spełniony; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-43, D-47, D-105 |
 | D-99 | Q-18: zastępcą jest tylko administrator skrzynki ADE wyznaczony w aplikacji e-Doręczeń; bez drugiego `app_user`, bez UPL-1; imię administratora tylko na karcie awaryjnej, nigdy w repo; „Rola zastępcy” z [roadmap.md](roadmap.md) odrzucona | przyjęta 2026-10-19 | Q-18 |
 | D-98 | pierwsza instalacja `kokpit-prod`: `scripts/prod-install.sh --node <nazwa>` jako root na VPS tworzy pliki hosta (`/etc/kokpit/secrets`, pytanie o brakujące wartości bez echa), hasła ról bazy w wolumenach przy pustej bazie, `pgpass`, konfigurację ntfy z użytkownikami i tokenem, sejf PROD w wolumenie `vault` (`scripts/init-prod-vault.php`), nazwę węzła `TS_HOSTNAME`, certyfikat `tailscale cert` z cronem `scripts/prod-cert.sh`, repozytorium restic i plik wdrożenia `/etc/kokpit/prod.env`, który czytają `make deploy` i `make rollback`; `PANEL_ORIGIN` i hosty powiadomień trafiają do kontenerów; `/health` po wdrożeniu przez adres VPN z kontenera app z ponowieniami, pierwszy backup przy pierwszym wdrożeniu; check dead-man `ksef.sync`; `--rehearsal` na danych fikcyjnych w CI; serializer transportów pomija `ScheduledStamp` | przyjęta 2026-10-19 | po F0a |
 | D-97 | job `live` bierze publiczny certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` (nie sekretu), sprawdza go `openssl x509` z ważnością i zapisuje do `var/jpk/mf-test.crt` w kontenerze `app` przed testsuite `live`; bez zmiennej job kończy się przed testami | przyjęta 2026-10-19 | F5.3 |
@@ -890,7 +891,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 - **Decyzja:**
   - `push` uruchamia CI tylko na `main`. Gałąź z PR liczy się raz, przez `pull_request`.
   - `concurrency` anuluje starszy przebieg tego samego PR po nowym pushu; przebiegi `main` nie są anulowane.
-  - `mutation` nie biegnie przy `pull_request`, póki jest doradczy (D-28). Z pierwszym plikiem w `src/Tax` job staje się blokujący i wraca do PR.
+  - `mutation` nie biegnie przy `pull_request`, póki jest doradczy (D-28). Z pierwszym plikiem w `src/Tax` job staje się blokujący i wraca do PR. Wrócił w D-106.
   - `evidence` biegnie tylko na gałęziach zaczynających się od `f` (prefiks fazy sprawdza `scripts/ci-evidence.sh`) albo przy `workflow_dispatch`. Gałąź bez fazy nie ma czego dowodzić.
   - Id jobów zostają bez zmian (kontrakt z [naming.md](naming.md)).
 - **Skutki:**
@@ -1423,6 +1424,25 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-106 Job `mutation` blokuje merge
+
+- **Status:** przyjęta 2026-10-20 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - D-43: job `mutation` nie biegnie przy `pull_request`, póki jest doradczy; jako blokujący wraca do PR. D-47: zostaje doradczy, dopóki przebieg na `main` nie pokaże progów na całym zakresie z `infection.json5`.
+  - Przebieg `main` 39419058617 (po D-105): 4665 mutantów, MSI i covered MSI 95,20% przy progach 85/95, 16m42s na 4 wątkach. Warunek D-47 jest spełniony.
+  - [testing.md](testing.md) opisywał na PR tylko zmienione pliki (`--git-diff-filter=AM`), ale `scripts/run-mutation.sh` tego nie robił: zawsze cały zakres.
+  - Repo `kokpit-jdg-public` jest publiczne, więc minuty GitHub Actions z D-43 nie są kosztem.
+- **Decyzja:**
+  - Job `mutation` bez `if` i bez `continue-on-error`: biegnie przy `pull_request`, push do `main` i `workflow_dispatch`, a czerwony job to czerwone CI.
+  - PR i `main` sprawdzają cały zakres. Próg dotyczy całego zakresu (zapas 221 ocalałych przy limicie 230), a MSI kilku mutantów zmienionego pliku jest niestabilne; `--git-diff-filter` zostaje poza zakresem.
+  - Progi 85/95 bez zmian.
+- **Skutki:**
+  - PR czeka ok. 17–20 min na `mutation` (job bez `needs`, rusza od razu); `concurrency` anuluje starszy przebieg PR.
+  - `main` nie ma ochrony gałęzi ani reguł, więc blokada to czerwony check i zasada merge tylko po zielonym CI, nie wymuszenie GitHub.
+  - `run-mutation.sh` bez gałęzi z progami 0 dla zakresu bez `src/Tax`: blokujący job nie może przejść bez progów. `CiWorkflowTest` pilnuje progów 85/95 w skrypcie.
+  - `.github/workflows/ci.yml`, `scripts/run-mutation.sh`, `tests/Unit/CiWorkflowTest.php`; [testing.md](testing.md), [naming.md](naming.md), `.claude/rules/zasady-twarde.md`.
+- **Pytania:** brak.
 
 ### D-105 Mutanty równoważne i powtarzalny pomiar
 

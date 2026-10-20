@@ -10,7 +10,7 @@ Po F0b kokpit przypomina o każdym terminie ZUS i urzędu skarbowego, z datą po
 | --- | --- |
 | kolejność z D-30: F0a → F2.1 → F2.4 → dry run → F0b → F1 | F0b zastaje tabele `setting` i `revenue_entry` z F2.1; nie zmienia ich kodu |
 | step-up i drugi passkey przechodzą z F0a do F0b (D-28) | zatwierdzenie i zmiana passkeyów wymagają świeżej asercji |
-| Infection działa doradczo do powstania `src/Tax` w F2 (D-28) | raport mutacji jest dowodem, nie blokadą merge |
+| Infection działa doradczo do D-106 (D-28) | raport mutacji jest dowodem; od D-106 także blokadą merge |
 | dowód działania jest obowiązkowy (D-28) | faza kończy się listą `docs/evidence/f0b.md` ze wszystkimi wierszami `pass` |
 
 ## Wejścia
@@ -132,7 +132,7 @@ Prawdziwe przedmioty dochodzą później: faktury w F3, złożenia w F5, szkice 
 | testy własności (testsuite `property`) | właściwości „przesunięcie” i „`previousWorkingDay`, dzień biznesowy” z „Testów własności” w [../testing.md](../testing.md), z generatorem dat i ziarnem w wyniku; dodatkowo Wielkanoc to niedziela od 22.03 do 25.04, a Boże Ciało to czwartek |
 | testy przejść bramki | jeden przypadek na każde przejście z „Stanów zatwierdzenia” w [../approval-gate.md](../approval-gate.md), na `dummy` jako `filing` albo `draft`, z wpisem w `audit_log`; `dummy` symuluje przyjęcie, odmowę, duplikat i timeout; para (z, do) spoza tabeli kończy się odmową |
 | obejście bramki (testsuite `security`) | metoda zapisująca `dummy` poza workerem bramki; wiadomość `official_writes` dla zatwierdzenia w stanie innym niż `approved` |
-| mutacje | job `mutation` obejmuje `PolishCalendar` i `ApprovalGate` z progami z „Testów mutacyjnych” w [../testing.md](../testing.md); wynik doradczy do powstania `src/Tax` (D-28) |
+| mutacje | job `mutation` obejmuje `PolishCalendar` i `ApprovalGate` z progami z „Testów mutacyjnych” w [../testing.md](../testing.md); wynik doradczy do D-106 (D-28), potem blokuje merge |
 
 ## Poza zakresem
 
@@ -174,7 +174,7 @@ Klucze, wykonawcy, wyniki i zapis dowodów działają jak w „Kryteriach odbior
 | `setting-change` zmiana parametrów | `[manual]` zmiana `zus.parameters` z nowym `valid_from` w panelu `kokpit-dev` | przeliczone obowiązki `open` i systemowe `not_applicable` z `period_start` od tej daty; `done` i Twoje `not_applicable` bez zmian; wpis `setting.changed` | `inbox/setting-change.png`: kalendarz po zmianie; `inbox/setting-change.txt`: wpis |
 | `zus-payment` zapłata ZUS | `[manual]` wpis zapłaty ZUS w panelu `kokpit-dev` | obowiązek `done`; przypomnienia ustają | `inbox/zus-payment.png`: obowiązek `done`; `inbox/zus-payment.txt`: wpis `obligation.payment_recorded` i zero wierszy `notification` po dacie zapłaty |
 | `gate-panel` zatwierdzenie w panelu | `[manual]` na `kokpit-dev` z fixtures dev, `CONNECTORS_ENABLED=1` i deweloperskim tematem ntfy: push `approval_pending`, link, „Zatwierdź” passkeyem; potem `bin/console app:audit:verify` | link otwiera podgląd z `summary`, początkiem hasha i czasem do wygaśnięcia; po step-upie `dummy` kończy w `accepted` z wpisami `audit_log`; łańcuch bez błędu | `inbox/gate-panel.png`: podgląd; `inbox/gate-panel.txt`: wpisy i wynik `app:audit:verify` |
-| `mutation-report` raport mutacji | job `mutation` w CI; lokalnie `vendor/bin/infection` z `infection.json5` | raport JSON Infection dla `PolishCalendar` i `ApprovalGate`; MSI i covered MSI zapisane w `docs/evidence/f0b.md`; wynik poniżej progu nie blokuje (D-28), ocalałe mutanty trafiają na listę zadań | raport JSON z artefaktu przebiegu; link do przebiegu w `docs/evidence/f0b.md` |
+| `mutation-report` raport mutacji | job `mutation` w CI; lokalnie `vendor/bin/infection` z `infection.json5` | raport JSON Infection dla `PolishCalendar` i `ApprovalGate`; MSI i covered MSI zapisane w `docs/evidence/f0b.md`; wynik poniżej progu blokuje merge od D-106, ocalałe mutanty trafiają na listę zadań | raport JSON z artefaktu przebiegu; link do przebiegu w `docs/evidence/f0b.md` |
 | `ci-green` CI zielone na PR | `[manual]` `gh run view <id> --json conclusion,headSha,jobs,url` dla przebiegu PR `f0b-bramka-kalendarz` → `main` | joby poza `live` i `mutation` zielone, także `evidence`; `mutation` na niepustym zakresie; `headSha` równy commitowi z `manifest.json` albo potomkiem ze zmianami tylko w `docs/` | `inbox/ci-green.json`; adres przebiegu w `docs/evidence/f0b.md` |
 
 **Kryteria przekrojowe:** [../testing.md](../testing.md), wiersze „od F0a” i „od F0b”. `kokpit:evidence f0b` uruchamia ich wiersze `ci`; dowód określa [../testing.md](../testing.md).
@@ -186,7 +186,7 @@ Po kryteriach wdrażasz `kokpit-prod` przez `make deploy` na VPS ([../operations
 - `make deploy` wykonuje krok 3: wdrożenie staje przy `approval` w `dispatching`.
 - `[manual]` drugi passkey na PROD na drugim urządzeniu, ze step-upem; ostrzeżenie o jednym passkeyu znika.
 - W panelu PROD wpisujesz prawdziwe wartości `setting`: mikrorachunek, rachunek składkowy, parametry ZUS na 2026, wariant i częstotliwość zaliczki.
-- Merge `f0b-bramka-kalendarz` do `main` po odbiorze. Przebieg CI na `main` jest zielony; `mutation` zostaje doradczy (D-28).
+- Merge `f0b-bramka-kalendarz` do `main` po odbiorze. Przebieg CI na `main` jest zielony; `mutation` był doradczy do D-106 (D-28).
 - Pierwsze przypomnienia dochodzą na telefon. Kokpit niczego nie składa; obowiązki realizujesz według „Teraz – zgodność” w [../README.md](../README.md).
 - Bramka na PROD nie ma przedmiotów do go-live F3. `dummy` nie istnieje przy `APP_ENV=prod` (D-32).
 - Check dead-man `notifications.dispatch` (5 min, zapas 30 min) dodany w zewnętrznym serwisie. `[manual]` zatrzymanie `worker_notifications` daje alert w czasie zapasu; zrzut alertu w `inbox/`.

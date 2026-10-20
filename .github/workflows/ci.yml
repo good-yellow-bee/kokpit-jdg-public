@@ -118,8 +118,6 @@ jobs:
       - if: env.PUBLISH == 'true'
         run: make verify-images KOKPIT_COMMIT="$GITHUB_SHA"
   mutation:
-    if: github.event_name != 'pull_request'
-    continue-on-error: true
     timeout-minutes: 90
     runs-on: ubuntu-latest
     steps:
