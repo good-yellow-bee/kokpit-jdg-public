@@ -51,3 +51,9 @@ echo json_encode($row, JSON_THROW_ON_ERROR) . "\n";
 if ($mode === 'register') {
     echo json_encode($db->fetchAllAssociative("SELECT action,target_id,details FROM audit_log WHERE action='credential.registered' AND target_id=? ORDER BY sequence DESC LIMIT 1", [$row['id']]), JSON_THROW_ON_ERROR) . "\n";
 }
+if ($mode === 'smoke') {
+    // Odbiór zostawia wiersze w bazie testowej, a `cc-13` w tej samej paczce uruchamia potem cały zestaw (D-102).
+    $db->executeStatement("DELETE FROM connector_call WHERE connector='dummy' AND environment='test'");
+    $db->executeStatement("DELETE FROM rate_counter WHERE connector='dummy' AND environment='test'");
+    $db->executeStatement("DELETE FROM credential_state WHERE kind='dummy_token' AND environment='test'");
+}

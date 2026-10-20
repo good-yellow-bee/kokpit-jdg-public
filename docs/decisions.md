@@ -1430,13 +1430,15 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - `kokpit:evidence --only=live` uruchamia komendę każdego wiersza `live` drugi raz w tym samym jobie (D-28), więc przy stałym NIP drugie złożenie PIT-28 dostawałoby 411 nawet na czystej bramce.
   - Kokpit potraktował 411 zgodnie z [modules/jpk.md](modules/jpk.md): `unknown` i rekoncyliacja odczytem, bez ponownej wysyłki.
   - Job `evidence` dla `f0a` nie zbudował paczki: `cc-13` (`scripts/check-ci.sh`) uruchamia cały zestaw z `EVIDENCE_DIR`, a `DraftApprovalCopyPanelTest` zapisywał `screens/draft-approval-copy.html` z fikcyjnym NRB, na którym pada skaner paczki.
+  - W paczce `f0a` wiersze `credential-register` i `credential-smoke` (`scripts/credential-acceptance.php`) zostawiały w bazie `kokpit_test` poświadczenie `dummy_token`, wywołanie i licznik `dummy`; `cc-13` uruchamia potem cały zestaw na tej bazie i trzy testy padały (`ObligationEngineTest`, `WhtObligationAmountsTest`, `ConnectorValidityPanelTest`).
   - Krok `ci-evidence.sh` joba `live` szedł po testach bez warunku, więc jeden czerwony test zostawiał przebieg bez paczki dowodów i bez artefaktu.
 - **Decyzja:**
   - `EDeklaracjeTePit28Test` bierze losowy NIP z poprawną sumą kontrolną (`KsefTeProvision::randomNip`, jak testy KSeF TE) do `company.identity`, a więc do deklaracji i `DaneAutoryzujace`. Pozostałe testy PIT-28 zostają na stałej tożsamości i złotym pliku.
   - `DraftApprovalCopyPanelTest` zapisuje zrzut z rachunkiem zamaskowanym jako `PL[FICTIONAL_IBAN]`; skaner paczki zostaje bez wyjątków.
+  - `credential-acceptance.php smoke` po sprawdzeniu usuwa swoje wiersze `dummy` (`credential_state`, `connector_call`, `rate_counter`) z celu `test`; wpis `audit_log` zostaje.
   - Krok `ci-evidence.sh` joba `live` ma `if: ${{ !cancelled() && steps.live_tests.outcome != 'skipped' }}`: paczka powstaje także po czerwonym teście, wiersz dostaje `fail` z artefaktem, a job zostaje czerwony. Po nieudanym bootstrapie albo kroku certyfikatu testy nie ruszają drugi raz przez `kokpit:evidence`. `CiWorkflowTest` tego pilnuje.
 - **Ryzyka:** losowy NIP z poprawną sumą kontrolną może istnieć w rejestrze, tak jak w testach KSeF TE (D-72); reszta deklaracji i `DaneAutoryzujace` (imię, nazwisko, data urodzenia, kwota, adres) jest fikcyjna, a bramka testowa nie porównuje ich z rejestrem (D-68). Losowy NIP może też trafić na NIP z PIT-28 na bramce testowej; wtedy znów 411 i ponowny przebieg. Na PROD 411 przy PIT-28 oznacza złożone już zeznanie za rok, a kokpit daje `unknown` i rekoncyliację.
-- **Skutki:** `tests/Live/EDeklaracjeTePit28Test.php`, `tests/Integration/Pit28TestCase.php`, `tests/Support/Pit28TestTools.php`, `.github/workflows/ci.yml`, `tests/Unit/CiWorkflowTest.php`, `tests/Integration/DraftApprovalCopyPanelTest.php`; [testing.md](testing.md), [modules/jpk.md](modules/jpk.md).
+- **Skutki:** `tests/Live/EDeklaracjeTePit28Test.php`, `tests/Integration/Pit28TestCase.php`, `tests/Support/Pit28TestTools.php`, `.github/workflows/ci.yml`, `tests/Unit/CiWorkflowTest.php`, `tests/Integration/DraftApprovalCopyPanelTest.php`, `scripts/credential-acceptance.php`; [testing.md](testing.md), [modules/jpk.md](modules/jpk.md).
 - **Pytania:** brak.
 
 ### D-101 Liczby PIT-28 do przepisania w Twój e-PIT
