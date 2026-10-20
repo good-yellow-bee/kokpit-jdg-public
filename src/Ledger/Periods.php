@@ -28,7 +28,7 @@ final readonly class Periods
         $now = $this->now();
         $this->db->executeStatement(
             "INSERT INTO period (id,environment,period_start,status,created_at,updated_at) VALUES (?,?,?,'open',?,?) ON CONFLICT (environment,period_start) DO NOTHING",
-            [(string) UuidV7::generate($this->clock->now()), $this->configuration->environment(), self::month($periodStart), $now, $now],
+            [UuidV7::generate($this->clock->now()), $this->configuration->environment(), self::month($periodStart), $now, $now],
         );
     }
 

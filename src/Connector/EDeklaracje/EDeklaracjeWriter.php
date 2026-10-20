@@ -86,7 +86,7 @@ final readonly class EDeklaracjeWriter implements OfficialWriter, StatusReader
         if (!hash_equals($request->sha256, hash('sha256', $request->bytes))) {
             throw new \LogicException('Bajty wysyłki różnią się od payload_sha256.');
         }
-        $correlation = (string) UuidV7::generate($this->clock->now());
+        $correlation = UuidV7::generate($this->clock->now());
         $call = EDeklaracjeCall::dispatch($this->guard, $request->approvalId, $correlation, $request->environment);
         $refs = ['correlation_id' => $correlation];
         $request->record($refs);
@@ -224,7 +224,7 @@ final readonly class EDeklaracjeWriter implements OfficialWriter, StatusReader
     private function readCall(string $approvalId, array $refs): EDeklaracjeCall
     {
         $environment = $this->db->fetchOne('SELECT environment FROM approval WHERE id=?', [$approvalId]);
-        return EDeklaracjeCall::read($approvalId, $refs['correlation_id'] ?? (string) UuidV7::generate($this->clock->now()), is_string($environment) ? $environment : $this->configuration->environment());
+        return EDeklaracjeCall::read($approvalId, $refs['correlation_id'] ?? UuidV7::generate($this->clock->now()), is_string($environment) ? $environment : $this->configuration->environment());
     }
 
     private function now(): string

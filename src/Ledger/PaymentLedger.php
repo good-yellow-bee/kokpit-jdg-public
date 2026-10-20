@@ -32,7 +32,7 @@ final readonly class PaymentLedger
         }
         $now = $this->now();
         $this->db->insert('payment', [
-            'id' => (string) UuidV7::generate($this->clock->now()),'environment' => $environment,'freshbooks_payment_id' => $payment->id,'freshbooks_invoice_id' => $payment->invoiceId,
+            'id' => UuidV7::generate($this->clock->now()),'environment' => $environment,'freshbooks_payment_id' => $payment->id,'freshbooks_invoice_id' => $payment->invoiceId,
             'paid_on' => $payment->paidOn,'amount' => $payment->amount,'currency' => $payment->currency,'gateway' => $payment->gateway,'created_at' => $now,'updated_at' => $now,
         ]);
         return 'new';

@@ -57,7 +57,7 @@ final readonly class RevenueEntryWriter
             ksort($rates, SORT_STRING);
             foreach ($rates as $rate => $net) {
                 $amount = $document->fxRate === null ? (string) $net : VatFx::convert((string) $net, $document->fxRate->mid);
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 $this->db->insert('revenue_entry', [
                     'id' => $id,'environment' => $environment,'year' => $year,'lp' => ++$lp,'entry_date' => $today,'revenue_date' => $document->revenueDate,
                     'document_number' => $document->documentNumber,'ksef_number' => $document->ksefNumber,'counterparty_country' => $document->counterpartyCountry,
@@ -91,7 +91,7 @@ final readonly class RevenueEntryWriter
             $lp = is_numeric($lp) ? (int) $lp : 0;
             $written = [];
             foreach ($rows as $row) {
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 $this->db->insert('revenue_entry', ['id' => $id,'environment' => $environment,'year' => $year,'lp' => ++$lp,'entry_date' => $this->businessDate->today(),'recorded_at' => $this->clock->now()->format('Y-m-d\TH:i:s.uP')] + $row);
                 $written[] = $id;
                 if (is_string($row['revenue_date'] ?? null)) {

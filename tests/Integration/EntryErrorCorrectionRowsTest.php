@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\LedgerTestTools;
 use App\Ledger\EntryErrorCorrection;
 use App\Tests\Support\ConnectorTestTools;
 use App\Tests\Support\F1TestTools;
@@ -88,5 +89,11 @@ final class EntryErrorCorrectionRowsTest extends DatabaseTestCase
     private function rows(string $wrong): array
     {
         return $this->db()->fetchAllAssociative('SELECT lp, amount_pln, counterparty_country, rate_pct FROM revenue_entry WHERE corrects_entry_id=? ORDER BY lp', [$wrong]);
+    }
+
+    public function testCorrectionWaitsForYearLockOfRevenueDate(): void
+    {
+        $wrong = $this->wrong('1000.05');
+        LedgerTestTools::assertWaitsForYearLock($this->db(), 2026, fn() => $this->correction()->correct($wrong, ['amount_pln' => '1200.00'], $this->user));
     }
 }

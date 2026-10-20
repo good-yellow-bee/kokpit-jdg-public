@@ -41,7 +41,7 @@ final readonly class FxRateProvider
         foreach ($rows as $row) {
             $this->db->executeStatement(
                 "INSERT INTO fx_rate (id,source,table_no,currency,effective_date,mid,fetched_at,connector_call_id) VALUES (?,'nbp',?,?,?,?,?,?) ON CONFLICT (source,currency,effective_date) DO NOTHING",
-                [(string) UuidV7::generate($this->clock->now()), $row['no'], $currency, $row['effectiveDate'], (string) BigDecimal::of($row['mid'])->toScale(6), $now, $row['connectorCallId']],
+                [UuidV7::generate($this->clock->now()), $row['no'], $currency, $row['effectiveDate'], (string) BigDecimal::of($row['mid'])->toScale(6), $now, $row['connectorCallId']],
             );
         }
         if ($previous === $today && $this->row($currency, $today) === null) {

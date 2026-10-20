@@ -71,7 +71,7 @@ final readonly class ManualFiling
                 $this->periods->saveChecklist($periodStart, $checklist);
             }
             $previous = $this->db->fetchAssociative("SELECT id, seq FROM filing WHERE environment=? AND type=? AND period_start=? AND status='accepted' ORDER BY seq DESC LIMIT 1", [$environment, $type, $periodStart]);
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $this->db->insert('filing', [
                 'id' => $id,'environment' => $environment,'type' => $type,'period_start' => $periodStart,'period_end' => $start->modify('last day of this month')->format('Y-m-d'),
                 'purpose' => $previous === false ? 1 : 2,'seq' => $previous === false ? 0 : self::int($previous['seq']) + 1,'status' => 'accepted',

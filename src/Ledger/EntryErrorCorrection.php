@@ -74,7 +74,7 @@ final readonly class EntryErrorCorrection
         $environment = $this->configuration->environment();
         $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [RevenueEntryWriter::LOCK_NAMESPACE, $year]);
         $lp = $this->db->fetchOne('SELECT coalesce(max(lp),0) FROM revenue_entry WHERE environment=? AND year=?', [$environment, $year]);
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $this->db->insert('revenue_entry', [
             'id' => $id,'environment' => $environment,'year' => $year,'lp' => (is_numeric($lp) ? (int) $lp : 0) + 1,'entry_date' => $this->businessDate->today(),
             'revenue_date' => $row['revenue_date'],'document_number' => $row['document_number'],'ksef_number' => $row['ksef_number'],

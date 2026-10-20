@@ -74,7 +74,7 @@ final readonly class LedgerImporter
                 if (isset($known[$row->lp])) {
                     continue;
                 }
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 // Puste K_2 to dzień importu w Europe/Warsaw, nigdy wcześniejszy (D-23).
                 $this->db->insert('revenue_entry', ['id' => $id,'environment' => $environment,'year' => $year,'lp' => $row->lp,'entry_date' => $row->entryDate ?? $today,'revenue_date' => $row->revenueDate,'document_number' => $row->documentNumber,'ksef_number' => $row->ksefNumber,'counterparty_country' => $row->counterpartyCountry,'counterparty_tax_id' => $row->counterpartyTaxId,'amount_pln' => (string) $row->amountPln->toScale(2),'rate_pct' => (string) $row->ratePct->toScale(2),'remarks' => $row->remarks,'source' => 'import','kind' => 'regular','recorded_at' => $recordedAt]);
                 $added[] = $id;

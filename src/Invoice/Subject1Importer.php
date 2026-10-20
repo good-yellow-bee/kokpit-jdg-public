@@ -64,7 +64,7 @@ final readonly class Subject1Importer
             $taxPoint = $document->taxPointDate();
             $fx = $this->fx->amounts($document->currency, $taxPoint, $document->issueDate, false, $document->netTotal, $document->vatTotal);
             $corrects = $document->corrected['ksefNumber'] === null ? false : $this->db->fetchOne("SELECT id FROM invoice WHERE environment=? AND direction='sale' AND ksef_number=?", [$environment, $document->corrected['ksefNumber']]);
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
             // Szkic o tym `kind` i P_2 (`draft`, `ready`, `approved` bez wysyłki) ustępuje fakturze z KSeF w tej samej transakcji:
             // żywe zatwierdzenie → `cancelled` z `manual_invoice`, szkic → `cancelled_before_send`, `freshbooks_id` przechodzi (D-45, F3.2).
@@ -92,7 +92,7 @@ final readonly class Subject1Importer
             ]);
             foreach ($document->lines as $line) {
                 $this->db->insert('invoice_line', [
-                    'id' => (string) UuidV7::generate($this->clock->now()),'invoice_id' => $id,'line_no' => $line->lineNo,'state_before' => $line->stateBefore ? 'true' : 'false',
+                    'id' => UuidV7::generate($this->clock->now()),'invoice_id' => $id,'line_no' => $line->lineNo,'state_before' => $line->stateBefore ? 'true' : 'false',
                     'description' => $line->description,'quantity' => $line->quantity,'unit' => $line->unit,'unit_net_price' => $line->unitNetPrice,'net_amount' => $line->netAmount,
                     'vat_code' => $line->vatCode,'vat_amount' => $line->vatAmount,'gtu' => $line->gtu,'created_at' => $now,'updated_at' => $now,
                 ]);

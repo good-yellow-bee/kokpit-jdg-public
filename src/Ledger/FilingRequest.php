@@ -39,7 +39,7 @@ final readonly class FilingRequest
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
             $existing = $this->db->fetchAssociative("SELECT id, status FROM filing WHERE environment=? AND type='JPK_V7M' AND period_start=? AND purpose=1 AND seq=0 FOR UPDATE", [$environment, $month]);
             if ($existing === false) {
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'JPK_V7M', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 1, 'seq' => 0, 'status' => 'draft', 'schema_version' => JpkV7mBuilder::SCHEMA_VERSION, 'totals' => '{}', 'created_at' => $now, 'updated_at' => $now]);
                 return $id;
             }
@@ -83,7 +83,7 @@ final readonly class FilingRequest
                 return $draft;
             }
             $seq = $this->db->fetchOne("SELECT max(seq) FROM filing WHERE environment=? AND type='JPK_V7M' AND period_start=?", [$environment, $month]);
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'JPK_V7M', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 2, 'seq' => (is_numeric($seq) ? (int) $seq : 0) + 1, 'status' => 'draft',
                 'supersedes_id' => $accepted['id'], 'schema_version' => JpkV7mBuilder::SCHEMA_VERSION, 'totals' => $totals, 'created_at' => $now, 'updated_at' => $now]);
             return $id;
@@ -128,7 +128,7 @@ final readonly class FilingRequest
             if ($route === 'vat_ue') {
                 $existing = $this->db->fetchAssociative("SELECT id, status FROM filing WHERE environment=? AND type='VAT_UE' AND period_start=? AND purpose=1 AND seq=0 FOR UPDATE", [$environment, $month]);
                 if ($existing === false) {
-                    $id = (string) UuidV7::generate($this->clock->now());
+                    $id = UuidV7::generate($this->clock->now());
                     $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'VAT_UE', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 1, 'seq' => 0, 'status' => 'draft', 'schema_version' => VatUeBuilder::SCHEMA_VERSION_UE, 'totals' => '{}', 'created_at' => $now, 'updated_at' => $now]);
                     return $id;
                 }
@@ -151,7 +151,7 @@ final readonly class FilingRequest
                 return $id;
             }
             $seq = $this->db->fetchOne("SELECT max(seq) FROM filing WHERE environment=? AND type IN ('VAT_UE','VAT_UEK') AND period_start=?", [$environment, $month]);
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => 'VAT_UEK', 'period_start' => $month, 'period_end' => self::end($month), 'purpose' => 2, 'seq' => (is_numeric($seq) ? (int) $seq : 0) + 1, 'status' => 'draft',
                 'supersedes_id' => $accepted['id'], 'schema_version' => VatUeBuilder::SCHEMA_VERSION_UEK, 'totals' => '{}', 'created_at' => $now, 'updated_at' => $now]);
             return $id;
@@ -192,7 +192,7 @@ final readonly class FilingRequest
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
             $existing = $this->db->fetchAssociative('SELECT id, status FROM filing WHERE environment=? AND type=? AND period_start=? AND purpose=1 AND seq=0 FOR UPDATE', [$environment, $type, sprintf('%04d-01-01', $year)]);
             if ($existing === false) {
-                $id = (string) UuidV7::generate($this->clock->now());
+                $id = UuidV7::generate($this->clock->now());
                 $this->db->insert('filing', ['id' => $id, 'environment' => $environment, 'type' => $type, 'period_start' => sprintf('%04d-01-01', $year), 'period_end' => sprintf('%04d-12-31', $year), 'purpose' => 1, 'seq' => 0, 'status' => 'draft', 'schema_version' => $schemaVersion, 'totals' => '{}', 'created_at' => $now, 'updated_at' => $now]);
                 return $id;
             }

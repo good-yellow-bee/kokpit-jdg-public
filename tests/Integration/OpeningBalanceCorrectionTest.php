@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\LedgerTestTools;
 use App\Ledger\OpeningBalance;
 use App\Setting\SettingKeys;
 use Symfony\Component\Uid\Uuid;
@@ -81,5 +82,10 @@ final class OpeningBalanceCorrectionTest extends DatabaseTestCase
         $keys = array_map('strval', array_keys($decoded));
         sort($keys);
         return $keys;
+    }
+
+    public function testConfirmWaitsForEnvironmentLock(): void
+    {
+        LedgerTestTools::assertWaitsForLock($this->db(), 'SELECT pg_advisory_lock(hashtext(?))', ['opening_balance:test'], fn() => $this->opening->confirm($this->user, 'fictional-step-up-credential', '2026-11-01', self::VALUES, $this->evidence));
     }
 }

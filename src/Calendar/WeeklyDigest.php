@@ -58,7 +58,7 @@ final readonly class WeeklyDigest
         $week = $this->businessDate->midnight()->format('o-\WW');
         return (int) $this->db->executeStatement(
             'INSERT INTO notification (id,channel,category,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-            [(string) UuidV7::generate($now), 'mail', self::CATEGORY, sprintf('%s:%s:%s:mail', self::CATEGORY, $this->configuration->environment(), $week), self::body($week, $this->counts()), self::LINK, $now->format('Y-m-d\TH:i:s.uP'), $now->format('Y-m-d\TH:i:s.uP')],
+            [UuidV7::generate($now), 'mail', self::CATEGORY, sprintf('%s:%s:%s:mail', self::CATEGORY, $this->configuration->environment(), $week), self::body($week, $this->counts()), self::LINK, $now->format('Y-m-d\TH:i:s.uP'), $now->format('Y-m-d\TH:i:s.uP')],
         );
     }
 

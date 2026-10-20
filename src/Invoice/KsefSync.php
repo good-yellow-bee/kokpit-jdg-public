@@ -169,7 +169,7 @@ final readonly class KsefSync
         $stamp = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
         $this->db->executeStatement(
             "INSERT INTO sync_cursor (id,environment,connector,stream,backfill_from,created_at,updated_at) VALUES (?,?,'ksef',?,?,?,?) ON CONFLICT (environment,connector,stream) DO NOTHING",
-            [(string) UuidV7::generate($this->clock->now()), $environment, $stream, $this->backfillFrom, $stamp, $stamp],
+            [UuidV7::generate($this->clock->now()), $environment, $stream, $this->backfillFrom, $stamp, $stamp],
         );
         $row = $this->db->fetchAssociative("SELECT id, last_hwm, last_run_at, backfill_from, backfill_done_at FROM sync_cursor WHERE environment=? AND connector='ksef' AND stream=?", [$environment, $stream]);
         if (!is_array($row) || !is_string($row['id'])) {

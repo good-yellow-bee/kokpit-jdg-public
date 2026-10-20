@@ -94,7 +94,7 @@ final readonly class ObligationEngine
             $fields['invoice_id'] = $candidate['invoice_id'];
         }
         if ($row === false) {
-            $this->db->insert('obligation', $fields + ['id' => (string) UuidV7::generate($this->clock->now()),'environment' => $candidate['environment'],'type' => $candidate['type'],'dedupe_key' => $candidate['dedupe_key'],'status' => $candidate['status'],'done_at' => $candidate['status'] === 'open' ? null : $now,'created_at' => $now,'updated_at' => $now]);
+            $this->db->insert('obligation', $fields + ['id' => UuidV7::generate($this->clock->now()),'environment' => $candidate['environment'],'type' => $candidate['type'],'dedupe_key' => $candidate['dedupe_key'],'status' => $candidate['status'],'done_at' => $candidate['status'] === 'open' ? null : $now,'created_at' => $now,'updated_at' => $now]);
             return 'inserted';
         }
         if ($row['status'] === 'done' || ($row['status'] === 'not_applicable' && $row['done_by'] !== null)) {

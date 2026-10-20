@@ -75,7 +75,7 @@ final readonly class MailInbox
             if ($this->db->fetchOne('SELECT 1 FROM mail_in_message WHERE environment=? AND uid_validity=? AND uid=?', [$environment, $mail->uidValidity, $mail->uid]) !== false) {
                 return 0;
             }
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $now = $this->clock->now()->format('Y-m-d\TH:i:s.uP');
             $row = ['id' => $id, 'environment' => $environment, 'uid_validity' => $mail->uidValidity, 'uid' => $mail->uid, 'size_bytes' => $mail->size, 'fetched_at' => $now, 'created_at' => $now, 'updated_at' => $now];
             if ($mail->raw === null) {

@@ -163,6 +163,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-102 | pierwsze przebiegi joba `live`: `EDeklaracjeTePit28Test` z losowym NIP na przebieg, bo bramka testowa przyjmuje jeden PIT-28 roku na identyfikator podatkowy i kolejny odrzuca kodem 411; paczka dowodów joba `live` także po czerwonym teście (`if`: nie anulowany i testy nie pominięte) | przyjęta 2026-10-20 | D-96, D-97 |
 | D-103 | job `mutation` nigdy nie liczył mutacji w CI: obraz `development` bez sterownika pokrycia, a `tee` ukrywał kod wyjścia Infection; krok dostaje `shell: bash` (pipefail), więc job jest uczciwie czerwony i dalej doradczy; `cc-23` = fail do osobnej zmiany z pomiarem | przyjęta 2026-10-20 | D-28, D-43, D-47 |
 | D-104 | job `mutation` mierzy: pcov w obrazie `development`, wątek Infection na rdzeń z własną kopią bazy testowej i katalogiem plików (`TEST_TOKEN`), zmutowany plik wczytany przed wyłączeniem wrappera `file://` Infection (brak `fsync`), `memory_limit=2G` (kod 255), raport JSON jako artefakt `mutation`; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-43, D-103 |
+| D-105 | mutanty równoważne w `infection.json5`: wzorce linii źródła per mutator z uzasadnieniem (strażniki typów wartości z bazy, `throw new \LogicException` niezmienników, rok i miesiąc z daty ISO, flagi i głębokość JSON dla `jsonb`); usunięte zbędne `(string)` przy `UuidV7::generate()`; `executionOrder="default"` w `phpunit.xml` dla powtarzalnego przypisania pokrycia; progi 85/95 bez zmian | przyjęta 2026-10-20 | D-28, D-104 |
 | D-99 | Q-18: zastępcą jest tylko administrator skrzynki ADE wyznaczony w aplikacji e-Doręczeń; bez drugiego `app_user`, bez UPL-1; imię administratora tylko na karcie awaryjnej, nigdy w repo; „Rola zastępcy” z [roadmap.md](roadmap.md) odrzucona | przyjęta 2026-10-19 | Q-18 |
 | D-98 | pierwsza instalacja `kokpit-prod`: `scripts/prod-install.sh --node <nazwa>` jako root na VPS tworzy pliki hosta (`/etc/kokpit/secrets`, pytanie o brakujące wartości bez echa), hasła ról bazy w wolumenach przy pustej bazie, `pgpass`, konfigurację ntfy z użytkownikami i tokenem, sejf PROD w wolumenie `vault` (`scripts/init-prod-vault.php`), nazwę węzła `TS_HOSTNAME`, certyfikat `tailscale cert` z cronem `scripts/prod-cert.sh`, repozytorium restic i plik wdrożenia `/etc/kokpit/prod.env`, który czytają `make deploy` i `make rollback`; `PANEL_ORIGIN` i hosty powiadomień trafiają do kontenerów; `/health` po wdrożeniu przez adres VPN z kontenera app z ponowieniami, pierwszy backup przy pierwszym wdrożeniu; check dead-man `ksef.sync`; `--rehearsal` na danych fikcyjnych w CI; serializer transportów pomija `ScheduledStamp` | przyjęta 2026-10-19 | po F0a |
 | D-97 | job `live` bierze publiczny certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` (nie sekretu), sprawdza go `openssl x509` z ważnością i zapisuje do `var/jpk/mf-test.crt` w kontenerze `app` przed testsuite `live`; bez zmiennej job kończy się przed testami | przyjęta 2026-10-19 | F5.3 |
@@ -1422,6 +1423,28 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-105 Mutanty równoważne i powtarzalny pomiar
+
+- **Status:** przyjęta 2026-10-20 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Po testach KOKPIT-82 pomiar lokalny: 4811 mutantów, 363 ocalałe, covered MSI 92,45% przy progu 95%. Raporty pięciu przeglądów grup wskazały, że większość ocalałych to mutanty równoważne: zachowanie identyczne przy typach kolumn, gwarancjach `pdo_pgsql` i formacie dat.
+  - [testing.md](testing.md): ocalały mutant to nowy test albo wpis ignorowania z uzasadnieniem w `infection.json5`.
+  - 18 mutantów `FreshBooksLedger::countryCode` przeżywało losowo: `static $names` buduje się raz na proces, a Infection uruchamiał testy w losowej kolejności, więc pokrycie dostawał przypadkowy test.
+- **Decyzja:**
+  - `(string)` przy `UuidV7::generate()` usunięte w całym `src/` (57 miejsc): metoda zwraca już `string`.
+  - `phpunit.xml` ma `executionOrder="default"`; Infection zachowuje kolejność, pokrycie trafia zawsze do tych samych testów, a pomiar jest powtarzalny.
+  - `infection.json5` ignoruje mutanty tylko według wzorca linii źródła per mutator (`ignoreSourceCodeByRegex`), każdy wzorzec z komentarzem-uzasadnieniem:
+    - jednolinijkowe pomocniki `is_scalar|is_numeric($value) ? (string|int) $value : throw new \LogicException` (CastString, CastInt, Throw_);
+    - `?? throw new \LogicException` i `is_*() ? … : throw new \LogicException` (Throw_): strażniki niezmienników;
+    - `if (!is_string($row['…']) || …)` (LogicalOr i negacje): czyste zawężenie typów kolumn NOT NULL;
+    - `(int) substr($date, 0, 4|5, 2)` bez innych liczb w linii (IncrementInteger, UnwrapSubstr): dłuższy wycinek daje tę samą liczbę;
+    - flagi `json_encode` dla `totals jsonb` (BitwiseOr) i głębokość `json_decode` (IncrementInteger, DecrementInteger). Zrzut kanoniczny ewidencji (sha256) nie jest objęty.
+  - Testy blokad advisory (`LedgerTestTools::assertWaitsForLock`): korekta wpisu, bilans otwarcia, przeliczenie obowiązków, termin z pisma.
+  - Bez ignorowania całych metod i numerów linii. Progi 85/95 bez zmian.
+- **Ryzyka:** wzorzec ukrywa też zabijalne mutanty tej samej linii (pomiar lokalny: 139 ignorowanych, w tym zabite). Nowy kod pasujący do wzorca nie jest mierzony w tym mutatorze. Zapas: 217 ocalałych przy limicie 232.
+- **Skutki:** pomiar lokalny 2026-10-20 (8 wątków, 8 min): 4790 mutantów, 4431 zabitych, 217 ocalałych, 139 ignorowanych, 3 limity czasu, MSI i covered MSI 95,33%; Infection kończy się kodem 0. `infection.json5`, `phpunit.xml`, `src/` (rzutowania), `tests/Support/LedgerTestTools.php`, testy blokad; [testing.md](testing.md).
+- **Pytania:** brak.
 
 ### D-104 Pomiar mutacyjny w CI
 

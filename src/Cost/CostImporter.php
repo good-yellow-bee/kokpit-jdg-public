@@ -74,7 +74,7 @@ final readonly class CostImporter
                 $this->audit->append('cost.ksef_linked', ['ksef_number' => $ksefNumber,'amounts_changed' => !$same], $environment, 'invoice', $id);
                 return $id;
             }
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $taxPoint = $document->taxPointDate();
             $fx = $this->fx->amounts($document->currency, $taxPoint, $document->issueDate, false, $document->netTotal, $document->vatTotal);
             $exempt = $document->lines !== [] && array_filter($document->lines, static fn($line): bool => $line->vatCode !== 'zw') === [];
@@ -123,7 +123,7 @@ final readonly class CostImporter
             if (is_string($duplicate)) {
                 throw new \DomainException('Ten dokument dostawcy już jest w kokpicie.');
             }
-            $id = (string) UuidV7::generate($this->clock->now());
+            $id = UuidV7::generate($this->clock->now());
             $import = $cost->importServices !== null;
             $fx = $this->fx->amounts($cost->currency, $cost->taxPointDate, $cost->issueDate, $import, $cost->netTotal, $cost->vatTotal);
             $selfAssessed = $import && $fx['net_pln'] !== null && $cost->taxPointDate !== null ? $this->fx->selfAssessed($fx['net_pln'], $cost->taxPointDate, $cost->vatExempt) : null;
@@ -148,7 +148,7 @@ final readonly class CostImporter
         $now = $this->now();
         foreach ($document->lines as $line) {
             $this->db->insert('invoice_line', [
-                'id' => (string) UuidV7::generate($this->clock->now()),'invoice_id' => $invoiceId,'line_no' => $line->lineNo,'state_before' => $line->stateBefore ? 'true' : 'false',
+                'id' => UuidV7::generate($this->clock->now()),'invoice_id' => $invoiceId,'line_no' => $line->lineNo,'state_before' => $line->stateBefore ? 'true' : 'false',
                 'description' => $line->description,'quantity' => $line->quantity,'unit' => $line->unit,'unit_net_price' => $line->unitNetPrice,'net_amount' => $line->netAmount,
                 'vat_code' => $line->vatCode,'vat_amount' => $line->vatAmount,'gtu' => $line->gtu,'created_at' => $now,'updated_at' => $now,
             ]);

@@ -53,14 +53,24 @@ final class LedgerTestTools
      */
     public static function assertWaitsForYearLock(Connection $db, int $year, callable $write): void
     {
+        self::assertWaitsForLock($db, 'SELECT pg_advisory_lock(?, ?)', [\App\Ledger\RevenueEntryWriter::LOCK_NAMESPACE, $year], $write);
+    }
+
+    /**
+     * Blokada advisory `$lock` trzymana przez drugie połączenie: `$write` musi na nią czekać i paść po `lock_timeout`.
+     *
+     * @param list<int|string> $params
+     */
+    public static function assertWaitsForLock(Connection $db, string $lock, array $params, callable $write): void
+    {
         $other = DriverManager::getConnection($db->getParams());
-        $other->executeQuery('SELECT pg_advisory_lock(?, ?)', [\App\Ledger\RevenueEntryWriter::LOCK_NAMESPACE, $year]);
+        $other->executeQuery($lock, $params);
         try {
             // `SET LOCAL` działa tylko w transakcji; bez niej zapis wisiałby na blokadzie bez limitu.
             \PHPUnit\Framework\Assert::assertTrue($db->isTransactionActive());
             $db->executeStatement("SET LOCAL lock_timeout = '200ms'");
             $write();
-            \PHPUnit\Framework\Assert::fail('Zapis nie czekał na blokadę roku.');
+            \PHPUnit\Framework\Assert::fail('Zapis nie czekał na blokadę.');
         } catch (DriverException $exception) {
             \PHPUnit\Framework\Assert::assertStringContainsString('lock timeout', $exception->getMessage());
         } finally {

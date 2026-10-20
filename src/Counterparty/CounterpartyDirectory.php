@@ -73,7 +73,7 @@ final readonly class CounterpartyDirectory
         if ($party->name === '') {
             throw new \DomainException('Kontrahent bez nazwy.');
         }
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $address = array_filter(['line1' => $party->address['line1'],'line2' => $party->address['line2'],'country' => $party->address['country']], static fn(?string $value): bool => $value !== null);
         $this->db->insert('counterparty', [
             'id' => $id,'environment' => $environment,'name' => $party->name,'country' => $party->country(),'nip' => $party->nip,

@@ -262,7 +262,7 @@ final readonly class SalesReadiness
         foreach ($invoice->lines as $line) {
             $entry = $map->match($line['name'], $line['description'] ?? $line['name']);
             $this->db->insert('invoice_line', [
-                'id' => (string) UuidV7::generate($this->clock->now()),'invoice_id' => $invoiceId,'line_no' => ++$lineNo,'state_before' => 'false',
+                'id' => UuidV7::generate($this->clock->now()),'invoice_id' => $invoiceId,'line_no' => ++$lineNo,'state_before' => 'false',
                 'description' => trim($line['name']) !== '' ? $line['name'] : ($line['description'] ?? '-'),'service_type' => $entry['service_type'] ?? null,'pkwiu' => $entry['pkwiu'] ?? null,
                 'quantity' => $line['qty'] ?? '1','unit' => self::UNIT,'unit_net_price' => $line['unit_cost'] ?? $line['net'],'net_amount' => $line['net'],'vat_code' => $vatCode,
                 'ryczalt_rate_pct' => $entry['rate_pct'] ?? null,'created_at' => $now,'updated_at' => $now,

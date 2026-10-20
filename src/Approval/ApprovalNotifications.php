@@ -42,7 +42,7 @@ final readonly class ApprovalNotifications
         $count = $category === 'approval_pending' ? $this->db->fetchOne("SELECT count(*) FROM approval WHERE status='pending'") : 1;
         $this->db->executeStatement(
             'INSERT INTO notification (id,channel,category,approval_id,dedupe_key,body,deep_link,scheduled_for,attempts,created_at) VALUES (?,?,?,?,?,?,?,?,0,?) ON CONFLICT (dedupe_key) DO NOTHING',
-            [(string) UuidV7::generate($now), 'push', $category, $approvalId, sprintf('%s:%s:%s:push', $approvalId, $category, $label), sprintf('%s: %d; %s', $category, is_numeric($count) ? max(1, (int) $count) : 1, self::LINK), self::LINK, $now->format('Y-m-d\TH:i:s.uP'), $now->format('Y-m-d\TH:i:s.uP')],
+            [UuidV7::generate($now), 'push', $category, $approvalId, sprintf('%s:%s:%s:push', $approvalId, $category, $label), sprintf('%s: %d; %s', $category, is_numeric($count) ? max(1, (int) $count) : 1, self::LINK), self::LINK, $now->format('Y-m-d\TH:i:s.uP'), $now->format('Y-m-d\TH:i:s.uP')],
         );
     }
 }

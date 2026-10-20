@@ -94,7 +94,7 @@ final readonly class KsefWriter implements OfficialWriter, StatusReader
         if (!hash_equals($request->sha256, hash('sha256', $request->bytes))) {
             throw new \LogicException('Bajty wysyłki różnią się od payload_sha256.');
         }
-        $correlation = (string) UuidV7::generate($this->clock->now());
+        $correlation = UuidV7::generate($this->clock->now());
         $call = KsefCall::dispatch($this->guard, $request->approvalId, $correlation);
         $refs = ['correlation_id' => $correlation];
         $request->record($refs);
@@ -282,7 +282,7 @@ final readonly class KsefWriter implements OfficialWriter, StatusReader
 
     private function openedSession(string $environment, KsefSession $session): string
     {
-        $id = (string) UuidV7::generate($this->clock->now());
+        $id = UuidV7::generate($this->clock->now());
         $now = $this->now();
         $this->db->insert('ksef_session', [
             'id' => $id, 'environment' => $environment, 'reference_number' => $session->referenceNumber, 'form_code' => $this->sessionFormCode(),
@@ -321,7 +321,7 @@ final readonly class KsefWriter implements OfficialWriter, StatusReader
     /** @param array<string,string> $refs */
     private function readCall(string $approvalId, array $refs): KsefCall
     {
-        return KsefCall::read($approvalId, $refs['correlation_id'] ?? (string) UuidV7::generate($this->clock->now()));
+        return KsefCall::read($approvalId, $refs['correlation_id'] ?? UuidV7::generate($this->clock->now()));
     }
 
     /** Początek dnia wysyłki w Europe/Warsaw: `dispatching_at`, a bez niego decyzja. */

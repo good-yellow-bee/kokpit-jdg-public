@@ -90,7 +90,7 @@ final readonly class JpkWriter implements OfficialWriter, StatusReader
         if (!hash_equals($request->sha256, hash('sha256', $request->bytes))) {
             throw new \LogicException('Bajty wysyłki różnią się od payload_sha256.');
         }
-        $correlation = (string) UuidV7::generate($this->clock->now());
+        $correlation = UuidV7::generate($this->clock->now());
         $call = JpkCall::dispatch($this->guard, $request->approvalId, $correlation, $request->environment);
         $refs = ['correlation_id' => $correlation];
         $request->record($refs);
@@ -289,7 +289,7 @@ final readonly class JpkWriter implements OfficialWriter, StatusReader
     private function readCall(string $approvalId, array $refs): JpkCall
     {
         $environment = $this->db->fetchOne('SELECT environment FROM approval WHERE id=?', [$approvalId]);
-        return JpkCall::read($approvalId, $refs['correlation_id'] ?? (string) UuidV7::generate($this->clock->now()), is_string($environment) ? $environment : $this->configuration->environment());
+        return JpkCall::read($approvalId, $refs['correlation_id'] ?? UuidV7::generate($this->clock->now()), is_string($environment) ? $environment : $this->configuration->environment());
     }
 
     private function now(): string

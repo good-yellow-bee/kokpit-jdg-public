@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheDirectory="var/phpunit-cache" defaultTestSuite="unit,property,contract,xsd,integration,security">
+<phpunit bootstrap="tests/bootstrap.php" colors="true" cacheDirectory="var/phpunit-cache" defaultTestSuite="unit,property,contract,xsd,integration,security" executionOrder="default">
   <php>
     <env name="ERIS_SEED" value="20261009" force="true"/>
     <env name="APP_ENV" value="test" force="true"/>

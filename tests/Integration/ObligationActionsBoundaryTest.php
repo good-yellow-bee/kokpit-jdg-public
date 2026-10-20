@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Tests\Support\LedgerTestTools;
 use App\Tests\Support\ObligationTestTools;
 use Symfony\Component\Clock\MockClock;
 
@@ -107,5 +108,11 @@ final class ObligationActionsBoundaryTest extends DatabaseTestCase
         $this->db()->insert('obligation', ['id' => $id, 'environment' => 'test', 'type' => 'vat_ue', 'rule_key' => 'vat_ue.monthly', 'period_start' => '2026-09-01', 'nominal_due_date' => '2026-10-26', 'due_date' => '2026-10-26', 'status' => 'open',
             'dedupe_key' => 'fictional:' . $id, 'created_at' => $stamp, 'updated_at' => $stamp]);
         return $id;
+    }
+
+    public function testLetterDeadlineWaitsForLock(): void
+    {
+        $actions = ObligationTestTools::actions($this->db(), new MockClock('2026-10-12T08:00:00Z'));
+        LedgerTestTools::assertWaitsForLock($this->db(), 'SELECT pg_advisory_lock(hashtext(?))', ['obligation.edelivery_reply_due'], fn() => $actions->addLetterDeadline(self::USER, '2026-10-12', 'FIKC/1', '2026-10-12', 'fikcyjne pismo'));
     }
 }
