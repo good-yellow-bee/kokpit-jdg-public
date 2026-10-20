@@ -22,9 +22,9 @@ Brak wejścia oznaczonego „stop” zatrzymuje fazę i kończy się pytaniem. P
 | hosting: VPS w UE tylko z projektem prod, RAM ≥ 2 GB; Tailscale i nazwa DNS w VPN dla TLS | Q-14 [F0], D-18, D-28 | stop: F0a nie startuje |
 | laptop z Docker Compose dla `kokpit-dev` | D-28 | – |
 | kanał push | Q-15, D-19 | założenie domyślne: self-hosted ntfy; treść to kategoria, liczba i link |
-| dostawca SMTP dla maila zapasowego; poświadczenia w Symfony Secrets | Q-40, D-19 | założenie domyślne: dostawca w UE z umową powierzenia; odbiór `push-test-mail` czeka |
-| cel backupu poza serwerem w UE; klucze w menedżerze haseł i na papierze | Q-41 | założenie domyślne: magazyn zgodny z S3 w UE u innego dostawcy; odbiór F0a czeka, termin przed końcem F0a |
-| zewnętrzny serwis dead-man | Q-42 | założenie domyślne: healthchecks.io; odbiór F0a czeka |
+| dostawca SMTP dla maila zapasowego; poświadczenia w Symfony Secrets | Q-40, D-19, D-100 | założenie domyślne: dostawca w UE z umową powierzenia; odbiór `push-test-mail` czeka |
+| cel backupu poza serwerem w UE; klucze w menedżerze haseł i na papierze | Q-41, D-100 | założenie domyślne: magazyn zgodny z S3 w UE u innego dostawcy; odbiór F0a czeka, termin przed końcem F0a |
+| zewnętrzny serwis dead-man | Q-42, D-100 | założenie domyślne: healthchecks.io; odbiór F0a czeka |
 | wymagane checki na `main` w repo prywatnym | Q-43 | założenie domyślne: bez wymuszenia; merge tylko przy zielonym CI na PR, pilnujesz Ty |
 | umowy powierzenia z hostingiem, celem backupu i dostawcą SMTP (art. 28 [RODO](https://uodo.gov.pl/pl/file/1460)) | „RODO” w [../security.md](../security.md) | odbiór F0a czeka |
 | repo prywatne `good-yellow-bee/kokpit-jdg` z commitem docs, `.claude/rules` w repo, `CLAUDE.md` lokalny; sprawdzenie: `git remote -v` | D-24 (Q-08) | stop: brak klonu z remote `origin`; bez `git init` |

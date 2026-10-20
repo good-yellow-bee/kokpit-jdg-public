@@ -268,7 +268,7 @@ Decyzje: D-19 i D-28. Push idzie tylko przez ntfy; wariant self-hosted albo ntfy
 | --- | --- | --- |
 | self-hosted ntfy (domyślnie) | na iOS serwis pośredni widzi tylko identyfikator wiadomości i hash tematu; telefon pobiera treść z Twojego serwera, więc potrzebuje VPN, inaczej dostarczenie może się opóźnić o godziny | [ntfy FAQ](https://docs.ntfy.sh/faq/) |
 | ntfy.sh | nazwa tematu działa jak hasło; serwis loguje tematy i IP, buforuje wiadomości 12 godzin i dostarcza je do aplikacji Android przez Firebase | [ntfy](https://docs.ntfy.sh/config/) |
-| mail (zapas powiadomień) | dostawca SMTP z poświadczeniami w Symfony Secrets (Q-40); ta sama zasada treści | D-19 |
+| mail (zapas powiadomień) | Scaleway Transactional Email z poświadczeniami w Symfony Secrets (Q-40, D-100); ta sama zasada treści | D-19 |
 
 Web Push w PWA i bot Telegram odpadają (D-19, D-28). PWA i Web Push są wierszami w [roadmap.md](roadmap.md).
 
