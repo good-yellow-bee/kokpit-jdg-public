@@ -4,7 +4,7 @@ Hosting, usługi compose, wdrożenie, Messenger, katalog zadań, monitoring, bac
 
 ## Hosting
 
-Decyzja przyjęta 2026-10-09: Q-14, D-18. Na VPS działa tylko projekt `kokpit-prod`; dev działa na laptopie, test odtworzenia w jednorazowym projekcie lokalnym (D-28).
+Decyzja przyjęta 2026-10-09: Q-14, D-18; dostawcy 2026-10-20: D-100. Na VPS działa tylko projekt `kokpit-prod`; dev działa na laptopie, test odtworzenia w jednorazowym projekcie lokalnym (D-28).
 
 | Wymóg | Dlaczego | Źródło |
 | --- | --- | --- |
@@ -14,6 +14,17 @@ Decyzja przyjęta 2026-10-09: Q-14, D-18. Na VPS działa tylko projekt `kokpit-p
 | architektura x86_64 (amd64), KVM z `/dev/net/tun` | job CI `images` buduje obrazy tylko dla amd64; sidecar Tailscale potrzebuje `/dev/net/tun`, więc kontenery LXC i OpenVZ odpadają | `.github/workflows/ci.yml`, `compose.yaml` (usługa `vpn`) |
 | zegar przez NTP | ważność tokenów KSeF; P_1 to dzień wysyłki w Europe/Warsaw (D-16) | [uwierzytelnianie KSeF](https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/uwierzytelnianie.md) |
 | stały publiczny IPv4 | teraz niepotrzebny; dostęp INT e-Doręczeń działa tylko ze zgłoszonych adresów, więc wymóg wraca z F4 (D-29) | [regulamin INT](https://www.gov.pl/attachment/f8d3d63b-74ca-4c89-b35b-773eaf2a924a) |
+
+**Dostawcy (D-100).**
+
+| Usługa | Dostawca |
+| --- | --- |
+| VPS | OVHcloud VPS-1 (2 vCore, 4 GB RAM, 40 GB NVMe) w Warszawie |
+| VPN | Tailscale Standard |
+| backup restic | Scaleway Object Storage, region PL-WAW (Q-41) |
+| mail zapasowy | Scaleway Transactional Email, `smtp.tem.scaleway.com` (Q-40) |
+| dead-man | healthchecks.io Hobbyist (Q-42) |
+| obrazy | GHCR, pakiety publiczne |
 
 **Pamięć (szacunek).** Minimum to 2 GB RAM dla jednego projektu `kokpit-prod`: PostgreSQL, PHP-FPM, trzy workery, `scheduler`, `proxy`, `ntfy` i sidecar Tailscale. Czat (F6) nie dodaje usług, a wariant z basal odpada (D-29).
 
@@ -107,7 +118,7 @@ Decyzja: D-93. Na VPS nic się nie buduje: `make deploy` uruchamia tylko obrazy,
 **Kroki tylko dla Ciebie (raz, przy stawianiu VPS):**
 
 1. Zainstaluj `cosign` 2.x na VPS z wydań [sigstore/cosign](https://github.com/sigstore/cosign/releases), ze sprawdzeniem sumy z `cosign_checksums.txt`. Bez niego `deploy`, `rollback`, `verify-images` i `update-check` odmawiają (kod 2).
-2. Dostęp do rejestru: pakiety `app` i `proxy` w GHCR powstają przy pierwszym push do `main` po D-93. Zostaw je prywatne i zaloguj VPS raz: `docker login ghcr.io` tokenem klasycznym tylko z `read:packages` (token w menedżerze haseł, nie w repo). Obrazy nie zawierają sekretów ani sejfu, więc publiczne pakiety też są dopuszczalne; wtedy logowanie odpada.
+2. Dostęp do rejestru: pakiety `app` i `proxy` w GHCR powstają przy pierwszym push do `main` po D-93. Ustaw je jako publiczne (D-100): obrazy nie zawierają sekretów ani sejfu, a logowanie VPS do rejestru odpada. Przy pakietach prywatnych VPS loguje się raz: `docker login ghcr.io` tokenem klasycznym tylko z `read:packages` (token w menedżerze haseł, nie w repo).
 3. Opcjonalnie cron na VPS z `make update-check` i powiadomieniem o nowej wersji; wdrożenie zostaje ręczne.
 
 - Na laptopie `kokpit-dev` startuje przez `docker compose up -d` (oba pliki z `COMPOSE_FILE`) z `KOKPIT_DEPLOYMENT=dev` i migracją z kroku 5. Kroki 3, 4 i 7 odpadają.
@@ -118,7 +129,7 @@ Decyzja: D-93. Na VPS nic się nie buduje: `make deploy` uruchamia tylko obrazy,
 
 Decyzja: D-98. Na świeżym VPS `scripts/prod-install.sh` przygotowuje wszystko, czego `make deploy` nie tworzy, i kończy się listą dalszych komend. Uruchamiasz go raz jako root w checkoucie `main`; każdy krok pomija to, co już istnieje, więc po błędzie poprawiasz przyczynę i uruchamiasz go ponownie. W sesji Claude Code odmawia.
 
-**Przed uruchomieniem (Ty):** VPS z tabeli „Hosting” z Dockerem i wtyczką compose, `git`, `make` i `cosign` („Podpisane obrazy”); `docker login ghcr.io`, jeśli pakiety są prywatne; w konsoli Tailscale klucz uwierzytelniania (wygasanie klucza węzła wyłączysz po pierwszym logowaniu) oraz MagicDNS i HTTPS Certificates w ustawieniach DNS; bucket S3 w UE z kluczami dostępu; w healthchecks.io checki z tabeli „Monitoring”.
+**Przed uruchomieniem (Ty):** VPS z tabeli „Hosting” z Dockerem i wtyczką compose, `git`, `make` i `cosign` („Podpisane obrazy”); `docker login ghcr.io`, jeśli pakiety są prywatne; w konsoli Tailscale klucz uwierzytelniania (wygasanie klucza węzła wyłączysz po pierwszym logowaniu) oraz MagicDNS i HTTPS Certificates w ustawieniach DNS; bucket w Scaleway Object Storage PL-WAW z kluczem dostępu tylko do niego (repozytorium `s3:https://s3.pl-waw.scw.cloud/<bucket>`); domena nadawcy z SPF i DKIM w Scaleway Transactional Email (`--mail-host smtp.tem.scaleway.com`); w healthchecks.io checki z tabeli „Monitoring”.
 
 `sudo scripts/prod-install.sh --node <nazwa> [--mail-host <host> --mail-from <adres> --mail-to <adres>]`
 
@@ -224,7 +235,7 @@ Konektor `mail_in` (D-92) czyta jedną dedykowaną skrzynkę tylko do odczytu. B
 
 Alert nie może zależeć tylko od serwera, który monitoruje. Fikcja doręczenia i terminy biegną także przy awarii kokpitu.
 
-**Dead-man.** Zewnętrzny serwis (Q-42: healthchecks.io albo Uptime Kuma na innym hoście) czeka na pingi i sam alarmuje telefon.
+**Dead-man.** Zewnętrzny serwis healthchecks.io (Q-42, D-100) czeka na pingi i sam alarmuje telefon.
 
 Pingi wysyła tylko `kokpit-prod`: adresy pingu są w jego sejfie i w pliku hosta usługi `backup`. `kokpit-dev` i `kokpit-restore` nie pingują, więc nie maskują martwego PROD.
 
@@ -258,7 +269,7 @@ Powiadomienia mailowe z aplikacji e-Doręczeń zostają włączone na stałe jak
 
 ## Backup i odtwarzanie
 
-Backup obejmuje bazę i pliki `FileStore` w jednym snapshocie. Cel jest poza serwerem, w UE (Q-41, warunki wstępne w [README.md](README.md)).
+Backup obejmuje bazę i pliki `FileStore` w jednym snapshocie. Cel jest poza serwerem, w UE, u innego dostawcy niż hosting: Scaleway Object Storage PL-WAW (Q-41, D-100).
 
 | Element | Reguła |
 | --- | --- |

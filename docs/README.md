@@ -154,11 +154,11 @@ Tabela obejmuje wszystkie osiem elementów z „Odłożonych z planu faz” w [r
 
 | Pozycja | Właściciel | Czas oczekiwania | Blokuje | Termin | Status |
 | --- | --- | --- | --- | --- | --- |
-| Hosting: VPS w UE tylko z projektem prod, RAM ≥ 2 GB, Tailscale i nazwa DNS w VPN dla TLS (D-28) | Ty | dni | F0a | przed wdrożeniem F0a | przyjęte 2026-10-09 (Q-14, D-18); VPS do wynajęcia |
+| Hosting: VPS w UE tylko z projektem prod, RAM ≥ 2 GB, Tailscale i nazwa DNS w VPN dla TLS (D-28) | Ty | dni | F0a | przed wdrożeniem F0a | przyjęte 2026-10-09 (Q-14, D-18); dostawcy: OVHcloud VPS-1 w Warszawie, Tailscale Standard (D-100) |
 | Kanał push: self-hosted ntfy albo ntfy.sh z tokenem | Ty | od ręki | odbiór `push-test` w F0a | krok 0 F0a | otwarte (Q-15) |
-| Dostawca SMTP dla maila zapasowego; poświadczenia w Symfony Secrets | Ty | od ręki | odbiór `push-test-mail` w F0a | krok 0 F0a | otwarte (Q-40) |
-| Cel backupu poza serwerem w UE; klucze w menedżerze haseł i na papierze | Ty | dni | F0a | przed końcem F0a | otwarte (Q-41) |
-| Zewnętrzny serwis dead-man: healthchecks.io albo Uptime Kuma na innym hoście | Ty | od ręki | go-live F0a | przed końcem F0a | otwarte (Q-42) |
+| Dostawca SMTP dla maila zapasowego; poświadczenia w Symfony Secrets; domena nadawcy z SPF i DKIM | Ty | od ręki | odbiór `push-test-mail` w F0a | krok 0 F0a | przyjęte 2026-10-20: Scaleway Transactional Email (Q-40, D-100) |
+| Cel backupu poza serwerem w UE; klucze w menedżerze haseł i na papierze | Ty | dni | F0a | przed końcem F0a | przyjęte 2026-10-20: Scaleway Object Storage PL-WAW (Q-41, D-100) |
+| Zewnętrzny serwis dead-man: healthchecks.io albo Uptime Kuma na innym hoście | Ty | od ręki | go-live F0a | przed końcem F0a | przyjęte 2026-10-20: healthchecks.io Hobbyist (Q-42, D-100) |
 | Plan GitHub: wymagane checki przez ruleset albo ochronę gałęzi `main` w repo prywatnym | Ty | od ręki | odbiór F0a (`ci-green`) | przed F0a | do sprawdzenia (Q-43) |
 | Umowy powierzenia z hostingiem, celem backupu i dostawcą SMTP (art. 28 [RODO](https://uodo.gov.pl/pl/file/1460)) | Ty | dni | go-live F0a | przed końcem F0a | otwarte ([security.md](security.md)) |
 | Eksport ewidencji 2026 z narzędzia z Q-11: CSV z K_1–K_10 albo XML JPK_EWP(4), z policzonymi K_8 i K_9 | Ty | od ręki po wyborze narzędzia | F2.1 | przed F2.1 | otwarte (Q-11, D-30) |
