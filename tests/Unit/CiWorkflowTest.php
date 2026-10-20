@@ -26,6 +26,10 @@ final class CiWorkflowTest extends TestCase
         self::assertSame('unit+property', $jobs['unit_property']['name'] ?? null);
         self::assertTrue($jobs['mutation']['continue-on-error'] ?? null);
         self::assertSame("github.event_name != 'pull_request'", $jobs['mutation']['if'] ?? null);
+        // Kod wyjścia Infection przechodzi przez `tee` tylko z pipefail (`shell: bash`, D-103).
+        $mutation = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => str_contains($step['run'] ?? '', 'run-mutation.sh')));
+        self::assertCount(1, $mutation);
+        self::assertSame('bash', $mutation[0]['shell'] ?? null);
         self::assertSame("github.event_name == 'workflow_dispatch'", $jobs['live']['if'] ?? null);
         self::assertStringContainsString("github.ref_name != 'main'", $jobs['evidence']['if'] ?? '');
         self::assertStringContainsString("startsWith(github.head_ref || github.ref_name, 'f')", $jobs['evidence']['if'] ?? '');

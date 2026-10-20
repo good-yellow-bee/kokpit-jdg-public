@@ -124,8 +124,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sh scripts/ci-bootstrap.sh
-      - run: docker compose exec -T app sh scripts/run-mutation.sh | tee mutation.txt
-      - run: cat mutation.txt >> "$GITHUB_STEP_SUMMARY"
+      # `shell: bash` daje pipefail: bez niego `tee` ukrywał kod wyjścia Infection (D-103).
+      - shell: bash
+        run: docker compose exec -T app sh scripts/run-mutation.sh | tee mutation.txt
+      - if: always()
+        run: cat mutation.txt >> "$GITHUB_STEP_SUMMARY"
   evidence:
     if: (github.event_name != 'push' || github.ref_name != 'main') && (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref || github.ref_name, 'f'))
     needs: [lint, unit_property, contract, xsd, integration, security]

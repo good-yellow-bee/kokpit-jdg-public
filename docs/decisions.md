@@ -161,6 +161,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
 | D-100 | dostawcy hostingu: OVHcloud VPS-1 w Warszawie (x86_64, KVM), Tailscale Standard (Personal odrzucony: regulamin tylko do użytku niekomercyjnego), backup restic w Scaleway Object Storage PL-WAW, mail zapasowy przez Scaleway Transactional Email, dead-man healthchecks.io Hobbyist, pakiety GHCR `app` i `proxy` publiczne | przyjęta 2026-10-20 | Q-40, Q-41, Q-42 |
 | D-101 | liczby PIT-28 do przepisania w Twój e-PIT na `/taxes`: `Pit28Builder::amounts` liczy części D–N bez pozycji formularza, także dla roku bez wariantu z XSD; generator PIT-28(27) mapuje te same kwoty | przyjęta 2026-10-20 | D-96 |
 | D-102 | pierwsze przebiegi joba `live`: `EDeklaracjeTePit28Test` z losowym NIP na przebieg, bo bramka testowa przyjmuje jeden PIT-28 roku na identyfikator podatkowy i kolejny odrzuca kodem 411; paczka dowodów joba `live` także po czerwonym teście (`if`: nie anulowany i testy nie pominięte) | przyjęta 2026-10-20 | D-96, D-97 |
+| D-103 | job `mutation` nigdy nie liczył mutacji w CI: obraz `development` bez sterownika pokrycia, a `tee` ukrywał kod wyjścia Infection; krok dostaje `shell: bash` (pipefail), więc job jest uczciwie czerwony i dalej doradczy; `cc-23` = fail do osobnej zmiany z pomiarem | przyjęta 2026-10-20 | D-28, D-43, D-47 |
 | D-99 | Q-18: zastępcą jest tylko administrator skrzynki ADE wyznaczony w aplikacji e-Doręczeń; bez drugiego `app_user`, bez UPL-1; imię administratora tylko na karcie awaryjnej, nigdy w repo; „Rola zastępcy” z [roadmap.md](roadmap.md) odrzucona | przyjęta 2026-10-19 | Q-18 |
 | D-98 | pierwsza instalacja `kokpit-prod`: `scripts/prod-install.sh --node <nazwa>` jako root na VPS tworzy pliki hosta (`/etc/kokpit/secrets`, pytanie o brakujące wartości bez echa), hasła ról bazy w wolumenach przy pustej bazie, `pgpass`, konfigurację ntfy z użytkownikami i tokenem, sejf PROD w wolumenie `vault` (`scripts/init-prod-vault.php`), nazwę węzła `TS_HOSTNAME`, certyfikat `tailscale cert` z cronem `scripts/prod-cert.sh`, repozytorium restic i plik wdrożenia `/etc/kokpit/prod.env`, który czytają `make deploy` i `make rollback`; `PANEL_ORIGIN` i hosty powiadomień trafiają do kontenerów; `/health` po wdrożeniu przez adres VPN z kontenera app z ponowieniami, pierwszy backup przy pierwszym wdrożeniu; check dead-man `ksef.sync`; `--rehearsal` na danych fikcyjnych w CI; serializer transportów pomija `ScheduledStamp` | przyjęta 2026-10-19 | po F0a |
 | D-97 | job `live` bierze publiczny certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` (nie sekretu), sprawdza go `openssl x509` z ważnością i zapisuje do `var/jpk/mf-test.crt` w kontenerze `app` przed testsuite `live`; bez zmiennej job kończy się przed testami | przyjęta 2026-10-19 | F5.3 |
@@ -1420,6 +1421,21 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - Testy: `tests/Live/KsefTe*`, `tests/Integration/KsefTeRecordingTest.php`, `tests/Unit/KsefCryptoTest.php`, `tests/Support/{KsefTeProvision,MemoryVault}.php`; rejestr `tests/Acceptance/f3.yaml`: wiersze F3.5.
   - `kod-i-qr-test` zostaje `[manual]`: skan kodu QR z PDF faktury przyjętej na TE robisz Ty.
   - PROD potrzebuje Twojego tokena `ksef_token_write` w sejfie `prod` (go-live).
+
+### D-103 Job `mutation` bez pomiaru w CI
+
+- **Status:** przyjęta 2026-10-20 (decyzja Claude w ramach pełnej odpowiedzialności za projekt).
+- **Kontekst:**
+  - Paczka `f0b` (przebieg 39385540766) przeszła 38 z 38 wierszy `ci`. Przekrojowe `cc-23` wymaga raportu MSI z joba `mutation`.
+  - Log joba: Infection kończy się od razu błędem „no code coverage generator (pcov, phpdbg or xdebug)”. Obraz `development` nie ma sterownika pokrycia. Krok `run-mutation.sh | tee mutation.txt` szedł w domyślnej powłoce bez pipefail, więc kod wyjścia `tee` (0) dawał zielony job. Job nigdy nie zmierzył MSI w CI; covered MSI 98% dla `src/Tax` z D-47 pochodzi z przebiegu lokalnego.
+  - Próba lokalna 2026-10-20 z pcov ładowanym tylko na przebieg pokrycia (`--initial-tests-php-options='-d extension=pcov.so'`): 4640 mutantów, jeden wątek, po 22 min przerwana kodem 255 przy ok. 1850 mutantach; wiele mutantów przeżyło, MSI całego zakresu jest wyraźnie poniżej 85/95.
+- **Decyzja:**
+  - Krok Infection ma `shell: bash` (pipefail): błąd Infection albo wynik poniżej progów daje czerwony job. Job zostaje doradczy (`continue-on-error`, bez `pull_request`), więc nie blokuje merge. Podsumowanie zapisuje się też po błędzie (`if: always()`). `CiWorkflowTest` pilnuje `shell: bash`.
+  - `cc-23` w listach `f0b`, `f1`, `f3`, `f5` ma `fail` z tą przyczyną; `mutation-report` [manual] zostaje bez raportu.
+  - Prawdziwy pomiar to osobna zmiana (nowy KOKPIT-n): sterownik pokrycia w obrazie `development`, budżet czasu joba, wątki przy jednej bazie testowej, przyczyna kodu 255, potem testy albo wpisy ignorowania dla ocalałych mutantów. Progów nie obniżamy (zasada z [testing.md](testing.md)).
+- **Ryzyka:** do tej zmiany jakość testów `src/Tax`, `src/Ledger`, `src/Calendar` i `src/Approval` nie ma pomiaru mutacyjnego w CI; każdy przebieg na `main` pokazuje czerwony job `mutation`.
+- **Skutki:** `.github/workflows/ci.yml`, `tests/Unit/CiWorkflowTest.php`; [testing.md](testing.md) („Testy mutacyjne”), listy `docs/evidence/f0b.md`, `f1.md`, `f3.md`, `f5.md`, [README.md](README.md).
+- **Pytania:** brak.
 
 ### D-102 Pierwsze przebiegi joba `live`: PIT-28 z losowym NIP i dowody po czerwonym teście
 
