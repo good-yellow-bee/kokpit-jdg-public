@@ -24,5 +24,8 @@ final class ScannerTest extends TestCase
         self::assertSame([], (new FixtureScanner())->findings('{"ci_run":"https:\\/\\/github.com\\/o\\/r\\/actions\\/runs\\/38142853590"}'));
         self::assertSame([], (new FixtureScanner())->findings('https://github.com/o/r/actions/runs/38142853590'));
         self::assertSame(['PESEL'], (new FixtureScanner())->findings('runs 38142853590'));
+        // Segment 1234563218 numeru referencyjnego KSeF przechodzi sumę kontrolną NIP (D-102).
+        self::assertSame([], (new FixtureScanner())->findings('<NumerReferencyjnySesji>20261020-SO-1234563218-909CEAD3C9-8C</NumerReferencyjnySesji>'));
+        self::assertSame(['NIP'], (new FixtureScanner())->findings('<Nip>1234563218</Nip>'));
     }
 }

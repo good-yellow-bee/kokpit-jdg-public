@@ -19,6 +19,8 @@ final class FixtureScanner
         }
         // Identyfikator przebiegu GitHub Actions w adresie (`ci_run` w manifest.json) to nie PESEL ani NIP.
         $content = (string) preg_replace('~/actions\\\\?/runs\\\\?/\d+~', '/actions/runs/', $content);
+        // Numer referencyjny KSeF ma segmenty 10 znaków szesnastkowych; segment z samych cyfr bywa „poprawnym NIP” (D-102).
+        $content = (string) preg_replace('/\b\d{8}-[A-Z]{2}-[0-9A-F]{10}-[0-9A-F]{10}-[0-9A-F]{2}\b/', '', $content);
         preg_match_all('/(?<![A-Za-z0-9])\d{11}(?![A-Za-z0-9])/', $content, $matches);
         foreach ($matches[0] as $value) {
             if (FictionalIdentifiers::validPesel($value) && !in_array($value, FictionalIdentifiers::PESELS, true)) {
