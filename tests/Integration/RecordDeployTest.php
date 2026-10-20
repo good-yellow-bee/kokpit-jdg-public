@@ -16,6 +16,10 @@ final class RecordDeployTest extends DatabaseTestCase
 {
     public function testDeployRecordsOnlyChangedTargetsOnce(): void
     {
+        // Git worktree: plik .git wskazuje ścieżkę hosta niewidoczną w kontenerze.
+        if (is_file(dirname(__DIR__, 2) . '/.git')) {
+            putenv('KOKPIT_COMMIT=fictional-worktree-commit');
+        }
         $before = $this->connection->fetchOne('SELECT max(sequence) FROM audit_log');
         self::assertTrue($before === null || is_int($before));
         $audit = new AuditLog($this->connection, new MockClock('2026-10-09T10:00:00Z'), new Redactor());
@@ -28,5 +32,6 @@ final class RecordDeployTest extends DatabaseTestCase
         $actions = $this->connection->fetchFirstColumn('SELECT action FROM audit_log WHERE sequence>? ORDER BY sequence', [$before ?? 0]);
         self::assertSame(['ops.deployed','connector.target_changed','connector.enabled_changed','ops.deployed','ops.deployed'], $actions);
         self::assertTrue($audit->verify());
+        putenv('KOKPIT_COMMIT');
     }
 }
