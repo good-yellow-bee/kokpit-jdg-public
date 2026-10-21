@@ -737,7 +737,7 @@ Część b: sekcja niżej.
 | Wynik przypadku | `status`: `pass`, `fail`, `skipped`; pola `failures`, `calls`, `requests`, `cost_usd`, `unsupported_numbers` |
 | Testy (`tests/`) | `ChatEvalRunner` (`tests/Support`: `profile`, `cases`, `manifest`, `recording`, `seed`, `run`, `lastSession`, `skipped`, `report`, `ratio`, `numbers`; stałe `NOW`, `SNAPSHOT`, `MIN_LIVE_PASS_RATIO` = `0.90`), `ChatEvalTest` (offline, testsuite `integration`), `ChatEvalLiveTest` (testsuite `live`, `#[Group('live')]`); opcje `profile` i `prompt` w `ClaudeTestTools::turn` |
 | Live | zmienne `CHAT_EVAL_LIVE` (`1` włącza przebieg) i `CLAUDE_TEST_API_KEY` (klucz workspace testowego tylko na czas przebiegu, do `MemoryVault`); nagrania przebiegu `var/live-recordings/Claude/eval/<id>.json` i `manifest.json` |
-| Raport i artefakty | `var/chat-eval/offline.{json,md}`, `var/chat-eval/live.{json,md}`; artefakt joba `integration` `chat-eval`; w paczce dowodów `cmd/chat-eval-offline.txt`, `cmd/chat-eval-live.txt` |
+| Raport i artefakty | `var/chat-eval/offline.{json,md}`, `var/chat-eval/live.{json,md}`; artefakt joba `integration` `chat-eval`; `cmd/chat-eval-offline.txt`, `cmd/chat-eval-live.txt` tylko pod `kokpit:evidence` (dziś bez wiersza kryterium) |
 
 ### Kreator pierwszego uruchomienia (D-91): nazwy
 

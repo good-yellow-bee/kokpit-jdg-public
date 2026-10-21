@@ -342,7 +342,7 @@ GitHub Actions w prywatnym repo `good-yellow-bee/kokpit-jdg`. Żaden job nie ma 
 | `unit_property` | testsuite `unit` i `property` (`tests/Unit`, `tests/Property`) | tak |
 | `contract` | testsuite `contract` (`tests/Contract`): nagrania i OpenAPI KSeF; bez sieci | tak |
 | `xsd` | testsuite `xsd` (`tests/Xsd`) z `LIBXML_NONET`; sumy kontrolne `resources/xsd` | tak |
-| `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi | tak |
+| `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi; raport zestawu ewaluacyjnego czatu jako artefakt `chat-eval` (D-114) | tak |
 | `security` | testsuite `security` (`tests/Security`), skaner fixtures i sekretów | tak |
 | `mutation` | Infection według „Testów mutacyjnych”, cały zakres także przy `pull_request` (17–26 min, D-106) | tak |
 | `evidence` | po pozostałych: `kokpit:evidence <phase> --only=ci`, upload `var/evidence/**` jako artefakt przebiegu; pomijany przy push do `main` i na gałęziach bez prefiksu fazy `<phase>-` (np. `feature/*`, D-43) | tak |
