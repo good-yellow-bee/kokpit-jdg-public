@@ -20,7 +20,8 @@ use Webauthn\PublicKeyCredentialUserEntity;
 
 /**
  * Step-up (docs/security.md, „Panel”): świeża asercja WebAuthn z `userVerification=required`, nie starsza niż
- * 5 minut, od passkeya zalogowanego użytkownika. Wynik żyje w sesji; użyty passkey trafia do wpisu `auth.step_up`.
+ * 5 minut, od passkeya zalogowanego użytkownika. Wynik żyje w sesji; użyty passkey i jego rodzaj trafiają do wpisu
+ * `auth.step_up`. Przy `step_up.security_key_required` i aktywnym kluczu FIDO2 tylko klucz daje step-up (D-111).
  */
 final readonly class StepUpVerifier implements StepUp
 {
@@ -28,14 +29,20 @@ final readonly class StepUpVerifier implements StepUp
     private const OPTIONS = 'step_up.options';
     private const VERIFIED_AT = 'step_up.verified_at';
     private const CREDENTIAL = 'step_up.credential_id';
+    private const KEY_REQUIRED = 'Ta akcja wymaga potwierdzenia kluczem FIDO2: step-up passkeyem w telefonie nie wystarcza (D-111).';
 
-    public function __construct(private Connection $db, private AuthenticatorAssertionResponseValidator $validator, private WebauthnRepository $repository, private SerializerInterface $serializer, private RequestStack $requests, private ClockInterface $clock, private AuditLog $audit) {}
+    public function __construct(private Connection $db, private AuthenticatorAssertionResponseValidator $validator, private WebauthnRepository $repository, private SerializerInterface $serializer, private RequestStack $requests, private ClockInterface $clock, private AuditLog $audit, private StepUpKeyPolicy $keyPolicy) {}
 
-    /** Opcje ceremonii `navigator.credentials.get` dla passkeyów zalogowanego użytkownika. */
+    /** Opcje ceremonii `navigator.credentials.get` dla passkeyów zalogowanego użytkownika; przy wymogu klucza tylko klucze FIDO2. */
     public function options(AppUser $user): string
     {
         $entity = PublicKeyCredentialUserEntity::create($user->getUserIdentifier(), $user->id(), $user->getUserIdentifier());
-        $allowed = array_map(static fn($record) => $record->getPublicKeyCredentialDescriptor(), $this->repository->findAllForUserEntity($entity));
+        $records = $this->repository->findAllForUserEntity($entity);
+        if ($this->keyPolicy->required($user->id())) {
+            $keys = $this->db->fetchFirstColumn("SELECT encode(credential_id,'hex') FROM webauthn_credential WHERE app_user_id=? AND kind='security_key' AND revoked_at IS NULL", [$user->id()]);
+            $records = array_filter($records, static fn($record) => in_array(bin2hex($record->publicKeyCredentialId), $keys, true));
+        }
+        $allowed = array_values(array_map(static fn($record) => $record->getPublicKeyCredentialDescriptor(), $records));
         if ($allowed === []) {
             throw new AccessDeniedHttpException('Brak aktywnego passkeya.');
         }
@@ -78,17 +85,23 @@ final readonly class StepUpVerifier implements StepUp
         } catch (\Throwable $exception) {
             throw new AccessDeniedHttpException('Step-up nie powiódł się.', $exception);
         }
-        $id = $this->db->fetchOne("SELECT id FROM webauthn_credential WHERE credential_id=decode(?,'hex') AND revoked_at IS NULL", [bin2hex($credential->rawId)]);
-        if (!is_string($id)) {
+        $row = $this->db->fetchAssociative("SELECT id,kind FROM webauthn_credential WHERE credential_id=decode(?,'hex') AND revoked_at IS NULL", [bin2hex($credential->rawId)]);
+        if ($row === false || !is_string($row['id']) || !is_string($row['kind'])) {
             throw new AccessDeniedHttpException('Passkey jest unieważniony.');
         }
+        if ($row['kind'] !== AuthenticatorKind::SecurityKey->value && $this->keyPolicy->required($user->id())) {
+            throw new AccessDeniedHttpException(self::KEY_REQUIRED);
+        }
         $session->set(self::VERIFIED_AT, $now->getTimestamp());
-        $session->set(self::CREDENTIAL, $id);
-        $this->audit->append('auth.step_up', ['credential_id' => $id], targetType: 'app_user', targetId: $user->id());
-        return $id;
+        $session->set(self::CREDENTIAL, $row['id']);
+        $this->audit->append('auth.step_up', ['credential_id' => $row['id'],'kind' => $row['kind']], targetType: 'app_user', targetId: $user->id());
+        return $row['id'];
     }
 
-    /** Wymaga świeżego step-upu; zwraca identyfikator użytego passkeya albo odmawia (403). */
+    /**
+     * Wymaga świeżego step-upu; zwraca identyfikator użytego passkeya albo odmawia (403). Rodzaj sprawdza ponownie, bo
+     * wymóg klucza mógł zacząć działać po step-upie telefonem.
+     */
     public function require(): string
     {
         $session = $this->session();
@@ -97,8 +110,12 @@ final readonly class StepUpVerifier implements StepUp
         if (!is_int($at) || !is_string($credential) || $this->clock->now()->getTimestamp() - $at > self::MAX_AGE_SECONDS) {
             throw new AccessDeniedHttpException('Ta akcja wymaga potwierdzenia passkeyem (step-up).');
         }
-        if ($this->db->fetchOne('SELECT 1 FROM webauthn_credential WHERE id=? AND revoked_at IS NULL', [$credential]) === false) {
+        $row = $this->db->fetchAssociative('SELECT app_user_id,kind FROM webauthn_credential WHERE id=? AND revoked_at IS NULL', [$credential]);
+        if ($row === false || !is_string($row['app_user_id']) || !is_string($row['kind'])) {
             throw new AccessDeniedHttpException('Passkey użyty do step-upu jest unieważniony.');
+        }
+        if ($row['kind'] !== AuthenticatorKind::SecurityKey->value && $this->keyPolicy->required($row['app_user_id'])) {
+            throw new AccessDeniedHttpException(self::KEY_REQUIRED);
         }
         return $credential;
     }

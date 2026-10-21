@@ -44,8 +44,15 @@ final class ApprovalGateGuardsTest extends DatabaseTestCase
     public function testApproveAuditCarriesStepUpCredentialAndConnector(): void
     {
         $id = $this->tools->approved();
-        self::assertSame(['from' => 'pending','step_up_credential_id' => $this->tools->stepUp->require(),'to' => 'approved'], ApprovalRowTools::details($this->db(), $id, 'approval.approved'));
+        self::assertSame(['from' => 'pending','step_up_credential_id' => $this->tools->stepUp->require(),'step_up_kind' => 'passkey','to' => 'approved'], ApprovalRowTools::details($this->db(), $id, 'approval.approved'));
         self::assertSame('dummy', $this->connector($id, 'approval.approved'));
+    }
+
+    public function testApproveAuditCarriesSecurityKeyKind(): void
+    {
+        $this->db()->executeStatement("UPDATE webauthn_credential SET kind='security_key' WHERE id=?", [$this->tools->stepUp->require()]);
+        $id = $this->tools->approved();
+        self::assertSame('security_key', ApprovalRowTools::details($this->db(), $id, 'approval.approved')['step_up_kind'] ?? null);
     }
 
     public function testApproveAtExactExpiryIsRefused(): void

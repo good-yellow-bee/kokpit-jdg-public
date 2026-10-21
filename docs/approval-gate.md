@@ -84,7 +84,7 @@ Panel pokazuje `summary` zapisane przy prośbie, więc widzisz dokładnie to, co
 
 ## Decyzja
 
-- Klikasz „Zatwierdź” i potwierdzasz passkeyem (step-up od F0b). Identyfikator passkeya trafia do `step_up_credential_id`, a wpis `approval.approved` do `audit_log`.
+- Klikasz „Zatwierdź” i potwierdzasz passkeyem (step-up od F0b). Przy `step_up.security_key_required` i aktywnym kluczu FIDO2 potwierdzasz tylko kluczem, nawet po zalogowaniu telefonem ([security.md](security.md), D-111). Identyfikator passkeya trafia do `step_up_credential_id`, a wpis `approval.approved` z `step_up_kind` (`passkey` albo `security_key`) do `audit_log`.
 - Bramka ponownie sprawdza warunki z kolumną „decyzja”. Przejście `pending` → `approved` jest warunkowe, więc drugie kliknięcie nic nie zmienia.
 - Decyzja ustawia `expires_at` według tabeli niżej. Przy fakturze blokuje też P_2 (`invoice_number_locked_at`).
 - „Anuluj” działa do chwili `dispatching` i zapisuje `cancel_reason` = `user`.

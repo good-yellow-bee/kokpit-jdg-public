@@ -1,0 +1,9 @@
+{# Przycisk step-up (D-40); przy wymogu klucza FIDO2 przycisk i podpowiedź mówią o kluczu (D-111). #}
+{% if app.user and step_up_security_key_required(app.user.id) %}
+    <p id="step-up-security-key">Potwierdzenie wymaga klucza FIDO2 (USB albo NFC) i jego PIN-u; passkey w telefonie nie wystarczy. Utrata klucza: <code>app:passkey:reset</code> przez SSH.</p>
+    <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź kluczem FIDO2</button>
+{% else %}
+    <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
+{% endif %}
+<p id="passkey-result" role="status"></p>
+<script src="{{ asset('passkey.js') }}" defer></script>
