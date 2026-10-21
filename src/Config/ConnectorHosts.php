@@ -28,6 +28,8 @@ final class ConnectorHosts
         'nbp' => ['default' => ['api.nbp.pl']],
         // API Sejmu (ELI i procesy legislacyjne) dla obserwacji prawa, tylko `GET` (D-75).
         'eli' => ['default' => ['api.sejm.gov.pl']],
+        // Changelog dokumentacji KSeF API z CIRFMF/ksef-docs, tylko `GET` i tylko ścieżki tego repozytorium (D-112).
+        'ksef_docs' => ['default' => ['raw.githubusercontent.com']],
         'freshbooks' => ['default' => ['api.freshbooks.com']],
         'claude' => ['default' => ['api.anthropic.com']],
         'mail' => ['default' => []],

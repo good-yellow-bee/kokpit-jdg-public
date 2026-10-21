@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Ręcznie pisane, fikcyjne (fictional) nagranie (D-112); kształt błędu jak w raw.githubusercontent.com.",
+    "scenario": "Ręcznie pisane, fikcyjne (fictional): plik changelogu przeniesiony, 404.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/CIRFMF/ksef-docs/main/api-changelog.md",
+            "status": 404,
+            "body_text": "404: Not Found"
+        }
+    ]
+}
