@@ -29,4 +29,11 @@ final class IsoDateTest extends TestCase
         }
         self::assertSame(2, IsoDate::month('2028-02-29'));
     }
+
+    public function testIsDate(): void
+    {
+        self::assertTrue(IsoDate::isDate('2028-02-29'));
+        self::assertFalse(IsoDate::isDate('2026-02-29'));
+        self::assertFalse(IsoDate::isDate('29.02.2028'));
+    }
 }

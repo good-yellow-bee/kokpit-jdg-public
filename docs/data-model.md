@@ -77,7 +77,7 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | Element | Reguła |
 | --- | --- |
 | Kolumna | `environment text NOT NULL CHECK (environment IN ('test','demo','prod'))`; `int` wraca z F4 osobną migracją (sekcja „Odłożone”) |
-| Tabele z kolumną | `invoice`, `ksef_session`, `counterparty`, `verification`, `payment`, `revenue_entry`, `fixed_asset`, `zus_payment`, `period`, `filing`, `obligation`, `approval`, `draft`, `stored_file`, `connector_call`, `rate_counter`, `sync_cursor`, `credential_state`, `mail_in_message`; w `audit_log` kolumna wskazuje cel akcji i może być pusta |
+| Tabele z kolumną | `invoice`, `ksef_session`, `counterparty`, `verification`, `payment`, `revenue_entry`, `fixed_asset`, `zus_payment`, `period`, `filing`, `obligation`, `approval`, `draft`, `stored_file`, `connector_call`, `rate_counter`, `sync_cursor`, `credential_state`, `mail_in_message`, `bank_statement`, `bank_statement_line`; w `audit_log` kolumna wskazuje cel akcji i może być pusta |
 | Tabele bez kolumny | `invoice_line` (dziedziczy po `invoice`), `fx_rate`, `setting`, `notification`, `app_user`, `webauthn_credential`, `chat_session`, `chat_message`, `legal_watch`, `legal_watch_hit` (stan prawa jest ten sam dla każdego środowiska) |
 | Środowisko wdrożenia | `prod` przy `APP_ENV=prod` (`kokpit-prod`, `kokpit-restore`), w innym wypadku `test` (`kokpit-dev`, testy); ten sam przełącznik wybiera hosty rejestrów ([modules/rejestry-kursy.md](modules/rejestry-kursy.md)) |
 | Dane prawdziwe | tylko w `kokpit-prod` i w jego kopii w `kokpit-restore`; `kokpit-dev` i testy działają wyłącznie na danych fikcyjnych |
@@ -123,6 +123,7 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | `chat_session`, `chat_message`, `draft` | historia czatu i szkice | F6 | [modules/czat.md](modules/czat.md) |
 | `legal_watch`, `legal_watch_hit` | obserwowane akty i procesy legislacyjne, wykryte zmiany | po F6 (D-75) | [modules/obserwacja-prawa.md](modules/obserwacja-prawa.md) |
 | `mail_in_message` | wiadomości z dedykowanej skrzynki na dokumenty kosztowe | po F1 (D-92) | [decisions.md](decisions.md), D-92 |
+| `bank_statement`, `bank_statement_line` | wgrane wyciągi bankowe i ich operacje z dopasowaniami | po F2.2/F2.3 (D-108) | [decisions.md](decisions.md), D-108 |
 
 - Kolejność wierszy idzie za kolejnością realizacji z D-30: F0a → F2.1 → F2.4 → F0b → F1 → F2.2/F2.3 → F3 → F5 → F6. Dokładny podział F2 jest w [phases/f2-ewidencja.md](phases/f2-ewidencja.md).
 - F2.1 i F2.4 działają przed F0b i F1. `revenue_entry.invoice_id`, `payment_id`, `fx_rate_id` oraz `fixed_asset.invoice_id` powstają bez kluczy obcych. Klucz obcy dodaje migracja fazy, która tworzy tabelę docelową: F1 (`invoice`, `fx_rate`), F2.2/F2.3 (`payment`).
@@ -900,6 +901,49 @@ Jedna pobrana wiadomość skrzynki `mail_in` (D-92). Treści maila kokpit nie za
 | `handled_at`, `handled_by` | timestamptz null, uuid FK null | „Oznacz jako wpisane” w panelu, tylko przy `new` |
 
 - Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`. Pliki dziedziczą retencję `stored_file` (koniec roku pobrania + 5 lat).
+
+### Wyciąg bankowy
+
+#### `bank_statement`
+
+Wgrany plik wyciągu (D-108). Plik leży w `stored_file` (`evidence`, `text/csv`, `owner_table` = `bank_statement`); podgląd liczy się z pliku, więc `pending` nie ma jeszcze wierszy operacji.
+
+| Pole | Typ | Opis |
+| --- | --- | --- |
+| `format` | text | `mbank_csv` |
+| `file_sha256`, `file_id` | char(64), uuid FK | hash pliku i plik w `FileStore`; hash sprawdzany przy każdym odczycie |
+| `original_name` | text null | nazwa pliku z przeglądarki |
+| `period_from`, `period_to` | date | okres z nagłówka wyciągu |
+| `status` | text | `pending`, `confirmed`, `discarded` |
+| `lines_in_file` | int | operacje w pliku |
+| `lines_added`, `matches_applied` | int null | zapisane nowe operacje i zastosowane dopasowania; tylko przy `confirmed` |
+| `uploaded_at`, `uploaded_by` | timestamptz, uuid FK | wgranie |
+| `decided_at`, `decided_by` | timestamptz, uuid FK null | zatwierdzenie albo odrzucenie |
+
+- Indeksy unikalne częściowe: `(environment, file_sha256)` poza `discarded` (ten sam plik drugi raz = odmowa) i `(environment)` przy `pending` (najwyżej jeden oczekujący).
+- Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`.
+
+#### `bank_statement_line`
+
+Operacja z zatwierdzonego wyciągu z dopasowaniem (D-108). Wiersz jest niezmienny od zapisu.
+
+| Pole | Typ | Opis |
+| --- | --- | --- |
+| `statement_id` | uuid FK | wyciąg, który zapisał operację |
+| `line_hash` | char(64) | sha256 z NRB rachunku, daty, kwoty, waluty, opisu po zwinięciu białych znaków i numeru wystąpienia takiej samej operacji w pliku; `UNIQUE (environment, line_hash)` |
+| `account` | char(26) | NRB własnego rachunku z nagłówka wyciągu |
+| `booked_on` | date | data operacji |
+| `amount`, `currency` | NUMERIC(18,2), char(3) | kwota ze znakiem: minus to obciążenie |
+| `operation_type`, `description` | text null, text | typ operacji banku i reszta opisu (tytuł, kontrahent) |
+| `counterparty_account` | char(26) null | NRB kontrahenta z opisu |
+| `kind` | text | `incoming`, `outgoing`, `zus`, `tax`, `internal` (między własnymi rachunkami, także techniczne przelewy VAT) |
+| `split_payment` | boolean | operacja w mechanizmie podzielonej płatności |
+| `invoice_id`, `payment_id`, `obligation_id` | uuid FK null | cel dopasowania; każdy cel najwyżej raz (indeksy unikalne częściowe) |
+| `match_rule` | text null | `invoice_title_amount`, `payment_title_amount`, `zus_amount`, `tax_amount` |
+| `matched_at`, `matched_by` | timestamptz, uuid FK null | Twoje zatwierdzenie dopasowania |
+
+- `CHECK`: reguła wyznacza cele (faktura z opcjonalną płatnością, sama płatność albo sam obowiązek); bez reguły brak celów i znaczników dopasowania.
+- Rola aplikacji ma `SELECT` i `INSERT`, bez `UPDATE` i `DELETE`.
 
 ## Stany encji
 

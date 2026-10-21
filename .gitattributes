@@ -1,0 +1,2 @@
+# Wyciąg banku w oryginalnym układzie: CRLF i BOM bez konwersji (D-108).
+tests/Fixtures/Bank/*.csv -text

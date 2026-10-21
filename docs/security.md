@@ -287,6 +287,7 @@ KSeF przechowuje faktury, ale UPO, ewidencja, wysłane XML i snapshoty weryfikac
 | dowody weryfikacji kontrahentów | `stored_file` `verification_raw`, `evidence` | jak dokument, który wspierają | konwencja kokpitu |
 | certyfikaty rezydencji dostawców | `stored_file` `evidence` przy `counterparty` | reguła podstawowa za rok płatności | konwencja kokpitu |
 | dowody bilansu otwarcia | `stored_file` `evidence` przy kluczach `setting` `opening.*` | jak ewidencja roku przejścia | konwencja kokpitu |
+| wyciągi bankowe | `stored_file` `evidence` przy `bank_statement`, `bank_statement_line` | reguła podstawowa za rok końca okresu wyciągu | dowód zapłaty; art. 86 § 1 Ordynacji |
 | szkice `email` i ich `outbound_payload` | `draft`, `stored_file` `outbound_payload` | 12 miesięcy od `executed` albo `discarded` | minimalizacja danych |
 | `audit_log` | baza | bez usuwania; bez treści dokumentów | konwencja kokpitu |
 | `connector_call` | baza | 90 dni | konwencja kokpitu |
@@ -313,6 +314,7 @@ Jesteś administratorem danych. Kokpit przetwarza dane osobowe w ramach obowiąz
 | kontrahenci będący osobami fizycznymi | nazwa JDG, NIP, adres, rachunek | `Redactor` w logach i czacie; dane w `buyer_snapshot` tylko z dnia wystawienia |
 | treść pism | imiona urzędników, dane z postępowań | kokpit nie pobiera pism, bo API jest odłożone (D-29); do modelu tylko według [modules/czat.md](modules/czat.md) |
 | rozmowy z czatem | pytania, wyniki narzędzi | retencja 12 miesięcy; pseudonimy w sesji |
+| wyciągi bankowe | kontrahenci, tytuły przelewów, Twoje rachunki | tylko w `kokpit-prod`; odmowa pliku podaje numer wiersza bez treści; audyt bez kwot i treści; fixtures fikcyjne (D-108) |
 
 | Obowiązek | Realizacja |
 | --- | --- |

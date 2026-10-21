@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 has_code=false
-for directory in src/Tax src/Ledger src/Calendar src/Approval; do
+for directory in src/Tax src/Ledger src/Calendar src/Approval src/Bank; do
   if [ -d "$directory" ] && find "$directory" -name '*.php' -print -quit | grep -q .; then
     has_code=true
   fi
