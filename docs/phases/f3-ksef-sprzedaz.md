@@ -33,7 +33,7 @@ Brak wejścia oznaczonego „stop” zatrzymuje część i kończy się pytaniem
 | usługi, PKWiU 2015 i stawki | F3.1, F3.2 | Q-22 | kod i testy na fikcyjnym `ryczalt.service_map`; pozycja bez mapowania blokuje zatwierdzenie |
 | wybór art. 31a ust. 2a | F3.1 | Q-23 | założenie domyślne: bez wyboru; kurs VAT według art. 31a ust. 1 i 2 |
 | data usługi z FreshBooks | F3.2 | [../modules/freshbooks.md](../modules/freshbooks.md) | założenie domyślne: `fulfillment_date` niepotwierdzone; data albo okres usługi z panelu przed `ready` |
-| zastępca przy terminach | go-live | Q-18 | założenie domyślne z Q-18; kodu F3 nie blokuje |
+| zastępca przy terminach | go-live | Q-18, D-107 | zastępcy brak (D-99, D-107); kodu F3 nie blokuje |
 | `company.identity` (część FA(3)) | wszystkie | [../modules/ksef.md](../modules/ksef.md) | na `kokpit-dev` i w testach wartości fikcyjne; na PROD przed go-live |
 | `ksef_token_write` PROD, SMTP PROD, FreshBooks PROD połączony | go-live | [../operations.md](../operations.md), [../security.md](../security.md) | go-live F3 czeka; odbioru F3.1–F3.5 nie blokuje |
 

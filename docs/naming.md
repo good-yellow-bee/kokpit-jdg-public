@@ -66,7 +66,7 @@ Terminy e-Doręczeń API i basal zostają w słowniku. Ich identyfikatory są od
 | GTU | kody grup towarów i usług w JPK_V7M | goods and services group codes |
 | PKWiU 2015 | klasyfikacja usług, od której zależy stawka ryczałtu | product and service classification |
 | UPL-1 | pełnomocnictwo do podpisywania deklaracji | power of attorney for tax returns |
-| administrator skrzynki | osoba wyznaczona przez przedsiębiorcę do obsługi skrzynki ADE; zastępca przy odbiorze pism (Q-18) | inbox administrator |
+| administrator skrzynki | osoba, którą przedsiębiorca może wyznaczyć do obsługi skrzynki ADE; kokpit jej nie zakłada (D-107) | inbox administrator |
 | nabywca z UE bez ważnego numeru w VIES | podatnik prowadzący działalność, niezidentyfikowany na potrzeby VAT; scenariusz do potwierdzenia przez doradcę (Q-29) | `invoice.tax_scenario` = `eu_b2b_unidentified` |
 | atrapa konektora | konektor testowy bez zewnętrznego systemu | konektor `dummy` |
 | lista dowodów fazy | ręcznie pisana lista: kryterium → pass albo fail → artefakt | `docs/evidence/<phase>.md` |
