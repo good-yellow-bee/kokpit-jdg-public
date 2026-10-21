@@ -66,6 +66,14 @@ parameters:
   mail_in.timeout_s: 30
   mail_in.max_message_bytes: 26214400
   mail_in.max_messages_per_run: 50
+  # Powiadomienia systemowe z poczty (D-109): `sender` (pełny adres) albo `domain` (bez poddomen), `subject` opcjonalnie.
+  # Adresy e-US i JPK_VAT z podatki.gov.pl; eZUS i e-Doręczenia to założenia do sprawdzenia (docs/facts.md).
+  mail_in.notices:
+    - { channel: e_us, sender: 'e-urzadskarbowy@podatki.gov.pl' }
+    - { channel: e_us, sender: 'jpk.powiadomienia@mf.gov.pl', subject: '/^POWIADOMIENIA JPK_VAT\b/iu' }
+    - { channel: e_us, sender: 'powiadomienia.jpk@mf.gov.pl', subject: '/^POWIADOMIENIA JPK_VAT\b/iu' }
+    - { channel: ezus, domain: zus.pl }
+    - { channel: ade, domain: edoreczenia.gov.pl }
 services:
   _defaults: { autowire: true, autoconfigure: true }
   App\Config\ConnectorConfiguration:
@@ -170,6 +178,8 @@ services:
     arguments: { $timeoutSeconds: '%mail_in.timeout_s%', $maxMessageBytes: '%mail_in.max_message_bytes%' }
   App\Cost\MailInbox:
     arguments: { $maxMessagesPerRun: '%mail_in.max_messages_per_run%' }
+  App\Calendar\MailNotices:
+    arguments: { $rules: '%mail_in.notices%' }
 when@dev:
   services:
     dummy.mock_response:

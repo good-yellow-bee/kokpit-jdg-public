@@ -263,6 +263,7 @@ Decyzje: D-19 i D-28. Push idzie tylko przez ntfy; wariant self-hosted albo ntfy
 - Nigdy nadawca pisma, nazwa kontrahenta, kwota ani treść. Szczegóły widać dopiero w panelu po zalogowaniu.
 - Kolumny i deduplikacja są w [data-model.md](data-model.md); terminy przypomnień w [compliance-calendar.md](compliance-calendar.md).
 - Powiadomienia mailowe z aplikacji e-Doręczeń zostają włączone na stałe, niezależnie od kokpitu. Do powrotu F4 to jedyny sygnał o nowym piśmie (D-29).
+- Mail z powiadomieniem e-US, eZUS albo e-Doręczeń w skrzynce `mail_in` daje obowiązek „sprawdź kanał” (D-109). Fałszywe maile KAS i ZUS: reguła wymaga dokładnego adresu albo domeny nadawcy (nazwa wyświetlana nie liczy się), kokpit nie czyta treści i nie otwiera linków, a notatka obowiązku każe logować się ze znanego adresu. Podrobiony nagłówek `From` daje najwyżej zbędne sprawdzenie kanału. Push `manual_channel_check` ma tylko kategorię, liczbę i link.
 
 | Kanał | Prywatność | Źródło |
 | --- | --- | --- |

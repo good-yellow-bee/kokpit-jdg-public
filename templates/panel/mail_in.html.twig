@@ -46,6 +46,9 @@
                     {% else %}
                         {{ {'no_document': 'bez dokumentu', 'too_large': 'za duża, nie pobrana', 'duplicate': 'powtórzona', 'unreadable': 'nieczytelna'}[message.status] ?? message.status }}
                     {% endif %}
+                    {% if message.notice_channel %}
+                        <br><span class="mail-in-notice-channel">powiadomienie {{ notice_labels[message.notice_channel] }}: <a href="{{ path('panel_calendar') }}">sprawdź kanał</a> (nadawca z nagłówka; nie otwieraj linków z maila)</span>
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}

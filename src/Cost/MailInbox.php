@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cost;
 
 use App\Audit\AuditLog;
+use App\Calendar\MailNotices;
 use App\Config\ConnectorConfiguration;
 use App\Connector\MailIn\FetchedMail;
 use App\Connector\MailIn\MailInConnector;
@@ -22,7 +23,8 @@ use Symfony\Component\Uid\UuidV7;
  * Dokumenty kosztowe z dedykowanej skrzynki (D-92). Każda pobrana wiadomość daje wiersz `mail_in_message` (kursor UID
  * per `UIDVALIDITY`), a załącznik PDF, JPEG albo PNG rozpoznany po sygnaturze pliku trafia do `FileStore` jako
  * `cost_document`. Fakturę kosztową wpisujesz sam; kokpit nie czyta treści maila, nie otwiera linków i nie
- * wykonuje załączników. Błąd skrzynki daje alert `connector_failure` (`mail_in`) raz na dobę i rodzaj błędu.
+ * wykonuje załączników. Mail z powiadomieniem e-US, eZUS albo e-Doręczeń daje obowiązek „sprawdź kanał” (D-109).
+ * Błąd skrzynki daje alert `connector_failure` (`mail_in`) raz na dobę i rodzaj błędu.
  */
 final readonly class MailInbox
 {
@@ -37,6 +39,7 @@ final readonly class MailInbox
         private FileStore $files,
         private AuditLog $audit,
         private RegistryAlerts $alerts,
+        private MailNotices $notices,
         private ConnectorConfiguration $configuration,
         private ClockInterface $clock,
         private int $maxMessagesPerRun,
@@ -107,7 +110,11 @@ final readonly class MailInbox
                 }
             }
             $status = $accepted === [] ? 'no_document' : 'new';
-            $this->db->insert('mail_in_message', $row + ['status' => $status, 'documents' => count($accepted), 'skipped' => count($parsed->attachments) - count($accepted)]);
+            $channel = $this->notices->channel($parsed->from, $parsed->subject);
+            $this->db->insert('mail_in_message', $row + ['status' => $status, 'documents' => count($accepted), 'skipped' => count($parsed->attachments) - count($accepted), 'notice_channel' => $channel]);
+            if ($channel !== null && $parsed->from !== null) {
+                $this->notices->record($environment, $id, $channel, $parsed->from, $parsed->subject);
+            }
             $year = (int) $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Warsaw'))->format('Y');
             foreach ($accepted as [$attachment, $type]) {
                 $this->files->put($attachment->bytes, $environment, 'cost_document', $type, 'mail_in_message', $id, $year, false, $attachment->filename);
