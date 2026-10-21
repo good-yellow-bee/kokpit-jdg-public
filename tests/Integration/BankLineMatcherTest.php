@@ -217,6 +217,7 @@ final class BankLineMatcherTest extends DatabaseTestCase
         $checked = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fikcyjny wykonawca', 'PL', ['nip' => $other]);
         ChatTestTools::verification($this->db(), 'test', $checked, 'white_list', 'valid', '2026-09-10T08:00:00Z', ['subject' => $other, 'bank_account' => FictionalIdentifiers::account(10)]);
         ChatTestTools::verification($this->db(), 'test', $checked, 'vies', 'valid', '2026-09-10T08:00:00Z', ['subject' => 'PL' . $other, 'bank_account' => FictionalIdentifiers::account(12)]);
+        ChatTestTools::verification($this->db(), 'test', $checked, 'white_list', 'invalid', '2026-09-11T08:00:00Z', ['subject' => $other, 'bank_account' => FictionalIdentifiers::account(13)]);
         $foreign = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fictional Ltd', 'IE');
         $account = $this->cost($supplier, 'FZ 1/2026', '100.00', '23.00');
         $object = $this->cost($supplier, 'FZ 2/2026', '200.00', '46.00', ['cost_review' => 'disputed']);
@@ -248,6 +249,7 @@ final class BankLineMatcherTest extends DatabaseTestCase
             'object' => $this->line(BankLineKind::Outgoing, '-246.00', 'ABONAMENT', FictionalIdentifiers::account(9)),
             'verified' => $this->line(BankLineKind::Outgoing, '-369.00', 'USŁUGA', FictionalIdentifiers::account(10)),
             'vies account' => $this->line(BankLineKind::Outgoing, '-1500.00', 'USŁUGA', FictionalIdentifiers::account(12)),
+            'invalid account' => $this->line(BankLineKind::Outgoing, '-1500.00', 'USŁUGA', FictionalIdentifiers::account(13), bookedOn: '2026-09-16'),
             'split' => $this->line(BankLineKind::Outgoing, '-492.00', '/VAT/92,00/IDC/' . $other . '/INV/INNA/TXT/USŁUGA'),
             'number' => $this->line(BankLineKind::Outgoing, '-500.00', 'invoice inv-5'),
             'ksef' => $this->line(BankLineKind::Outgoing, '-738.00', 'KSeF ' . $nip . '-20260901-0000FICTION-AB'),

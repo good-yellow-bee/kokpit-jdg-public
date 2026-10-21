@@ -145,7 +145,7 @@ final readonly class BankLineMatcher
 
     /**
      * Koszt bez `paid_on` z kwotą brutto równą obciążeniu i co najmniej jednym wskazaniem dostawcy: rachunek odbiorcy
-     * z `counterparty.bank_accounts` albo sprawdzony w białej liście, NIP (w podzielonej płatności pole `/IDC/`) albo
+     * z `counterparty.bank_accounts` albo potwierdzony w białej liście (`valid`), NIP (w podzielonej płatności pole `/IDC/`) albo
      * numer faktury lub numer KSeF w tytule. Blokada jak przy obowiązkach: `paid_on` nie zmieni się przed `markPaid`.
      *
      * @return list<BankMatch>
@@ -162,7 +162,7 @@ final readonly class BankLineMatcher
         foreach ($rows as $row) {
             $number = self::text($row['invoice_number']);
             $accounts = [...self::entries(json_decode(self::text($row['bank_accounts']), true, 4, JSON_THROW_ON_ERROR)), ...$this->db->fetchFirstColumn(
-                "SELECT bank_account FROM verification WHERE counterparty_id=? AND source='white_list' AND bank_account IS NOT NULL",
+                "SELECT bank_account FROM verification WHERE counterparty_id=? AND source='white_list' AND result='valid' AND bank_account IS NOT NULL",
                 [$row['counterparty_id']],
             )];
             $evidence = array_keys(array_filter([
