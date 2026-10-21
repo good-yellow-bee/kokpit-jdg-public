@@ -896,7 +896,7 @@ Rekord ma pola: status, kontekst, decyzja, skutki, pytania. Źródło stoi przy 
   - `push` uruchamia CI tylko na `main`. Gałąź z PR liczy się raz, przez `pull_request`.
   - `concurrency` anuluje starszy przebieg tego samego PR po nowym pushu; przebiegi `main` nie są anulowane.
   - `mutation` nie biegnie przy `pull_request`, póki jest doradczy (D-28). Z pierwszym plikiem w `src/Tax` job staje się blokujący i wraca do PR. Wrócił w D-106.
-  - `evidence` biegnie tylko na gałęziach zaczynających się od `f` (prefiks fazy sprawdza `scripts/ci-evidence.sh`) albo przy `workflow_dispatch`. Gałąź bez fazy nie ma czego dowodzić.
+  - `evidence` biegnie tylko na gałęziach zaczynających się od `<phase>-` (np. `f0a-szkielet`) albo przy `workflow_dispatch`. Gałąź bez fazy nie ma czego dowodzić. Pierwotny warunek „zaczyna się od `f`” łapał też `feature/*` i dawał czerwony `evidence` (KOKPIT-93).
   - Id jobów zostają bez zmian (kontrakt z [naming.md](naming.md)).
 - **Skutki:**
   - Push do PR kosztuje ok. 21 minut zamiast ok. 50.

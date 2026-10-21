@@ -44,7 +44,12 @@ final class CiWorkflowTest extends TestCase
         self::assertSame(['name' => 'mutation','path' => 'mutation.json','if-no-files-found' => 'error'], $report[0]['with'] ?? null);
         self::assertSame("github.event_name == 'workflow_dispatch'", $jobs['live']['if'] ?? null);
         self::assertStringContainsString("github.ref_name != 'main'", $jobs['evidence']['if'] ?? '');
-        self::assertStringContainsString("startsWith(github.head_ref || github.ref_name, 'f')", $jobs['evidence']['if'] ?? '');
+        // Tylko gałęzie `<phase>-*` z listy `ci-evidence.sh`; `feature/*` pomija `evidence` (KOKPIT-93).
+        self::assertSame(1, preg_match('/case "\$phase" in ([a-z0-9|]+)\)/', (string) file_get_contents($root . '/scripts/ci-evidence.sh'), $phases));
+        foreach (explode('|', $phases[1] ?? '') as $phase) {
+            self::assertStringContainsString("startsWith(github.head_ref || github.ref_name, '{$phase}-')", $jobs['evidence']['if'] ?? '');
+        }
+        self::assertStringNotContainsString("'f')", $jobs['evidence']['if'] ?? '');
         foreach (['unit_property' => ['unit','property'],'contract' => ['contract'],'xsd' => ['xsd'],'integration' => ['integration'],'security' => ['security'],'live' => ['live']] as $job => $suites) {
             foreach ($suites as $suite) {
                 self::assertStringContainsString('--testsuite ' . $suite, implode("\n", array_column($jobs[$job]['steps'], 'run')));
