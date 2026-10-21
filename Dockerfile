@@ -8,8 +8,12 @@ RUN git config --system --add safe.directory /app \
 WORKDIR /app
 
 FROM base AS development
-# Sterownik pokrycia dla Infection (D-104); obraz `production` go nie ma.
-RUN pecl install pcov-1.0.12 && docker-php-ext-enable pcov && rm -rf /tmp/pear
+# Sterownik pokrycia dla Infection (D-104); obraz `production` go nie ma. Źródło: tag z GitHub z przypiętą sumą, bez pecl.php.net.
+RUN curl -fsSL -o /tmp/pcov.tar.gz https://github.com/krakjoe/pcov/archive/refs/tags/v1.0.12.tar.gz \
+    && echo "fdd07cad8e2ff42f0c9f095d84aeef11dab0fde7a008805f61883cbcb1b3f12b  /tmp/pcov.tar.gz" | sha256sum -c - \
+    && mkdir /tmp/pcov && tar -xzf /tmp/pcov.tar.gz -C /tmp/pcov --strip-components=1 \
+    && cd /tmp/pcov && phpize && ./configure && make -j$(nproc) && make install \
+    && docker-php-ext-enable pcov && rm -rf /tmp/pcov /tmp/pcov.tar.gz
 COPY . /app
 RUN composer install --no-interaction --prefer-dist --no-scripts
 CMD ["php-fpm"]
