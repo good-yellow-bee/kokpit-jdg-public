@@ -92,6 +92,24 @@
         {% endif %}
     </section>
 
+    <section id="ledger-entry-error">
+        <h2>Błąd wpisu</h2>
+        <p>Wiersz wskazujesz rokiem i K_1. Wypełniasz tylko pola do poprawy. Błąd w samej kwocie K_8 daje jeden wiersz correction z różnicą, błąd w innym polu daje wiersz odwracający i wiersz z poprawnymi polami.</p>
+        <form method="post" action="{{ path('panel_ledger_entry_error') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('ledger') }}">
+            <label>Rok <input name="year" type="number" required value="{{ year }}"></label>
+            <label>K_1 <input name="lp" type="number" required min="1"></label>
+            <label>Data przychodu (K_3) <input name="revenue_date" type="date"></label>
+            <label>Numer dowodu (K_4) <input name="document_number" maxlength="256"></label>
+            <label>Numer KSeF (K_5) <input name="ksef_number"></label>
+            <label>Kraj kontrahenta (K_6) <input name="counterparty_country" maxlength="2" pattern="[A-Za-z]{2}"></label>
+            <label>Identyfikator kontrahenta (K_7) <input name="counterparty_tax_id" maxlength="50"></label>
+            <label>Kwota w zł (K_8) <input name="amount_pln" pattern="-?[0-9]+\.[0-9]{2}"></label>
+            <label>Stawka % (K_9) <input name="rate_pct" pattern="[0-9]{1,2}(\.[0-9]{1,2})?"></label>
+            <button type="submit">Zapisz korektę</button>
+        </form>
+    </section>
+
     <section id="ledger-rows">
         <h2>Ostatnie wiersze</h2>
         <table>

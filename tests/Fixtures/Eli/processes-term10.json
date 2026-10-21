@@ -1,0 +1,73 @@
+{
+    "fictional": true,
+    "source": "Nagranie z api.sejm.gov.pl z 2026-10-21 (D-112): publiczne nagłówki procesów legislacyjnych, skrócone do pięciu procesów i pól bez opisu i odnośników; bez danych osobowych (fictional: brak danych identyfikujących).",
+    "scenario": "Procesy kadencji 10 zmienione od 14.10.2026: projekty o VAT (3135), o świadczeniach opieki zdrowotnej (3141) i o PIT (3147, na liście), projekt spoza listy aktów (3002) i informacja (3237).",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes",
+            "status": 200,
+            "body": [
+                {
+                    "number": "3002",
+                    "term": 10,
+                    "title": "Rządowy projekt ustawy o zmianie ustawy - Prawo farmaceutyczne",
+                    "documentType": "projekt ustawy",
+                    "documentTypeEnum": "BILL",
+                    "changeDate": "2026-10-14T14:38:15",
+                    "processStartDate": "2026-08-05",
+                    "passed": true,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL"
+                },
+                {
+                    "number": "3135",
+                    "term": 10,
+                    "title": "Rządowy projekt ustawy o zmianie ustawy o podatku od towarów i usług",
+                    "documentType": "projekt ustawy",
+                    "documentTypeEnum": "BILL",
+                    "changeDate": "2026-10-21T13:12:25",
+                    "processStartDate": "2026-09-24",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL"
+                },
+                {
+                    "number": "3141",
+                    "term": 10,
+                    "title": "Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw",
+                    "documentType": "projekt ustawy",
+                    "documentTypeEnum": "BILL",
+                    "changeDate": "2026-10-21T11:20:34",
+                    "processStartDate": "2026-09-24",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL"
+                },
+                {
+                    "number": "3147",
+                    "term": 10,
+                    "title": "Rządowy projekt ustawy o zmianie ustawy o podatku dochodowym od osób fizycznych, ustawy o podatku dochodowym od osób prawnych oraz ustawy o zryczałtowanym podatku dochodowym od niektórych przychodów osiąganych przez osoby fizyczne",
+                    "documentType": "projekt ustawy",
+                    "documentTypeEnum": "BILL",
+                    "changeDate": "2026-10-21T13:55:55",
+                    "processStartDate": "2026-09-29",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL"
+                },
+                {
+                    "number": "3237",
+                    "term": 10,
+                    "title": "Międzynarodowa pozycja inwestycyjna Polski w 2025 roku",
+                    "documentType": "informacja innych organów",
+                    "changeDate": "2026-10-20T11:33:39",
+                    "processStartDate": "2026-10-09",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL"
+                }
+            ]
+        }
+    ]
+}

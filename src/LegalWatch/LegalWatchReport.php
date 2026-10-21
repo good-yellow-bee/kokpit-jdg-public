@@ -15,7 +15,7 @@ final readonly class LegalWatchReport
 {
     public const NEXT_CHECK_DAYS = 7;
 
-    public function __construct(private Connection $db, private ClockInterface $clock, private string $baseUrl) {}
+    public function __construct(private Connection $db, private ClockInterface $clock, private string $baseUrl, private string $ksefDocsUrl) {}
 
     /** @return list<string> wiersze Markdown */
     public function draftRows(): array
@@ -30,7 +30,14 @@ final readonly class LegalWatchReport
                     continue;
                 }
                 $title = self::cell($change['title'] ?? '');
-                if ($hit['kind'] === 'process') {
+                if ($hit['kind'] === 'bills') {
+                    $item = sprintf('%s: proces %s (%s)', self::cell($hit['label']), self::cell($change['number'] ?? ''), self::cell($change['acts'] ?? ''));
+                    $source = sprintf('[proces](%s/sejm/%s/processes/%s)', $this->baseUrl, $hit['ref'], self::cell($change['number'] ?? ''));
+                } elseif ($hit['kind'] === 'changelog') {
+                    $item = sprintf('%s: %s', self::cell($hit['label']), self::cell($change['version'] ?? ''));
+                    $title = self::cell($change['dates'] ?? '');
+                    $source = sprintf('[changelog](%s/%s)', $this->ksefDocsUrl, $hit['ref']);
+                } elseif ($hit['kind'] === 'process') {
                     [$term, $number] = explode('/', $hit['ref'], 2);
                     $item = sprintf('%s: %s', self::cell($hit['label']), self::cell($change['stage'] ?? ''));
                     $source = sprintf('[proces](%s/sejm/%s/processes/%s)', $this->baseUrl, $term, $number);

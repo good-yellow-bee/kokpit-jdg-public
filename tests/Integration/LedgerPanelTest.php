@@ -13,7 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DomCrawler\Field\FileFormField;
 use Symfony\Component\Uid\Uuid;
 
-/** Wpis ręczny w panelu z plikiem dowodu (kryterium `ledger-manual-entry`). Dane fikcyjne. */
+/** Wpis ręczny w panelu z plikiem dowodu (kryterium `ledger-manual-entry`) i błąd wpisu (`ledger-entry-error`). Dane fikcyjne. */
 final class LedgerPanelTest extends WebTestCase
 {
     public function testLedgerManualEntryFromPanelStoresEvidenceAndAudit(): void
@@ -59,6 +59,44 @@ final class LedgerPanelTest extends WebTestCase
             EvidenceArtefacts::write('db/ledger-manual-entry-audit_log.csv', EvidenceArtefacts::csv($audit));
         } finally {
             @unlink($evidence);
+            while ($db->isTransactionActive()) {
+                $db->rollBack();
+            }
+        }
+    }
+
+    public function testLedgerEntryErrorFromPanelWritesCorrectionRowsAndAudit(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $db = self::getContainer()->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $db);
+        $db->beginTransaction();
+        $id = (string) Uuid::v7();
+        try {
+            $now = (new \DateTimeImmutable())->format('c');
+            $today = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Warsaw')))->format('Y-m-d');
+            $db->insert('app_user', ['id' => $id,'username' => 'fictional-owner','display_name' => 'Fikcyjny właściciel','created_at' => $now,'updated_at' => $now]);
+            $db->insert('webauthn_credential', ['id' => (string) Uuid::v7(),'app_user_id' => $id,'credential_id' => 'fictional-credential-id','public_key' => 'fictional-public-key','label' => 'Fikcyjny passkey','created_at' => $now,'updated_at' => $now]);
+            $client->loginUser(new AppUser($id, 'fictional-owner'));
+            $wrong = (string) Uuid::v7();
+            $db->insert('revenue_entry', ['id' => $wrong,'environment' => 'test','year' => (int) substr($today, 0, 4),'lp' => 1,'entry_date' => $today,'revenue_date' => $today,'document_number' => 'UMOWA/FIKCYJNA/10','amount_pln' => '400.00','rate_pct' => '12.00','source' => 'manual','kind' => 'regular','recorded_at' => $now,'recorded_by' => $id]);
+            $crawler = $client->request('GET', '/ledger');
+            self::assertResponseIsSuccessful();
+            $client->submit($crawler->filter('#ledger-entry-error form')->form(['lp' => '2','rate_pct' => '8.5']));
+            self::assertResponseStatusCodeSame(422);
+            self::assertSelectorTextContains('[role=alert]', 'Brak wiersza ewidencji');
+            $client->submit($crawler->filter('#ledger-entry-error form')->form(['lp' => '1','amount_pln' => '4OO']));
+            self::assertResponseStatusCodeSame(422);
+            $client->submit($crawler->filter('#ledger-entry-error form')->form(['lp' => '1','rate_pct' => '8.5']));
+            self::assertResponseRedirects('/ledger');
+            $rows = $db->fetchAllAssociative('SELECT lp, amount_pln, rate_pct, source, kind, recorded_by FROM revenue_entry WHERE corrects_entry_id=? ORDER BY lp', [$wrong]);
+            self::assertSame([
+                ['lp' => 2,'amount_pln' => '-400.00','rate_pct' => '12.00','source' => 'manual','kind' => 'correction','recorded_by' => $id],
+                ['lp' => 3,'amount_pln' => '400.00','rate_pct' => '8.50','source' => 'manual','kind' => 'correction','recorded_by' => $id],
+            ], $rows);
+            self::assertEquals(1, $db->fetchOne("SELECT count(*) FROM audit_log WHERE action='ledger.entry_corrected' AND actor_user_id=?", [$id]));
+        } finally {
             while ($db->isTransactionActive()) {
                 $db->rollBack();
             }

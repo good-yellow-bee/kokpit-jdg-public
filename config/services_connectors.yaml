@@ -12,7 +12,7 @@ parameters:
   app.default_deployment: dev
   app.panel.default_origin: 'http://localhost'
   app.panel.default_certificate: '/run/kokpit/certificates/panel.crt'
-  connector.daily_limits: { jpk.init_upload: 10, edeklaracje.send: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, eli.read: 100, white_list.search: 80, white_list.check: 4000, mail_in.fetch: 100 }
+  connector.daily_limits: { jpk.init_upload: 10, edeklaracje.send: 10, dummy.call: 10000, push.send: 250, mail.send: 100, deadman.ping: 500, nbp.rates: 200, eli.read: 100, ksef_docs.read: 10, white_list.search: 80, white_list.check: 4000, mail_in.fetch: 100 }
   # Adresy rejestrów per środowisko (docs/modules/rejestry-kursy.md); poza PROD tylko usługi testowe.
   registry.vies_endpoints: { test: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-test-service', prod: 'https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number' }
   registry.white_list_endpoints: { test: 'https://wykazpodatnikowvat-test.mf.gov.pl/api', prod: 'https://wykazpodatnikowvat.mf.gov.pl/api' }
@@ -38,6 +38,8 @@ parameters:
   edeklaracje.soap: { namespace: 'https://bramka.e-deklaracje.mf.gov.pl/xsd', language: pl, signature_type: PIT }
   # Konektor `eli` (D-75): API Sejmu, tylko odczyt; obserwacja prawa raz w tygodniu.
   eli.base_url: 'https://api.sejm.gov.pl'
+  # Konektor `ksef_docs` (D-112): pliki repozytorium CIRFMF/ksef-docs, tylko odczyt.
+  ksef_docs.base_url: 'https://raw.githubusercontent.com/CIRFMF/ksef-docs/main'
   # Pozycje obserwacji prawa (docs/modules/obserwacja-prawa.md): akty bazowe z tabeli „Akty prawne” w docs/facts.md
   # (powiązania w ELI wiszą przy akcie bazowym, nie przy tekście jednolitym) i procesy z tabeli „Obserwacja prawa”.
   legal_watch.items:
@@ -57,6 +59,21 @@ parameters:
     - { kind: act, ref: DU/2025/1294, label: 'rozporządzenie o ewidencji przychodów i wykazie' }
     - { kind: process, ref: term10/3147, label: 'UD458, druk 3147' }
     - { kind: process, ref: term10/2453, label: 'zniesienie VAT-UE, druk 2453' }
+    - { kind: bills, ref: term10, label: 'projekty ustaw spoza listy' }
+    - { kind: changelog, ref: api-changelog.md, label: 'changelog KSeF API' }
+  # Projekty ustaw spoza listy (D-112): tytuł procesu musi zawierać nazwę obserwowanego aktu; klucz to ELI z `legal_watch.items`.
+  legal_watch.bill_keywords:
+    DU/2004/535: ['podatku od towarów i usług']
+    DU/1991/350: ['podatku dochodowym od osób fizycznych']
+    DU/1998/930: ['zryczałtowanym podatku dochodowym']
+    DU/1992/86: ['podatku dochodowym od osób prawnych']
+    DU/1997/926: ['ordynacja podatkowa']
+    DU/2020/2320: ['doręczeniach elektronicznych']
+    DU/2016/1947: ['krajowej administracji skarbowej']
+    DU/1998/887: ['systemie ubezpieczeń społecznych']
+    DU/2004/2135: ['świadczeniach opieki zdrowotnej']
+    DU/2018/646: ['prawo przedsiębiorców']
+    DU/1951/28: ['dniach wolnych od pracy']
   # Kategorie powiązań ELI, których nowe pozycje dają alert: zmiany, teksty jednolite, akty wykonawcze, wyroki TK i
   # uchylenie aktu. Odesłania, podstawy prawne i akty uchylone przez sam akt go nie zmieniają.
   legal_watch.act_categories: ['Akty zmieniające', 'Inf. o tekście jednolitym', 'Akty wykonawcze', 'Orzeczenie TK', 'Uchylenia wynikające z']
@@ -119,10 +136,12 @@ services:
   App\Connector\Nbp\NbpConnector: ~
   App\Connector\Eli\EliConnector:
     arguments: { $baseUrl: '%eli.base_url%' }
+  App\Connector\KsefDocs\KsefDocsConnector:
+    arguments: { $baseUrl: '%ksef_docs.base_url%' }
   App\LegalWatch\LegalWatch:
-    arguments: { $items: '%legal_watch.items%', $actCategories: '%legal_watch.act_categories%' }
+    arguments: { $items: '%legal_watch.items%', $actCategories: '%legal_watch.act_categories%', $billKeywords: '%legal_watch.bill_keywords%' }
   App\LegalWatch\LegalWatchReport:
-    arguments: { $baseUrl: '%eli.base_url%' }
+    arguments: { $baseUrl: '%eli.base_url%', $ksefDocsUrl: '%ksef_docs.base_url%' }
   App\Fx\NbpRateSource: '@App\Connector\Nbp\NbpConnector'
   # Własny klient KSeF API 2.0 (D-70): uwierzytelnienie tokenem, szyfrowanie sesji i wysyłka; eksport F1 poza zakresem.
   App\Connector\Ksef\KsefApi:

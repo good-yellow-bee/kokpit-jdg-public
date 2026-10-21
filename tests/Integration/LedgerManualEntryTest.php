@@ -12,7 +12,6 @@ use App\Tests\Support\EvidenceArtefacts;
 use App\Tests\Support\F1TestTools;
 use App\Tests\Support\LedgerTestTools;
 use App\Tests\Support\ObligationTestTools;
-use App\Time\BusinessDate;
 use Symfony\Component\Clock\MockClock;
 
 /** Wpis ręczny i błąd wpisu (F2.2, docs/modules/ewidencja.md). Dane i kursy fikcyjne. */
@@ -89,6 +88,6 @@ final class LedgerManualEntryTest extends DatabaseTestCase
 
     private function correction(MockClock $clock): EntryErrorCorrection
     {
-        return new EntryErrorCorrection($this->db(), $clock, new BusinessDate($clock), F1TestTools::schema(), F1TestTools::audit($this->db(), $clock), ConnectorTestTools::configuration(false));
+        return new EntryErrorCorrection($this->db(), F1TestTools::writer($this->db(), $clock), F1TestTools::schema(), F1TestTools::audit($this->db(), $clock), ConnectorTestTools::configuration(false));
     }
 }

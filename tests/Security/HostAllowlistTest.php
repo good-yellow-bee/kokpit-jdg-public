@@ -28,7 +28,11 @@ final class HostAllowlistTest extends TestCase
                 if (in_array($target, ['prod','demo'], true)) {
                     continue;
                 } foreach ($hosts as $host) {
-                    $path = $connector === 'vies' ? '/taxation_customs/vies/rest-api/check-vat-test-service' : '/';
+                    $path = match ($connector) {
+                        'vies' => '/taxation_customs/vies/rest-api/check-vat-test-service',
+                        'ksef_docs' => '/CIRFMF/ksef-docs/main/api-changelog.md',
+                        default => '/',
+                    };
                     $guard->assertAllowed($connector, $target, ($host === 'ntfy' ? 'http' : 'https') . '://' . $host . $path, 'GET');
                     self::addToAssertionCount(1);
                 }
@@ -64,10 +68,10 @@ final class HostAllowlistTest extends TestCase
                 self::addToAssertionCount(1);
             }
         }
-        foreach ([['ksef','prod','https://api.ksef.mf.gov.pl','GET'],['vies','test','https://ec.europa.eu/production','POST'],['nbp','default','https://api.nbp.pl','POST'],['eli','default','https://api.sejm.gov.pl/eli/acts/DU/2025/1815/references','POST'],['eli','default','https://api.sejm.gov.pl.evil.invalid/eli','GET'],['jpk','test','https://www.podatki.gov.pl','POST']] as [$connector,$target,$url,$method]) {
+        foreach ([['ksef','prod','https://api.ksef.mf.gov.pl','GET'],['vies','test','https://ec.europa.eu/production','POST'],['nbp','default','https://api.nbp.pl','POST'],['eli','default','https://api.sejm.gov.pl/eli/acts/DU/2025/1815/references','POST'],['eli','default','https://api.sejm.gov.pl.evil.invalid/eli','GET'],['jpk','test','https://www.podatki.gov.pl','POST'],['ksef_docs','default','https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/api-changelog.md','POST'],['ksef_docs','default','https://raw.githubusercontent.com/attacker/ksef-docs/main/api-changelog.md','GET'],['ksef_docs','default','https://raw.githubusercontent.com/CIRFMF/ksef-docs/../../attacker/x.md','GET'],['ksef_docs','default','https://raw.githubusercontent.com/','GET'],['dummy','default','https://raw.githubusercontent.com/CIRFMF/ksef-docs/main/api-changelog.md','GET'],['ksef_docs','default','https://raw.githubusercontent.com.evil.invalid/CIRFMF/ksef-docs/main/api-changelog.md','GET']] as [$connector,$target,$url,$method]) {
             try {
                 $this->guard()->assertAllowed($connector, $target, $url, $method);
-                self::fail('Wywołanie dopuszczone.');
+                self::fail('Wywołanie dopuszczone: ' . $connector . ' ' . $method . ' ' . $url);
             } catch (ConnectorException) {
                 self::addToAssertionCount(1);
             }

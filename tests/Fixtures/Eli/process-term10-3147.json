@@ -1,0 +1,23 @@
+{
+    "fictional": true,
+    "source": "Ręcznie pisane, fikcyjne (fictional) nagranie (D-112); kształt jak w api.sejm.gov.pl.",
+    "scenario": "Ręcznie pisane, fikcyjne (fictional): proces druku 3147 z listy obserwacji z jednym etapem.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes/3147",
+            "status": 200,
+            "body": {
+                "number": "3147",
+                "title": "Projekt ustawy z listy obserwacji (fictional)",
+                "passed": false,
+                "stages": [
+                    {
+                        "date": "2099-01-02",
+                        "stageName": "Projekt wpłynął do Sejmu (fictional)"
+                    }
+                ]
+            }
+        }
+    ]
+}

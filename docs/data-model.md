@@ -83,7 +83,7 @@ Każde wdrożenie ma osobną bazę i osobny projekt compose: `kokpit-prod` na VP
 | Dane prawdziwe | tylko w `kokpit-prod` i w jego kopii w `kokpit-restore`; `kokpit-dev` i testy działają wyłącznie na danych fikcyjnych |
 | Wiersz z konektora z celem | cel konektora w chwili zapisu (`KSEF_TARGET`, `JPK_TARGET`, `EDEKLARACJE_TARGET`) |
 | Wiersz z FreshBooks: dane (`invoice`, `payment`, `counterparty`, `revenue_entry`) i techniczne (`connector_call`, `rate_counter`, `sync_cursor`, `credential_state`) | na `kokpit-prod`: `prod`, z prawdziwej firmy, tylko odczyt do pierwszego zapisu zwrotnego w F3; w `kokpit-dev` i testach: tylko fixtures, `KSEF_TARGET` w chwili zapisu (`test` albo `demo`); firmy testowej nie ma (D-35, [modules/freshbooks.md](modules/freshbooks.md)) |
-| Konektor bez celu: `vies`, `white_list`, `nbp`, `eli`, `mail_in`, `claude`, `push`, `mail`, `deadman`, `dummy` | środowisko wdrożenia; dotyczy `connector_call`, `rate_counter` i `credential_state`, np. `dummy_token` |
+| Konektor bez celu: `vies`, `white_list`, `nbp`, `eli`, `ksef_docs`, `mail_in`, `claude`, `push`, `mail`, `deadman`, `dummy` | środowisko wdrożenia; dotyczy `connector_call`, `rate_counter` i `credential_state`, np. `dummy_token` |
 | Wiersz `verification` z rejestru (VIES, biała lista) | `environment` kontrahenta, którego dotyczy; samosprawdzenie z pustym `counterparty_id`: środowisko wdrożenia |
 | Wiersz `obligation` | obowiązek z encją (`credential_state`, `counterparty`, `invoice`) dziedziczy jej `environment`; obowiązek bez encji (`zus`, `vat_jpk_v7m`, `manual_channel_check`, wpisany ręcznie `edelivery_reply_due` i inne): środowisko wdrożenia |
 | `draft` | `environment` odbiorcy (`counterparty`) |
@@ -863,12 +863,12 @@ Zmiana `chat.model`, listy narzędzi albo promptu systemowego w konfiguracji otw
 
 | Pole | Typ | Opis |
 | --- | --- | --- |
-| `kind` | text | `act` (akt w ELI) albo `process` (proces legislacyjny Sejmu) |
-| `ref` | text | `DU/2004/535` albo `term10/2453`; `UNIQUE (kind, ref)` |
+| `kind` | text | `act` (akt w ELI), `process` (proces legislacyjny Sejmu), `bills` (projekty ustaw kadencji spoza listy, D-112) albo `changelog` (plik changelogu ksef-docs, D-112) |
+| `ref` | text | `DU/2004/535`, `term10/2453`, `term10` albo `api-changelog.md`; `UNIQUE (kind, ref)` |
 | `label` | text | nazwa z `legal_watch.items` |
-| `snapshot` | jsonb | posortowana lista: `kategoria\|ELI` powiązań z obserwowanych kategorii albo etapy procesu (`passed` po uchwaleniu) |
+| `snapshot` | jsonb | posortowana lista: `kategoria\|ELI` powiązań z obserwowanych kategorii, etapy procesu (`passed` po uchwaleniu), numery dopasowanych projektów ustaw (suma narastająca) albo wersje changelogu z datami wdrożeń |
 | `snapshot_sha256` | char(64) | hash `snapshot` |
-| `checked_at`, `changed_at` | timestamptz | ostatni odczyt; ostatnia zmiana stanu (pusty do pierwszej zmiany) |
+| `checked_at`, `changed_at` | timestamptz | ostatni udany odczyt (przy `bills` kursor `modifiedSince` minus dzień); ostatnia zmiana stanu (pusty do pierwszej zmiany) |
 
 #### `legal_watch_hit`
 
@@ -876,7 +876,7 @@ Zmiana `chat.model`, listy narzędzi albo promptu systemowego w konfiguracji otw
 | --- | --- | --- |
 | `legal_watch_id` | uuid FK | pozycja |
 | `snapshot_sha256` | char(64) | stan, w którym pojawiły się zmiany; `UNIQUE (legal_watch_id, snapshot_sha256)` |
-| `changes` | jsonb | niepusta lista nowych pozycji: akt (`category`, `eli`, `displayAddress`, `title`, `date`) albo etap (`stage`, `title`) |
+| `changes` | jsonb | niepusta lista nowych pozycji: akt (`category`, `eli`, `displayAddress`, `title`, `date`), etap (`stage`, `title`), projekt ustawy (`number`, `title`, `acts`, `changeDate`) albo wersja (`version`, `dates`) |
 | `detected_at` | timestamptz | wykrycie |
 | `reviewed_at` | timestamptz null | przeniesienie do [facts.md](facts.md) (`app:legal-watch report --mark-reviewed`) |
 

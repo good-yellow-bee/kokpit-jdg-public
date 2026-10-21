@@ -11,6 +11,7 @@ use App\Connector\FreshBooks\FreshBooksException;
 use App\Connector\FreshBooks\FreshBooksInvoice;
 use App\Connector\FreshBooks\FreshBooksOAuth;
 use App\Ledger\CorrectionLedger;
+use App\Ledger\EntryErrorCorrection;
 use App\Ledger\LedgerEntryCheck;
 use App\Ledger\LedgerReconciliation;
 use App\Ledger\ManualRevenueEntry;
@@ -31,7 +32,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * Ewidencja w panelu (F2.2): alerty liczone zapytaniem (brak stawki, brak daty przychodu, kurs w toku), wiersze roku
- * wpis ręczny z dowodem, zadania „korekta z KOR” i widok „Uzgodnienia” z eksportem CSV (docs/modules/ewidencja.md). Eksport
+ * wpis ręczny z dowodem, błąd wpisu, zadania „korekta z KOR” i widok „Uzgodnienia” z eksportem CSV (docs/modules/ewidencja.md). Eksport
  * CSV całego roku ewidencji: `?format=csv&year=<rok>` (D-78).
  */
 final class LedgerController extends AbstractController
@@ -73,6 +74,43 @@ final class LedgerController extends AbstractController
             return $this->page($exception->getMessage());
         }
         $this->addFlash('notice', 'Zapisano wpis ręczny.');
+        return $this->redirectToRoute('panel_ledger');
+    }
+
+    /** Błąd wpisu: wiersz po roku i K_1; puste pole zostaje jak w błędnym wierszu (docs/modules/ewidencja.md, „Błąd wpisu”). */
+    #[Route('/ledger/entry-error', name: 'panel_ledger_entry_error', methods: ['POST'])]
+    public function entryError(Request $request, EntryErrorCorrection $correction): Response
+    {
+        if (!$this->isCsrfTokenValid('ledger', $request->request->getString('_token'))) {
+            throw new AccessDeniedHttpException('Nieprawidłowy token CSRF.');
+        }
+        $user = $this->getUser();
+        if (!$user instanceof AppUser) {
+            throw new AccessDeniedHttpException('Brak zalogowanego użytkownika.');
+        }
+        $entry = $this->db->fetchOne('SELECT id FROM revenue_entry WHERE environment=? AND year=? AND lp=?', [$this->configuration->environment(), $request->request->getInt('year'), $request->request->getInt('lp')]);
+        if (!is_string($entry)) {
+            return $this->page('Brak wiersza ewidencji o tym roku i K_1.');
+        }
+        $correct = [];
+        foreach (EntryErrorCorrection::FIELDS as $field) {
+            $value = trim($request->request->getString($field));
+            if ($value !== '') {
+                $correct[$field] = $field === 'counterparty_country' ? strtoupper($value) : $value;
+            }
+        }
+        if (isset($correct['amount_pln']) && preg_match('/^-?[0-9]+\.[0-9]{2}$/D', $correct['amount_pln']) !== 1) {
+            return $this->page('Kwota K_8 w formacie 1234.56.');
+        }
+        if (isset($correct['rate_pct']) && preg_match('/^[0-9]{1,2}(\.[0-9]{1,2})?$/D', $correct['rate_pct']) !== 1) {
+            return $this->page('Stawka K_9 w formacie 12 albo 8.5.');
+        }
+        try {
+            $written = $correction->correct($entry, $correct, $user->id());
+        } catch (\InvalidArgumentException | \DomainException $exception) {
+            return $this->page($exception->getMessage());
+        }
+        $this->addFlash('notice', sprintf('Poprawiono błąd wpisu: %d wiersz(e) correction.', count($written)));
         return $this->redirectToRoute('panel_ledger');
     }
 

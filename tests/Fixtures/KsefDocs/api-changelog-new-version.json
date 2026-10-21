@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Ręcznie zmienione, fikcyjne (fictional) nagranie api-changelog.json (D-112).",
+    "scenario": "Ręcznie pisane, fikcyjne (fictional): nowa wersja 2.10.0 z datą tylko na TEST nad trzema wersjami z nagrania.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/CIRFMF/ksef-docs/main/api-changelog.md",
+            "status": 200,
+            "body_text": "## Zmiany w API 2.0\n\n### Wersja 2.10.0 (fictional)\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     04.01.2099 |\n\n- **Fikcyjna zmiana (fictional)**  \n  Opis fikcyjnej zmiany.\n\n### Wersja 2.9.0\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     13.10.2026 |\n| **DEMO**   |     13.10.2026 |\n| **PROD**   |     15.10.2026 |\n\n### Wersja 2.8.1\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     22.09.2026 |\n| **DEMO**   |     23.09.2026 |\n| **PROD**   |     23.09.2026 |\n\n### Wersja 2.8.0\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     14.09.2026 |\n| **DEMO**   |     15.09.2026 |\n| **PROD**   |     23.09.2026 |\n\n"
+        }
+    ]
+}
