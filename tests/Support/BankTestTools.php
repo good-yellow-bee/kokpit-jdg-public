@@ -36,7 +36,7 @@ final class BankTestTools
 
     public static function statements(Connection $db, MockClock $clock): BankStatements
     {
-        return new BankStatements($db, $clock, new BusinessDate($clock), F1TestTools::files($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false), self::matcher($db, $clock), ObligationTestTools::actions($db, $clock), [new MbankCsvParser(), self::otherBank()]);
+        return new BankStatements($db, $clock, new BusinessDate($clock), F1TestTools::files($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false), self::matcher($db, $clock), ObligationTestTools::actions($db, $clock), F1TestTools::review($db, $clock), [new MbankCsvParser(), self::otherBank()]);
     }
 
     /** Drugi czytnik w rejestrze: nic nie rozpoznaje, więc nie może nadpisać wybranego czytnika. */

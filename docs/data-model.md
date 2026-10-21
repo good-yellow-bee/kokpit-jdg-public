@@ -212,7 +212,7 @@ Kwota przychodu po kursie PIT jest w `revenue_entry.amount_pln`, nie w `invoice`
 | `jpk_doc_type` | text null | `WEW` dla dokumentu wewnętrznego, np. raportu opłat Stripe |
 | `is_fixed_asset` | boolean null | zakup środka trwałego; wiersz w `fixed_asset`; pusty przy sprzedaży |
 | `tax_point_override_reason` | text null | powód ręcznej zmiany `tax_point_date`, np. przedpłata (art. 19a ust. 8 [ustawy o VAT](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf)); Q-21 |
-| `paid_on` | date null | zapłata dostawcy, czyli dzień zlecenia przelewu; podstawa terminów `wht_payment` ([tax-rules.md](tax-rules.md)) i `wl_notice` ([modules/rejestry-kursy.md](modules/rejestry-kursy.md)) |
+| `paid_on` | date null | zapłata dostawcy, czyli dzień zlecenia przelewu; wpisujesz Ty albo zatwierdzone dopasowanie wyciągu (D-110); podstawa terminów `wht_payment` ([tax-rules.md](tax-rules.md)) i `wl_notice` ([modules/rejestry-kursy.md](modules/rejestry-kursy.md)) |
 | `reviewed_at`, `reviewed_by` | timestamptz, uuid null | Twoja ocena |
 
 Znacznik JPK rekordu (NrKSeF, OFF, BFK, DI) wylicza mapper z tych pól ([modules/jpk.md](modules/jpk.md)).
@@ -941,11 +941,11 @@ Operacja z zatwierdzonego wyciągu z opcjonalnym dopasowaniem (D-108). Wiersz je
 | `counterparty_account` | char(26) null | NRB kontrahenta z opisu |
 | `kind` | text | `incoming`, `outgoing`, `zus`, `tax`, `internal` (między własnymi rachunkami, także techniczne przelewy VAT) |
 | `split_payment` | boolean | operacja w mechanizmie podzielonej płatności |
-| `invoice_id`, `payment_id`, `obligation_id` | uuid FK null | cel dopasowania; każdy cel najwyżej raz (indeksy unikalne częściowe) |
-| `match_rule` | text null | `invoice_title_amount`, `payment_title_amount`, `zus_amount`, `tax_amount` |
+| `invoice_id`, `payment_id`, `obligation_id` | uuid FK null | cel dopasowania: faktura sprzedaży albo koszt, płatność, obowiązek; każdy cel najwyżej raz (indeksy unikalne częściowe) |
+| `match_rule` | text null | `invoice_title_amount`, `payment_title_amount`, `zus_amount`, `tax_amount`, `cost_invoice_amount` (koszt, D-110) |
 | `matched_at`, `matched_by` | timestamptz, uuid FK null | Twoje zatwierdzenie dopasowania |
 
-- `CHECK`: reguła wyznacza cele (faktura z opcjonalną płatnością, sama płatność albo sam obowiązek); bez reguły brak celów i znaczników dopasowania. Reguły obowiązków tylko przy obciążeniu, reguły faktur i płatności tylko przy wpływie.
+- `CHECK`: reguła wyznacza cele (faktura z opcjonalną płatnością, sama płatność, sam obowiązek albo sam koszt); bez reguły brak celów i znaczników dopasowania. Reguły obowiązków i kosztu tylko przy obciążeniu, reguły faktur sprzedaży i płatności tylko przy wpływie.
 - Rola aplikacji ma `SELECT` i `INSERT`, bez `UPDATE` i `DELETE`.
 
 ## Stany encji

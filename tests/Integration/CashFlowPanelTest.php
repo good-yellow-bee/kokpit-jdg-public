@@ -60,6 +60,8 @@ final class CashFlowPanelTest extends WebTestCase
             self::assertSame('−2300.00', $crawler->filter('#cashflow-obligations-pln')->text());
             self::assertSame('−246.00', $crawler->filter('#cashflow-payables-pln')->text());
             self::assertSame('-1546.00', $crawler->filter('#cashflow-balance-pln')->text());
+            self::assertStringContainsString('Brak zapisanych operacji', $crawler->filter('#cashflow-bank')->text());
+            self::assertCount(1, $crawler->filter('#cashflow-bank a[href="/bank"]'));
 
             foreach ([$zus, $advance, $overdue] as $id) {
                 self::assertCount(1, $crawler->filter('#cashflow-obligation-' . $id));

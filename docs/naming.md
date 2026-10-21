@@ -689,16 +689,17 @@ Część b: sekcja niżej.
 
 | Rodzaj | Nazwy |
 | --- | --- |
-| Kod (`src/Bank`) | `BankStatementParser` (`format`, `supports`, `parse`; tag `app.bank_statement_parser`), `MbankCsvParser` (format `mbank_csv`), `ParsedStatement`, `BankLine`, `BankLineKind`, `BankLineMatcher` (`propose`), `BankMatch` (`token`, `targets`), `BankMatchRule`, `BankPreview` (`fingerprint`), `BankStatements` (`upload`, `preview`, `confirm`, `discard`, `MAX_BYTES`), `BankStatementRefused`; `IsoDate::isDate` |
+| Kod (`src/Bank`) | `BankStatementParser` (`format`, `supports`, `parse`; tag `app.bank_statement_parser`), `MbankCsvParser` (format `mbank_csv`), `ParsedStatement`, `BankLine`, `BankLineKind`, `BankLineMatcher` (`propose`), `BankMatch` (`token`, `targets`), `BankMatchRule` (`Cost` od D-110), `BankPreview` (`fingerprint`), `BankStatements` (`upload`, `preview`, `confirm`, `discard`, `MAX_BYTES`), `BankStatementRefused`; `IsoDate::isDate` |
 | Tabela `bank_statement` | `format`, `file_sha256`, `file_id`, `original_name`, `period_from`, `period_to`, `status`, `lines_in_file`, `lines_added`, `matches_applied`, `uploaded_at`, `uploaded_by`, `decided_at`, `decided_by`; indeksy `bank_statement_file`, `bank_statement_pending` |
 | Tabela `bank_statement_line` | `statement_id`, `line_hash`, `account`, `booked_on`, `amount`, `currency`, `operation_type`, `description`, `counterparty_account`, `kind`, `split_payment`, `invoice_id`, `payment_id`, `obligation_id`, `match_rule`, `matched_at`, `matched_by`; indeksy `bank_statement_line_statement`, `bank_statement_line_invoice_id`, `bank_statement_line_payment_id`, `bank_statement_line_obligation_id` |
 | `bank_statement.format` | `mbank_csv` |
 | `bank_statement.status` | `pending`, `confirmed`, `discarded` |
 | `bank_statement_line.kind` | `incoming`, `outgoing`, `zus`, `tax`, `internal` |
-| `bank_statement_line.match_rule` | `invoice_title_amount`, `payment_title_amount`, `zus_amount`, `tax_amount` |
+| `bank_statement_line.match_rule` | `invoice_title_amount`, `payment_title_amount`, `zus_amount`, `tax_amount`, `cost_invoice_amount` (D-110) |
 | Pliki | `stored_file` `evidence` (`text/csv`) z `owner_table` = `bank_statement` |
-| Audyt | `bank_statement.uploaded`, `bank_statement.confirmed`, `bank_statement.discarded`; zapłata obowiązku jak wpis ręczny: `obligation.payment_recorded` |
+| Audyt | `bank_statement.uploaded`, `bank_statement.confirmed`, `bank_statement.discarded`; zapłata obowiązku jak wpis ręczny: `obligation.payment_recorded`; zapłata kosztu jak wpis ręczny: `cost.paid` (D-110) |
 | Panel | `BankController`: trasy `panel_bank` (`GET /bank`), `panel_bank_upload` (`POST /bank/upload`, pole `statement`), `panel_bank_statement` (`GET /bank/{id}`), `panel_bank_confirm` (`POST /bank/{id}/confirm`, pola `fingerprint`, `match[]`, `complete`), `panel_bank_discard` (`POST /bank/{id}/discard`); token CSRF `bank`; szablony `templates/panel/bank.html.twig`, `templates/panel/bank_statement.html.twig`; identyfikatory `#bank-notice`, `#bank-error`, `#bank-problems`, `#bank-upload`, `#bank-statements`, `#bank-statement-<id>`, `#bank-preview`, `#bank-preview-error`, `#bank-summary`, `#bank-lines`, `#bank-line-<line_hash albo id>` |
+| Migracje | `Version20261028000100`; reguła `cost_invoice_amount`: `Version20261029000910` (D-110) |
 | Testy | `MbankCsvParserTest`, `BankLineMatcherTest`, `BankStatementsTest`, `BankPanelTest`, `BankTestTools`; fixture `tests/Fixtures/Bank/mbank-lista-operacji.csv` (NRB jako znaczniki `{account:N}`) |
 
 ### PIT-28 przez e-Deklaracje (D-96): nazwy
@@ -795,10 +796,10 @@ Część b: sekcja niżej.
 
 | Rodzaj | Nazwy |
 | --- | --- |
-| Ewidencja (`src/Ledger`) | `CashFlow` (`summary`; stałe `HORIZON_DAYS`, `MAX_ROWS`) |
+| Ewidencja (`src/Ledger`) | `CashFlow` (`summary`; stałe `HORIZON_DAYS`, `MAX_ROWS`, `PAYABLE`; klucze `bank`, `bank_until` od D-110) |
 | Panel | `CashFlowController`: trasa `panel_cashflow` (`GET /cashflow`) |
-| Szablon | `templates/panel/cashflow.html.twig`; identyfikatory `#cashflow-balance`, `#cashflow-receivables-pln`, `#cashflow-obligations-pln`, `#cashflow-payables-pln`, `#cashflow-balance-pln`, `#cashflow-obligations`, `#cashflow-obligation-<id>`, `#cashflow-without-amount`, `#cashflow-receivables`, `#cashflow-receivable-<id>`, `#cashflow-payables`, `#cashflow-payable-<id>` |
-| Testy | `CashFlowPanelTest` |
+| Szablon | `templates/panel/cashflow.html.twig`; identyfikatory `#cashflow-balance`, `#cashflow-receivables-pln`, `#cashflow-obligations-pln`, `#cashflow-payables-pln`, `#cashflow-balance-pln`, `#cashflow-bank`, `#cashflow-bank-<account>-<currency>` (D-110), `#cashflow-obligations`, `#cashflow-obligation-<id>`, `#cashflow-without-amount`, `#cashflow-receivables`, `#cashflow-receivable-<id>`, `#cashflow-payables`, `#cashflow-payable-<id>` |
+| Testy | `CashFlowPanelTest`, `CashFlowSummaryTest` |
 
 ### Raport rok do roku (D-87): nazwy
 

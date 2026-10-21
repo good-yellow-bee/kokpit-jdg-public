@@ -6,6 +6,7 @@ namespace App\Bank;
 
 use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
+use App\Ledger\CashFlow;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
 use Doctrine\DBAL\ArrayParameterType;
@@ -13,7 +14,8 @@ use Doctrine\DBAL\Connection;
 
 /**
  * Propozycje dopasowań wierszy wyciągu (D-108): wpływ → faktura sprzedaży albo płatność po numerze w opisie i kwocie,
- * przelew do ZUS albo US → otwarty obowiązek płatniczy z tą kwotą, za okres zakończony przed operacją. Propozycja powstaje tylko
+ * przelew do ZUS albo US → otwarty obowiązek płatniczy z tą kwotą, za okres zakończony przed operacją; wydatek → niezapłacony koszt
+ * z tą kwotą brutto, gdy rachunek odbiorcy, NIP dostawcy albo numer faktury wskazują dostawcę (D-110). Propozycja powstaje tylko
  * przy jednoznaczności w obie strony: wiersz ma jednego kandydata, a kandydat jeden wiersz wśród nowych operacji; cel
  * powiązany już w bazie odpada.
  */
@@ -65,7 +67,7 @@ final readonly class BankLineMatcher
         if ($zus || $line->kind === BankLineKind::Tax || self::isAccount($line, $accounts[SettingKeys::TAX_MICRO_ACCOUNT])) {
             return $this->obligations($line, $zus);
         }
-        return $line->kind === BankLineKind::Incoming ? [...$this->invoices($line), ...$this->revenuePayments($line)] : [];
+        return $line->kind === BankLineKind::Incoming ? [...$this->invoices($line), ...$this->revenuePayments($line)] : $this->costs($line);
     }
 
     /** @return list<BankMatch> */
@@ -139,6 +141,54 @@ final readonly class BankLineMatcher
             }
         }
         return $matches;
+    }
+
+    /**
+     * Koszt bez `paid_on` z kwotą brutto równą obciążeniu i co najmniej jednym wskazaniem dostawcy: rachunek odbiorcy
+     * z `counterparty.bank_accounts` albo potwierdzony w białej liście (`valid`), NIP (w podzielonej płatności pole `/IDC/`) albo
+     * numer faktury lub numer KSeF w tytule. Blokada jak przy obowiązkach: `paid_on` nie zmieni się przed `markPaid`.
+     *
+     * @return list<BankMatch>
+     */
+    private function costs(BankLine $line): array
+    {
+        $rows = $this->db->fetchAllAssociative(
+            'SELECT i.id, i.invoice_number, i.ksef_number, c.id AS counterparty_id, c.name, c.nip, c.bank_accounts::text AS bank_accounts FROM invoice i JOIN counterparty c ON c.id=i.counterparty_id
+             WHERE i.environment=? AND ' . CashFlow::PAYABLE . ' AND i.currency=? AND i.gross_total=?
+             AND NOT EXISTS (SELECT 1 FROM bank_statement_line b WHERE b.invoice_id=i.id) ORDER BY i.id FOR UPDATE OF i',
+            [$this->configuration->environment(), $line->currency, $line->amount->abs()],
+        );
+        $matches = [];
+        foreach ($rows as $row) {
+            $number = self::text($row['invoice_number']);
+            $accounts = [...self::entries(json_decode(self::text($row['bank_accounts']), true, 4, JSON_THROW_ON_ERROR)), ...$this->db->fetchFirstColumn(
+                "SELECT bank_account FROM verification WHERE counterparty_id=? AND source='white_list' AND result='valid' AND bank_account IS NOT NULL",
+                [$row['counterparty_id']],
+            )];
+            $evidence = array_keys(array_filter([
+                'rachunek dostawcy' => in_array($line->counterpartyAccount, array_map(self::account(...), $accounts), true),
+                'NIP w tytule' => is_string($row['nip']) && self::mentions($line->description, $row['nip']),
+                'numer w tytule' => self::mentions($line->description, $number) || (is_string($row['ksef_number']) && self::mentions($line->description, $row['ksef_number'])),
+            ]));
+            if ($evidence !== []) {
+                $matches[] = new BankMatch(BankMatchRule::Cost, sprintf('koszt %s od %s (%s)', $number, self::text($row['name']), implode(', ', $evidence)), self::text($row['id']));
+            }
+        }
+        return $matches;
+    }
+
+    /** NRB z wpisu `bank_accounts` (tekst albo obiekt z polem `number`) bez spacji i prefiksu PL. */
+    private static function account(mixed $entry): string
+    {
+        $value = is_array($entry) ? ($entry['number'] ?? '') : $entry;
+        $compact = strtoupper((string) preg_replace('/\s/', '', is_string($value) ? $value : ''));
+        return str_starts_with($compact, 'PL') ? substr($compact, 2) : $compact;
+    }
+
+    /** @return array<mixed> */
+    private static function entries(mixed $value): array
+    {
+        return is_array($value) ? $value : [];
     }
 
     private static function isAccount(BankLine $line, mixed $account): bool
