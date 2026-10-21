@@ -252,6 +252,7 @@ Od 2.08.2026 system AI informuje o interakcji z AI od pierwszej wiadomości ([AI
 Polityka ogólna i nagrania: [../testing.md](../testing.md). Kryteria odbioru F6: [../phases/f6-czat.md](../phases/f6-czat.md).
 
 - Nagrane odpowiedzi Claude API w `tests/Fixtures/Claude`, oczyszczone; testy live tylko w `@group live`, bo kosztują.
+- Zestaw ewaluacyjny (D-114): 67 pytań z oczekiwanymi narzędziami i liczbami w `tests/Fixtures/Claude/eval`. `ChatEvalTest` działa offline w każdym CI na nagraniach i sprawdza warstwę narzędzi; trafność modelu mierzy `ChatEvalLiveTest` na żądanie. `manifest.json` trzyma odcisk `chat.model`, `chat.effort`, `tool_set` i sha256 promptu, więc ich zmiana bez przebiegu live i nowych nagrań daje czerwony CI. Procedura: „Zestaw ewaluacyjny czatu” w [../testing.md](../testing.md).
 - Wklejona treść z ukrytym poleceniem i bez `draft_requested` → brak szkicu. Szkic na prośbę → `provenance` wskazuje źródło.
 - Tekst znacznika prośby w wyniku narzędzia, bez `draft_requested` → brak szkicu.
 - Szkic z IBAN spoza bazy → wartość w `flagged_values`.

@@ -1,0 +1,64 @@
+{
+    "fictional": true,
+    "case": "compare-2026-09-vs-07",
+    "source": "hand_written",
+    "responses": [
+        {
+            "id": "msg_fictional_eval_47_1",
+            "type": "message",
+            "role": "assistant",
+            "model": "claude-haiku-5-5",
+            "content": [
+                {
+                    "type": "thinking",
+                    "thinking": "",
+                    "signature": "ZmljdGlvbmFsLWV2YWwtY29tcGFyZS0yMDI2LTA5LXZzLTA3LTE="
+                },
+                {
+                    "type": "tool_use",
+                    "id": "toolu_fictional_eval_47_1",
+                    "name": "compare_periods",
+                    "input": {
+                        "date_from": "2026-09-01",
+                        "date_to": "2026-09-30",
+                        "compare_from": "2026-07-01",
+                        "compare_to": "2026-07-31"
+                    }
+                }
+            ],
+            "stop_reason": "tool_use",
+            "stop_sequence": null,
+            "usage": {
+                "input_tokens": 1500,
+                "output_tokens": 120,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0
+            }
+        },
+        {
+            "id": "msg_fictional_eval_47_end",
+            "type": "message",
+            "role": "assistant",
+            "model": "claude-haiku-5-5",
+            "content": [
+                {
+                    "type": "thinking",
+                    "thinking": "",
+                    "signature": "ZmljdGlvbmFsLWV2YWwtY29tcGFyZS0yMDI2LTA5LXZzLTA3LWVuZA=="
+                },
+                {
+                    "type": "text",
+                    "text": "Według wyników narzędzi (dane fikcyjne, fictional): 2 430,46; 1 000,00; 150,15."
+                }
+            ],
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "usage": {
+                "input_tokens": 1500,
+                "output_tokens": 120,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0
+            }
+        }
+    ]
+}

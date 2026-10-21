@@ -58,7 +58,7 @@ Odłożone testy F4 są w [modules/e-doreczenia.md](modules/e-doreczenia.md); ni
 | `eli` | brak; jeden publiczny host, tylko odczyt | nagrania `tests/Fixtures/Eli` i ręcznie zmienione warianty fikcyjne | `app:legal-watch check` ręcznie, nigdy z testów | dane publiczne, bez danych osobowych (D-75) |
 | `mail_in` | brak; dedykowana skrzynka właściciela tylko na PROD | fikcyjne sesje IMAP i wiadomości `tests/Fixtures/MailIn` odtwarzane przez `ScriptedImapStream`; test listy poleceń tylko do odczytu | `app:mail-in:fetch` ręcznie na `kokpit-prod`, nigdy z testów | wyłącznie fikcyjne wiadomości i załączniki (D-92) |
 | `freshbooks` | brak sandboxu i firmy testowej (D-35, [FreshBooks API, 8.10.2026](https://www.freshbooks.com/api/start)) | ręcznie pisane fixtures i nagrania oczyszczone | brak; prawdziwa firma tylko odczytem, ręcznie przez `app:fixtures:record` | fikcyjni klienci i faktury |
-| `claude` | brak | nagrane odpowiedzi Messages API | tak, z budżetem przebiegu | tylko dane fikcyjne |
+| `claude` | brak | nagrane odpowiedzi Messages API; zestaw ewaluacyjny offline (D-114) | tak, z budżetem przebiegu; zestaw ewaluacyjny tylko z `CHAT_EVAL_LIVE=1` | tylko dane fikcyjne |
 | `push`, `mail`, `deadman` | brak | transport i Symfony Mailer w pamięci; ping przez `MockHttpClient` | `[manual]` push na telefon, mail, alert dead-man | – |
 | `dummy` | brak; host `dummy.invalid` tylko przez `MockHttpClient` | atrapa konektora zapisującego dla bramki przed F3 | nie | nigdy przy `APP_ENV=prod` (D-32) |
 
@@ -97,6 +97,26 @@ Nagrania leżą w `tests/Fixtures/<Connector>`. Reguły kodu dla konektorów i f
 - VIES i biała lista wołają wyłącznie usługi testowe z tabeli polityki.
 - `workflow_dispatch` działa dopiero, gdy plik workflow jest na gałęzi domyślnej ([GitHub, sprawdzone 8.10.2026](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows)). Job `live` startuje więc dopiero po pierwszym merge F0a do `main`.
 - Test live Claude API używa `chat.model` (`claude-haiku-5-5`) i zatrzymuje się po wyczerpaniu budżetu przebiegu w USD.
+
+## Zestaw ewaluacyjny czatu
+
+Zestaw pytań czatu z oczekiwanymi narzędziami i liczbami (D-114, R-41). Przypadki i nagrania leżą w `tests/Fixtures/Claude/eval`, ocena w `ChatEvalRunner`, kontekst w [modules/czat.md](modules/czat.md).
+
+| Tryb | Test | Co sprawdza | Kiedy |
+| --- | --- | --- | --- |
+| offline | `ChatEvalTest` (testsuite `integration`) | nagranie na przypadek przez `MockHttpClient`, ta sama `ChatTurn`, executor i nazwane zapytania co panel, na fikcyjnym zbiorze: schematy narzędzi, liczby, pętla; odcisk profilu w `manifest.json` równy konfiguracji; 100% `pass` | każdy przebieg CI; raport jako artefakt `chat-eval` |
+| live | `ChatEvalLiveTest` (testsuite `live`) | te same pytania na Claude API workspace testowego: wybór narzędzi, parametry i liczby w odpowiedzi modelu; próg 90% `pass`; nagrania do `var/live-recordings/Claude/eval/` | ręcznie, przed zmianą `chat.model`, `chat.effort`, promptu albo `tool_set`; po kluczu F6.5 |
+
+- Offline nie mierzy trafności modelu: nagrania są ręcznie pisane (`source` = `hand_written`) z oczekiwanych wywołań. Po pierwszym przebiegu live nagrania z `source` = `live` odtwarzają prawdziwe odpowiedzi Haiku 5.5.
+- Zmiana profilu czatu bez nowych nagrań i `manifest.json` daje czerwony `ChatEvalTest` z bieżącym odciskiem w komunikacie.
+- Nowy przypadek: wpis w `cases.yaml` z jawną datą w pytaniu i nagranie `<id>.json` (ręcznie albo z przebiegu live). Liczby z `numbers` muszą wynikać z fikcyjnego zbioru `ChatEvalRunner::seed`.
+
+**Przebieg live (po kluczu workspace testowego, F6.5)**
+
+1. Postaw projekt testowy (`scripts/ci-bootstrap.sh`). Sejf testowy z bootstrapu ma fikcyjny `CLAUDE_TEST_API_KEY` w plikach tylko do odczytu, więc prawdziwy klucz podajesz zmienną środowiskową tylko na czas przebiegu: test wkłada go do sejfu w pamięci (`MemoryVault`).
+2. W swoim terminalu wczytaj klucz bez echa (`read -rs CLAUDE_TEST_API_KEY && export CLAUDE_TEST_API_KEY`) i uruchom: `docker compose exec -e CLAUDE_TEST_API_KEY -e CONNECTORS_ENABLED=1 -e CHAT_LIVE_RUN_BUDGET_USD=1.00 -e CHAT_EVAL_LIVE=1 app vendor/bin/phpunit --testsuite live --filter ChatEvalLive`. `-e` bez wartości przekazuje zmienną z terminala, więc klucz nie trafia do historii poleceń. Budżet $1 pokrywa zestaw z zapasem; job `live` w CI ma $0,25 i bez `CHAT_EVAL_LIVE` pomija zestaw.
+3. Raport: `var/chat-eval/live.md` w kontenerze. Przypadki `fail` to pytania, na których Haiku 5.5 nie trafia (wiersz „eskalacja czatu do Sonnet 5.5” w [roadmap.md](roadmap.md)).
+4. Nagrania: przejrzyj `var/live-recordings/Claude/eval/` i skopiuj do `tests/Fixtures/Claude/eval/` nagrania przypadków `pass` i `manifest.json`. Przypadek `fail` zostaje z nagraniem ręcznym do decyzji: inne pytanie, narzędzie albo prompt. Potem `composer fixtures:scan` i `ChatEvalTest`.
 
 ## KSeF TE
 
@@ -322,7 +342,7 @@ GitHub Actions w prywatnym repo `good-yellow-bee/kokpit-jdg`. Żaden job nie ma 
 | `unit_property` | testsuite `unit` i `property` (`tests/Unit`, `tests/Property`) | tak |
 | `contract` | testsuite `contract` (`tests/Contract`): nagrania i OpenAPI KSeF; bez sieci | tak |
 | `xsd` | testsuite `xsd` (`tests/Xsd`) z `LIBXML_NONET`; sumy kontrolne `resources/xsd` | tak |
-| `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi | tak |
+| `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi; raport zestawu ewaluacyjnego czatu jako artefakt `chat-eval` (D-114) | tak |
 | `security` | testsuite `security` (`tests/Security`), skaner fixtures i sekretów | tak |
 | `mutation` | Infection według „Testów mutacyjnych”, cały zakres także przy `pull_request` (17–26 min, D-106) | tak |
 | `evidence` | po pozostałych: `kokpit:evidence <phase> --only=ci`, upload `var/evidence/**` jako artefakt przebiegu; pomijany przy push do `main` i na gałęziach bez prefiksu fazy `<phase>-` (np. `feature/*`, D-43) | tak |

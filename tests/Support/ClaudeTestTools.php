@@ -33,6 +33,7 @@ use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\InMemoryStore;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Konektor `claude` i pętla czatu w testach (F6.2): ręcznie pisane, fikcyjne odpowiedzi z `tests/Fixtures/Claude`
@@ -165,12 +166,12 @@ final class ClaudeTestTools
         return self::$vault ?? throw new \LogicException('Brak sejfu testowego: test dziedziczy ClaudeTestCase.');
     }
 
-    public static function messages(Connection $db, MockClock $clock, MockHttpClient $mock, bool $enabled = true, ?Redactor $redactor = null): ClaudeMessages
+    public static function messages(Connection $db, MockClock $clock, HttpClientInterface $http, bool $enabled = true, ?Redactor $redactor = null): ClaudeMessages
     {
         $redactor ??= new Redactor();
         $configuration = ConnectorTestTools::configuration($enabled);
         $secrets = new SecretStore(self::vault(), $db, new LockFactory(new InMemoryStore()), $clock, $redactor, new AuditLog($db, $clock, $redactor), 'test');
-        $factory = new ClaudeClientFactory(ConnectorTestTools::http($db, $clock, $mock, $redactor, $enabled), $secrets, $configuration, self::BASE_URL, self::TIMEOUT_S);
+        $factory = new ClaudeClientFactory(ConnectorTestTools::http($db, $clock, $http, $redactor, $enabled), $secrets, $configuration, self::BASE_URL, self::TIMEOUT_S);
         return new ClaudeMessages($factory, self::rates($db, $clock), $configuration);
     }
 
@@ -234,25 +235,26 @@ final class ClaudeTestTools
 
     /**
      * Pełna tura czatu nad atrapą HTTP; opcje: `budget`, `context` (ChatContextGuard), `iterations`, `enabled`, `registry`,
-     * `drafts` (narzędzie `draft_document` z F6.4; bez niego szkic zawsze odmawia).
+     * `drafts` (narzędzie `draft_document` z F6.4; bez niego szkic zawsze odmawia), `profile` i `prompt` (zestaw
+     * ewaluacyjny: wartości z kontenera).
      *
-     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor,drafts?:DraftDocumentTool} $options
+     * @param array{budget?:ChatBudget,context?:ChatContextGuard,iterations?:int,enabled?:bool,registry?:ChatToolRegistry,redactor?:Redactor,drafts?:DraftDocumentTool,profile?:ChatRequestProfile,prompt?:string} $options
      */
-    public static function turn(Connection $db, MockClock $clock, MockHttpClient $mock, array $options = []): ChatTurn
+    public static function turn(Connection $db, MockClock $clock, HttpClientInterface $http, array $options = []): ChatTurn
     {
         $registry = $options['registry'] ?? self::registry();
-        $profile = self::profile();
+        $profile = $options['profile'] ?? self::profile();
         return new ChatTurn(
             $db,
             $clock,
-            self::sessions($db, $clock, $profile, $registry),
+            self::sessions($db, $clock, $profile, $registry, $options['prompt'] ?? self::PROMPT),
             $profile,
             $registry,
             self::executor($db, $clock, $registry, $options['drafts'] ?? null),
             self::redaction($db),
             $options['budget'] ?? self::budget($db, $clock),
             $options['context'] ?? new ChatContextGuard(80000, 100000),
-            self::messages($db, $clock, $mock, $options['enabled'] ?? true, $options['redactor'] ?? null),
+            self::messages($db, $clock, $http, $options['enabled'] ?? true, $options['redactor'] ?? null),
             self::rates($db, $clock),
             ConnectorTestTools::configuration($options['enabled'] ?? true),
             $options['iterations'] ?? self::MAX_ITERATIONS,

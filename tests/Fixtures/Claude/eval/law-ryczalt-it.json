@@ -1,0 +1,32 @@
+{
+    "fictional": true,
+    "case": "law-ryczalt-it",
+    "source": "hand_written",
+    "responses": [
+        {
+            "id": "msg_fictional_eval_56_end",
+            "type": "message",
+            "role": "assistant",
+            "model": "claude-haiku-5-5",
+            "content": [
+                {
+                    "type": "thinking",
+                    "thinking": "",
+                    "signature": "ZmljdGlvbmFsLWV2YWwtbGF3LXJ5Y3phbHQtaXQtZW5k"
+                },
+                {
+                    "type": "text",
+                    "text": "Według wyników narzędzi (dane fikcyjne, fictional): 12."
+                }
+            ],
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "usage": {
+                "input_tokens": 1500,
+                "output_tokens": 120,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0
+            }
+        }
+    ]
+}

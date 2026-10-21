@@ -42,6 +42,11 @@ final class CiWorkflowTest extends TestCase
         $report = array_values(array_filter($jobs['mutation']['steps'], static fn(array $step): bool => ($step['uses'] ?? '') === 'actions/upload-artifact@v4'));
         self::assertCount(1, $report);
         self::assertSame(['name' => 'mutation','path' => 'mutation.json','if-no-files-found' => 'error'], $report[0]['with'] ?? null);
+        // Raport zestawu ewaluacyjnego czatu z joba integration (D-114).
+        $chatEval = array_values(array_filter($jobs['integration']['steps'], static fn(array $step): bool => ($step['uses'] ?? '') === 'actions/upload-artifact@v4'));
+        self::assertCount(1, $chatEval);
+        self::assertSame(['name' => 'chat-eval','path' => 'chat-eval/','if-no-files-found' => 'error'], $chatEval[0]['with'] ?? null);
+        self::assertContains('docker compose cp app:/app/var/chat-eval chat-eval', array_column($jobs['integration']['steps'], 'run'));
         self::assertSame("github.event_name == 'workflow_dispatch'", $jobs['live']['if'] ?? null);
         self::assertStringContainsString("github.ref_name != 'main'", $jobs['evidence']['if'] ?? '');
         // Tylko gałęzie `<phase>-*` z listy `ci-evidence.sh`; `feature/*` pomija `evidence` (KOKPIT-93).

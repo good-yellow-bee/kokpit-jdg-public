@@ -1,0 +1,9 @@
+{
+    "fictional": true,
+    "source": "hand_written",
+    "recorded_on": "2026-10-21",
+    "model": "claude-haiku-5-5",
+    "effort": "low",
+    "tool_set": "ts-9e4d10630d57bff5",
+    "system_prompt_sha256": "83584beda4eb40f694b290577f22f316332cfce7c368127947335b741bfac30e"
+}
