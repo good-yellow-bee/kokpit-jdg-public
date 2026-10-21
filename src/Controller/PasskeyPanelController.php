@@ -36,7 +36,12 @@ final class PasskeyPanelController extends AbstractController
     #[Route('/passkey/step-up/verify', name: 'passkey_step_up_verify', methods: ['POST'])]
     public function stepUpVerify(Request $request, StepUpVerifier $stepUp): Response
     {
-        $stepUp->verify($this->user(), $request->getContent());
+        try {
+            $stepUp->verify($this->user(), $request->getContent());
+        } catch (AccessDeniedHttpException $exception) {
+            // Powód odmowy, np. wymóg klucza FIDO2 (D-111), trafia do panelu; komunikaty są stałe, bez danych.
+            return new JsonResponse(['error' => $exception->getMessage()], Response::HTTP_FORBIDDEN);
+        }
         return new JsonResponse(['status' => 'ok']);
     }
 

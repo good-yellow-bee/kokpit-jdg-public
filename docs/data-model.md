@@ -772,6 +772,7 @@ Drugi poziom sejfu: tokeny rotujące w runtime oraz daty ważności wszystkich p
 | `ksef.fa3_review` | wynik przeglądu doradcy: data, zatwierdzone `tax_scenario` i KOR, sha256 złotych plików; brak blokuje zatwierdzenie przy `KSEF_TARGET=prod` | D-04, Q-29, [modules/ksef.md](modules/ksef.md) |
 | `ksef.sales_transition_on` | dzień pierwszej Twojej faktury w KSeF; dzień przejścia dla importu FreshBooks 2026 | Q-10, [modules/ksef.md](modules/ksef.md) |
 | `ledger.auto_entries_enabled` | wpisy automatyczne w ewidencji; `valid_from` = dzień włączenia, dopiero po imporcie 2026 | [modules/ewidencja.md](modules/ewidencja.md) |
+| `step_up.security_key_required` | step-up tylko kluczem FIDO2; działa, gdy masz aktywny wiersz `webauthn_credential.kind` = `security_key`; zmiana wymaga step-upu (D-111) | [security.md](security.md) |
 | `opening.vat_carry_forward_pln` | nadwyżka VAT do przeniesienia (P_62) z ostatniego JPK_V7M złożonego poza kokpitem | [compliance-calendar.md](compliance-calendar.md) |
 | `opening.revenue_ytd` | przychód narastająco per stawka ryczałtu na dzień przejścia | [compliance-calendar.md](compliance-calendar.md) |
 | `opening.zus_paid_ytd` | składki zapłacone w roku: społeczne i zdrowotna, w PLN | [compliance-calendar.md](compliance-calendar.md) |

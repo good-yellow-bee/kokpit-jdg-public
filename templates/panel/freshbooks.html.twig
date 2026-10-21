@@ -11,8 +11,7 @@
         <p>Stan: {{ credential ? credential.status ~ (credential.rotated_at ? ', odświeżone ' ~ credential.rotated_at : '') : 'niepołączone' }}.</p>
         {% if credential and credential.status not in ['valid', 'expiring'] %}<p role="alert">Połącz ponownie FreshBooks: refresh token został odrzucony.</p>{% endif %}
         <p>Do F3 kokpit tylko czyta faktury i płatności (D-35). Połączenie wymaga potwierdzenia passkeyem (ważne 5 minut).</p>
-        <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
-        <p id="passkey-result" role="status"></p>
+        {% include 'panel/_step_up.html.twig' %}
         <form method="post" action="{{ path('panel_freshbooks_connect') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('freshbooks') }}">
             <button type="submit">{{ credential ? 'Połącz ponownie' : 'Połącz' }}</button>

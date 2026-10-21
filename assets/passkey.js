@@ -1,5 +1,6 @@
 const toBuffer = value => Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
 const toBase64Url = value => btoa(String.fromCharCode(...new Uint8Array(value))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+class Refusal extends Error {}
 const paths = {enrol: ['/passkey/enrol/options', '/passkey/enrol/result'], login: ['/passkey/login/options', '/passkey/login'], 'step-up': ['/passkey/step-up/options', '/passkey/step-up/verify']};
 for (const mode of Object.keys(paths)) {
     const button = document.getElementById(`passkey-${mode}`);
@@ -25,9 +26,12 @@ for (const mode of Object.keys(paths)) {
                 payload.response.userHandle = credential.response.userHandle ? toBase64Url(credential.response.userHandle) : null;
             }
             const saved = await fetch(resultPath, {method: 'POST', credentials: 'same-origin', headers, body: JSON.stringify(payload)});
-            if (!saved.ok) throw new Error('Uwierzytelnienie nie powiodło się.');
+            if (!saved.ok) {
+                const body = await saved.json().catch(() => ({}));
+                throw body.error ? new Refusal(body.error) : new Error('Uwierzytelnienie nie powiodło się.');
+            }
             if (mode === 'step-up') { result.textContent = 'Potwierdzono. Masz 5 minut na akcję.'; return; }
             location.href = mode === 'enrol' ? (button.dataset.next || '/login') : '/';
-        } catch { result.textContent = 'Nie udało się użyć passkeya. Spróbuj ponownie.'; }
+        } catch (error) { result.textContent = error instanceof Refusal ? error.message : 'Nie udało się użyć passkeya. Spróbuj ponownie.'; }
     });
 }

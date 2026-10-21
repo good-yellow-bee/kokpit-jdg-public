@@ -29,6 +29,8 @@ final class SettingKeys
     /** Przegląd doradcy PIT-28 (D-96): wariant formularza i dzień przeglądu; warunek prośby `PIT_28` przy `EDEKLARACJE_TARGET=prod`. */
     public const PIT_28_REVIEW = 'pit_28.review';
     public const TAXPAYER_RESIDENCE_ADDRESS = 'taxpayer.residence_address';
+    /** Step-up tylko kluczem FIDO2, gdy masz aktywny klucz (D-111); zmiana w panelu wymaga step-upu. */
+    public const STEP_UP_SECURITY_KEY_REQUIRED = 'step_up.security_key_required';
     /** Snapshot prawa czatu (F6.2, D-60): stawki, progi i terminy z podstawą prawną, wybrany na starcie rozmowy. */
     public const CHAT_LAW_SNAPSHOT = 'chat.law_snapshot';
     /** Polityka nadwyżki VAT (Q-31): tylko `carry_forward`, czyli cała P_53 do P_62 (D-65). */
@@ -44,7 +46,7 @@ final class SettingKeys
     public const EXCESS_POLICIES = ['carry_forward'];
     public const WHT_CATEGORIES = ['license','services_21_2a'];
     public const FA3_SCENARIOS = ['eu_b2b','eu_b2b_unidentified','non_eu_b2b','pl_b2b'];
-    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW, self::PIT_28_REVIEW, self::TAXPAYER_RESIDENCE_ADDRESS, self::CHAT_LAW_SNAPSHOT, self::VAT_EXCESS_POLICY, self::WHT_RATES, self::OPENING_VAT_CARRY_FORWARD, self::OPENING_REVENUE_YTD, self::OPENING_ZUS_PAID_YTD, self::OPENING_LAST_INVOICE_NUMBERS];
+    public const KEYS = [self::COMPANY_IDENTITY, self::JPK_ST_ENABLED, self::PIT_KASOWY, self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT, self::ZUS_PARAMETERS, self::ZUS_VARIANT, self::ADVANCE_FREQUENCY, self::VAT_STANDARD_RATE, self::PRE_PAYMENT_THRESHOLD, self::RYCZALT_SERVICE_MAP, self::LEDGER_AUTO_ENTRIES, self::KSEF_SALES_TRANSITION_ON, self::RYCZALT_ELIGIBILITY, self::FRESHBOOKS_SALES_ENABLED, self::KSEF_FA3_REVIEW, self::PIT_28_REVIEW, self::TAXPAYER_RESIDENCE_ADDRESS, self::CHAT_LAW_SNAPSHOT, self::VAT_EXCESS_POLICY, self::WHT_RATES, self::OPENING_VAT_CARRY_FORWARD, self::OPENING_REVENUE_YTD, self::OPENING_ZUS_PAID_YTD, self::OPENING_LAST_INVOICE_NUMBERS, self::STEP_UP_SECURITY_KEY_REQUIRED];
     public const ZUS_VARIANTS = ['full','preferential','start_relief'];
     public const ADVANCE_FREQUENCIES = ['monthly','quarterly'];
     private const AMOUNT = '/^(0|[1-9][0-9]{0,11})\.[0-9]{2}$/D';
@@ -62,7 +64,7 @@ final class SettingKeys
     public static function normalize(string $key, mixed $value): mixed
     {
         return match ($key) {
-            self::JPK_ST_ENABLED, self::PIT_KASOWY, self::LEDGER_AUTO_ENTRIES, self::FRESHBOOKS_SALES_ENABLED => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
+            self::JPK_ST_ENABLED, self::PIT_KASOWY, self::LEDGER_AUTO_ENTRIES, self::FRESHBOOKS_SALES_ENABLED, self::STEP_UP_SECURITY_KEY_REQUIRED => is_bool($value) ? $value : throw new \InvalidArgumentException(sprintf('%s przyjmuje tak albo nie.', $key)),
             self::COMPANY_IDENTITY => self::identity($value),
             self::TAX_MICRO_ACCOUNT, self::ZUS_ACCOUNT => self::account($key, $value),
             self::ZUS_PARAMETERS => self::zusParameters($value),

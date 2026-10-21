@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Messenger\Message\ObligationRecomputeMessage;
 use App\Passkey\AppUser;
+use App\Passkey\StepUp;
 use App\Setting\SettingKeys;
 use App\Setting\SettingStore;
 use App\Time\BusinessDate;
@@ -27,8 +28,8 @@ final class SettingController extends AbstractController
         }
         return $this->render('panel/settings.html.twig', ['current' => $current,'today' => $date->today(),'error' => null]);
     }
-    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|white_list\.pre_payment_threshold_pln|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on|ryczalt\.eligibility|freshbooks\.sales_enabled|ksef\.fa3_review|pit_28\.review|taxpayer\.residence_address|chat\.law_snapshot|vat\.excess_policy|wht\.rates|opening\.vat_carry_forward_pln|opening\.revenue_ytd|opening\.zus_paid_ytd|opening\.last_invoice_numbers'])]
-    public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus): Response
+    #[Route('/settings/{key}', name: 'panel_setting_change', methods: ['POST'], requirements: ['key' => 'company\.identity|jpk_st\.enabled|pit\.kasowy|company\.tax_micro_account|company\.zus_account|zus\.parameters|zus\.variant|ryczalt\.advance_frequency|vat\.standard_rate|white_list\.pre_payment_threshold_pln|ryczalt\.service_map|ledger\.auto_entries_enabled|ksef\.sales_transition_on|ryczalt\.eligibility|freshbooks\.sales_enabled|ksef\.fa3_review|pit_28\.review|taxpayer\.residence_address|chat\.law_snapshot|vat\.excess_policy|wht\.rates|opening\.vat_carry_forward_pln|opening\.revenue_ytd|opening\.zus_paid_ytd|opening\.last_invoice_numbers|step_up\.security_key_required'])]
+    public function change(string $key, Request $request, SettingStore $settings, BusinessDate $date, MessageBusInterface $bus, StepUp $stepUp): Response
     {
         if (!$this->isCsrfTokenValid('setting', $request->request->getString('_token'))) {
             throw new AccessDeniedHttpException('Nieprawidłowy token CSRF.');
@@ -36,6 +37,10 @@ final class SettingController extends AbstractController
         $user = $this->getUser();
         if (!$user instanceof AppUser) {
             throw new AccessDeniedHttpException('Brak zalogowanego użytkownika.');
+        }
+        // Wyłączenie wymogu klucza samym telefonem omijałoby go (D-111).
+        if ($key === SettingKeys::STEP_UP_SECURITY_KEY_REQUIRED) {
+            $stepUp->require();
         }
         $validFrom = $request->request->getString('valid_from');
         $note = trim($request->request->getString('note'));
@@ -50,7 +55,7 @@ final class SettingController extends AbstractController
                 // Formularz zmienia część JPK; część FA(3) przechodzi bez zmian z wiersza obowiązującego.
                 $previous = $settings->value($key, $validFrom !== '' ? $validFrom : null);
                 $value = array_merge(is_array($previous) ? $previous : [], $fields);
-            } elseif (in_array($key, [SettingKeys::JPK_ST_ENABLED, SettingKeys::PIT_KASOWY, SettingKeys::LEDGER_AUTO_ENTRIES, SettingKeys::FRESHBOOKS_SALES_ENABLED], true)) {
+            } elseif (in_array($key, [SettingKeys::JPK_ST_ENABLED, SettingKeys::PIT_KASOWY, SettingKeys::LEDGER_AUTO_ENTRIES, SettingKeys::FRESHBOOKS_SALES_ENABLED, SettingKeys::STEP_UP_SECURITY_KEY_REQUIRED], true)) {
                 $value = $request->request->getString('value') === '1';
             } elseif (in_array($key, [SettingKeys::RYCZALT_SERVICE_MAP, SettingKeys::KSEF_FA3_REVIEW, SettingKeys::PIT_28_REVIEW, SettingKeys::TAXPAYER_RESIDENCE_ADDRESS, SettingKeys::CHAT_LAW_SNAPSHOT, SettingKeys::WHT_RATES, SettingKeys::OPENING_REVENUE_YTD, SettingKeys::OPENING_ZUS_PAID_YTD, SettingKeys::OPENING_LAST_INVOICE_NUMBERS], true)) {
                 try {

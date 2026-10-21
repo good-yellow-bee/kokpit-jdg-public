@@ -9,8 +9,7 @@
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     {% include 'panel/_latarnia.html.twig' with {latarnia: latarnia} only %}
     <p>Podgląd pokazuje dokładnie to, co wiąże hash payloadu. „Zatwierdź” i „Ponów” wymagają potwierdzenia passkeyem (ważne 5 minut).</p>
-    <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
-    <p id="passkey-result" role="status"></p>
+    {% include 'panel/_step_up.html.twig' %}
     {% for item in items %}
         <section id="approval-{{ item.id }}">
             <h2>{{ item.subject_type }}{% if item.connector %} przez {{ item.connector }}{% endif %}: {{ item.status }}</h2>
@@ -76,5 +75,4 @@
     {% else %}
         <p>Brak zatwierdzeń.</p>
     {% endfor %}
-    <script src="{{ asset('passkey.js') }}" defer></script>
 {% endblock %}
