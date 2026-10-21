@@ -12,7 +12,8 @@ use Doctrine\DBAL\Connection;
 /**
  * Cash-flow na 90 dni (D-88): otwarte obowiązki z kwotą (urząd, ZUS, WHT) wobec należności z faktur sprzedaży
  * i niezapłaconych kosztów. Tylko odczyt, bez przeliczania walut: saldo liczy się tylko w PLN, inne waluty stoją osobno.
- * Rezerwę „do odłożenia dziś” liczy panel „Podatki” (D-76).
+ * Rezerwę „do odłożenia dziś” liczy panel „Podatki” (D-76). Wyciąg mBanku nie ma salda, więc rachunki pokazują tylko
+ * ruch z zapisanych operacji, poza saldem (D-110).
  */
 final readonly class CashFlow
 {
@@ -21,14 +22,15 @@ final readonly class CashFlow
     public const MAX_ROWS = 200;
     /** Faktura sprzedaży, której zapłata może jeszcze wpłynąć; korekty (KOR) zmieniają kwotę przez `payment` i nie są należnością. */
     private const RECEIVABLE = "i.direction='sale' AND i.kind IN ('VAT','ZAL','ROZ','UPR') AND i.status IN ('accepted','corrected')";
-    /** Koszt firmy do zapłaty: bez `paid_on` i bez oznaczenia jako prywatny albo cudzy. */
-    private const PAYABLE = "i.direction='cost' AND i.paid_on IS NULL AND (i.cost_review IS NULL OR i.cost_review IN ('business','disputed'))";
+    /** Koszt firmy do zapłaty: bez `paid_on` i bez oznaczenia jako prywatny albo cudzy; czyta też dopasowanie wyciągu (D-110). */
+    public const PAYABLE = "i.direction='cost' AND i.paid_on IS NULL AND (i.cost_review IS NULL OR i.cost_review IN ('business','disputed'))";
 
     public function __construct(private Connection $db, private ConnectorConfiguration $configuration, private BusinessDate $date) {}
 
     /**
      * @return array{today: string, until: string, obligations: list<array<string, mixed>>, by_month: list<array<string, mixed>>, without_amount: list<array<string, mixed>>,
      *     receivables: list<array<string, mixed>>, receivable_totals: list<array<string, mixed>>, payables: list<array<string, mixed>>, payable_totals: list<array<string, mixed>>,
+     *     bank: list<array<string, mixed>>, bank_until: ?string,
      *     pln: array{receivables: string, obligations: string, payables: string, balance: string}}
      */
     public function summary(): array
@@ -88,6 +90,12 @@ final readonly class CashFlow
                 [$environment],
             ),
             'payable_totals' => $payableTotals,
+            'bank' => $this->db->fetchAllAssociative(
+                'SELECT account, currency, min(booked_on) AS first_booked, max(booked_on) AS last_booked, count(*) AS items, COALESCE(sum(amount) FILTER (WHERE amount > 0), 0.00) AS inflow,
+                 COALESCE(sum(amount) FILTER (WHERE amount < 0), 0.00) AS outflow, sum(amount) AS net FROM bank_statement_line WHERE environment=? GROUP BY account, currency ORDER BY account, currency',
+                [$environment],
+            ),
+            'bank_until' => self::date($this->db->fetchOne("SELECT max(period_to) FROM bank_statement WHERE environment=? AND status='confirmed'", [$environment])),
             'pln' => [
                 'receivables' => (string) $receivablesPln,
                 'obligations' => (string) $obligationsPln,
@@ -95,6 +103,11 @@ final readonly class CashFlow
                 'balance' => (string) $receivablesPln->minus($obligationsPln)->minus($payablesPln)->toScale(2),
             ],
         ];
+    }
+
+    private static function date(mixed $value): ?string
+    {
+        return is_string($value) ? $value : null;
     }
 
     /** @param list<mixed> $amounts */

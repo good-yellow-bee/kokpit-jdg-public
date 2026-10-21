@@ -208,6 +208,96 @@ final class BankLineMatcherTest extends DatabaseTestCase
         ]));
     }
 
+    public function testOutgoingMatchesUnpaidCostByAmountAndSupplierEvidence(): void
+    {
+        $nip = FictionalIdentifiers::NIPS[1];
+        $other = FictionalIdentifiers::NIPS[2];
+        $spaced = 'pl ' . implode(' ', str_split(FictionalIdentifiers::account(8), 4));
+        $supplier = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fikcyjny dostawca', 'PL', ['nip' => $nip, 'bank_accounts' => json_encode([$spaced, ['number' => FictionalIdentifiers::account(9)], ['source' => 'ksef']], JSON_THROW_ON_ERROR)]);
+        $checked = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fikcyjny wykonawca', 'PL', ['nip' => $other]);
+        ChatTestTools::verification($this->db(), 'test', $checked, 'white_list', 'valid', '2026-09-10T08:00:00Z', ['subject' => $other, 'bank_account' => FictionalIdentifiers::account(10)]);
+        ChatTestTools::verification($this->db(), 'test', $checked, 'vies', 'valid', '2026-09-10T08:00:00Z', ['subject' => 'PL' . $other, 'bank_account' => FictionalIdentifiers::account(12)]);
+        $foreign = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fictional Ltd', 'IE');
+        $account = $this->cost($supplier, 'FZ 1/2026', '100.00', '23.00');
+        $object = $this->cost($supplier, 'FZ 2/2026', '200.00', '46.00', ['cost_review' => 'disputed']);
+        $verified = $this->cost($checked, 'W 3', '300.00', '69.00');
+        $split = $this->cost($checked, 'W 4', '400.00', '92.00');
+        $number = $this->cost($foreign, 'INV-5', '500.00', '0.00', ['cost_review' => null, 'cost_status' => 'imported']);
+        $ksef = $this->cost($supplier, 'FZ 6/2026', '600.00', '138.00', ['ksef_number' => $nip . '-20260901-0000FICTION-AB']);
+        $all = $this->cost($supplier, 'FZ 7/2026', '700.00', '161.00');
+        $this->cost($supplier, 'FZ 8/2026', '800.00', '0.00', ['paid_on' => '2026-09-01']);
+        $this->cost($supplier, 'FZ 9/2026', '900.00', '0.00', ['cost_review' => 'private']);
+        $this->cost($supplier, 'FZ 10/2026', '1000.00', '0.00', ['currency' => 'EUR']);
+        $this->cost($supplier, 'FZ 11/2026', '1100.00', '0.00');
+        $this->cost($supplier, 'FZ 12/2026', '1200.00', '0.00');
+        $this->cost($supplier, 'FZ 13/2026', '1200.00', '0.00');
+        $this->cost($checked, 'W 16', '1500.00', '0.00');
+        ChatTestTools::sale($this->db(), $this->clock, 'test', $supplier, 'FZ 14/2026', '2026-09-01', 'PLN', '1300.00', '0.00', '1300.00', 'accepted');
+        $prod = ChatTestTools::counterparty($this->db(), $this->clock, 'prod', 'Fikcyjny dostawca', 'PL', ['nip' => $nip]);
+        ChatTestTools::cost($this->db(), $this->clock, 'prod', $prod, 'FZ 15/2026', '2026-09-01', 'PLN', '1400.00', '0.00', '1400.00', 'business');
+        self::assertSame([
+            'account' => ['cost_invoice_amount', $account, 'koszt FZ 1/2026 od Fikcyjny dostawca (rachunek dostawcy)'],
+            'object' => ['cost_invoice_amount', $object, 'koszt FZ 2/2026 od Fikcyjny dostawca (rachunek dostawcy)'],
+            'verified' => ['cost_invoice_amount', $verified, 'koszt W 3 od Fikcyjny wykonawca (rachunek dostawcy)'],
+            'split' => ['cost_invoice_amount', $split, 'koszt W 4 od Fikcyjny wykonawca (NIP w tytule)'],
+            'number' => ['cost_invoice_amount', $number, 'koszt INV-5 od Fictional Ltd (numer w tytule)'],
+            'ksef' => ['cost_invoice_amount', $ksef, 'koszt FZ 6/2026 od Fikcyjny dostawca (NIP w tytule, numer w tytule)'],
+            'all' => ['cost_invoice_amount', $all, 'koszt FZ 7/2026 od Fikcyjny dostawca (rachunek dostawcy, NIP w tytule, numer w tytule)'],
+        ], $this->proposeCosts([
+            'account' => $this->line(BankLineKind::Outgoing, '-123.00', 'ABONAMENT', FictionalIdentifiers::account(8)),
+            'object' => $this->line(BankLineKind::Outgoing, '-246.00', 'ABONAMENT', FictionalIdentifiers::account(9)),
+            'verified' => $this->line(BankLineKind::Outgoing, '-369.00', 'USŁUGA', FictionalIdentifiers::account(10)),
+            'vies account' => $this->line(BankLineKind::Outgoing, '-1500.00', 'USŁUGA', FictionalIdentifiers::account(12)),
+            'split' => $this->line(BankLineKind::Outgoing, '-492.00', '/VAT/92,00/IDC/' . $other . '/INV/INNA/TXT/USŁUGA'),
+            'number' => $this->line(BankLineKind::Outgoing, '-500.00', 'invoice inv-5'),
+            'ksef' => $this->line(BankLineKind::Outgoing, '-738.00', 'KSeF ' . $nip . '-20260901-0000FICTION-AB'),
+            'all' => $this->line(BankLineKind::Outgoing, '-861.00', 'NIP ' . $nip . ' FZ 7/2026', FictionalIdentifiers::account(8)),
+            'no evidence' => $this->line(BankLineKind::Outgoing, '-1100.00', 'FZ 11/20260 NIP ' . $nip . '0', FictionalIdentifiers::account(11)),
+            'paid' => $this->line(BankLineKind::Outgoing, '-800.00', 'FZ 8/2026'),
+            'private' => $this->line(BankLineKind::Outgoing, '-900.00', 'FZ 9/2026'),
+            'other currency' => $this->line(BankLineKind::Outgoing, '-1000.00', 'FZ 10/2026'),
+            'two costs' => $this->line(BankLineKind::Outgoing, '-1200.00', 'ABONAMENT', FictionalIdentifiers::account(8)),
+            'sale' => $this->line(BankLineKind::Outgoing, '-1300.00', 'FZ 14/2026'),
+            'other environment' => $this->line(BankLineKind::Outgoing, '-1400.00', 'FZ 15/2026'),
+            'incoming' => $this->line(BankLineKind::Incoming, '123.00', 'ZWROT', FictionalIdentifiers::account(8)),
+            'internal' => $this->line(BankLineKind::Internal, '-123.00', 'PRZELEW', FictionalIdentifiers::account(8)),
+        ]));
+        $line = $this->line(BankLineKind::Outgoing, '-123.00', 'ABONAMENT', FictionalIdentifiers::account(8));
+        $proposal = BankTestTools::matcher($this->db(), $this->clock)->propose([$line])[$line->hash];
+        self::assertSame([null, null, ['invoice:' . $account], $line->hash . '|cost_invoice_amount|' . $account . '||'], [$proposal->paymentId, $proposal->obligationId, $proposal->targets(), $proposal->token($line->hash)]);
+        self::assertSame([], $this->proposeCosts([
+            'first' => $this->line(BankLineKind::Outgoing, '-123.00', 'ABONAMENT', FictionalIdentifiers::account(8)),
+            'second' => $this->line(BankLineKind::Outgoing, '-123.00', 'FZ 1/2026', bookedOn: '2026-09-20'),
+        ]));
+    }
+
+    /**
+     * @param array<string,BankLine> $lines
+     * @return array<string,array{string,?string,string}> klucz → reguła, faktura, opis propozycji
+     */
+    private function proposeCosts(array $lines): array
+    {
+        $proposals = BankTestTools::matcher($this->db(), $this->clock)->propose(array_values($lines));
+        $result = [];
+        foreach ($lines as $key => $line) {
+            if (isset($proposals[$line->hash])) {
+                $match = $proposals[$line->hash];
+                $result[$key] = [$match->rule->value, $match->invoiceId, $match->label];
+            }
+        }
+        return $result;
+    }
+
+    /** @param array<string,?string> $extra */
+    private function cost(string $counterparty, string $number, string $net, string $vat, array $extra = []): string
+    {
+        $id = ChatTestTools::cost($this->db(), $this->clock, 'test', $counterparty, $number, '2026-09-01', 'PLN', $net, $vat, $net, 'business');
+        if ($extra !== []) {
+            $this->db()->update('invoice', $extra, ['id' => $id]);
+        }
+        return $id;
+    }
+
     /**
      * @param array<string,BankLine> $lines
      * @return array<string,array{string,?string,string}> klucz → reguła, obowiązek, opis propozycji

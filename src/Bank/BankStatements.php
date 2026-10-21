@@ -8,6 +8,7 @@ use App\Audit\AuditLog;
 use App\Calendar\IsoDate;
 use App\Calendar\ObligationActions;
 use App\Config\ConnectorConfiguration;
+use App\Cost\CostReview;
 use App\Storage\FileStore;
 use App\Time\BusinessDate;
 use Doctrine\DBAL\ArrayParameterType;
@@ -36,6 +37,7 @@ final readonly class BankStatements
         private ConnectorConfiguration $configuration,
         private BankLineMatcher $matcher,
         private ObligationActions $obligations,
+        private CostReview $costs,
         #[AutowireIterator(BankStatementParser::TAG)]
         private iterable $parsers,
     ) {}
@@ -82,7 +84,8 @@ final readonly class BankStatements
 
     /**
      * Zapisuje nowe operacje i zaznaczone propozycje. Token niezgodny z przeliczoną propozycją jest pomijany, nigdy
-     * podmieniany; obowiązek z propozycji jest zablokowany do końca transakcji i zamyka go `ObligationActions::recordPayment`.
+     * podmieniany; obowiązek i koszt z propozycji są zablokowane do końca transakcji. Obowiązek zamyka
+     * `ObligationActions::recordPayment`, koszt dostaje `paid_on` = dzień operacji przez `CostReview::markPaid` (D-110).
      *
      * @param list<string> $tokens
      * @return array{added:int,applied:int,skipped:int}
@@ -108,6 +111,9 @@ final readonly class BankStatements
                 $this->db->insert('bank_statement_line', ['id' => UuidV7::generate($this->clock->now()),'environment' => $environment,'statement_id' => $id,'line_hash' => $line->hash,'account' => $line->account,'booked_on' => $line->bookedOn,'amount' => $line->amount,'currency' => $line->currency,'operation_type' => $line->operationType,'description' => $line->description,'counterparty_account' => $line->counterpartyAccount,'kind' => $line->kind->value,'split_payment' => $line->splitPayment ? 'true' : 'false','invoice_id' => $match?->invoiceId,'payment_id' => $match?->paymentId,'obligation_id' => $match?->obligationId,'match_rule' => $match?->rule->value,'matched_at' => $match === null ? null : $now,'matched_by' => $match === null ? null : $userId,'created_at' => $now]);
                 if ($match?->obligationId !== null) {
                     $this->obligations->recordPayment($match->obligationId, $userId, (string) $line->amount->abs()->toScale(2), $line->bookedOn);
+                }
+                if ($match?->rule === BankMatchRule::Cost) {
+                    $this->costs->markPaid($match->invoiceId ?? throw new \LogicException('Dopasowanie kosztu bez faktury.'), $line->bookedOn, $userId);
                 }
                 $applied += $match === null ? 0 : 1;
             }

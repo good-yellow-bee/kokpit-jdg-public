@@ -21,7 +21,7 @@
         <section id="bank-preview">
             <h2>Podgląd</h2>
             <p id="bank-summary">Nowe operacje: <strong>{{ preview.lines|length }}</strong>, już zapisane wcześniej: {{ preview.duplicates }}, z datą po dziś (pominięte do następnego wyciągu): {{ preview.future }}.</p>
-            <p>Zaznaczone dopasowania zapiszą się razem z operacjami. Dopasowanie do obowiązku ZUS albo US wpisuje zapłatę i zamyka obowiązek w kalendarzu; rozbicie składek ZUS wpisujesz dalej na stronie „Podatki”. Wpłata VAT nie zamyka obowiązku: robi to przyjęty JPK. Tytuł z symbolem VAT-7 albo z okresem rocznym (np. 25R) nie dostaje propozycji.</p>
+            <p>Zaznaczone dopasowania zapiszą się razem z operacjami. Dopasowanie do obowiązku ZUS albo US wpisuje zapłatę i zamyka obowiązek w kalendarzu; rozbicie składek ZUS wpisujesz dalej na stronie „Podatki”. Dopasowanie wydatku do kosztu wpisuje dzień operacji jako dzień zapłaty faktury. Wpłata VAT nie zamyka obowiązku: robi to przyjęty JPK. Tytuł z symbolem VAT-7 albo z okresem rocznym (np. 25R) nie dostaje propozycji.</p>
             <form method="post" action="{{ path('panel_bank_confirm', {id: statement.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
                 <input type="hidden" name="fingerprint" value="{{ preview.fingerprint }}">
@@ -64,6 +64,7 @@
                     <td>{{ line.operation_type ?? '' }}{% if line.description %}<br><small>{{ line.description }}</small>{% endif %}</td>
                     <td>
                         {% if line.match_rule == 'invoice_title_amount' %}faktura {{ line.invoice_number }}
+                        {% elseif line.match_rule == 'cost_invoice_amount' %}koszt {{ line.invoice_number }}, zapłacony {{ line.booked_on }}
                         {% elseif line.match_rule == 'payment_title_amount' %}płatność dokumentu {{ line.document_number }}
                         {% elseif line.match_rule %}obowiązek {{ line.obligation_type }} za {{ line.obligation_period }}
                         {% else %}–{% endif %}

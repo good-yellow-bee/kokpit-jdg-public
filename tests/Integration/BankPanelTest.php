@@ -56,17 +56,21 @@ final class BankPanelTest extends WebTestCase
         $counterparty = (string) Uuid::v7();
         $this->db->insert('counterparty', ['id' => $counterparty, 'environment' => 'test', 'name' => 'Fikcyjna spółka', 'country' => 'PL', 'created_at' => $now, 'updated_at' => $now]);
         $this->db->insert('invoice', ['id' => (string) Uuid::v7(), 'environment' => 'test', 'direction' => 'sale', 'kind' => 'VAT', 'invoice_number' => 'FV 7/2026', 'counterparty_id' => $counterparty, 'currency' => 'PLN', 'issue_date' => '2026-09-01', 'net_total' => '10000.00', 'vat_total' => '2300.00', 'gross_total' => '12300.00', 'net_pln' => '10000.00', 'status' => 'accepted', 'created_at' => $now, 'updated_at' => $now]);
+        $fee = (string) Uuid::v7();
+        $this->db->insert('invoice', ['id' => $fee, 'environment' => 'test', 'direction' => 'cost', 'kind' => 'VAT', 'invoice_number' => 'FZ 4/2026', 'counterparty_id' => $counterparty, 'currency' => 'PLN', 'issue_date' => '2026-09-08', 'net_total' => '100.00', 'vat_total' => '0.00', 'gross_total' => '100.00', 'net_pln' => '100.00', 'cost_status' => 'reviewed', 'cost_review' => 'business', 'source' => 'manual', 'vat_exempt' => 'true', 'deductible' => 'false', 'is_fixed_asset' => 'false', 'created_at' => $now, 'updated_at' => $now]);
 
         $crawler = $this->client->request('GET', '/payments');
         $crawler = $this->client->click($crawler->selectLink('Wyciąg bankowy')->link());
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Brak wgranych wyciągów.', $crawler->text());
         $form = $crawler->selectButton('Pokaż podgląd')->form();
-        $this->attach($form, BankTestTools::fixture());
+        $supplier = '2026-09-21;"FZ 4/2026     FIKCYJNY DOSTAWCA SP. Z O.O.     PRZELEW ZEWNĘTRZNY WYCHODZĄCY     ' . FictionalIdentifiers::account(8) . '  ";"mBiznes konto Komfort 1499 ... 0001";"Usługi";-100,00 PLN;;' . "\r\n";
+        $this->attach($form, str_replace('#Kwota;' . "\r\n", '#Kwota;' . "\r\n" . $supplier, BankTestTools::fixture()));
         $this->client->submit($form);
         $crawler = $this->client->followRedirect();
-        self::assertSame('Nowe operacje: 15, już zapisane wcześniej: 0, z datą po dziś (pominięte do następnego wyciągu): 0.', $crawler->filter('#bank-summary')->text());
-        self::assertSame(2, $crawler->filter('#bank-lines input[type=checkbox]:checked')->count());
+        self::assertSame('Nowe operacje: 16, już zapisane wcześniej: 0, z datą po dziś (pominięte do następnego wyciągu): 0.', $crawler->filter('#bank-summary')->text());
+        self::assertSame(3, $crawler->filter('#bank-lines input[type=checkbox]:checked')->count());
+        self::assertStringContainsString('koszt FZ 4/2026 od Fikcyjna spółka (numer w tytule)', $crawler->filter('#bank-lines')->text());
         self::assertStringContainsString('obowiązek zus za 2026-08-01, termin 2026-09-21', $crawler->filter('#bank-lines')->text());
         self::assertStringContainsString('podzielona płatność', $crawler->filter('#bank-lines')->text());
 
@@ -82,12 +86,20 @@ final class BankPanelTest extends WebTestCase
         $values['match'][] = 'stary|token';
         $this->client->request('POST', $form->getUri(), $values);
         $crawler = $this->client->followRedirect();
-        self::assertSame('Zapisano operacji: 15, dopasowań: 2. Pominięte nieaktualne dopasowania: 1.', $crawler->filter('#bank-notice')->text());
-        self::assertSame('Zapisane operacje: 15, dopasowania: 2.', $crawler->filter('#bank-summary')->text());
+        self::assertSame('Zapisano operacji: 16, dopasowań: 3. Pominięte nieaktualne dopasowania: 1.', $crawler->filter('#bank-notice')->text());
+        self::assertSame('Zapisane operacje: 16, dopasowania: 3.', $crawler->filter('#bank-summary')->text());
         self::assertStringContainsString('faktura FV 7/2026', $crawler->filter('#bank-lines')->text());
-        self::assertSame(15, $crawler->filter('#bank-lines tbody tr')->count());
+        self::assertSame(16, $crawler->filter('#bank-lines tbody tr')->count());
         self::assertStringContainsString('obowiązek zus za 2026-08-01', $crawler->filter('#bank-lines')->text());
         self::assertSame('done', $this->db->fetchOne('SELECT status FROM obligation WHERE id=?', [$zus]));
+        self::assertStringContainsString('koszt FZ 4/2026, zapłacony 2026-09-21', $crawler->filter('#bank-lines')->text());
+        self::assertSame('2026-09-21', $this->db->fetchOne('SELECT paid_on FROM invoice WHERE id=?', [$fee]));
+
+        $crawler = $this->client->request('GET', '/cashflow');
+        self::assertStringContainsString('ostatni zatwierdzony wyciąg kończy się 2026-09-30', $crawler->filter('#cashflow-bank')->text());
+        self::assertSame('…' . substr(FictionalIdentifiers::account(1), -4) . ' (PLN)', $crawler->filter('#cashflow-bank-' . FictionalIdentifiers::account(1) . '-PLN td')->first()->text());
+        self::assertSame('4074.90', $crawler->filter('#cashflow-bank-' . FictionalIdentifiers::account(1) . '-PLN .net')->text());
+        self::assertSame('160.00', $crawler->filter('#cashflow-bank-' . FictionalIdentifiers::account(3) . '-PLN .net')->text());
 
         $crawler = $this->client->request('GET', '/bank');
         self::assertStringContainsString('zatwierdzony', $crawler->filter('#bank-statements')->text());

@@ -9,7 +9,7 @@
     {% if problems is not empty %}
         <div role="alert" id="bank-problems"><p>Plik odrzucony, nic nie zapisano:</p><ul>{% for problem in problems|slice(0, 20) %}<li>{{ problem }}</li>{% endfor %}</ul>{% if problems|length > 20 %}<p>… i {{ problems|length - 20 }} więcej.</p>{% endif %}</div>
     {% endif %}
-    <p>Kokpit tylko czyta wyciąg: niczego nie wysyła do banku. Każde dopasowanie do faktury, płatności albo obowiązku widzisz w podglądzie przed zapisem.</p>
+    <p>Kokpit tylko czyta wyciąg: niczego nie wysyła do banku. Każde dopasowanie do faktury, płatności, kosztu albo obowiązku widzisz w podglądzie przed zapisem.</p>
 
     <section id="bank-upload">
         <h2>Wgraj wyciąg</h2>

@@ -150,6 +150,29 @@ final class BankStatementsTest extends DatabaseTestCase
         self::assertSame([1, []], [count($again->lines), $again->proposals]);
     }
 
+    public function testConfirmedCostMatchMarksCostPaidOnOperationDay(): void
+    {
+        $nip = FictionalIdentifiers::NIPS[1];
+        $supplier = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fikcyjny dostawca', 'PL', ['nip' => $nip]);
+        $cost = ChatTestTools::cost($this->db(), $this->clock, 'test', $supplier, 'FZ 3/2026', '2026-09-01', 'PLN', '200.00', '46.00', '200.00', 'business');
+        $skipped = ChatTestTools::cost($this->db(), $this->clock, 'test', $supplier, 'FZ 4/2026', '2026-09-02', 'PLN', '100.00', '0.00', '100.00', 'business');
+        $split = '2026-09-20;"/VAT/46,00/IDC/' . $nip . '/INV/FZ 3/2026/TXT/ABONAMENT     FIKCYJNY DOSTAWCA SP. Z O.O.     PP/PRZELEW ZEWNĘTRZNY WYCHODZĄCY     ' . FictionalIdentifiers::account(8) . '  ";"mBiznes konto Komfort 1499 ... 0001";"Usługi";-246,00 PLN;;' . "\r\n";
+        $plain = '2026-09-21;"FZ 4/2026     FIKCYJNY DOSTAWCA SP. Z O.O.     PRZELEW ZEWNĘTRZNY WYCHODZĄCY     ' . FictionalIdentifiers::account(8) . '  ";"mBiznes konto Komfort 1499 ... 0001";"Usługi";-100,00 PLN;;' . "\r\n";
+        $statements = $this->statements();
+        $id = $statements->upload(str_replace('#Kwota;' . "\r\n", '#Kwota;' . "\r\n" . $split . $plain, BankTestTools::fixture()), null, $this->owner);
+        $preview = $statements->preview($id);
+        [$mpp, $other] = [$preview->lines[0], $preview->lines[1]];
+        self::assertSame([true, 'outgoing', 'koszt FZ 3/2026 od Fikcyjny dostawca (NIP w tytule, numer w tytule)', 'koszt FZ 4/2026 od Fikcyjny dostawca (numer w tytule)'], [$mpp->splitPayment, $mpp->kind->value, $preview->proposals[$mpp->hash]->label, $preview->proposals[$other->hash]->label]);
+        self::assertSame(['added' => 17, 'applied' => 1, 'skipped' => 0], $statements->confirm($id, $this->owner, $preview->fingerprint(), [$preview->proposals[$mpp->hash]->token($mpp->hash)]));
+        self::assertSame(['2026-09-20', 2, null, 1], [
+            $this->db()->fetchOne('SELECT paid_on FROM invoice WHERE id=?', [$cost]), $this->db()->fetchOne('SELECT version FROM invoice WHERE id=?', [$cost]),
+            $this->db()->fetchOne('SELECT paid_on FROM invoice WHERE id=?', [$skipped]), $this->db()->fetchOne('SELECT version FROM invoice WHERE id=?', [$skipped]),
+        ]);
+        self::assertSame(['cost_invoice_amount', $cost, null, null, true, $this->owner], array_values((array) $this->db()->fetchAssociative('SELECT match_rule, invoice_id, payment_id, obligation_id, split_payment, matched_by FROM bank_statement_line WHERE line_hash=?', [$mpp->hash])));
+        self::assertSame(['{"paid_on": "2026-09-20"}', $this->owner], array_values((array) $this->db()->fetchAssociative("SELECT details::text, actor_user_id FROM audit_log WHERE action='cost.paid' AND target_id=?", [$cost])));
+        self::assertNull($this->db()->fetchOne('SELECT match_rule FROM bank_statement_line WHERE line_hash=?', [$other->hash]));
+    }
+
     public function testRefusesUnknownFormatTooLargeFileAndCorruptedStoredFile(): void
     {
         $statements = $this->statements();

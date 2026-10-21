@@ -255,7 +255,7 @@ Strona `/year-close` panelu (D-86) zbiera rok N w jednym miejscu: obowiązki roc
 
 ## Cash-flow
 
-Strona `/cashflow` panelu (D-88) zestawia na 90 dni otwarte obowiązki z kwotą (z zaległymi) z należnościami z faktur sprzedaży i kosztami do zapłaty. Saldo liczy tylko kwoty w PLN; inne waluty stoją osobno, bez przeliczania.
+Strona `/cashflow` panelu (D-88) zestawia na 90 dni otwarte obowiązki z kwotą (z zaległymi) z należnościami z faktur sprzedaży i kosztami do zapłaty. Saldo liczy tylko kwoty w PLN; inne waluty stoją osobno, bez przeliczania. Sekcja „Rachunki z wyciągów” pokazuje ruch netto zapisanych operacji per rachunek, poza saldem: lista operacji mBanku nie ma salda (D-110).
 
 ## Blokada okresu
 

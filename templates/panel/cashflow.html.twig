@@ -19,6 +19,19 @@
         </table>
     </section>
 
+    <section id="cashflow-bank">
+        <h2>Rachunki z wyciągów</h2>
+        {% if flow.bank is empty %}<p>Brak zapisanych operacji: wgraj <a href="{{ path('panel_bank') }}">wyciąg</a>.</p>{% else %}
+        <p>Lista operacji z mBanku nie podaje salda, więc kokpit nie zna stanu rachunku i nie dolicza go do salda wyżej. Tabela pokazuje ruch z zapisanych operacji{% if flow.bank_until %}; ostatni zatwierdzony wyciąg kończy się {{ flow.bank_until }}{% endif %}. Saldo sprawdzisz w aplikacji banku.</p>
+        <table>
+            <thead><tr><th>Rachunek</th><th>Operacje od – do</th><th>Wpływy</th><th>Wydatki</th><th>Ruch netto</th></tr></thead>
+            <tbody>
+            {% for account in flow.bank %}<tr id="cashflow-bank-{{ account.account }}-{{ account.currency }}"><td>…{{ account.account|slice(-4) }} ({{ account.currency }})</td><td>{{ account.first_booked }} – {{ account.last_booked }} ({{ account.items }})</td><td>{{ account.inflow }}</td><td>{{ account.outflow }}</td><td class="net">{{ account.net }}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </section>
+
     <section id="cashflow-obligations">
         <h2>Obowiązki z kwotą</h2>
         {% if flow.by_month is empty %}<p>Brak otwartych obowiązków z kwotą w horyzoncie.</p>{% else %}
