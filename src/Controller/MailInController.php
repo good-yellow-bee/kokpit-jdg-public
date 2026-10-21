@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Audit\AuditLog;
+use App\Calendar\MailNotices;
 use App\Config\ConnectorConfiguration;
 use App\Passkey\AppUser;
 use App\Storage\FileStore;
@@ -32,7 +33,7 @@ final class MailInController extends AbstractController
     {
         $environment = $this->configuration->environment();
         $messages = $this->db->fetchAllAssociative(
-            "SELECT id, from_address, subject, sent_at, fetched_at, size_bytes, status, documents, skipped, handled_at FROM mail_in_message WHERE environment=?
+            "SELECT id, from_address, subject, sent_at, fetched_at, size_bytes, status, documents, skipped, handled_at, notice_channel FROM mail_in_message WHERE environment=?
              ORDER BY (status='new' AND handled_at IS NULL) DESC, fetched_at DESC, uid DESC LIMIT 200",
             [$environment],
         );
@@ -50,6 +51,7 @@ final class MailInController extends AbstractController
             'secret' => 'MAIL_IN_' . strtoupper($environment) . '_DSN',
             'last_call' => $this->db->fetchAssociative("SELECT started_at, error_code FROM connector_call WHERE environment=? AND connector='mail_in' ORDER BY started_at DESC, sequence DESC LIMIT 1", [$environment]) ?: null,
             'open' => count(array_filter($messages, static fn(array $row): bool => $row['status'] === 'new' && $row['handled_at'] === null)),
+            'notice_labels' => MailNotices::LABELS,
         ]);
     }
 

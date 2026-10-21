@@ -379,7 +379,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | --- | --- |
 | Kalendarz | `PolishCalendar` (`src/Calendar`): `holidays`, `isHoliday`, `isWorkingDay`, `previousWorkingDay`, `workingDayOnOrAfter`, `shift`, `easter`; polityki `op12`, `zus`, `none` |
 | Obowiązki | `ObligationEngine` (`recompute`, `candidates`, `zusAmount`), `ObligationRules` (`RULES`, `MANUAL`, `CHANNELS`, `EXPIRING_KINDS`, `source`, `policy`, `missingAmount`); wiadomość `ObligationRecomputeMessage` (transport `reads`) |
-| `obligation.rule_key` | `zus.monthly`, `ryczalt_advance.monthly`, `ryczalt_advance.quarterly`, `vat_jpk_v7m.monthly`, `vat_ue.monthly`, `invoice_issue.monthly`, `ledger_entry.monthly`, `wht_payment.monthly`, `ift_2r.yearly`, `cit_10z.yearly`, `jpk_ewp.yearly`, `jpk_st.yearly`, `pit_28.yearly`, `health_reconciliation.yearly`, `tax_form_choice.yearly`, `credential_expiry.valid_until`, `credential_expiry.auth_data`, `manual_channel_check.weekly`, `manual_channel_check.balance_check`; wpis ręczny `edelivery_reply_due.manual` |
+| `obligation.rule_key` | `zus.monthly`, `ryczalt_advance.monthly`, `ryczalt_advance.quarterly`, `vat_jpk_v7m.monthly`, `vat_ue.monthly`, `invoice_issue.monthly`, `ledger_entry.monthly`, `wht_payment.monthly`, `ift_2r.yearly`, `cit_10z.yearly`, `jpk_ewp.yearly`, `jpk_st.yearly`, `pit_28.yearly`, `health_reconciliation.yearly`, `tax_form_choice.yearly`, `credential_expiry.valid_until`, `credential_expiry.auth_data`, `manual_channel_check.weekly`, `manual_channel_check.balance_check`; wpis ręczny `edelivery_reply_due.manual`; z maila z powiadomieniem `manual_channel_check.mail_notice` (D-109) |
 | Tabele | `obligation`, `notification` (migracja F0b) |
 | Przypomnienia i akcje | `NotificationDispatcher` (`run`, `plan`, `send`, `offsets`, `channels`, `body`; link `/calendar`; klucz zaległości `{obligation_id}:overdue:{data}:push`), `ObligationActions` (`complete`, `recordPayment`, `markNotApplicable`, `addLetterDeadline`), `CredentialExpiryChecker` (`src/Security`), `CredentialValidity` (`rows`; sekcja pulpitu `#connector-validity`); wiadomości `NotificationDispatchMessage` (transport `notifications`), `CredentialExpiryMessage` (`reads`) |
 | Panel | `CalendarController`: `/calendar`, `/calendar/letter`, `/calendar/{id}/complete`, `/calendar/{id}/payment`, `/calendar/{id}/not-applicable`; `/settings` z kluczami F0b |
@@ -776,6 +776,18 @@ Część b: sekcja niżej.
 | Panel | `MailInController`: trasy `panel_mail_in` (`GET /mail-in`), `panel_mail_in_file` (`GET /mail-in/files/{id}`), `panel_mail_in_handled` (`POST /mail-in/{id}/handled`, token CSRF `mail_in`); szablon `templates/panel/mail_in.html.twig`; identyfikatory `#mail-in-status`, `#mail-in-open`, `#mail-in-error`, `#mail-in-notice`, `#mail-in-messages`, `#mail-in-<id>` |
 | Komenda | `app:mail-in:fetch` (`MailInFetchCommand`) |
 | Testy | `MailInboxTest`, `MailInPanelTest`, `MimeParserTest`, `ImapClientTest`, `ScriptedImapStream`; fixtures `tests/Fixtures/MailIn/invoice-pdf.eml`, `nested-forward.eml`, `no-attachment.eml`, `session-first.txt`, `session-second.txt`, `session-new-validity.txt`, `session-login-failed.txt` |
+
+### Powiadomienia systemowe z poczty (D-109): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Kalendarz (`src/Calendar`) | `MailNotices` (`channel`, `record`; stałe `CHANNELS`, `RULE_KEY`, `LABELS`) |
+| Kanał powiadomienia | `e_us` (e-Urząd Skarbowy i powiadomienia KAS), `ezus` (PUE/eZUS), `ade` (e-Doręczenia, ADE firmy albo prywatny) |
+| Kolumna | `mail_in_message.notice_channel` (`NULL` albo kanał powiadomienia, CHECK) |
+| Obowiązek | `manual_channel_check` z regułą `manual_channel_check.mail_notice`; `dedupe_key` `manual_channel_check:{dzień pobrania}:{kanał}:{mail_in_message.id}` |
+| Audyt | `mail_in.notice_recognized` (`channel`) |
+| Konfiguracja | `mail_in.notices`: lista reguł `channel`, `sender` (pełny adres) albo `domain` (domena bez poddomen), opcjonalnie `subject` (wyrażenie regularne PCRE) |
+| Testy | `MailNoticesTest` (`configuredRules`), `MailInboxTest::testSystemNoticesCreateOneChannelCheckEach`, `MailInPanelTest::testSystemNoticeShowsSourceOnBothPages`; fixtures `tests/Fixtures/MailIn/session-notices.txt`, `session-notices-new-validity.txt`, `notice-e-us.eml`, `notice-jpk.eml`, `notice-jpk-other-subject.eml`, `notice-spoofed-name.eml`, `notice-typosquat.eml` |
 
 ### Cash-flow na 90 dni (D-88): nazwy
 

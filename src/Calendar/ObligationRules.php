@@ -45,9 +45,10 @@ final class ObligationRules
         'manual_channel_check.weekly' => ['type' => 'manual_channel_check','policy' => PolishCalendar::NONE,'source' => 'docs/modules/e-doreczenia.md','cadence' => 'weekly'],
         'manual_channel_check.balance_check' => ['type' => 'manual_channel_check','policy' => PolishCalendar::NONE,'source' => 'docs/compliance-calendar.md','cadence' => 'monthly_after_vat'],
     ];
-    /** Formularze wpisu ręcznego: wiersz tworzy akcja w panelu, przeliczenie go nie zmienia. */
+    /** Wiersze spoza silnika: tworzy je akcja w panelu albo rozpoznany mail (D-109), przeliczenie ich nie zmienia. */
     public const MANUAL = [
         'edelivery_reply_due.manual' => ['type' => 'edelivery_reply_due','policy' => PolishCalendar::NONE,'source' => 'docs/modules/e-doreczenia.md'],
+        MailNotices::RULE_KEY => ['type' => 'manual_channel_check','policy' => PolishCalendar::NONE,'source' => 'docs/modules/e-doreczenia.md'],
         'wl_notice.manual' => ['type' => 'wl_notice','policy' => PolishCalendar::OP12,'source' => 'https://api.sejm.gov.pl/eli/acts/DU/2026/622/text.pdf'],
     ];
     /** Kanały cotygodniowego przeglądu (Q-13). */

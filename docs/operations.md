@@ -228,6 +228,7 @@ Konektor `mail_in` (D-92) czyta jedną dedykowaną skrzynkę tylko do odczytu. B
 4. Restart workerów, potem `bin/console app:mail-in:fetch`: wynik `"status":"ok"` i wiersz `connector_call` konektora `mail_in` bez `error_code`.
 5. Dokumenty są na stronie „Dokumenty z poczty” (`/mail-in`, link na stronie kosztów).
 
+- Powiadomienia systemowe (D-109): w głównej skrzynce ustaw regułę przekazywania (przekierowanie z zachowaniem nagłówka `From`, nie „przekaż jako załącznik”) maili od `e-urzadskarbowy@podatki.gov.pl`, `jpk.powiadomienia@mf.gov.pl`, `powiadomienia.jpk@mf.gov.pl`, domeny `zus.pl` i domeny nadawcy powiadomień e-Doręczeń do skrzynki `mail_in`. Kopia zostaje w głównej skrzynce. Każdy taki mail daje obowiązek `manual_channel_check` na dziś; na `/mail-in` ma dopisek „powiadomienie”. Inny adres nadawcy prawdziwego powiadomienia zmienia `mail_in.notices` w `config/services_connectors.yaml` (Claude Code, nowe wdrożenie) i wiersz w [facts.md](facts.md).
 - Rotacja: nowe hasło u dostawcy → `secrets:set MAIL_IN_PROD_DSN` → restart workerów → `app:mail-in:fetch`.
 - Błąd sesji daje push `connector_failure` (`mail_in`, np. `login_failed`) raz na dobę; kod jest też na stronie `/mail-in` i w `/connectors`.
 
