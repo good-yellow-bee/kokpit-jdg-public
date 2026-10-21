@@ -7,22 +7,21 @@ namespace App\Ledger;
 use App\Audit\AuditLog;
 use App\Calendar\IsoDate;
 use App\Config\ConnectorConfiguration;
-use App\Time\BusinessDate;
 use Brick\Math\BigDecimal;
 use Doctrine\DBAL\Connection;
-use Symfony\Component\Clock\ClockInterface;
-use Symfony\Component\Uid\UuidV7;
 
 /**
  * Błąd wpisu (docs/modules/ewidencja.md, „Korekty”, „Błąd wpisu”): nigdy `UPDATE`. Błąd tylko w K_8 daje jeden wiersz
  * `correction` z różnicą; błąd w K_3–K_7 albo K_9 daje wiersz odwracający (−K_8) i wiersz z poprawnymi polami.
  * Każdy wiersz ma `corrects_entry_id` błędnego wiersza, jego `invoice_id`, `source` = `manual` i `year` z własnego K_3.
+ * Zapis przez `RevenueEntryWriter::append`, więc wiersz w zamkniętym miesiącu daje „korekta wymagana”. Akcja panelu `/ledger`.
+ * Wiersz poprawiasz raz: kolejny błąd poprawiasz w wierszu korekty, więc ponowione żądanie nie dubluje różnicy.
  */
 final readonly class EntryErrorCorrection
 {
     public const FIELDS = ['revenue_date','document_number','ksef_number','counterparty_country','counterparty_tax_id','amount_pln','rate_pct'];
 
-    public function __construct(private Connection $db, private ClockInterface $clock, private BusinessDate $businessDate, private JpkEwpSchema $schema, private AuditLog $audit, private ConnectorConfiguration $configuration) {}
+    public function __construct(private Connection $db, private RevenueEntryWriter $writer, private JpkEwpSchema $schema, private AuditLog $audit, private ConnectorConfiguration $configuration) {}
 
     /**
      * @param array<string,?string> $correct poprawne wartości pól z FIELDS; pominięte pole zostaje jak w błędnym wierszu
@@ -38,6 +37,11 @@ final readonly class EntryErrorCorrection
             if ($wrong === false) {
                 throw new \DomainException('Brak wiersza ewidencji.');
             }
+            // Blokada roku błędnego wiersza szereguje równoległe korekty tego wiersza przed sprawdzeniem poprzedniej.
+            $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [RevenueEntryWriter::LOCK_NAMESPACE, $wrong['year']]);
+            if ($this->db->fetchOne("SELECT 1 FROM revenue_entry WHERE corrects_entry_id=? AND source='manual'", [$entryId]) !== false) {
+                throw new \DomainException('Wiersz ma już korektę błędu wpisu: popraw wiersz korekty.');
+            }
             $fixed = $wrong;
             foreach ($correct as $field => $value) {
                 $fixed[$field] = $value;
@@ -52,6 +56,9 @@ final readonly class EntryErrorCorrection
             if (is_string($fixed['counterparty_country']) && !$this->schema->isCountry($fixed['counterparty_country'])) {
                 throw new \DomainException('Kod kraju spoza słownika K_6.');
             }
+            if (is_string($fixed['ksef_number']) && !$this->schema->isKsefNumber($fixed['ksef_number'])) {
+                throw new \DomainException('Numer KSeF K_5 niezgodny ze wzorcem JPK_EWP(4).');
+            }
             $rows = [];
             if ($changed === ['amount_pln']) {
                 $rows[] = ['amount_pln' => (string) BigDecimal::of(self::str($fixed['amount_pln']))->minus(self::str($wrong['amount_pln']))->toScale(2)] + $wrong;
@@ -61,30 +68,22 @@ final readonly class EntryErrorCorrection
             }
             $ids = [];
             foreach ($rows as $row) {
-                $ids[] = $this->insert($row, $entryId, $userId);
+                $ids = array_merge($ids, $this->writer->append(IsoDate::year(self::str($row['revenue_date'])), [self::row($row, $entryId, $userId)]));
             }
             $this->audit->append('ledger.entry_corrected', ['corrects_entry_id' => $entryId,'changed' => $changed,'rows' => count($ids)], $this->configuration->environment(), 'revenue_entry', $ids[0], $userId);
             return $ids;
         });
     }
 
-    /** @param array<string,mixed> $row */
-    private function insert(array $row, string $correctsEntryId, string $userId): string
+    /**
+     * @param array<string,mixed> $row
+     * @return array<string,string|null>
+     */
+    private static function row(array $row, string $correctsEntryId, string $userId): array
     {
-        $year = IsoDate::year(self::str($row['revenue_date']));
-        $environment = $this->configuration->environment();
-        $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [RevenueEntryWriter::LOCK_NAMESPACE, $year]);
-        $lp = $this->db->fetchOne('SELECT coalesce(max(lp),0) FROM revenue_entry WHERE environment=? AND year=?', [$environment, $year]);
-        $id = UuidV7::generate($this->clock->now());
-        $this->db->insert('revenue_entry', [
-            'id' => $id,'environment' => $environment,'year' => $year,'lp' => (is_numeric($lp) ? (int) $lp : 0) + 1,'entry_date' => $this->businessDate->today(),
-            'revenue_date' => $row['revenue_date'],'document_number' => $row['document_number'],'ksef_number' => $row['ksef_number'],
-            'counterparty_country' => $row['counterparty_country'],'counterparty_tax_id' => $row['counterparty_tax_id'],'amount_pln' => $row['amount_pln'],
-            'rate_pct' => (string) BigDecimal::of(self::str($row['rate_pct']))->toScale(2),'remarks' => $row['remarks'],'source' => 'manual','kind' => 'correction',
-            'invoice_id' => $row['invoice_id'],'corrects_entry_id' => $correctsEntryId,'fx_rate_id' => $row['fx_rate_id'],
-            'recorded_at' => $this->clock->now()->format('Y-m-d\TH:i:s.uP'),'recorded_by' => $userId,
-        ]);
-        return $id;
+        $columns = ['revenue_date','document_number','ksef_number','counterparty_country','counterparty_tax_id','amount_pln','remarks','invoice_id','fx_rate_id'];
+        $values = array_map(static fn(string $column): ?string => $row[$column] === null ? null : self::str($row[$column]), array_combine($columns, $columns));
+        return $values + ['rate_pct' => (string) BigDecimal::of(self::str($row['rate_pct']))->toScale(2),'source' => 'manual','kind' => 'correction','corrects_entry_id' => $correctsEntryId,'recorded_by' => $userId];
     }
 
     private static function norm(string $field, mixed $value): ?string

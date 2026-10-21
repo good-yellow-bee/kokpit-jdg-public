@@ -330,7 +330,7 @@ Katalogi: `src/Connector/<System>`, `src/Approval`, `src/Calendar` (`PolishCalen
 | --- | --- |
 | Ewidencja ze źródeł | `ServiceMap`, `RevenueDocument`, `RevenueEntryWriter`, `RevenueWriteResult`, `Subject1Ledger`, `Subject1LedgerResult` (wyniki `written`, `duplicate`, `fields_only`, `not_vat`, `revenue_date_manual`, `rate_missing`, `fx_rate_pending`), `ManualRevenueEntry`, `EntryErrorCorrection` (`src/Ledger`) |
 | Ustawienia | `ryczalt.service_map`, `ledger.auto_entries_enabled` w `SettingKeys` i w panelu `/settings` |
-| Panel | `LedgerController`; `/ledger` (braki wpisów, wiersze roku, wpis ręczny), `POST /ledger/manual` |
+| Panel | `LedgerController`; `/ledger` (braki wpisów, wiersze roku, wpis ręczny, błąd wpisu), `POST /ledger/manual`, `POST /ledger/entry-error` (`panel_ledger_entry_error`) |
 | Akcje audytu | `ledger.manual_entry`, `ledger.entry_corrected` |
 | Komendy | `app:ledger:import ksef_subject1 <rok>` i `app:ledger:import freshbooks <rok>` (odtworzenie) |
 | Konektor `freshbooks` (`src/Connector/FreshBooks`) | `FreshBooksOAuth` (`authorizeUrl`, `connect`, `connected`, `session`), `FreshBooksConnector` (`invoices`, `payments`, `invoice`), `FreshBooksInvoice`, `FreshBooksPayment`, `FreshBooksSync` (`pollInvoices`, `pollPayments`, `reconstruct`; `BACKFILL_FROM`), `FreshBooksPollHandler`; wyliczenie `FreshBooksError` (`not_connected`, `grant_lost`, `token_rejected`, `invalid_response`, `http_error`, `rate_limited`), `FreshBooksException` |
