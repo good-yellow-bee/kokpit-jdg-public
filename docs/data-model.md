@@ -899,6 +899,7 @@ Jedna pobrana wiadomość skrzynki `mail_in` (D-92). Treści maila kokpit nie za
 | `documents`, `skipped` | int | zapisane dokumenty i pominięte załączniki; `documents > 0` tylko przy `new` |
 | `fetched_at` | timestamptz | pobranie |
 | `handled_at`, `handled_by` | timestamptz null, uuid FK null | „Oznacz jako wpisane” w panelu, tylko przy `new` |
+| `notice_channel` | text null | kanał rozpoznanego powiadomienia systemowego (`e_us`, `ezus`, `ade`; CHECK), wtedy też obowiązek `manual_channel_check` z regułą `manual_channel_check.mail_notice` (D-109) |
 
 - Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`. Pliki dziedziczą retencję `stored_file` (koniec roku pobrania + 5 lat).
 

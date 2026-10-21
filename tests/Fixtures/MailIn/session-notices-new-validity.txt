@@ -1,0 +1,36 @@
+# Fictional IMAP session: the mailbox was recreated and still holds the same fictional notifications.
+S: * OK fictional IMAP server ready
+C: K001 LOGIN "koszty@example.invalid" "fictional-mail-in-password"
+S: K001 OK LOGIN completed
+C: K002 EXAMINE "INBOX"
+S: * 5 EXISTS
+S: * OK [UIDVALIDITY 1700000004] UIDs valid
+S: K002 OK [READ-ONLY] EXAMINE completed
+C: K003 UID SEARCH UID 1:*
+S: * SEARCH 201 202 203 204 205
+S: K003 OK SEARCH completed
+C: K004 UID FETCH 201,202,203,204,205 (UID RFC822.SIZE)
+S: * 1 FETCH (UID 201 RFC822.SIZE @size:notice-e-us.eml)
+S: * 2 FETCH (UID 202 RFC822.SIZE @size:notice-jpk.eml)
+S: * 3 FETCH (UID 203 RFC822.SIZE @size:notice-jpk-other-subject.eml)
+S: * 4 FETCH (UID 204 RFC822.SIZE @size:notice-spoofed-name.eml)
+S: * 5 FETCH (UID 205 RFC822.SIZE @size:notice-typosquat.eml)
+S: K004 OK FETCH completed
+C: K005 UID FETCH 201 (UID BODY.PEEK[])
+S: * 1 FETCH (UID 201 BODY[] @literal:notice-e-us.eml)
+S: K005 OK FETCH completed
+C: K006 UID FETCH 202 (UID BODY.PEEK[])
+S: * 2 FETCH (UID 202 BODY[] @literal:notice-jpk.eml)
+S: K006 OK FETCH completed
+C: K007 UID FETCH 203 (UID BODY.PEEK[])
+S: * 3 FETCH (UID 203 BODY[] @literal:notice-jpk-other-subject.eml)
+S: K007 OK FETCH completed
+C: K008 UID FETCH 204 (UID BODY.PEEK[])
+S: * 4 FETCH (UID 204 BODY[] @literal:notice-spoofed-name.eml)
+S: K008 OK FETCH completed
+C: K009 UID FETCH 205 (UID BODY.PEEK[])
+S: * 5 FETCH (UID 205 BODY[] @literal:notice-typosquat.eml)
+S: K009 OK FETCH completed
+C: K010 LOGOUT
+S: * BYE fictional IMAP server logging out
+S: K010 OK LOGOUT completed

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Calendar\MailNotices;
 use App\Passkey\AppUser;
 use App\Storage\FileStore;
 use App\Tests\Support\F1TestTools;
@@ -69,6 +70,43 @@ final class MailInPanelTest extends WebTestCase
             self::assertSame($owner, $db->fetchOne('SELECT handled_by FROM mail_in_message WHERE id=?', [$message]));
             self::assertSame(1, F1TestTools::count($db, "SELECT count(*) FROM audit_log WHERE action='mail_in.handled' AND target_id=?", [$message]));
             self::assertSame($fileId, $db->fetchOne("SELECT id FROM stored_file WHERE owner_id=? AND kind='cost_document'", [$message]));
+        } finally {
+            $db->rollBack();
+        }
+    }
+
+    public function testSystemNoticeShowsSourceOnBothPages(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $db = self::getContainer()->get(Connection::class);
+        $notices = self::getContainer()->get(MailNotices::class);
+        self::assertInstanceOf(Connection::class, $db);
+        self::assertInstanceOf(MailNotices::class, $notices);
+        $db->beginTransaction();
+        try {
+            $now = (new \DateTimeImmutable())->format('c');
+            $owner = (string) Uuid::v7();
+            $db->insert('app_user', ['id' => $owner,'username' => 'fictional-owner','display_name' => 'Fikcyjny właściciel','created_at' => $now,'updated_at' => $now]);
+            $db->insert('webauthn_credential', ['id' => (string) Uuid::v7(),'app_user_id' => $owner,'credential_id' => 'fictional-credential-id','public_key' => 'fictional-public-key','label' => 'Fikcyjny passkey','created_at' => $now,'updated_at' => $now]);
+            $client->loginUser(new AppUser($owner, 'fictional-owner'));
+
+            // Reguły z konfiguracji kontenera: adres e-US z podatki.gov.pl.
+            $channel = $notices->channel('e-urzadskarbowy@podatki.gov.pl', 'Nowa wiadomość (fictional)');
+            self::assertSame('e_us', $channel);
+            $message = (string) Uuid::v7();
+            $db->insert('mail_in_message', ['id' => $message,'environment' => 'test','uid_validity' => 1700000003,'uid' => 201,'from_address' => 'e-urzadskarbowy@podatki.gov.pl','subject' => 'Nowa wiadomość (fictional)','size_bytes' => 400,'status' => 'no_document','documents' => 0,'skipped' => 0,'notice_channel' => $channel,'fetched_at' => $now,'created_at' => $now,'updated_at' => $now]);
+            $obligation = $notices->record('test', $message, $channel, 'e-urzadskarbowy@podatki.gov.pl', 'Nowa wiadomość (fictional)');
+
+            $crawler = $client->request('GET', '/mail-in');
+            self::assertResponseIsSuccessful();
+            $row = $crawler->filter('#mail-in-' . $message);
+            self::assertStringContainsString('bez dokumentu', $row->text());
+            self::assertStringContainsString('powiadomienie e-Urząd Skarbowy: sprawdź kanał (nadawca z nagłówka; nie otwieraj linków z maila)', $row->text());
+            $crawler = $client->click($row->selectLink('sprawdź kanał')->link());
+            self::assertResponseIsSuccessful();
+            self::assertStringContainsString('e-Urząd Skarbowy: mail od e-urzadskarbowy@podatki.gov.pl, temat „Nowa wiadomość (fictional)”; zaloguj się sam, nie przez link z maila', $crawler->filter('body')->text());
+            self::assertSame('open', $db->fetchOne('SELECT status FROM obligation WHERE id=?', [$obligation]));
         } finally {
             $db->rollBack();
         }

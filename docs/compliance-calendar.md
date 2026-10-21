@@ -59,13 +59,13 @@ Silnik terminów, pełna tabela obowiązków, przypomnienia, zamknięcie miesią
 | okresowe, np. `vat_jpk_v7m`, `zus`, `ift_2r`, `cit_10z` | `{type}:{okres}`, np. `vat_jpk_v7m:2026-11-01` |
 | `wht_payment` | F0b: `wht_payment:{okres}`; od F1: `wht_payment:{okres}:{counterparty_id}` |
 | `invoice_issue` | F0b: `invoice_issue:{miesiąc usługi}`; od F3: `invoice_issue:{miesiąc usługi}:{invoice_id}` |
-| `manual_channel_check` | `manual_channel_check:{poniedziałek}:{kanał}`, np. `manual_channel_check:2026-10-12:ezus`; saldo: `manual_channel_check:{miesiąc sprawdzenia}:balance_check` |
+| `manual_channel_check` | `manual_channel_check:{poniedziałek}:{kanał}`, np. `manual_channel_check:2026-10-12:ezus`; saldo: `manual_channel_check:{miesiąc sprawdzenia}:balance_check`; z maila (D-109): `manual_channel_check:{dzień pobrania}:{kanał}:{mail_in_message.id}` |
 | `credential_expiry` | `credential_expiry:{valid_until}:{kind}`, data `valid_until` w Europe/Warsaw; `auth_data`: `credential_expiry:{rok}:auth_data` |
 | `wht_certificate` | `wht_certificate:{wht_cert_valid_until albo data bazowa}:{counterparty_id}` |
 | `wl_notice` | `wl_notice:{dzień zlecenia przelewu}:{invoice_id}` |
 | `edelivery_reply_due` | `edelivery_reply_due:{data odbioru}:{znak pisma}` |
 
-- Kanały `manual_channel_check`: `ade_private`, `e_us`, `ezus` (co tydzień) i `balance_check` (co miesiąc).
+- Kanały `manual_channel_check`: `ade_private`, `e_us`, `ezus` (co tydzień) i `balance_check` (co miesiąc). Z maila z powiadomieniem: `e_us`, `ezus`, `ade` (reguła `manual_channel_check.mail_notice`, poza przeliczeniem, termin na dzień pobrania, D-109).
 - Klucz z datą ważności daje nowy obowiązek po rotacji poświadczenia albo certyfikatu. Stary zamyka się jako `done` („Stany obowiązku”).
 - Znak pisma w kluczu `edelivery_reply_due`: bez spacji na brzegach, wielkie litery. Pismo bez znaku dostaje `brak-{n}`, gdzie n to kolejny numer w dniu odbioru.
 
@@ -142,7 +142,7 @@ Kolumna „Od fazy” mówi, kiedy kokpit przypomina, liczy kwotę i wysyła. Wy
 | `tax_form_choice` | 20 lutego: metoda kasowa; forma opodatkowania do 20. dnia miesiąca po pierwszym przychodzie w roku | `none` | decyzja i oświadczenie na piśmie (Q-24, Q-38) | [ustawa o PIT, art. 14c ust. 1 pkt 3, Dz.U. 2026 poz. 592](https://api.sejm.gov.pl/eli/acts/DU/2026/592/text.pdf), [ustawa o ryczałcie, art. 9 ust. 1](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf) | F0b: 20 lutego, pierwszy termin 20.02.2027; wariant po pierwszym przychodzie F2 |
 | `edelivery_reply_due` | termin odpowiedzi z pisma odebranego w aplikacji e-Doręczeń, wpisany przez Ciebie | `none` | odpowiedź na pismo | [modules/e-doreczenia.md](modules/e-doreczenia.md) | F0b: wpis ręczny (D-29) |
 | `credential_expiry` | `credential_state.valid_until`; `auth_data`: 2 stycznia | `none` | odnowienie poświadczenia; runbook w [operations.md](operations.md) | [security.md](security.md) | F0b |
-| `manual_channel_check` | co tydzień w poniedziałek, jeden obowiązek na kanał; saldo e-US i eZUS raz w miesiącu (`balance_check` w „Uwagach do wierszy”) | `none` | przegląd prywatnego ADE, konta e-US i eZUS; sprawdzenie sald | [modules/e-doreczenia.md](modules/e-doreczenia.md) | F0b |
+| `manual_channel_check` | co tydzień w poniedziałek, jeden obowiązek na kanał; saldo e-US i eZUS raz w miesiącu (`balance_check` w „Uwagach do wierszy”); dzień pobrania maila z powiadomieniem e-US, eZUS albo e-Doręczeń (D-109) | `none` | przegląd prywatnego ADE, konta e-US i eZUS; sprawdzenie sald; sprawdzenie kanału z powiadomienia | [modules/e-doreczenia.md](modules/e-doreczenia.md) | F0b; z maila po D-109 |
 | `wl_notice` | dzień zlecenia przelewu + 7 dni | `op12` | zawiadomienie ZAW-NR o zapłacie na rachunek spoza wykazu; składasz ręcznie | [Ordynacja podatkowa, art. 117ba § 3](https://api.sejm.gov.pl/eli/acts/DU/2026/622/text.pdf); akcja w [modules/rejestry-kursy.md](modules/rejestry-kursy.md) | F1 |
 
 **Uwagi do wierszy**
