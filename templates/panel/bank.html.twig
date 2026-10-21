@@ -16,7 +16,7 @@
         {% if pending %}
             <p>Najpierw rozstrzygnij <a href="{{ path('panel_bank_statement', {id: pending}) }}">oczekujący wyciąg</a>.</p>
         {% else %}
-            <p>Lista operacji CSV z mBanku: wszystkie operacje rachunków za pełne dni, bez filtrów kwot i typów (inaczej rozpoznanie powtórzonych operacji jest niepewne). Do {{ max_mb }} MB.</p>
+            <p>Lista operacji CSV z mBanku: wszystkie operacje rachunków za pełne dni, bez filtrów kwot i typów (inaczej rozpoznanie powtórzonych operacji jest niepewne). Do 1 MB.</p>
             <form method="post" action="{{ path('panel_bank_upload') }}" enctype="multipart/form-data">
                 <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
                 <label>Plik <input type="file" name="statement" accept=".csv,text/csv" required></label>

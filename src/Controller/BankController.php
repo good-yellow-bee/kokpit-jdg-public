@@ -33,11 +33,14 @@ final class BankController extends AbstractController
     {
         $user = $this->user($request);
         $file = $request->files->get('statement');
-        if (!$file instanceof UploadedFile || !$file->isValid()) {
+        if (!$file instanceof UploadedFile) {
             return $this->page(['Wybierz plik wyciągu (CSV).']);
         }
+        if (!$file->isValid()) {
+            return $this->page([in_array($file->getError(), [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) ? 'plik większy niż 1 MB' : 'serwer nie przyjął pliku: ' . $file->getErrorMessage()]);
+        }
         try {
-            $id = $this->statements->upload((string) file_get_contents($file->getPathname()), $file->getClientOriginalName(), $user->id());
+            $id = $this->statements->upload($file->getContent(), $file->getClientOriginalName(), $user->id());
         } catch (BankStatementRefused $refused) {
             return $this->page($refused->problems);
         }
@@ -57,7 +60,18 @@ final class BankController extends AbstractController
              WHERE l.statement_id=? ORDER BY l.booked_on DESC, l.id',
             [$id],
         ) : [];
-        return $this->render('panel/bank_statement.html.twig', ['statement' => $statement,'preview' => $statement['status'] === 'pending' ? $this->statements->preview($id) : null,'lines' => $lines]);
+        $preview = null;
+        $error = null;
+        if ($statement['status'] === 'pending') {
+            try {
+                $preview = $this->statements->preview($id);
+            } catch (BankStatementRefused $refused) {
+                $error = 'Pliku nie da się już odczytać: ' . implode('; ', $refused->problems) . '. Odrzuć wyciąg i wgraj plik ponownie.';
+            } catch (\RuntimeException $exception) {
+                $error = $exception->getMessage() . ' Odrzuć wyciąg i wgraj plik ponownie.';
+            }
+        }
+        return $this->render('panel/bank_statement.html.twig', ['statement' => $statement,'preview' => $preview,'preview_error' => $error,'lines' => $lines]);
     }
 
     #[Route('/bank/{id}/confirm', name: 'panel_bank_confirm', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
@@ -67,7 +81,7 @@ final class BankController extends AbstractController
         $tokens = array_values(array_filter($request->request->all('match'), is_string(...)));
         try {
             $result = $this->statements->confirm($id, $user->id(), $request->request->getString('fingerprint'), $tokens);
-        } catch (\DomainException $exception) {
+        } catch (\DomainException | \RuntimeException $exception) {
             $this->addFlash('error', $exception->getMessage());
             return $this->redirectToRoute('panel_bank_statement', ['id' => $id]);
         }
@@ -109,7 +123,6 @@ final class BankController extends AbstractController
             'statements' => $this->db->fetchAllAssociative('SELECT id, original_name, period_from, period_to, status, lines_in_file, lines_added, matches_applied, uploaded_at FROM bank_statement WHERE environment=? ORDER BY uploaded_at DESC LIMIT 50', [$environment]),
             'pending' => $this->db->fetchOne("SELECT id FROM bank_statement WHERE environment=? AND status='pending'", [$environment]),
             'problems' => $problems,
-            'max_mb' => intdiv(BankStatements::MAX_BYTES, 1_048_576),
         ], new Response(status: $problems === [] ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

@@ -11,7 +11,7 @@ final readonly class BankPreview
      * @param list<BankLine> $lines
      * @param array<string,BankMatch> $proposals `line_hash` → propozycja
      */
-    public function __construct(public ParsedStatement $statement, public array $lines, public array $proposals, public int $duplicates, public int $future) {}
+    public function __construct(public array $lines, public array $proposals, public int $duplicates, public int $future) {}
 
     /** Odcisk zbioru nowych operacji; zatwierdzenie z innym odciskiem jest odrzucane. */
     public function fingerprint(): string

@@ -13,8 +13,9 @@ use Doctrine\DBAL\Connection;
 
 /**
  * Propozycje dopasowań wierszy wyciągu (D-108): wpływ → faktura sprzedaży albo płatność po numerze w opisie i kwocie,
- * przelew do ZUS albo US → otwarty obowiązek płatniczy z tą kwotą. Propozycja powstaje tylko przy jednoznaczności
- * w obie strony: wiersz ma jednego kandydata, a kandydat jeden wiersz w pliku; cel powiązany już w bazie odpada.
+ * przelew do ZUS albo US → otwarty obowiązek płatniczy z tą kwotą, za okres zakończony przed operacją. Propozycja powstaje tylko
+ * przy jednoznaczności w obie strony: wiersz ma jednego kandydata, a kandydat jeden wiersz wśród nowych operacji; cel
+ * powiązany już w bazie odpada.
  */
 final readonly class BankLineMatcher
 {
@@ -71,13 +72,14 @@ final readonly class BankLineMatcher
         }
         // Blokada do końca transakcji zatwierdzenia: kwota i stan obowiązku nie zmienią się przed `recordPayment`.
         $rows = $this->db->fetchAllAssociative(
-            "SELECT o.id, o.type, o.rule_key, o.period_start, o.due_date FROM obligation o WHERE o.environment=? AND o.status='open' AND o.type IN (?) AND o.amount_due=? AND o.period_start<=?
+            "SELECT o.id, o.type, o.rule_key, o.period_start, o.due_date FROM obligation o WHERE o.environment=? AND o.status='open' AND o.type IN (?) AND o.amount_due=?
+             AND o.period_start + CASE WHEN o.rule_key LIKE '%.monthly' THEN interval '1 month' WHEN o.rule_key LIKE '%.quarterly' THEN interval '3 months' WHEN o.rule_key LIKE '%.yearly' THEN interval '1 year' ELSE interval '0 days' END <= ?::date
              AND NOT EXISTS (SELECT 1 FROM bank_statement_line b WHERE b.obligation_id=o.id) ORDER BY o.due_date, o.id FOR UPDATE OF o",
             [$this->configuration->environment(), $zus ? self::ZUS_TYPES : self::TAX_TYPES, $line->amount->abs(), $line->bookedOn],
             [1 => ArrayParameterType::STRING],
         );
         $symbolTypes = array_filter(self::SYMBOLS, static fn(string $symbol): bool => self::mentions($line->description, $symbol), ARRAY_FILTER_USE_KEY);
-        preg_match_all('/(?<![0-9A-Z])[0-9]{2}[MK][0-9]{2}(?![0-9A-Z])/', strtoupper($line->description), $periods);
+        preg_match_all('/(?<![0-9A-Z])[0-9]{2}(?:[MK][0-9]{2}|R)(?![0-9A-Z])/', strtoupper($line->description), $periods);
         $matches = [];
         foreach ($rows as $row) {
             $type = self::text($row['type']);
@@ -140,7 +142,7 @@ final readonly class BankLineMatcher
         return $line->counterpartyAccount !== null && $line->counterpartyAccount === $this->settings->value($key);
     }
 
-    /** Okres z tytułu przelewu (`RRMnn`, `RRKnn`) według szablonu tytułów `ObligationEngine`; kwartał zaczyna się w 1., 4., 7. albo 10. miesiącu. */
+    /** Okres z tytułu przelewu (`RRMnn`, `RRKnn`; roczne `RRR` nie pasuje do żadnego obowiązku) według szablonu tytułów `ObligationEngine`; kwartał zaczyna się w 1., 4., 7. albo 10. miesiącu. */
     private static function periodToken(string $ruleKey, string $periodStart): string
     {
         $month = IsoDate::month($periodStart);

@@ -29,7 +29,8 @@ CREATE TABLE bank_statement (
  decided_at timestamptz, decided_by uuid REFERENCES app_user(id),
  created_at timestamptz NOT NULL, updated_at timestamptz NOT NULL,
  CHECK ((status = 'pending') = (decided_at IS NULL) AND (decided_at IS NULL) = (decided_by IS NULL)),
- CHECK ((status = 'confirmed') = (lines_added IS NOT NULL) AND (lines_added IS NULL) = (matches_applied IS NULL))
+ CHECK ((status = 'confirmed') = (lines_added IS NOT NULL) AND (lines_added IS NULL) = (matches_applied IS NULL)),
+ CHECK (lines_added <= lines_in_file AND matches_applied <= lines_added)
 )
 SQL);
         $this->addSql("CREATE UNIQUE INDEX bank_statement_file ON bank_statement (environment, file_sha256) WHERE status <> 'discarded'");
@@ -51,6 +52,7 @@ CREATE TABLE bank_statement_line (
  created_at timestamptz NOT NULL,
  UNIQUE (environment, line_hash),
  CHECK ((match_rule IS NULL) = (matched_at IS NULL) AND (matched_at IS NULL) = (matched_by IS NULL)),
+ CHECK (match_rule IS NULL OR (match_rule IN ('zus_amount','tax_amount')) = (amount < 0)),
  CHECK (CASE match_rule
   WHEN 'invoice_title_amount' THEN invoice_id IS NOT NULL AND obligation_id IS NULL
   WHEN 'payment_title_amount' THEN payment_id IS NOT NULL AND invoice_id IS NULL AND obligation_id IS NULL

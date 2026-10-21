@@ -11,11 +11,17 @@
     {% for message in app.flashes('error') %}<p role="alert" id="bank-error">{{ message }}</p>{% endfor %}
     <p>Plik: {{ statement.original_name ?? 'wyciąg' }}, operacji w pliku: {{ statement.lines_in_file }}.</p>
 
-    {% if preview %}
+    {% if preview_error %}
+        <p role="alert" id="bank-preview-error">{{ preview_error }}</p>
+        <form method="post" action="{{ path('panel_bank_discard', {id: statement.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
+            <button type="submit">Odrzuć</button>
+        </form>
+    {% elseif preview %}
         <section id="bank-preview">
             <h2>Podgląd</h2>
             <p id="bank-summary">Nowe operacje: <strong>{{ preview.lines|length }}</strong>, już zapisane wcześniej: {{ preview.duplicates }}, z datą po dziś (pominięte do następnego wyciągu): {{ preview.future }}.</p>
-            <p>Zaznaczone dopasowania zapiszą się razem z operacjami. Dopasowanie do obowiązku ZUS albo US wpisuje zapłatę i zamyka obowiązek w kalendarzu; rozbicie składek ZUS wpisujesz dalej na stronie „Podatki”. Wpłaty VAT i PIT-28 za rok nie zamykają obowiązków: robi to przyjęte złożenie.</p>
+            <p>Zaznaczone dopasowania zapiszą się razem z operacjami. Dopasowanie do obowiązku ZUS albo US wpisuje zapłatę i zamyka obowiązek w kalendarzu; rozbicie składek ZUS wpisujesz dalej na stronie „Podatki”. Wpłata VAT nie zamyka obowiązku: robi to przyjęty JPK. Tytuł z symbolem VAT-7 albo z okresem rocznym (np. 25R) nie dostaje propozycji.</p>
             <form method="post" action="{{ path('panel_bank_confirm', {id: statement.id}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
                 <input type="hidden" name="fingerprint" value="{{ preview.fingerprint }}">

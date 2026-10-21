@@ -920,12 +920,13 @@ Wgrany plik wyciągu (D-108). Plik leży w `stored_file` (`evidence`, `text/csv`
 | `uploaded_at`, `uploaded_by` | timestamptz, uuid FK | wgranie |
 | `decided_at`, `decided_by` | timestamptz, uuid FK null | zatwierdzenie albo odrzucenie |
 
+- `CHECK`: `lines_added` ≤ `lines_in_file`, `matches_applied` ≤ `lines_added`.
 - Indeksy unikalne częściowe: `(environment, file_sha256)` poza `discarded` (ten sam plik drugi raz = odmowa) i `(environment)` przy `pending` (najwyżej jeden oczekujący).
 - Rola aplikacji ma `SELECT`, `INSERT` i `UPDATE`, bez `DELETE`.
 
 #### `bank_statement_line`
 
-Operacja z zatwierdzonego wyciągu z dopasowaniem (D-108). Wiersz jest niezmienny od zapisu.
+Operacja z zatwierdzonego wyciągu z opcjonalnym dopasowaniem (D-108). Wiersz jest niezmienny od zapisu.
 
 | Pole | Typ | Opis |
 | --- | --- | --- |
@@ -942,7 +943,7 @@ Operacja z zatwierdzonego wyciągu z dopasowaniem (D-108). Wiersz jest niezmienn
 | `match_rule` | text null | `invoice_title_amount`, `payment_title_amount`, `zus_amount`, `tax_amount` |
 | `matched_at`, `matched_by` | timestamptz, uuid FK null | Twoje zatwierdzenie dopasowania |
 
-- `CHECK`: reguła wyznacza cele (faktura z opcjonalną płatnością, sama płatność albo sam obowiązek); bez reguły brak celów i znaczników dopasowania.
+- `CHECK`: reguła wyznacza cele (faktura z opcjonalną płatnością, sama płatność albo sam obowiązek); bez reguły brak celów i znaczników dopasowania. Reguły obowiązków tylko przy obciążeniu, reguły faktur i płatności tylko przy wpływie.
 - Rola aplikacji ma `SELECT` i `INSERT`, bez `UPDATE` i `DELETE`.
 
 ## Stany encji

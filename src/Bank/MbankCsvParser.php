@@ -78,7 +78,7 @@ final readonly class MbankCsvParser implements BankStatementParser
         if ($lines === []) {
             throw new BankStatementRefused(['plik nie ma operacji']);
         }
-        return new ParsedStatement(self::FORMAT, $from, $to, $lines);
+        return new ParsedStatement($from, $to, $lines);
     }
 
     /**
@@ -163,7 +163,7 @@ final readonly class MbankCsvParser implements BankStatementParser
         return $date !== false && $date->format('d.m.Y') === $value ? $date->format('Y-m-d') : null;
     }
 
-    /** @return \Generator<int,list<string|null>> numer wiersza od 1 → komórki; cudzysłów może zawierać nową linię */
+    /** @return \Generator<int,list<string|null>> numer rekordu CSV od 1 (linia pliku, póki pole w cudzysłowie nie ma nowej linii) → komórki */
     private static function records(string $bytes): \Generator
     {
         $stream = fopen('php://memory', 'r+');

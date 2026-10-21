@@ -22,8 +22,8 @@ use Symfony\Component\Uid\UuidV7;
  */
 final readonly class BankStatements
 {
-    /** Limit pliku w panelu; eksport roku to kilkaset KB. */
-    public const MAX_BYTES = 5_242_880;
+    /** Limit pliku w panelu: eksport roku to około 100 KB, a domyślny limit treści żądania nginx to 1 MiB. */
+    public const MAX_BYTES = 1_000_000;
     private const LOCK = 'bank_statement';
 
     /** @param iterable<BankStatementParser> $parsers */
@@ -44,7 +44,7 @@ final readonly class BankStatements
     public function upload(string $bytes, ?string $originalName, string $userId): string
     {
         if (strlen($bytes) > self::MAX_BYTES) {
-            throw new BankStatementRefused(['plik większy niż 5 MB']);
+            throw new BankStatementRefused(['plik większy niż 1 MB']);
         }
         $parser = null;
         foreach ($this->parsers as $candidate) {
@@ -56,7 +56,7 @@ final readonly class BankStatements
         $parsed = $parser->parse($bytes);
         $environment = $this->configuration->environment();
         $sha = hash('sha256', $bytes);
-        return $this->db->transactional(function () use ($bytes, $originalName, $userId, $parsed, $environment, $sha): string {
+        return $this->db->transactional(function () use ($bytes, $originalName, $userId, $parser, $parsed, $environment, $sha): string {
             $this->lock();
             if ($this->db->fetchOne("SELECT 1 FROM bank_statement WHERE environment=? AND status='pending'", [$environment]) !== false) {
                 throw new BankStatementRefused(['najpierw zatwierdź albo odrzuć oczekujący wyciąg']);
@@ -69,8 +69,8 @@ final readonly class BankStatements
             // Dowód zapłat w roku końca okresu; PIT-28 za ten rok składasz w następnym.
             $file = $this->files->put($bytes, $environment, 'evidence', 'text/csv', 'bank_statement', $id, IsoDate::year($parsed->periodTo) + 1, false, $originalName);
             $stamp = $now->format('Y-m-d\TH:i:s.uP');
-            $this->db->insert('bank_statement', ['id' => $id,'environment' => $environment,'format' => $parsed->format,'file_sha256' => $sha,'file_id' => $file,'original_name' => $originalName,'period_from' => $parsed->periodFrom,'period_to' => $parsed->periodTo,'status' => 'pending','lines_in_file' => count($parsed->lines),'uploaded_at' => $stamp,'uploaded_by' => $userId,'created_at' => $stamp,'updated_at' => $stamp]);
-            $this->audit->append('bank_statement.uploaded', ['format' => $parsed->format,'file_sha256' => $sha,'lines_in_file' => count($parsed->lines)], $environment, 'bank_statement', $id, $userId);
+            $this->db->insert('bank_statement', ['id' => $id,'environment' => $environment,'format' => $parser->format(),'file_sha256' => $sha,'file_id' => $file,'original_name' => $originalName,'period_from' => $parsed->periodFrom,'period_to' => $parsed->periodTo,'status' => 'pending','lines_in_file' => count($parsed->lines),'uploaded_at' => $stamp,'uploaded_by' => $userId,'created_at' => $stamp,'updated_at' => $stamp]);
+            $this->audit->append('bank_statement.uploaded', ['format' => $parser->format(),'file_sha256' => $sha,'lines_in_file' => count($parsed->lines)], $environment, 'bank_statement', $id, $userId);
             return $id;
         });
     }
@@ -154,7 +154,7 @@ final readonly class BankStatements
         $current = array_filter($parsed->lines, static fn(BankLine $line): bool => $line->bookedOn <= $today);
         $known = $this->db->fetchFirstColumn('SELECT line_hash FROM bank_statement_line WHERE environment=? AND line_hash IN (?)', [$this->configuration->environment(), array_map(static fn(BankLine $line): string => $line->hash, $current)], [1 => ArrayParameterType::STRING]);
         $new = array_values(array_filter($current, static fn(BankLine $line): bool => !in_array($line->hash, $known, true)));
-        return new BankPreview($parsed, $new, $this->matcher->propose($new), count($current) - count($new), count($parsed->lines) - count($current));
+        return new BankPreview($new, $this->matcher->propose($new), count($current) - count($new), count($parsed->lines) - count($current));
     }
 
     private function lock(): void

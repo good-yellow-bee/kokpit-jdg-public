@@ -289,7 +289,7 @@ Każdy test zapisuje ziarno. Ziarno z porażki staje się nowym przypadkiem w `t
 
 ## Testy mutacyjne
 
-- Zakres to katalogi: `src/Tax`, `src/Ledger`, `src/Calendar` (`PolishCalendar`, `ObligationEngine`), `src/Approval` (`ApprovalGate`), od D-108 także `src/Bank` (import wyciągu zamyka obowiązki). Powstają w F0a, puste z `.gitkeep`.
+- Zakres to katalogi: `src/Tax`, `src/Ledger`, `src/Calendar` (`PolishCalendar`, `ObligationEngine`), `src/Approval` (`ApprovalGate`); powstają w F0a, puste z `.gitkeep`. Od D-108 także `src/Bank` (import wyciągu zamyka obowiązki).
 - PR i `main` sprawdzają cały zakres (D-106): progi dotyczą całego zakresu, więc pomiar samych zmienionych plików ich nie pilnuje.
 - Gdy zakres nie ma plików PHP do sprawdzenia, job pomija Infection. Zapisuje „brak kodu w zakresie” w podsumowaniu joba i kończy kodem 0.
 - Progi: `--min-msi=85` i `--min-covered-msi=95` ([Infection](https://infection.github.io/guide/command-line-options.html)). Progi tylko rosną; obniżenie wymaga wpisu D-xx.

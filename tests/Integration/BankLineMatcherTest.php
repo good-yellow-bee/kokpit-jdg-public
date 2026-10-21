@@ -68,8 +68,27 @@ final class BankLineMatcherTest extends DatabaseTestCase
             'wrong group' => $this->line(BankLineKind::Tax, '-100.00', 'URZĄD SKARBOWY'),
             'closed' => $this->line(BankLineKind::Zus, '-300.00', 'ZUS'),
         ]));
-        $onFirstDay = $this->line(BankLineKind::Tax, '-200.00', 'PPE', bookedOn: '2026-09-01');
-        self::assertSame(['x' => ['tax_amount']], array_map(static fn(array $row): array => [$row[0]], $this->propose(['x' => $onFirstDay])));
+        self::assertSame([], $this->propose(['before period end' => $this->line(BankLineKind::Tax, '-200.00', 'PPE', bookedOn: '2026-09-30')]));
+        $periodEnded = $this->line(BankLineKind::Tax, '-200.00', 'PPE', bookedOn: '2026-10-01');
+        self::assertSame(['x' => ['tax_amount']], array_map(static fn(array $row): array => [$row[0]], $this->propose(['x' => $periodEnded])));
+    }
+
+    public function testRecurringObligationOfSameAmountMatchesOnlyEndedPeriod(): void
+    {
+        $august = $this->obligation('zus', 'zus.monthly', '2026-08-01', '2026-09-21', '1926.76');
+        $this->obligation('zus', 'zus.monthly', '2026-09-01', '2026-10-20', '1926.76');
+        $this->obligation('zus', 'zus.monthly', '2026-10-01', '2026-11-20', '1926.76');
+        $quarter = $this->obligation('ryczalt_advance', 'ryczalt_advance.quarterly', '2026-07-01', '2026-10-20', '600.00');
+        $health = $this->obligation('health_reconciliation', 'health_reconciliation.yearly', '2026-01-01', '2027-05-20', '321.00');
+        $wht = $this->obligation('wht_payment', 'wht_payment.supplier', '2026-09-01', '2026-10-07', '77.00');
+        self::assertSame(['zus' => $august, 'wht' => $wht], array_map(static fn(array $row): ?string => $row[1], $this->propose([
+            'zus' => $this->line(BankLineKind::Zus, '-1926.76', 'ZUS', bookedOn: '2026-09-16'),
+            'quarter before end' => $this->line(BankLineKind::Tax, '-600.00', 'PPE', bookedOn: '2026-09-30'),
+            'year before end' => $this->line(BankLineKind::Zus, '-321.00', 'ZUS', bookedOn: '2026-09-30'),
+            'wht' => $this->line(BankLineKind::Tax, '-77.00', 'CIT-10Z', bookedOn: '2026-09-01'),
+        ])));
+        self::assertSame(['quarter' => $quarter], array_map(static fn(array $row): ?string => $row[1], $this->propose(['quarter' => $this->line(BankLineKind::Tax, '-600.00', 'PPE', bookedOn: '2026-10-01')])));
+        self::assertNotSame('', $health);
     }
 
     public function testTitleSymbolAndPeriodVetoCandidates(): void
@@ -79,16 +98,17 @@ final class BankLineMatcherTest extends DatabaseTestCase
         $wht = $this->obligation('wht_payment', 'wht_payment.monthly', '2026-08-01', '2026-09-07', '700.00');
         self::assertSame(['august' => $august, 'quarter' => $quarter, 'cit' => $wht], array_map(static fn(array $row): ?string => $row[1], $this->propose([
             'august' => $this->line(BankLineKind::Tax, '-500.00', 'PIT-28 26m08'),
-            'quarter' => $this->line(BankLineKind::Tax, '-600.00', 'PPE 26K03'),
+            'quarter' => $this->line(BankLineKind::Tax, '-600.00', 'PPE 26K03', bookedOn: '2026-10-02'),
             'cit' => $this->line(BankLineKind::Tax, '-700.00', 'CIT-10Z 26M08'),
         ])));
         self::assertSame([], $this->propose([
             'vat symbol' => $this->line(BankLineKind::Tax, '-500.00', 'VAT-7 26M08'),
-            'vat-7k symbol' => $this->line(BankLineKind::Tax, '-600.00', 'VAT-7K 26K03'),
+            'vat-7k symbol' => $this->line(BankLineKind::Tax, '-600.00', 'VAT-7K 26K03', bookedOn: '2026-10-02'),
             'other symbol' => $this->line(BankLineKind::Tax, '-700.00', 'PPE 26M08'),
             'other period' => $this->line(BankLineKind::Tax, '-500.00', 'PIT-28 26M07'),
-            'month for quarter' => $this->line(BankLineKind::Tax, '-600.00', 'PPE 26M07'),
+            'month for quarter' => $this->line(BankLineKind::Tax, '-600.00', 'PPE 26M07', bookedOn: '2026-10-02'),
         ]));
+        self::assertSame([], $this->propose(['yearly pit-28' => $this->line(BankLineKind::Tax, '-500.00', 'PIT-28 ZA 25R')]));
         $first = $this->obligation('ryczalt_advance', 'ryczalt_advance.monthly', '2026-08-01', '2026-09-01', '800.00');
         $later = $this->obligation('wht_payment', 'wht_payment.monthly', '2026-08-01', '2026-09-30', '800.00');
         self::assertSame(['cit after vetoed' => $later], array_map(static fn(array $row): ?string => $row[1], $this->propose(['cit after vetoed' => $this->line(BankLineKind::Tax, '-800.00', 'CIT-10Z')])));
@@ -108,10 +128,10 @@ final class BankLineMatcherTest extends DatabaseTestCase
         $september = $this->obligation('zus', 'zus.monthly', '2026-09-01', '2026-10-20', '250.00');
         self::assertSame([], $this->propose(['two targets' => $this->line(BankLineKind::Zus, '-100.00', 'ZUS')]));
         self::assertSame([], $this->propose([
-            'first' => $this->line(BankLineKind::Zus, '-250.00', 'ZUS'),
-            'second' => $this->line(BankLineKind::Zus, '-250.00', 'ZUS', bookedOn: '2026-09-16'),
+            'first' => $this->line(BankLineKind::Zus, '-250.00', 'ZUS', bookedOn: '2026-10-02'),
+            'second' => $this->line(BankLineKind::Zus, '-250.00', 'ZUS', bookedOn: '2026-10-03'),
         ]));
-        self::assertSame(['one' => ['zus_amount', $september, 'obowiązek zus za 2026-09-01, termin 2026-10-20']], $this->propose(['one' => $this->line(BankLineKind::Zus, '-250.00', 'ZUS', bookedOn: '2026-09-16')]));
+        self::assertSame(['one' => ['zus_amount', $september, 'obowiązek zus za 2026-09-01, termin 2026-10-20']], $this->propose(['one' => $this->line(BankLineKind::Zus, '-250.00', 'ZUS', bookedOn: '2026-10-03')]));
     }
 
     public function testIncomingMatchesAcceptedInvoiceByNumberAndAmountWithItsPayment(): void
@@ -119,6 +139,7 @@ final class BankLineMatcherTest extends DatabaseTestCase
         $client = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fikcyjny klient', 'PL');
         $seven = ChatTestTools::sale($this->db(), $this->clock, 'test', $client, 'FV 7/2026', '2026-09-01', 'PLN', '10000.00', '2300.00', '10000.00', 'accepted');
         $payment = $this->payment('FB-1', '12300.00', 'PLN', ['invoice_id' => $seven]);
+        $this->payment('FB-5', '100.00', 'PLN', ['invoice_id' => $seven]);
         $eight = ChatTestTools::sale($this->db(), $this->clock, 'test', $client, 'FV 8/2026', '2026-09-01', 'PLN', '2000.00', '460.00', '2000.00', 'accepted');
         $this->payment('FB-2', '2460.00', 'PLN', ['invoice_id' => $eight]);
         $this->payment('FB-3', '2460.00', 'PLN', ['invoice_id' => $eight]);

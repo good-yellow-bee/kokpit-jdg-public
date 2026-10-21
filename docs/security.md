@@ -287,7 +287,7 @@ KSeF przechowuje faktury, ale UPO, ewidencja, wysłane XML i snapshoty weryfikac
 | dowody weryfikacji kontrahentów | `stored_file` `verification_raw`, `evidence` | jak dokument, który wspierają | konwencja kokpitu |
 | certyfikaty rezydencji dostawców | `stored_file` `evidence` przy `counterparty` | reguła podstawowa za rok płatności | konwencja kokpitu |
 | dowody bilansu otwarcia | `stored_file` `evidence` przy kluczach `setting` `opening.*` | jak ewidencja roku przejścia | konwencja kokpitu |
-| wyciągi bankowe | `stored_file` `evidence` przy `bank_statement`, `bank_statement_line` | reguła podstawowa za rok końca okresu wyciągu | dowód zapłaty; art. 86 § 1 Ordynacji |
+| wyciągi bankowe | `stored_file` `evidence` przy `bank_statement`; wiersze `bank_statement_line` | reguła podstawowa z terminem płatności w roku po końcu okresu wyciągu (jak PIT-28 za ten rok) | dowód zapłaty; art. 86 § 1 Ordynacji |
 | szkice `email` i ich `outbound_payload` | `draft`, `stored_file` `outbound_payload` | 12 miesięcy od `executed` albo `discarded` | minimalizacja danych |
 | `audit_log` | baza | bez usuwania; bez treści dokumentów | konwencja kokpitu |
 | `connector_call` | baza | 90 dni | konwencja kokpitu |

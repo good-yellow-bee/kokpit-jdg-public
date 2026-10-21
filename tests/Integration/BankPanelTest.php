@@ -53,6 +53,10 @@ final class BankPanelTest extends WebTestCase
         $zus = (string) Uuid::v7();
         $this->db->insert('obligation', ['id' => $zus, 'environment' => 'test', 'type' => 'zus', 'rule_key' => 'zus.monthly', 'period_start' => '2026-08-01', 'nominal_due_date' => '2026-09-21', 'due_date' => '2026-09-21', 'amount_due' => '1926.76', 'status' => 'open', 'dedupe_key' => 'fikcyjny-bank-zus', 'created_at' => $now, 'updated_at' => $now]);
 
+        $counterparty = (string) Uuid::v7();
+        $this->db->insert('counterparty', ['id' => $counterparty, 'environment' => 'test', 'name' => 'Fikcyjna spółka', 'country' => 'PL', 'created_at' => $now, 'updated_at' => $now]);
+        $this->db->insert('invoice', ['id' => (string) Uuid::v7(), 'environment' => 'test', 'direction' => 'sale', 'kind' => 'VAT', 'invoice_number' => 'FV 7/2026', 'counterparty_id' => $counterparty, 'currency' => 'PLN', 'issue_date' => '2026-09-01', 'net_total' => '10000.00', 'vat_total' => '2300.00', 'gross_total' => '12300.00', 'net_pln' => '10000.00', 'status' => 'accepted', 'created_at' => $now, 'updated_at' => $now]);
+
         $crawler = $this->client->request('GET', '/payments');
         $crawler = $this->client->click($crawler->selectLink('Wyciąg bankowy')->link());
         self::assertResponseIsSuccessful();
@@ -62,14 +66,21 @@ final class BankPanelTest extends WebTestCase
         $this->client->submit($form);
         $crawler = $this->client->followRedirect();
         self::assertSame('Nowe operacje: 15, już zapisane wcześniej: 0, z datą po dziś (pominięte do następnego wyciągu): 0.', $crawler->filter('#bank-summary')->text());
-        self::assertSame(1, $crawler->filter('#bank-lines input[type=checkbox]:checked')->count());
+        self::assertSame(2, $crawler->filter('#bank-lines input[type=checkbox]:checked')->count());
         self::assertStringContainsString('obowiązek zus za 2026-08-01, termin 2026-09-21', $crawler->filter('#bank-lines')->text());
         self::assertStringContainsString('podzielona płatność', $crawler->filter('#bank-lines')->text());
 
-        $this->client->submit($crawler->selectButton('Zatwierdź')->form());
+        $form = $crawler->selectButton('Zatwierdź')->form();
+        $values = $form->getPhpValues();
+        $this->client->request('POST', $form->getUri(), ['_token' => 'zly'] + $values);
+        self::assertResponseStatusCodeSame(403);
+        self::assertIsArray($values['match']);
+        $values['match'][] = 'stary|token';
+        $this->client->request('POST', $form->getUri(), $values);
         $crawler = $this->client->followRedirect();
-        self::assertSame('Zapisano operacji: 15, dopasowań: 1.', $crawler->filter('#bank-notice')->text());
-        self::assertSame('Zapisane operacje: 15, dopasowania: 1.', $crawler->filter('#bank-summary')->text());
+        self::assertSame('Zapisano operacji: 15, dopasowań: 2. Pominięte nieaktualne dopasowania: 1.', $crawler->filter('#bank-notice')->text());
+        self::assertSame('Zapisane operacje: 15, dopasowania: 2.', $crawler->filter('#bank-summary')->text());
+        self::assertStringContainsString('faktura FV 7/2026', $crawler->filter('#bank-lines')->text());
         self::assertSame(15, $crawler->filter('#bank-lines tbody tr')->count());
         self::assertStringContainsString('obowiązek zus za 2026-08-01', $crawler->filter('#bank-lines')->text());
         self::assertSame('done', $this->db->fetchOne('SELECT status FROM obligation WHERE id=?', [$zus]));
@@ -77,6 +88,26 @@ final class BankPanelTest extends WebTestCase
         $crawler = $this->client->request('GET', '/bank');
         self::assertStringContainsString('zatwierdzony', $crawler->filter('#bank-statements')->text());
         self::assertStringContainsString('lista_operacji.csv', $crawler->filter('#bank-statements')->text());
+    }
+
+    public function testUnreadablePendingFileCanStillBeDiscarded(): void
+    {
+        $crawler = $this->client->request('GET', '/bank');
+        $form = $crawler->selectButton('Pokaż podgląd')->form();
+        $this->attach($form, BankTestTools::fixture());
+        $this->client->submit($form);
+        $id = $this->db->fetchOne("SELECT id FROM bank_statement WHERE status='pending'");
+        self::assertIsString($id);
+        $this->db->executeStatement('UPDATE bank_statement SET file_sha256=? WHERE id=?', [str_repeat('0', 64), $id]);
+        $crawler = $this->client->request('GET', '/bank/' . $id);
+        self::assertResponseIsSuccessful();
+        self::assertSame('Plik wyciągu nie zgadza się z sumą kontrolną. Odrzuć wyciąg i wgraj plik ponownie.', $crawler->filter('#bank-preview-error')->text());
+        $this->client->request('POST', '/bank/' . $id . '/confirm', ['_token' => $crawler->filter('input[name=_token]')->attr('value'), 'fingerprint' => '']);
+        $crawler = $this->client->followRedirect();
+        self::assertSame('Plik wyciągu nie zgadza się z sumą kontrolną.', $crawler->filter('#bank-error')->text());
+        $this->client->submit($crawler->selectButton('Odrzuć')->form());
+        $this->client->followRedirect();
+        self::assertSame('discarded', $this->db->fetchOne('SELECT status FROM bank_statement WHERE id=?', [$id]));
     }
 
     public function testRefusedFileStaleConfirmDiscardAndCsrf(): void

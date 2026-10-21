@@ -39,7 +39,7 @@ final class BankTestTools
         return new BankStatements($db, $clock, new BusinessDate($clock), F1TestTools::files($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false), self::matcher($db, $clock), ObligationTestTools::actions($db, $clock), [new MbankCsvParser(), self::otherBank()]);
     }
 
-    /** Drugi czytnik w rejestrze: nic nie rozpoznaje, więc wybór czytnika nie może go nadpisać. */
+    /** Drugi czytnik w rejestrze: nic nie rozpoznaje, więc nie może nadpisać wybranego czytnika. */
     private static function otherBank(): BankStatementParser
     {
         return new class implements BankStatementParser {

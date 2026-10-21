@@ -114,14 +114,50 @@ final class BankStatementsTest extends DatabaseTestCase
         self::assertSame(17, F1TestTools::count($this->db(), 'SELECT count(*) FROM bank_statement_line'));
     }
 
+    public function testStaleSelectionIsSkippedNeverRedirectedAndLinkedTargetIsNotProposedAgain(): void
+    {
+        $august = $this->obligation('zus', 'zus.monthly', '1926.76');
+        $statements = $this->statements();
+        $id = $statements->upload(BankTestTools::fixture(), null, $this->owner);
+        $preview = $statements->preview($id);
+        $line = $preview->lines[0];
+        $token = $preview->proposals[$line->hash]->token($line->hash);
+        // Zanim zatwierdzisz: sierpień zapłacony ręcznie, a wrzesień ma tę samą kwotę i już zakończony okres.
+        ObligationTestTools::actions($this->db(), $this->clock)->recordPayment($august, $this->owner, '1926.76', '2026-09-28');
+        $stamp = $this->clock->now()->format('c');
+        $september = (string) UuidV7::generate();
+        $this->db()->insert('obligation', ['id' => $september, 'environment' => 'test', 'type' => 'zus', 'rule_key' => 'zus.monthly', 'period_start' => '2026-08-15', 'nominal_due_date' => '2026-10-20', 'due_date' => '2026-10-20', 'amount_due' => '1926.76', 'status' => 'open', 'dedupe_key' => 'fikcyjny-wrzesien', 'created_at' => $stamp, 'updated_at' => $stamp]);
+        self::assertSame(['added' => 15, 'applied' => 0, 'skipped' => 1], $statements->confirm($id, $this->owner, $preview->fingerprint(), [$token]));
+        self::assertSame('open', $this->db()->fetchOne('SELECT status FROM obligation WHERE id=?', [$september]));
+        self::assertNull($this->db()->fetchOne('SELECT match_rule FROM bank_statement_line WHERE line_hash=?', [$line->hash]));
+
+        $client = ChatTestTools::counterparty($this->db(), $this->clock, 'test', 'Fikcyjna spółka', 'PL');
+        $seven = ChatTestTools::sale($this->db(), $this->clock, 'test', $client, 'FV 7/2026', '2026-09-01', 'PLN', '10000.00', '2300.00', '10000.00', 'accepted');
+        $next = str_replace(['01.09.2026;30.09.2026;', '#Kwota;' . "\r\n"], ['01.09.2026;03.10.2026;', '#Kwota;' . "\r\n" . '2026-10-02;"DRUGA WPŁATA FV 7/2026   FIKCYJNA SPÓŁKA   PRZELEW ZEWNĘTRZNY PRZYCHODZĄCY   ' . FictionalIdentifiers::account(5) . '  ";"mBiznes konto Komfort 1499 ... 0001";"Wpływy";12 300,00 PLN;;' . "\r\n" . '2026-10-03;"TRZECIA WPŁATA FV 7/2026   FIKCYJNA SPÓŁKA   PRZELEW ZEWNĘTRZNY PRZYCHODZĄCY   ' . FictionalIdentifiers::account(5) . '  ";"mBiznes konto Komfort 1499 ... 0001";"Wpływy";12 300,00 PLN;;' . "\r\n"], BankTestTools::fixture());
+        $second = $statements->upload($next, null, $this->owner);
+        $first = $statements->preview($second);
+        self::assertCount(2, $first->lines);
+        self::assertSame([], $first->proposals);
+        $this->db()->executeStatement("UPDATE bank_statement SET status='discarded', decided_at=?, decided_by=? WHERE id=?", [$stamp, $this->owner, $second]);
+        $single = str_replace('2026-10-03;"TRZECIA WPŁATA FV 7/2026   FIKCYJNA SPÓŁKA   PRZELEW ZEWNĘTRZNY PRZYCHODZĄCY   ' . FictionalIdentifiers::account(5) . '  ";"mBiznes konto Komfort 1499 ... 0001";"Wpływy";12 300,00 PLN;;' . "\r\n", '', $next);
+        $third = $statements->upload($single, null, $this->owner);
+        $once = $statements->preview($third);
+        $match = $once->proposals[$once->lines[0]->hash];
+        self::assertSame(['added' => 1, 'applied' => 1, 'skipped' => 0], $statements->confirm($third, $this->owner, $once->fingerprint(), [$match->token($once->lines[0]->hash)]));
+        self::assertSame($seven, $match->invoiceId);
+        $fourth = $statements->upload($next, null, $this->owner);
+        $again = $statements->preview($fourth);
+        self::assertSame([1, []], [count($again->lines), $again->proposals]);
+    }
+
     public function testRefusesUnknownFormatTooLargeFileAndCorruptedStoredFile(): void
     {
         $statements = $this->statements();
         $this->assertRefused(['nieznany format: obsługiwana jest lista operacji CSV z mBanku'], fn() => $statements->upload("K_1;K_2\r\n", null, $this->owner));
-        $this->assertRefused(['plik większy niż 5 MB'], fn() => $statements->upload(str_repeat('x', 5_242_881), null, $this->owner));
+        $this->assertRefused(['plik większy niż 1 MB'], fn() => $statements->upload(str_repeat('x', 1_000_001), null, $this->owner));
         $this->assertRefused(['plik nie ma operacji'], fn() => $statements->upload(substr(BankTestTools::fixture(), 0, (int) strpos(BankTestTools::fixture(), '2026-09-29')), null, $this->owner));
         $padded = BankTestTools::fixture();
-        $padded .= str_repeat("\n", 5_242_880 - strlen($padded));
+        $padded .= str_repeat("\n", 1_000_000 - strlen($padded));
         $id = $statements->upload($padded, null, $this->owner);
         self::assertSame(0, F1TestTools::count($this->db(), 'SELECT count(*) FROM audit_log WHERE action=? AND target_id<>?', ['bank_statement.uploaded', $id]));
         $this->db()->executeStatement("UPDATE bank_statement SET file_sha256=? WHERE id=?", [str_repeat('0', 64), $id]);

@@ -20,7 +20,7 @@ final class MbankCsvParserTest extends TestCase
     public function testParsesFictionalExport(): void
     {
         $statement = (new MbankCsvParser())->parse(BankTestTools::fixture());
-        self::assertSame(['mbank_csv', '2026-09-01', '2026-09-30', 15], [$statement->format, $statement->periodFrom, $statement->periodTo, count($statement->lines)]);
+        self::assertSame(['2026-09-01', '2026-09-30', 15], [$statement->periodFrom, $statement->periodTo, count($statement->lines)]);
         self::assertSame(
             ['zus', 'tax', 'tax', 'incoming', 'incoming', 'internal', 'internal', 'internal', 'internal', 'internal', 'incoming', 'outgoing', 'outgoing', 'outgoing', 'outgoing'],
             array_map(static fn(BankLine $line): string => $line->kind->value, $statement->lines),
