@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/infection/infection/0.31/resources/schema.json",
-  "source": { "directories": ["src/Tax", "src/Ledger", "src/Calendar", "src/Approval"] },
+  "source": { "directories": ["src/Tax", "src/Ledger", "src/Calendar", "src/Approval", "src/Bank"] },
   "logs": { "text": "var/evidence/mutation.txt", "json": "var/evidence/mutation.json" },
   "timeout": 120,
   "minMsi": 85,
@@ -36,6 +36,12 @@
       "ignoreSourceCodeByRegex": [
         // Czysty strażnik typów kolumn wiersza bazy, NOT NULL albo odfiltrowanych w zapytaniu (zawężenie dla PHPStan).
         "if \\(!is_string\\(\\$\\w+\\['\\w+'\\]\\)( \\|\\| !is_string\\(\\$\\w+\\['\\w+'\\]\\))+\\) \\{"
+      ]
+    },
+    "TrueValue": {
+      "ignoreSourceCodeByRegex": [
+        // Ścisłe `in_array` na hashach sha256 (64 znaki hex z bazy): luźne porównanie daje ten sam wynik poza „magicznymi” hashami.
+        ".*in_array\\(\\$line->hash, \\$known, true\\).*"
       ]
     },
     "Throw_": {

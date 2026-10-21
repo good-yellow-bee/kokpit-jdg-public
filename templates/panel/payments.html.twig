@@ -4,7 +4,7 @@
 
 {% block body %}
     <h1>Płatności klientów</h1>
-    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a id="payments-csv" href="{{ path('panel_payments', unmatched_only ? {format: 'csv', unmatched: '1'} : {format: 'csv'}) }}">Eksport CSV</a></nav>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_freshbooks') }}">FreshBooks</a> · <a href="{{ path('panel_ledger') }}">Ewidencja</a> · <a href="{{ path('panel_bank') }}">Wyciąg bankowy</a> · <a id="payments-csv" href="{{ path('panel_payments', unmatched_only ? {format: 'csv', unmatched: '1'} : {format: 'csv'}) }}">Eksport CSV</a></nav>
     <p>Płatności z FreshBooks, tylko do odczytu. Przypisanie do faktury i różnice kursowe robi synchronizacja FreshBooks.</p>
     <p id="payments-filter">
         {% if unmatched_only %}

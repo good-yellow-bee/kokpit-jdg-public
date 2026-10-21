@@ -86,6 +86,7 @@ Nagrania leżą w `tests/Fixtures/<Connector>`. Reguły kodu dla konektorów i f
 - Ta sama wartość prawdziwa dostaje w całym nagraniu tę samą wartość fikcyjną, więc relacje zostają.
 - Wartości fikcyjne pochodzą z generatora z poprawną sumą kontrolną i z jednej listy fikcyjnych identyfikatorów. Losowe NIP z KSeF TE trafiają na tę listę przed pierwszym nagraniem.
 - Skaner fixtures pada na PESEL lub NIP z poprawną sumą spoza listy, IBAN z prefiksem PL, JWT, `Bearer` i klucz PEM. Obejmuje złote pliki XML, `docs/` i paczki dowodów.
+- Plik bez nagrania, z ręcznie napisanym układem prawdziwego eksportu (wyciąg mBanku, D-108), trzyma NRB jako znaczniki `{account:N}`; test podstawia `FictionalIdentifiers::account(N)`.
 
 ## `@group live`
 
@@ -288,7 +289,7 @@ Każdy test zapisuje ziarno. Ziarno z porażki staje się nowym przypadkiem w `t
 
 ## Testy mutacyjne
 
-- Zakres to katalogi: `src/Tax`, `src/Ledger`, `src/Calendar` (`PolishCalendar`, `ObligationEngine`), `src/Approval` (`ApprovalGate`). Powstają w F0a, puste z `.gitkeep`.
+- Zakres to katalogi: `src/Tax`, `src/Ledger`, `src/Calendar` (`PolishCalendar`, `ObligationEngine`), `src/Approval` (`ApprovalGate`); powstają w F0a, puste z `.gitkeep`. Od D-108 także `src/Bank` (import wyciągu zamyka obowiązki).
 - PR i `main` sprawdzają cały zakres (D-106): progi dotyczą całego zakresu, więc pomiar samych zmienionych plików ich nie pilnuje.
 - Gdy zakres nie ma plików PHP do sprawdzenia, job pomija Infection. Zapisuje „brak kodu w zakresie” w podsumowaniu joba i kończy kodem 0.
 - Progi: `--min-msi=85` i `--min-covered-msi=95` ([Infection](https://infection.github.io/guide/command-line-options.html)). Progi tylko rosną; obniżenie wymaga wpisu D-xx.

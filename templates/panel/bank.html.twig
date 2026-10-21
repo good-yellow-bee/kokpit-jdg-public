@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Wyciąg bankowy – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Wyciąg bankowy</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_payments') }}">Płatności</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status" id="bank-notice">{{ message }}</p>{% endfor %}
+    {% if problems is not empty %}
+        <div role="alert" id="bank-problems"><p>Plik odrzucony, nic nie zapisano:</p><ul>{% for problem in problems|slice(0, 20) %}<li>{{ problem }}</li>{% endfor %}</ul>{% if problems|length > 20 %}<p>… i {{ problems|length - 20 }} więcej.</p>{% endif %}</div>
+    {% endif %}
+    <p>Kokpit tylko czyta wyciąg: niczego nie wysyła do banku. Każde dopasowanie do faktury, płatności albo obowiązku widzisz w podglądzie przed zapisem.</p>
+
+    <section id="bank-upload">
+        <h2>Wgraj wyciąg</h2>
+        {% if pending %}
+            <p>Najpierw rozstrzygnij <a href="{{ path('panel_bank_statement', {id: pending}) }}">oczekujący wyciąg</a>.</p>
+        {% else %}
+            <p>Lista operacji CSV z mBanku: wszystkie operacje rachunków za pełne dni, bez filtrów kwot i typów (inaczej rozpoznanie powtórzonych operacji jest niepewne). Do 1 MB.</p>
+            <form method="post" action="{{ path('panel_bank_upload') }}" enctype="multipart/form-data">
+                <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
+                <label>Plik <input type="file" name="statement" accept=".csv,text/csv" required></label>
+                <button type="submit">Pokaż podgląd</button>
+            </form>
+        {% endif %}
+    </section>
+
+    <h2>Wyciągi</h2>
+    {% if statements is empty %}<p>Brak wgranych wyciągów.</p>{% else %}
+    <table id="bank-statements">
+        <thead><tr><th>Wgrano</th><th>Plik</th><th>Okres</th><th>Operacje w pliku</th><th>Zapisane</th><th>Dopasowania</th><th>Stan</th></tr></thead>
+        <tbody>
+        {% for statement in statements %}
+            <tr id="bank-statement-{{ statement.id }}">
+                <td>{{ statement.uploaded_at|date('Y-m-d H:i', 'Europe/Warsaw') }}</td>
+                <td><a href="{{ path('panel_bank_statement', {id: statement.id}) }}">{{ statement.original_name ?? 'wyciąg' }}</a></td>
+                <td>{{ statement.period_from }} – {{ statement.period_to }}</td>
+                <td>{{ statement.lines_in_file }}</td>
+                <td>{{ statement.lines_added ?? '–' }}</td>
+                <td>{{ statement.matches_applied ?? '–' }}</td>
+                <td>{{ {'pending': 'czeka na podgląd', 'confirmed': 'zatwierdzony', 'discarded': 'odrzucony'}[statement.status] }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

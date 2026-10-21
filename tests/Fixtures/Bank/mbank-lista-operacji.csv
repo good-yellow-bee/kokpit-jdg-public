@@ -1,0 +1,42 @@
+﻿mBank S.A. Bankowość Detaliczna;
+		Skrytka pocztowa 0000 (fictional);
+		00-000 Miasto;
+		www.example.invalid;
+		Infolinia: 000 000 000;
+		+48 (00) 0 000 000;
+		
+
+#Klient;
+FIKCYJNY KLIENT (FICTIONAL);
+
+#Za okres:;
+01.09.2026;30.09.2026;
+
+#zgodnie z wybranymi filtrami wyszukiwania;
+      #dla rachunków:;
+      mBiznes konto Komfort - {account:1};
+      mBiznes Konto VAT - {account:3};
+      
+      #Lista operacji fikcyjna, tylko do testów (fictional).;
+      
+      #Waluta;#Wpływy;#Wydatki;
+PLN;15 620,00;-11 284,10;
+      
+#Data operacji;#Opis operacji;#Rachunek;#Kategoria;#Kwota;
+2026-09-29;"ZAKŁAD UBEZPIECZEŃ SPOŁECZNYCH     PRZELEW ZEWNĘTRZNY DO ZUS          {account:2}  ";"mBiznes konto Komfort 1499 ... 0001";"Ubezpieczenia";-1 926,76 PLN;;
+2026-09-24;"URZĄD SKARBOWY, VAT-7 PODATEK OD TOWARÓW I USŁUG ZA SIERPIEŃ          URZĄD SKARBOWY                     PRZELEW PODATKOWY                  {account:4}  ";"mBiznes konto Komfort 1499 ... 0001";"Podatki - inne";-2 300,00 PLN;;
+2026-09-22;"URZĄD SKARBOWY, PIT-28 ZRYCZAŁTOWANY PODATEK ZA 26M08                 URZĄD SKARBOWY                     PRZELEW PODATKOWY                  {account:4}  ";"mBiznes konto Komfort 1499 ... 0001";"Podatki - inne";-1 234,00 PLN;;
+2026-09-15;"FIKCYJNA SPÓŁKA SP. Z O.O. UL. TESTOWA 1 00-001 WARSZAWA, FV 7/2026   FIKCYJNA SPÓŁKA SP. Z O.O.         UL. TESTOWA 1                      00-001 WARSZAWA                    PRZELEW WEWNĘTRZNY PRZYCHODZĄCY    {account:5}  ";"mBiznes konto Komfort 1499 ... 0001";"Wpływy - inne";12 300,00 PLN;;
+2026-09-15;"PP/PRZELEW ZEWNĘTRZNY PRZYCHODZĄCY                                    PRZYKŁADOWA FIRMA S.A. UL. WZOROWA 5 00-003 KRAKÓW                    FV 8/2026                          PP/PRZELEW ZEWNĘTRZNY PRZYCHODZĄCY                                    {account:6}  ";"mBiznes konto Komfort 1499 ... 0001";"Wpływy - inne";2 460,00 PLN;;
+2026-09-15;"PP/PRZELEW VAT WYCHODZĄCY TECHN.   FIKCYJNY KLIENT UL. PRZYKŁADOWA 2 M.3 00-002 WARSZAWA                 PP/PRZELEW VAT WYCHODZĄCY TECHN.   {account:3}  ";"mBiznes konto Komfort 1499 ... 0001";"Księgowanie VAT";-460,00 PLN;;
+2026-09-15;"PP/PRZELEW VAT PRZYCHODZĄCY TECHN.                                    FIKCYJNY KLIENT UL. PRZYKŁADOWA 2 M.3 00-002 WARSZAWA                 PP/PRZELEW VAT PRZYCHODZĄCY TECHN.                                    {account:1}  ";"mBiznes Konto VAT 5799 ... 0003";"Przelew własny";460,00 PLN;;
+2026-09-12;"PP/PRZELEW VAT WYCH. WŁASNY ZUS    FIKCYJNY KLIENT                    UL. PRZYKŁADOWA 2 M.3 00-002 WARSZAWA                                 PP/PRZELEW VAT WYCH. WŁASNY ZUS    {account:1}  ";"mBiznes Konto VAT 5799 ... 0003";"Przelew własny";-300,00 PLN;;
+2026-09-12;"PP/PRZELEW VAT PRZYCH. WŁASNY ZUS  FIKCYJNY KLIENT                    UL. PRZYKŁADOWA 2 M.3 00-002 WARSZAWA                                 PP/PRZELEW VAT PRZYCH. WŁASNY ZUS  {account:3}  ";"mBiznes konto Komfort 1499 ... 0001";"Przelew własny";300,00 PLN;;
+2026-09-10;"FIKCYJNY KLIENT, PRZELEW ŚRODKÓW   UL. PRZYKŁADOWA 2 M.3              00-002 WARSZAWA                    PRZELEW WŁASNY                     {account:7}  ";"mBiznes konto Komfort 1499 ... 0001";"Przelew własny";-5 000,00 PLN;;
+2026-09-10;"ZWROT NADPŁATY (FICTIONAL)         PRZYKŁADOWA FIRMA S.A.             PRZELEW ZEWNĘTRZNY PRZYCHODZĄCY    {account:6}  ";"mBiznes konto Komfort 1499 ... 0001";"Wpływy - inne";100,00 PLN;;
+2026-09-08;"PROWIZJA ZA ODNOWIENIE KREDYTU     ";"mBiznes konto Komfort 1499 ... 0001";"Opłaty i odsetki";-50,00 PLN;;
+2026-09-01;"KAPITALIZACJA ODSETEK-OBCIĄŻENIE   ";"mBiznes konto Komfort 1499 ... 0001";"Opłaty i odsetki";-1,00 PLN;;
+2026-09-01;"KAPITALIZACJA ODSETEK-OBCIĄŻENIE   ";"mBiznes konto Komfort 1499 ... 0001";"Opłaty i odsetki";-1,00 PLN;;
+2026-09-01;"ODSETKI - OBCIĄŻENIE               ";"mBiznes konto Komfort 1499 ... 0001";"Opłaty i odsetki";-12,34 PLN;;
+
+

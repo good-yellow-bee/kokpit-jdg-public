@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+
+{% set kinds = {'incoming': 'wpływ', 'outgoing': 'wydatek', 'zus': 'do ZUS', 'tax': 'do urzędu skarbowego', 'internal': 'między własnymi rachunkami'} %}
+
+{% block title %}Wyciąg {{ statement.period_from }} – {{ statement.period_to }} – Kokpit JDG{% endblock %}
+
+{% block body %}
+    <h1>Wyciąg {{ statement.period_from }} – {{ statement.period_to }}</h1>
+    <nav><a href="{{ path('panel_dashboard') }}">Start</a> · <a href="{{ path('panel_bank') }}">Wyciągi</a> · <a href="{{ path('panel_calendar') }}">Kalendarz</a></nav>
+    {% for message in app.flashes('notice') %}<p role="status" id="bank-notice">{{ message }}</p>{% endfor %}
+    {% for message in app.flashes('error') %}<p role="alert" id="bank-error">{{ message }}</p>{% endfor %}
+    <p>Plik: {{ statement.original_name ?? 'wyciąg' }}, operacji w pliku: {{ statement.lines_in_file }}.</p>
+
+    {% if preview_error %}
+        <p role="alert" id="bank-preview-error">{{ preview_error }}</p>
+        <form method="post" action="{{ path('panel_bank_discard', {id: statement.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
+            <button type="submit">Odrzuć</button>
+        </form>
+    {% elseif preview %}
+        <section id="bank-preview">
+            <h2>Podgląd</h2>
+            <p id="bank-summary">Nowe operacje: <strong>{{ preview.lines|length }}</strong>, już zapisane wcześniej: {{ preview.duplicates }}, z datą po dziś (pominięte do następnego wyciągu): {{ preview.future }}.</p>
+            <p>Zaznaczone dopasowania zapiszą się razem z operacjami. Dopasowanie do obowiązku ZUS albo US wpisuje zapłatę i zamyka obowiązek w kalendarzu; rozbicie składek ZUS wpisujesz dalej na stronie „Podatki”. Wpłata VAT nie zamyka obowiązku: robi to przyjęty JPK. Tytuł z symbolem VAT-7 albo z okresem rocznym (np. 25R) nie dostaje propozycji.</p>
+            <form method="post" action="{{ path('panel_bank_confirm', {id: statement.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
+                <input type="hidden" name="fingerprint" value="{{ preview.fingerprint }}">
+                {% if preview.lines is not empty %}
+                <table id="bank-lines">
+                    <thead><tr><th>Data</th><th>Kwota</th><th>Rodzaj</th><th>Operacja</th><th>Dopasowanie</th></tr></thead>
+                    <tbody>
+                    {% for line in preview.lines %}
+                        {% set match = preview.proposals[line.hash] ?? null %}
+                        <tr id="bank-line-{{ line.hash }}">
+                            <td>{{ line.bookedOn }}</td>
+                            <td>{{ line.amount }} {{ line.currency }}</td>
+                            <td>{{ kinds[line.kind.value] }}{% if line.splitPayment %}, podzielona płatność{% endif %}</td>
+                            <td>{{ line.operationType ?? '' }}{% if line.description %}<br><small>{{ line.description }}</small>{% endif %}</td>
+                            <td>{% if match %}<label><input type="checkbox" name="match[]" value="{{ match.token(line.hash) }}" checked> {{ match.label }}</label>{% else %}–{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                <input type="hidden" name="complete" value="1">
+                <button type="submit">Zatwierdź</button>
+            </form>
+            <form method="post" action="{{ path('panel_bank_discard', {id: statement.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('bank') }}">
+                <button type="submit">Odrzuć</button>
+            </form>
+        </section>
+    {% elseif statement.status == 'confirmed' %}
+        <p id="bank-summary">Zapisane operacje: {{ statement.lines_added }}, dopasowania: {{ statement.matches_applied }}.</p>
+        {% if lines is empty %}<p>Wszystkie operacje z pliku były już zapisane wcześniej.</p>{% else %}
+        <table id="bank-lines">
+            <thead><tr><th>Data</th><th>Kwota</th><th>Rodzaj</th><th>Operacja</th><th>Dopasowanie</th></tr></thead>
+            <tbody>
+            {% for line in lines %}
+                <tr id="bank-line-{{ line.id }}">
+                    <td>{{ line.booked_on }}</td>
+                    <td>{{ line.amount }} {{ line.currency }}</td>
+                    <td>{{ kinds[line.kind] }}{% if line.split_payment %}, podzielona płatność{% endif %}</td>
+                    <td>{{ line.operation_type ?? '' }}{% if line.description %}<br><small>{{ line.description }}</small>{% endif %}</td>
+                    <td>
+                        {% if line.match_rule == 'invoice_title_amount' %}faktura {{ line.invoice_number }}
+                        {% elseif line.match_rule == 'payment_title_amount' %}płatność dokumentu {{ line.document_number }}
+                        {% elseif line.match_rule %}obowiązek {{ line.obligation_type }} za {{ line.obligation_period }}
+                        {% else %}–{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    {% else %}
+        <p id="bank-summary">Wyciąg odrzucony; operacje nie zostały zapisane.</p>
+    {% endif %}
+{% endblock %}

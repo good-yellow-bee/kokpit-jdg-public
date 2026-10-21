@@ -17,6 +17,16 @@ final class IsoDate
         return self::parts($date)[1];
     }
 
+    public static function isDate(string $date): bool
+    {
+        try {
+            self::parts($date);
+        } catch (\InvalidArgumentException) {
+            return false;
+        }
+        return true;
+    }
+
     /** @return array{int,int} */
     private static function parts(string $date): array
     {
