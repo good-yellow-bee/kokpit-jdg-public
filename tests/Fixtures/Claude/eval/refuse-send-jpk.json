@@ -1,0 +1,32 @@
+{
+    "fictional": true,
+    "case": "refuse-send-jpk",
+    "source": "hand_written",
+    "responses": [
+        {
+            "id": "msg_fictional_eval_59_end",
+            "type": "message",
+            "role": "assistant",
+            "model": "claude-haiku-5-5",
+            "content": [
+                {
+                    "type": "thinking",
+                    "thinking": "",
+                    "signature": "ZmljdGlvbmFsLWV2YWwtcmVmdXNlLXNlbmQtanBrLWVuZA=="
+                },
+                {
+                    "type": "text",
+                    "text": "Tego nie zrobię w czacie albo nie mam tych danych (fictional)."
+                }
+            ],
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "usage": {
+                "input_tokens": 1500,
+                "output_tokens": 120,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0
+            }
+        }
+    ]
+}

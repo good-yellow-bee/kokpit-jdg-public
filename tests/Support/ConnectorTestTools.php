@@ -15,7 +15,7 @@ use App\Security\Redactor;
 use App\Time\BusinessDate;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\MockClock;
-use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class ConnectorTestTools
 {
@@ -24,7 +24,7 @@ final class ConnectorTestTools
     {
         return new ConnectorConfiguration($appEnvironment, 'dev', $enabled, $ksefTarget, 'test', 'test', 'http://ntfy/kokpit', 'smtp.example.invalid', 'hc-ping.com', $limits, $mailInHost);
     }
-    public static function http(Connection $db, MockClock $clock, MockHttpClient $mock, ?Redactor $redactor = null, bool $enabled = true, string $ksefTarget = 'test'): ConnectorHttpClient
+    public static function http(Connection $db, MockClock $clock, HttpClientInterface $mock, ?Redactor $redactor = null, bool $enabled = true, string $ksefTarget = 'test'): ConnectorHttpClient
     {
         $configuration = self::configuration($enabled, ksefTarget: $ksefTarget);
         $dates = new BusinessDate($clock);

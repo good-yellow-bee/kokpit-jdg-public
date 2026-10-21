@@ -64,6 +64,15 @@ jobs:
       - uses: actions/checkout@v4
       - run: sh scripts/ci-bootstrap.sh
       - run: docker compose exec -T app vendor/bin/phpunit --testsuite integration --fail-on-empty-test-suite
+      # Raport zestawu ewaluacyjnego czatu offline (`ChatEvalTest`, D-114) jako artefakt przebiegu.
+      - if: always()
+        run: docker compose cp app:/app/var/chat-eval chat-eval
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chat-eval
+          path: chat-eval/
+          if-no-files-found: error
   security:
     runs-on: ubuntu-latest
     steps:

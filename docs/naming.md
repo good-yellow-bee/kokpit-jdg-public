@@ -727,6 +727,18 @@ Część b: sekcja niżej.
 | Kolumny wyników | `revenue_pln`, `jpk_v7m_status`, `jpk_v7m_purpose`, `advance_due`, `zus_due` (`get_period_summary`); `kind` (`obligations`, `receivables`, `payables`), `amount`, `items` (`get_cashflow`); `period` (`current`, `compare`), `sales_net_pln`, `sales_invoices`, `costs_net_pln`, `cost_invoices` (`compare_periods`) |
 | Testy | `ChatPeriodToolsTest` |
 
+### Zestaw ewaluacyjny czatu (D-114): nazwy
+
+| Rodzaj | Nazwy |
+| --- | --- |
+| Zestaw (`tests/Fixtures/Claude/eval`) | `cases.yaml` (lista `cases`; pola przypadku `id`, `category`, `question`, `tools`, `no_tools`, `replay`, `numbers`; pola wywołania `name`, `input`, `step`, `error`), nagranie przypadku `<id>.json` (`fictional`, `case`, `source`, `responses`), `manifest.json` (`source`, `recorded_on`, `model`, `effort`, `tool_set`, `system_prompt_sha256`) |
+| Wartości `source` | `hand_written`, `live` |
+| Kategorie przypadków | `obligations`, `revenue`, `sales`, `costs`, `invoices`, `counterparties`, `fx`, `period`, `cashflow`, `compare`, `chart`, `law`, `refuse`, `guard` |
+| Wynik przypadku | `status`: `pass`, `fail`, `skipped`; pola `failures`, `calls`, `requests`, `cost_usd`, `unsupported_numbers` |
+| Testy (`tests/`) | `ChatEvalRunner` (`tests/Support`: `profile`, `cases`, `manifest`, `recording`, `seed`, `run`, `lastSession`, `skipped`, `report`, `ratio`, `numbers`; stałe `NOW`, `SNAPSHOT`, `MIN_LIVE_PASS_RATIO` = `0.90`), `ChatEvalTest` (offline, testsuite `integration`), `ChatEvalLiveTest` (testsuite `live`, `#[Group('live')]`); opcje `profile` i `prompt` w `ClaudeTestTools::turn` |
+| Live | zmienne `CHAT_EVAL_LIVE` (`1` włącza przebieg) i `CLAUDE_TEST_API_KEY` (klucz workspace testowego tylko na czas przebiegu, do `MemoryVault`); nagrania przebiegu `var/live-recordings/Claude/eval/<id>.json` i `manifest.json` |
+| Raport i artefakty | `var/chat-eval/offline.{json,md}`, `var/chat-eval/live.{json,md}`; artefakt joba `integration` `chat-eval`; w paczce dowodów `cmd/chat-eval-offline.txt`, `cmd/chat-eval-live.txt` |
+
 ### Kreator pierwszego uruchomienia (D-91): nazwy
 
 | Rodzaj | Nazwy |

@@ -25,3 +25,5 @@ Wszystkie dane są fikcyjne (fictional): identyfikatory `msg_fictional_*`, `tool
 | `messages-draft-document.json` | `tool_use` `draft_document` do `K-01` z kwotą z fikcyjnej bazy (F6.4, D-62) |
 | `messages-draft-recipients.json` | pięć `draft_document`: `K-01`, `K-99` spoza mapy, adres e-mail, dwóch odbiorców, `K-02` z innego środowiska |
 | `messages-draft-flagged.json` | `draft_document` z IBAN (znacznik `{{FICTIONAL_IBAN}}` podstawia test, bo skaner pada na literałach rachunków), NIP i kwotą spoza bazy |
+
+Katalog `eval/` to zestaw ewaluacyjny czatu (D-114): `cases.yaml`, `manifest.json` z odciskiem profilu i jedno nagranie na przypadek (`responses` w kolejności żądań). Nagrania `source` = `hand_written` są ręcznie pisane z oczekiwanych wywołań; przebieg live zastępuje je nagraniami `live` ([docs/testing.md](../../../docs/testing.md), „Zestaw ewaluacyjny czatu”).
