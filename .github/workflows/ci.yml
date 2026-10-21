@@ -140,7 +140,14 @@ jobs:
           path: mutation.json
           if-no-files-found: error
   evidence:
-    if: (github.event_name != 'push' || github.ref_name != 'main') && (github.event_name == 'workflow_dispatch' || startsWith(github.head_ref || github.ref_name, 'f'))
+    # Tylko gałąź fazy `<phase>-*` (np. `f0a-szkielet`) albo workflow_dispatch; `feature/*` pomija job (D-43).
+    if: >-
+      (github.event_name != 'push' || github.ref_name != 'main') && (github.event_name == 'workflow_dispatch'
+      || startsWith(github.head_ref || github.ref_name, 'f0a-') || startsWith(github.head_ref || github.ref_name, 'f0b-')
+      || startsWith(github.head_ref || github.ref_name, 'f1-') || startsWith(github.head_ref || github.ref_name, 'f2-')
+      || startsWith(github.head_ref || github.ref_name, 'f3-') || startsWith(github.head_ref || github.ref_name, 'f4-')
+      || startsWith(github.head_ref || github.ref_name, 'f5-') || startsWith(github.head_ref || github.ref_name, 'f6-')
+      || startsWith(github.head_ref || github.ref_name, 'f7-'))
     needs: [lint, unit_property, contract, xsd, integration, security]
     env:
       SOURCE_BRANCH: ${{ github.head_ref || github.ref_name }}

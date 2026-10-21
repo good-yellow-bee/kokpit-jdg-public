@@ -289,7 +289,7 @@ Sposób uruchamiania komend: [../.claude/rules/zasady-twarde.md](../.claude/rule
 | testsuite PHPUnit | jeden na katalog: `unit` (`tests/Unit`), `property` (`tests/Property`), `contract` (`tests/Contract`), `xsd` (`tests/Xsd`), `integration` (`tests/Integration`), `security` (`tests/Security`), `live` (`tests/Live`); domyślny przebieg bez `live` |
 | `.github/workflows/ci.yml` | id jobów: `lint`, `unit_property` (`name: unit+property`), `contract`, `xsd`, `integration`, `security`, `images` (D-93), `mutation`, `evidence`; `live` tylko ręcznie (`workflow_dispatch`), nigdy PROD |
 | `mutation` | Infection, blokuje merge, także przy `pull_request` (D-106) |
-| faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` i gałąź bez prefiksu `f` pomijają `evidence` (D-43) |
+| faza joba `evidence` | prefiks gałęzi `fX-*` albo wejście `phase` przy `workflow_dispatch`; push do `main` i gałąź bez prefiksu `<phase>-` (np. `feature/*`) pomijają `evidence` (D-43) |
 | `infection.json5` | zakres mutacji i progi `minMsi`, `minCoveredMsi`; wartości w [testing.md](testing.md) |
 
 Repo CI: prywatne `good-yellow-bee/kokpit-jdg`. Zakres jobów i próg MSI: [testing.md](testing.md).

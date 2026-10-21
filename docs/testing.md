@@ -325,13 +325,13 @@ GitHub Actions w prywatnym repo `good-yellow-bee/kokpit-jdg`. Żaden job nie ma 
 | `integration` | testsuite `integration` (`tests/Integration`) z PostgreSQL jako kontener usługi | tak |
 | `security` | testsuite `security` (`tests/Security`), skaner fixtures i sekretów | tak |
 | `mutation` | Infection według „Testów mutacyjnych”, cały zakres także przy `pull_request` (17–26 min, D-106) | tak |
-| `evidence` | po pozostałych: `kokpit:evidence <phase> --only=ci`, upload `var/evidence/**` jako artefakt przebiegu; pomijany przy push do `main` i na gałęziach bez prefiksu fazy (D-43) | tak |
+| `evidence` | po pozostałych: `kokpit:evidence <phase> --only=ci`, upload `var/evidence/**` jako artefakt przebiegu; pomijany przy push do `main` i na gałęziach bez prefiksu fazy `<phase>-` (np. `feature/*`, D-43) | tak |
 | `live` | tylko `workflow_dispatch` z wymaganym wejściem `phase`; testsuite `live` na celach testowych, potem `kokpit:evidence <phase> --only=live` i upload paczki; przed testami certyfikat testowy MF ze zmiennej repozytorium `MF_TEST_CERT_PEM` w `var/jpk/mf-test.crt` (D-97); paczka także po czerwonym teście (D-102); klucz sejfu testowego jako sekret środowiska GitHub; nigdy PROD | nie; faza z kryteriami live wymaga udanego przebiegu |
 
 - Wyzwalacze (D-43): `push` tylko na `main`, gałąź PR przez `pull_request`; nowy push do PR anuluje starszy przebieg.
 - Id joba to `unit_property` z `name: unit+property` (D-34). GitHub dopuszcza w id litery, cyfry, `-` i `_` ([GitHub](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions)).
 - Faza przy `push` pochodzi z prefiksu gałęzi przed pierwszym `-` (`f0a-szkielet` → `f0a`). Przy `pull_request` z gałęzi źródłowej PR, przy `workflow_dispatch` z wejścia `phase`.
-- Push do `main` pomija `evidence`. Brak fazy na innej gałęzi przerywa job.
+- Push do `main` i gałąź bez prefiksu `<phase>-` pomijają `evidence`. Niepoprawne wejście `phase` przy `workflow_dispatch` przerywa job.
 - Job `evidence` nie czyta `docs/evidence/<phase>.md`. Listę piszesz ręcznie i sprawdzasz Ty (D-28).
 - Wymuszenie zielonego CI przed merge zależy od planu GitHub (Q-43). Domyślnie bez rulesetu: merge tylko przy zielonym CI na PR, sprawdzany ręcznie ([GitHub](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)).
 
