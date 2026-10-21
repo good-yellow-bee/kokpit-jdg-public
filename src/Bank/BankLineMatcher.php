@@ -76,13 +76,13 @@ final readonly class BankLineMatcher
             [$this->configuration->environment(), $zus ? self::ZUS_TYPES : self::TAX_TYPES, $line->amount->abs(), $line->bookedOn],
             [1 => ArrayParameterType::STRING],
         );
-        $symbols = array_keys(array_filter(self::SYMBOLS, static fn(string $symbol): bool => self::mentions($line->description, $symbol), ARRAY_FILTER_USE_KEY));
+        $symbolTypes = array_filter(self::SYMBOLS, static fn(string $symbol): bool => self::mentions($line->description, $symbol), ARRAY_FILTER_USE_KEY);
         preg_match_all('/(?<![0-9A-Z])[0-9]{2}[MK][0-9]{2}(?![0-9A-Z])/', strtoupper($line->description), $periods);
         $matches = [];
         foreach ($rows as $row) {
             $type = self::text($row['type']);
             $periodStart = self::text($row['period_start']);
-            if (!$zus && $symbols !== [] && !in_array($type, array_map(static fn(string $symbol): ?string => self::SYMBOLS[$symbol], $symbols), true)) {
+            if (!$zus && $symbolTypes !== [] && !in_array($type, $symbolTypes, true)) {
                 continue;
             }
             if ($periods[0] !== [] && !in_array(self::periodToken(self::text($row['rule_key']), $periodStart), $periods[0], true)) {

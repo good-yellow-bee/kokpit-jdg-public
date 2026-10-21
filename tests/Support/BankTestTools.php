@@ -7,9 +7,9 @@ namespace App\Tests\Support;
 use App\Audit\AuditLog;
 use App\Bank\BankLineMatcher;
 use App\Bank\BankStatementParser;
-use App\Bank\ParsedStatement;
 use App\Bank\BankStatements;
 use App\Bank\MbankCsvParser;
+use App\Bank\ParsedStatement;
 use App\Fixtures\FictionalIdentifiers;
 use App\Security\Redactor;
 use App\Time\BusinessDate;
@@ -34,6 +34,11 @@ final class BankTestTools
         return new BankLineMatcher($db, ObligationTestTools::settings($db, $clock), ConnectorTestTools::configuration(false));
     }
 
+    public static function statements(Connection $db, MockClock $clock): BankStatements
+    {
+        return new BankStatements($db, $clock, new BusinessDate($clock), F1TestTools::files($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false), self::matcher($db, $clock), ObligationTestTools::actions($db, $clock), [new MbankCsvParser(), self::otherBank()]);
+    }
+
     /** Drugi czytnik w rejestrze: nic nie rozpoznaje, więc wybór czytnika nie może go nadpisać. */
     private static function otherBank(): BankStatementParser
     {
@@ -53,10 +58,5 @@ final class BankTestTools
                 throw new \LogicException('Czytnik testowy nie czyta plików.');
             }
         };
-    }
-
-    public static function statements(Connection $db, MockClock $clock): BankStatements
-    {
-        return new BankStatements($db, $clock, new BusinessDate($clock), F1TestTools::files($db, $clock), new AuditLog($db, $clock, new Redactor()), ConnectorTestTools::configuration(false), self::matcher($db, $clock), ObligationTestTools::actions($db, $clock), [new MbankCsvParser(), self::otherBank()]);
     }
 }
