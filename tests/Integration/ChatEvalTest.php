@@ -60,17 +60,23 @@ final class ChatEvalTest extends ClaudeTestCase
         $runner = $this->runner($clock);
         $owner = $runner->seed();
         $results = [];
+        $consumed = [];
         foreach (ChatEvalRunner::cases() as $case) {
             $recording = ChatEvalRunner::recording($case['id']);
             $requests = [];
-            $results[] = $result = $runner->run($case, ClaudeTestTools::mock(array_map(static fn(array $response): MockResponse => new MockResponse(json_encode($response, JSON_THROW_ON_ERROR), ['http_code' => 200, 'response_headers' => ['content-type' => 'application/json']]), $recording), $requests), $owner);
-            self::assertSame('pass', $result['status'], $case['id'] . ': ' . implode('; ', $result['failures']));
-            self::assertCount(count($recording), $requests, $case['id'] . ': pętla zużywa całe nagranie');
+            $results[] = $runner->run($case, ClaudeTestTools::mock(array_map(static fn(array $response): MockResponse => new MockResponse(json_encode($response, JSON_THROW_ON_ERROR), ['http_code' => 200, 'response_headers' => ['content-type' => 'application/json']]), $recording), $requests), $owner);
+            $consumed[$case['id']] = [count($recording), $requests];
+        }
+        // Raport przed asercjami: artefakt `chat-eval` powstaje także przy czerwonym przypadku.
+        $report = ChatEvalRunner::report('offline', $runner->profile(), $results);
+        foreach ($results as $result) {
+            self::assertSame('pass', $result['status'], $result['id'] . ': ' . implode('; ', $result['failures']));
+            [$expected, $requests] = $consumed[$result['id']];
+            self::assertCount($expected, $requests, $result['id'] . ': pętla zużywa całe nagranie');
             foreach (ClaudeTestTools::bodies($requests) as $body) {
                 self::assertSame(ChatRequestProfile::MODEL, $body['model']);
             }
         }
-        $report = ChatEvalRunner::report('offline', $runner->profile(), $results);
         self::assertStringContainsString(sprintf('Wynik: %1$d/%1$d pass', count($results)), $report);
         self::assertSame('1.0000', ChatEvalRunner::ratio($results));
     }
@@ -79,6 +85,7 @@ final class ChatEvalTest extends ClaudeTestCase
     {
         self::assertSame(['1926.76', '4.2567', '265', '10643.53'], array_map('strval', ChatEvalRunner::numbers("Kwoty: 1\u{00A0}926,76 zł; kurs 4,2567; VAT 265; 10 643,53.")));
         self::assertSame(['2026', '10', '20', '312.00'], array_map('strval', ChatEvalRunner::numbers('{"due_date":"2026-10-20","amount_due":"312.00"}')));
+        self::assertSame(['-2430.46', '-1926.76', '1', '1000.00'], array_map('strval', ChatEvalRunner::numbers("Przychód -2430,46 zł i \u{2212}1\u{00A0}926,76; K-01: 1000.00")));
     }
 
     private function runner(?MockClock $clock = null): ChatEvalRunner

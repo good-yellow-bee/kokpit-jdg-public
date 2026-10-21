@@ -35,7 +35,8 @@ final class ChatEvalRunner
         ['name' => 'Stawka ryczałtu dla usług IT (fictional)', 'value' => '12%', 'legal_source' => 'art. 12 ust. 1 ustawy o ryczałcie'],
         ['name' => 'Limit sprzedaży zwolnienia z VAT (fictional)', 'value' => '240000 zł', 'legal_source' => 'art. 113 ust. 1 ustawy o VAT'],
     ], 'note' => 'fikcyjny snapshot zestawu ewaluacyjnego'];
-    private const NUMBER = '/\d{1,3}(?:[ \x{00A0}\x{202F}]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?/u';
+    /** Minus tylko bez litery albo cyfry przed nim, więc „2026-10-20” i „K-01” nie dają liczb ujemnych. */
+    private const NUMBER = '/(?:(?<![\w\-])[\-\x{2212}])?(?:\d{1,3}(?:[ \x{00A0}\x{202F}]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)/u';
 
     private ?string $session = null;
 
@@ -272,11 +273,11 @@ final class ChatEvalRunner
         return array_values(array_unique($out));
     }
 
-    /** @return list<BigDecimal> liczby z tekstu; zapis polski („1 926,76”) i JSON („1926.76”) dają tę samą wartość */
+    /** @return list<BigDecimal> liczby z tekstu ze znakiem; zapis polski („1 926,76”) i JSON („1926.76”) dają tę samą wartość */
     public static function numbers(string $text): array
     {
         preg_match_all(self::NUMBER, $text, $matches);
-        return array_map(static fn(string $token): BigDecimal => BigDecimal::of(str_replace([' ', "\u{00A0}", "\u{202F}", ','], ['', '', '', '.'], $token)), $matches[0]);
+        return array_map(static fn(string $token): BigDecimal => BigDecimal::of(str_replace([' ', "\u{00A0}", "\u{202F}", ',', "\u{2212}"], ['', '', '', '.', '-'], $token)), $matches[0]);
     }
 
     /** @param list<BigDecimal> $numbers */
