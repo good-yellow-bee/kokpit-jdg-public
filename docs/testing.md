@@ -297,6 +297,19 @@ Każdy test zapisuje ziarno. Ziarno z porażki staje się nowym przypadkiem w `t
 - `tests/bootstrap.php` wczytuje zmutowany plik od razu i wyłącza wrapper `file://` Infection: wrapper nie obsługuje `fsync`, więc każdy nowy zapis `FileStore` dawał fałszywe zabicie.
 - Stan 2026-10-20 (D-105): 4665 mutantów, 62 ignorowane według wzorców równoważności z `infection.json5`, MSI i covered MSI 95,20%, 221 ocalałych; progi spełnione. `phpunit.xml` ma `executionOrder="default"`, żeby pokrycie trafiało zawsze do tych samych testów.
 - Ocalały mutant to nowy test albo wpis ignorowania z uzasadnieniem w `infection.json5`. Raport JSON trafia do paczki dowodów.
+- Lista zadań z odbioru `mutation-report` F0b (2026-10-21, [przebieg](https://github.com/good-yellow-bee/kokpit-jdg-public/actions/runs/39419058617), commit `c29d422`): `ApprovalGate` 131 mutantów, 0 ocalałych; `PolishCalendar` 151 mutantów, 9 ocalałych. Każdy z 9 jest równoważny, więc zadanie to wpis ignorowania z uzasadnieniem w `infection.json5`.
+
+| Miejsce | Mutator | Zmiana | Dlaczego równoważny |
+| --- | --- | --- | --- |
+| `src/Calendar/PolishCalendar.php:31` | `IncrementInteger` | `intdiv($b + 8, 25)` → `intdiv($b + 9, 25)` | ta sama data Wielkanocy w latach 1583–9999 (porównanie rok po roku) |
+| `src/Calendar/PolishCalendar.php:38` | `IncrementInteger` | `7 * $m` → `8 * $m` w `$month` | jak wyżej |
+| `src/Calendar/PolishCalendar.php:38` | `DecrementInteger` | `7 * $m` → `6 * $m` w `$month` | jak wyżej |
+| `src/Calendar/PolishCalendar.php:55` | `CastInt` | bez `(int)` przed `format('N')` | PHP 8 porównuje tekst liczbowy z liczbą jak liczby |
+| `src/Calendar/PolishCalendar.php:88` | `ReturnRemoval` | bez `return` z pamięci podręcznej roku | zbiór liczony od nowa daje ten sam wynik |
+| `src/Calendar/PolishCalendar.php:92` | `TrueValue` | `true` → `false` dla świąt stałych | `isset` i `array_keys` sprawdzają tylko klucz |
+| `src/Calendar/PolishCalendar.php:95` | `TrueValue` | `true` → `false` dla 24 grudnia | jak wyżej |
+| `src/Calendar/PolishCalendar.php:99` | `TrueValue` | `true` → `false` dla świąt ruchomych | jak wyżej |
+| `src/Calendar/PolishCalendar.php:99` | `ConcatOperandRemoval` | `'+' . $offset . ' days'` → `$offset . ' days'` | `modify` czyta przesunięcie bez znaku jako dodatnie |
 
 ## CI
 
