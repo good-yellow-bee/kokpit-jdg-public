@@ -143,7 +143,7 @@ final readonly class BankStatements
     {
         $bytes = $this->files->read($statement['file_id']);
         if (!hash_equals($statement['file_sha256'], hash('sha256', $bytes))) {
-            throw new \RuntimeException('Plik wyciągu nie zgadza się z sumą kontrolną.');
+            throw new BankStatementRefused(['plik wyciągu nie zgadza się z sumą kontrolną']);
         }
         $parser = null;
         foreach ($this->parsers as $candidate) {

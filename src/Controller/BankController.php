@@ -65,6 +65,9 @@ final class BankController extends AbstractController
         if ($statement['status'] === 'pending') {
             try {
                 $preview = $this->statements->preview($id);
+            } catch (\DomainException) {
+                // Wyciąg rozstrzygnięty w innej karcie między odczytem stanu a podglądem.
+                return $this->redirectToRoute('panel_bank_statement', ['id' => $id]);
             } catch (BankStatementRefused $refused) {
                 $error = 'Pliku nie da się już odczytać: ' . implode('; ', $refused->problems) . '. Odrzuć wyciąg i wgraj plik ponownie.';
             } catch (\RuntimeException $exception) {
@@ -78,11 +81,19 @@ final class BankController extends AbstractController
     public function confirm(string $id, Request $request): Response
     {
         $user = $this->user($request);
+        // Pole na końcu formularza: bez niego PHP obciął zaznaczenia (`max_input_vars`) i część dopasowań by przepadła.
+        if (!$request->request->has('complete')) {
+            $this->addFlash('error', 'Formularz dotarł niepełny: odśwież stronę i zatwierdź ponownie.');
+            return $this->redirectToRoute('panel_bank_statement', ['id' => $id]);
+        }
         $tokens = array_values(array_filter($request->request->all('match'), is_string(...)));
         try {
             $result = $this->statements->confirm($id, $user->id(), $request->request->getString('fingerprint'), $tokens);
-        } catch (\DomainException | \RuntimeException $exception) {
+        } catch (\DomainException $exception) {
             $this->addFlash('error', $exception->getMessage());
+            return $this->redirectToRoute('panel_bank_statement', ['id' => $id]);
+        } catch (BankStatementRefused $refused) {
+            $this->addFlash('error', 'Pliku nie da się już odczytać: ' . implode('; ', $refused->problems) . '.');
             return $this->redirectToRoute('panel_bank_statement', ['id' => $id]);
         }
         $this->addFlash('notice', sprintf('Zapisano operacji: %d, dopasowań: %d.', $result['added'], $result['applied']) . ($result['skipped'] > 0 ? sprintf(' Pominięte nieaktualne dopasowania: %d.', $result['skipped']) : ''));

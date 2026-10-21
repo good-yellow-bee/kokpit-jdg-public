@@ -74,6 +74,10 @@ final class BankPanelTest extends WebTestCase
         $values = $form->getPhpValues();
         $this->client->request('POST', $form->getUri(), ['_token' => 'zly'] + $values);
         self::assertResponseStatusCodeSame(403);
+        $truncated = $values;
+        unset($truncated['complete']);
+        $this->client->request('POST', $form->getUri(), $truncated);
+        self::assertSame('Formularz dotarł niepełny: odśwież stronę i zatwierdź ponownie.', $this->client->followRedirect()->filter('#bank-error')->text());
         self::assertIsArray($values['match']);
         $values['match'][] = 'stary|token';
         $this->client->request('POST', $form->getUri(), $values);
@@ -101,10 +105,10 @@ final class BankPanelTest extends WebTestCase
         $this->db->executeStatement('UPDATE bank_statement SET file_sha256=? WHERE id=?', [str_repeat('0', 64), $id]);
         $crawler = $this->client->request('GET', '/bank/' . $id);
         self::assertResponseIsSuccessful();
-        self::assertSame('Plik wyciągu nie zgadza się z sumą kontrolną. Odrzuć wyciąg i wgraj plik ponownie.', $crawler->filter('#bank-preview-error')->text());
-        $this->client->request('POST', '/bank/' . $id . '/confirm', ['_token' => $crawler->filter('input[name=_token]')->attr('value'), 'fingerprint' => '']);
+        self::assertSame('Pliku nie da się już odczytać: plik wyciągu nie zgadza się z sumą kontrolną. Odrzuć wyciąg i wgraj plik ponownie.', $crawler->filter('#bank-preview-error')->text());
+        $this->client->request('POST', '/bank/' . $id . '/confirm', ['_token' => $crawler->filter('input[name=_token]')->attr('value'), 'fingerprint' => '', 'complete' => '1']);
         $crawler = $this->client->followRedirect();
-        self::assertSame('Plik wyciągu nie zgadza się z sumą kontrolną.', $crawler->filter('#bank-error')->text());
+        self::assertSame('Pliku nie da się już odczytać: plik wyciągu nie zgadza się z sumą kontrolną.', $crawler->filter('#bank-error')->text());
         $this->client->submit($crawler->selectButton('Odrzuć')->form());
         $this->client->followRedirect();
         self::assertSame('discarded', $this->db->fetchOne('SELECT status FROM bank_statement WHERE id=?', [$id]));

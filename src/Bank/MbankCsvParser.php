@@ -53,7 +53,7 @@ final readonly class MbankCsvParser implements BankStatementParser
             } elseif ($section === '#Za okres:' && $period === null) {
                 $period = [self::periodDate($cells[0] ?? ''), self::periodDate($cells[1] ?? '')];
             } elseif ($section === '#dla rachunków:' && preg_match('/(.+) - ([0-9]{26})$/', $first, $match) === 1) {
-                $accounts[$match[1]] = $match[2];
+                $accounts[$match[1]][] = $match[2];
             }
         }
         if ($data === null) {
@@ -83,7 +83,7 @@ final readonly class MbankCsvParser implements BankStatementParser
 
     /**
      * @param list<string|null> $cells
-     * @param array<string,string> $accounts nazwa rachunku → NRB
+     * @param array<string,list<string>> $accounts nazwa rachunku → NRB (kilka rachunków może mieć tę samą nazwę)
      * @param array<string,int> $occurrences
      * @param list<string> $problems
      */
@@ -147,14 +147,18 @@ final readonly class MbankCsvParser implements BankStatementParser
         };
     }
 
-    /** @param array<string,string> $accounts */
+    /** @param array<string,list<string>> $accounts */
     private static function account(string $label, array $accounts): ?string
     {
         if (preg_match('/(.+) ([0-9]{4}) \.\.\. ([0-9]{4})$/', $label, $match) !== 1) {
             return null;
         }
-        $number = $accounts[$match[1]] ?? '';
-        return str_starts_with($number, $match[2]) && str_ends_with($number, $match[3]) ? $number : null;
+        foreach ($accounts[$match[1]] ?? [] as $number) {
+            if (str_starts_with($number, $match[2]) && str_ends_with($number, $match[3])) {
+                return $number;
+            }
+        }
+        return null;
     }
 
     private static function periodDate(?string $value): ?string

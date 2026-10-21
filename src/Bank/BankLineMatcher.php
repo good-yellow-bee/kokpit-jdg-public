@@ -34,8 +34,9 @@ final readonly class BankLineMatcher
     {
         $candidates = [];
         $claims = [];
+        $accounts = [SettingKeys::ZUS_ACCOUNT => $this->settings->value(SettingKeys::ZUS_ACCOUNT), SettingKeys::TAX_MICRO_ACCOUNT => $this->settings->value(SettingKeys::TAX_MICRO_ACCOUNT)];
         foreach ($lines as $line) {
-            $candidates[$line->hash] = $this->candidates($line);
+            $candidates[$line->hash] = $this->candidates($line, $accounts);
             foreach ($candidates[$line->hash] as $match) {
                 foreach ($match->targets() as $target) {
                     $claims[$target] = ($claims[$target] ?? 0) + 1;
@@ -51,14 +52,17 @@ final readonly class BankLineMatcher
         return $proposals;
     }
 
-    /** @return list<BankMatch> */
-    private function candidates(BankLine $line): array
+    /**
+     * @param array<string,mixed> $accounts klucz `setting` rachunku → wartość
+     * @return list<BankMatch>
+     */
+    private function candidates(BankLine $line, array $accounts): array
     {
         if ($line->kind === BankLineKind::Internal) {
             return [];
         }
-        $zus = $line->kind === BankLineKind::Zus || $this->isAccount($line, SettingKeys::ZUS_ACCOUNT);
-        if ($zus || $line->kind === BankLineKind::Tax || $this->isAccount($line, SettingKeys::TAX_MICRO_ACCOUNT)) {
+        $zus = $line->kind === BankLineKind::Zus || self::isAccount($line, $accounts[SettingKeys::ZUS_ACCOUNT]);
+        if ($zus || $line->kind === BankLineKind::Tax || self::isAccount($line, $accounts[SettingKeys::TAX_MICRO_ACCOUNT])) {
             return $this->obligations($line, $zus);
         }
         return $line->kind === BankLineKind::Incoming ? [...$this->invoices($line), ...$this->revenuePayments($line)] : [];
@@ -137,9 +141,9 @@ final readonly class BankLineMatcher
         return $matches;
     }
 
-    private function isAccount(BankLine $line, string $key): bool
+    private static function isAccount(BankLine $line, mixed $account): bool
     {
-        return $line->counterpartyAccount !== null && $line->counterpartyAccount === $this->settings->value($key);
+        return $line->counterpartyAccount !== null && $line->counterpartyAccount === $account;
     }
 
     /** Okres z tytułu przelewu (`RRMnn`, `RRKnn`; roczne `RRR` nie pasuje do żadnego obowiązku) według szablonu tytułów `ObligationEngine`; kwartał zaczyna się w 1., 4., 7. albo 10. miesiącu. */

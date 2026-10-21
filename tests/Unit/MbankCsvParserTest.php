@@ -153,6 +153,13 @@ final class MbankCsvParserTest extends TestCase
         $this->assertRefused(['wiersz 26: rachunek spoza sekcji #dla rachunków:'], $this->replaceRows($fixture, $row));
     }
 
+    public function testAccountsWithTheSameNameResolveByNumberFragments(): void
+    {
+        $fixture = str_replace('      mBiznes Konto VAT - ' . FictionalIdentifiers::account(3) . ';', '      mBiznes Konto VAT - ' . FictionalIdentifiers::account(3) . ";\r\n      mBiznes konto Komfort - " . FictionalIdentifiers::account(6) . ';', BankTestTools::fixture());
+        $statement = (new MbankCsvParser())->parse($this->replaceRows($fixture, "2026-09-02;\"OPIS\";\"mBiznes konto Komfort 7399 ... 0006\";\"Inne\";-1,00 PLN;;\r\n2026-09-01;\"OPIS\";\"" . self::MAIN . "\";\"Inne\";-1,00 PLN;;\r\n"));
+        self::assertSame([FictionalIdentifiers::account(6), FictionalIdentifiers::account(1)], array_map(static fn(BankLine $line): string => $line->account, $statement->lines));
+    }
+
     public function testAccountSectionLineMustEndWithNumber(): void
     {
         $fixture = str_replace('mBiznes konto Komfort - ' . FictionalIdentifiers::account(1) . ';', 'mBiznes konto Komfort - ' . FictionalIdentifiers::account(1) . ' (stary);', BankTestTools::fixture());

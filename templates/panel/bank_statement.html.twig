@@ -42,6 +42,7 @@
                     </tbody>
                 </table>
                 {% endif %}
+                <input type="hidden" name="complete" value="1">
                 <button type="submit">Zatwierdź</button>
             </form>
             <form method="post" action="{{ path('panel_bank_discard', {id: statement.id}) }}">

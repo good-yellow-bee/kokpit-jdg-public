@@ -161,12 +161,7 @@ final class BankStatementsTest extends DatabaseTestCase
         $id = $statements->upload($padded, null, $this->owner);
         self::assertSame(0, F1TestTools::count($this->db(), 'SELECT count(*) FROM audit_log WHERE action=? AND target_id<>?', ['bank_statement.uploaded', $id]));
         $this->db()->executeStatement("UPDATE bank_statement SET file_sha256=? WHERE id=?", [str_repeat('0', 64), $id]);
-        try {
-            $statements->preview($id);
-            self::fail('Przyjęto plik niezgodny z sumą kontrolną.');
-        } catch (\RuntimeException $exception) {
-            self::assertSame('Plik wyciągu nie zgadza się z sumą kontrolną.', $exception->getMessage());
-        }
+        $this->assertRefused(['plik wyciągu nie zgadza się z sumą kontrolną'], fn() => $statements->preview($id));
     }
 
     public function testUploadWaitsForImportLock(): void
