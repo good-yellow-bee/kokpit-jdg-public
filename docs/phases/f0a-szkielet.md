@@ -33,7 +33,7 @@ Brak wejścia oznaczonego „stop” zatrzymuje fazę i kończy się pytaniem. P
 | cele per konektor niezależne od `APP_ENV` | D-13 | – |
 | panel webowy bez PWA, Web Push i VAPID | D-08, D-28 | – |
 | tanie decyzje na później: `SecretStore`, `Redactor`, zero GPL, adresy i wersje API w konfiguracji | D-25 | – |
-| zastępca i break-glass | D-03, Q-18 | karta awaryjna bez zastępcy poza skrzynką ADE |
+| zastępca i break-glass | D-03, Q-18, D-107 | karta awaryjna bez zastępcy i bez administratora skrzynki ADE |
 
 **Poza fazą.** Wynajęcie VPS według D-18 (Q-14) to działanie poza kodem; bez VPS kroki `[manual]` F0a na `kokpit-prod` czekają.
 
@@ -79,7 +79,7 @@ Granica F0a i F0b pochodzi z D-28 i tabeli „Status faz” w [../README.md](../
 | testy | testsuite PHPUnit per katalog: `unit`, `property`, `contract`, `xsd`, `integration`, `security`, `live`; domyślny przebieg bez `live`, przy `CONNECTORS_ENABLED=0`; bootstrap `live` odmawia przy `*_TARGET=prod` albo `CONNECTORS_ENABLED` różnym od `1`; `phpstan` poziom 9 z regułami architektury; `php-cs-fixer`; lista dozwolonych licencji; nagrania przez `MockHttpClient` i `Psr18Client` za `HostAllowlist`; `app:fixtures:record` ze scrubberem; skaner fixtures; `MockClock`; biblioteka testów własności zapisana w [../testing.md](../testing.md) (pakiet, wersja) | [../testing.md](../testing.md) |
 | CI | `.github/workflows/ci.yml` z jobami z tabeli „CI” niżej | [../testing.md](../testing.md) |
 | dowód działania | `kokpit:evidence <phase>` z `--only=ci` albo `--only=live`; rejestr `tests/Acceptance/f0a.yaml` bez testu zgodności z tabelą (D-28); `manifest.json`; pliki kroków `[manual]` w `var/evidence/f0a/inbox/`; ręcznie pisana lista `docs/evidence/f0a.md` | [../testing.md](../testing.md), [../naming.md](../naming.md) |
-| karta awaryjna | dostęp do hostingu, miejsce kluczy, lista obowiązków z narzędziem MF, kontakt do doradcy, administrator skrzynki ADE (Q-18) | [../operations.md](../operations.md) |
+| karta awaryjna | dostęp do hostingu, miejsce kluczy, lista obowiązków z narzędziem MF, kontakt do doradcy | [../operations.md](../operations.md) |
 
 Pracujesz na klonie repo, na gałęzi fazy `f0a-szkielet`, według [../../.claude/rules/zasady-twarde.md](../../.claude/rules/zasady-twarde.md).
 

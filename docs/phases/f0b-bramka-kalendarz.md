@@ -25,7 +25,7 @@ Brak wejścia oznaczonego „stop” zatrzymuje fazę i kończy się pytaniem. P
 | wariant składek ZUS, próg składki zdrowotnej | Q-16 | założenie domyślne: pełne składki, próg z przychodu bieżącego roku |
 | zaliczka co miesiąc czy co kwartał | Q-17 | założenie domyślne: co miesiąc |
 | prywatny ADE, zgoda na e-Korespondencję | Q-13 | założenie domyślne: cotygodniowy przegląd ręczny prywatnego ADE, konta e-US i eZUS |
-| zastępca, administrator skrzynki ADE, UPL-1 | Q-18, D-03 | założenie domyślne: administrator skrzynki wyznaczony; poza skrzynką zastępcy brak, przypomnienia tylko do Ciebie |
+| zastępca, administrator skrzynki ADE, UPL-1 | Q-18, D-03, D-107 | rozstrzygnięte: zastępcy brak, także administratora skrzynki; przypomnienia tylko do Ciebie |
 | metoda kasowa i forma opodatkowania 2027 | Q-24, Q-38 | przypomnienie `tax_form_choice` na 20.02.2027, bez decyzji ([ustawa o PIT, art. 14c ust. 1 pkt 3, Dz.U. 2026 poz. 592](https://api.sejm.gov.pl/eli/acts/DU/2026/592/text.pdf)) |
 | klasyfikacja WHT dostawców | Q-21 | przypomnienia WHT ogólne, bez kwot |
 | e-Doręczenia bez API | D-29, Q-30 | – (termin z pisma wpisujesz ręcznie; `edelivery_deemed` nie powstaje) |
@@ -34,7 +34,7 @@ Brak wejścia oznaczonego „stop” zatrzymuje fazę i kończy się pytaniem. P
 | `approval.connector` przy szkicu tylko do kopiowania | Q-35, [../approval-gate.md](../approval-gate.md) | założenie domyślne: `connector` nullable tylko dla `subject_type` = `draft` (`CHECK` w [../data-model.md](../data-model.md)) |
 | konektor testowy `dummy` | D-32 | – |
 
-**Poza fazą.** ADE aktywny, powiadomienia mailowe, administrator skrzynki i bramki 1–2 z Q-30 to działania poza kodem. F0b ich nie zastępuje.
+**Poza fazą.** ADE aktywny, powiadomienia mailowe, codzienny podgląd skrzynki i bramki 1–2 z Q-30 to działania poza kodem. F0b ich nie zastępuje.
 
 ## Ładuj tylko
 

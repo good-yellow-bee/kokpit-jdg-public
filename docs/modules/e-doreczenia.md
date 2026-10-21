@@ -1,6 +1,6 @@
 # e-Doręczenia
 
-Kanały doręczeń, procedura ręczna i administrator skrzynki. API (wykonalność PROD, INT, UA API v3, odbiór, fikcja, cykl życia pisma) jako odłożony dodatek do F4. Stan na 8 października 2026.
+Kanały doręczeń, procedura ręczna i odbiór bez zastępcy. API (wykonalność PROD, INT, UA API v3, odbiór, fikcja, cykl życia pisma) jako odłożony dodatek do F4. Stan na 8 października 2026.
 
 ## Status: API odłożone (D-29)
 
@@ -9,7 +9,7 @@ Kanały doręczeń, procedura ręczna i administrator skrzynki. API (wykonalnoś
 | odbiór pism | powiadomienia mailowe dostawcy, odbiór ręczny w aplikacji e-Doręczeń | `list()` i `receive()` przez UA API |
 | terminy | termin z pisma wpisujesz ręcznie jako `edelivery_reply_due` | `edelivery_deemed` z API, `edelivery_reply_due` ze sprawy |
 | inne kanały | `manual_channel_check` co tydzień od F0b | bez zmian |
-| zastępca | administrator skrzynki ADE (Q-18, przegląd S9) | bez zmian |
+| zastępca | brak: pisma odbierasz sam (D-107) | bez zmian |
 | wniosek INT, certyfikat kwalifikowany, pytanie do COI | nie teraz | po F5, gdy bramki 1–2 mają Twoje odpowiedzi (Q-30) |
 
 - Powrót wymaga nowego rekordu D-xx. Warunek stoi w [../roadmap.md](../roadmap.md).
@@ -18,7 +18,7 @@ Kanały doręczeń, procedura ręczna i administrator skrzynki. API (wykonalnoś
 
 ## Jak czytać
 
-- F0b czyta „Obowiązek już biegnie”, „Administrator skrzynki”, „Kanały doręczeń” i „Procedura ręczna”. Z nich powstają `manual_channel_check` i ręczny `edelivery_reply_due`.
+- F0b czyta „Obowiązek już biegnie”, „Odbiór bez zastępcy”, „Kanały doręczeń” i „Procedura ręczna”. Z nich powstają `manual_channel_check` i ręczny `edelivery_reply_due`.
 - Bramki 1–2 z dodatku zapisujesz Ty, poza kodem.
 - Przy powrocie F4 sesja czyta cały plik. Semantyka akcji „Odbierz” (step-up, wpis w `audit_log`) jest w „Odbiorze i fikcji doręczenia” niżej.
 - Kolumny `edelivery_message` i `edelivery_case` są w [../data-model.md](../data-model.md) jako odłożone. Ten plik jest domem ich stanów.
@@ -28,22 +28,20 @@ Kanały doręczeń, procedura ręczna i administrator skrzynki. API (wykonalnoś
 
 Firmy z CEIDG wpisane przed 1.01.2025 muszą mieć ADE wpisany do BAE od 1.10.2026 ([gov.pl](https://www.gov.pl/web/e-doreczenia/e-doreczenia-1-pazdziernika-2026-r-wazny-termin-dla-przedsiebiorcow-z-ceidg); art. 9 ust. 1 pkt 9 i art. 152 ust. 3 [ustawy o doręczeniach elektronicznych, Dz.U. 2026 poz. 3](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)). Pisma mogą już wpływać, a fikcja doręczenia biegnie niezależnie od kokpitu.
 
-Obowiązek pokrywa procedura ręczna z tego pliku i sekcja „Teraz – zgodność” w [../README.md](../README.md). Warunek (Q-13, Q-18): ADE aktywny, powiadomienia mailowe przetestowane, administrator skrzynki wyznaczony.
+Obowiązek pokrywa procedura ręczna z tego pliku i sekcja „Teraz – zgodność” w [../README.md](../README.md). Warunek (Q-13, D-107): ADE aktywny, powiadomienia mailowe przetestowane, codzienny podgląd skrzynki.
 
 Polling metadanych przez API odpada do powrotu F4. PROD wymaga certyfikatu kwalifikowanego i bramek z dodatku (D-29).
 
-## Administrator skrzynki
+## Odbiór bez zastępcy
 
-Przedsiębiorca może wyznaczyć administratora skrzynki, który obsługuje korespondencję w jego imieniu ([gov.pl, 16.09.2026](https://www.gov.pl/web/e-doreczenia/e-doreczenia-1-pazdziernika-2026-r-wazny-termin-dla-przedsiebiorcow-z-ceidg)). To najtańsze zabezpieczenie przed fikcją doręczenia podczas Twojej nieobecności (R-11, R-25 w [../facts.md](../facts.md); przegląd S9).
+Pisma ze skrzynki ADE odbierasz tylko Ty (D-107). Administratora skrzynki ani innego zastępcy nie ma i dokumentacja go nie zakłada, także dla innych użytkowników kokpitu.
 
 | Element | Reguła |
 | --- | --- |
-| Kto | jedna zaufana osoba fizyczna; upoważnienie imienne, bez prawa dalszego upoważniania (art. 19 ust. 6 pkt 2 i ust. 7 [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)) |
-| Termin | poza kodem (Q-18) |
-| Zakres | podgląd i odbiór pism w aplikacji e-Doręczeń podczas Twojej nieobecności; przekazanie Ci treści i terminu |
-| Kiedy odbiera | po uzgodnieniu z Tobą albo najpóźniej przed upływem 14 dni od zawiadomienia; odbiór przez administratora to doręczenie (art. 41 ust. 2) |
-| Czego nie robi | nie ma konta w kokpicie; obowiązek do kalendarza wpisujesz Ty (rola zastępcy w panelu: [../roadmap.md](../roadmap.md)) |
-| Poza skrzynką | zastępcy brak; procedura break-glass w [../operations.md](../operations.md) (D-03) |
+| Zabezpieczenie | powiadomienia mailowe dostawcy ADE i codzienny podgląd skrzynki w aplikacji e-Doręczeń |
+| Nieobecność | pismo od podmiotu publicznego nieodebrane w 14 dni od zawiadomienia jest doręczone fikcją (art. 42 ust. 2 [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)) także wtedy, gdy Cię nie ma; ryzyko zaakceptowane (D-107; R-11, R-25 w [../facts.md](../facts.md)) |
+| Przed dłuższą nieobecnością | sprawdzasz skrzynkę i odbierasz pisma; deklaracje składasz z wyprzedzeniem ([../operations.md](../operations.md), „Break-glass i zastępca”) |
+| Po powrocie | odbierasz zaległe pisma; terminy liczysz od daty odbioru albo fikcji i wpisujesz do kalendarza („Procedura ręczna” niżej) |
 
 ## Kanały doręczeń
 
@@ -51,7 +49,7 @@ Każdy kanał ma swój skutek prawny. Kokpit nie monitoruje żadnego kanału prz
 
 | Kanał | Skutek prawny | Monitoring teraz | Po powrocie F4 | Kto |
 | --- | --- | --- | --- | --- |
-| ADE firmy (BAE) | fikcja doręczenia pism od podmiotów publicznych (art. 42 ust. 2 [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)) | powiadomienia mailowe dostawcy, codzienny podgląd w aplikacji e-Doręczeń, administrator skrzynki; termin z pisma ręcznie do kalendarza | przy spełnionych bramkach PROD: polling `list()` co 15 min, push, obowiązek `edelivery_deemed`; powiadomienia mailowe zostają na stałe | Ty, administrator |
+| ADE firmy (BAE) | fikcja doręczenia pism od podmiotów publicznych (art. 42 ust. 2 [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)) | powiadomienia mailowe dostawcy, Twój codzienny podgląd w aplikacji e-Doręczeń; termin z pisma ręcznie do kalendarza | przy spełnionych bramkach PROD: polling `list()` co 15 min, push, obowiązek `edelivery_deemed`; powiadomienia mailowe zostają na stałe | Ty |
 | prywatny ADE (osoba fizyczna) | osobny adres (art. 32 ust. 2 [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)); żaden przepis nie mówi, który adres wybierze urząd | powiadomienia mailowe i przypomnienie `manual_channel_check` raz w tygodniu | bez zmian: API dla skrzynki prywatnej niezweryfikowane (instrukcje INT v1.9.7 i PROD v1.9 tego nie opisują); pytanie do COI razem z Q-30 ([../facts.md](../facts.md)) | Ty |
 | konto w e-Urzędzie Skarbowym | doręczenie na konto po zgodzie na e-Korespondencję (art. 144 § 1a [Ordynacji podatkowej](https://api.sejm.gov.pl/eli/acts/DU/2026/622/text.pdf); art. 35e [ustawy o KAS](https://api.sejm.gov.pl/eli/acts/DU/2025/1131/text.pdf)); własna fikcja 14 dni; w części procedur obowiązkowe (np. art. 14zc Ordynacji) | przypomnienie `manual_channel_check` raz w tygodniu | bez zmian; API brak, scraping poza zakresem | Ty |
 | skrzynka eZUS | powiadomienie mailem albo SMS-em; każdy płatnik ją ma; czy działa fikcja – niezweryfikowane | przypomnienie `manual_channel_check` raz w tygodniu | bez zmian; API brak | Ty |
@@ -68,8 +66,8 @@ Obowiązuje od teraz do powrotu F4. Kokpit niczego nie pobiera; przechowuje tylk
 | Krok | Kto | Co |
 | --- | --- | --- |
 | 1 | dostawca ADE | mail o nowym zawiadomieniu; od zawiadomienia biegnie 14 dni fikcji dla pism od podmiotów publicznych (art. 42 ust. 2 [u.d.e.](https://api.sejm.gov.pl/eli/acts/DU/2026/3/text.pdf)) |
-| 2 | Ty albo administrator | logowanie do aplikacji e-Doręczeń; podgląd listy to jeszcze nie odbiór |
-| 3 | Ty albo administrator | otwarcie pisma to odbiór z dowodem otrzymania (art. 41 ust. 2); od tej daty liczysz terminy z pisma |
+| 2 | Ty | logowanie do aplikacji e-Doręczeń; podgląd listy to jeszcze nie odbiór |
+| 3 | Ty | otwarcie pisma to odbiór z dowodem otrzymania (art. 41 ust. 2); od tej daty liczysz terminy z pisma |
 | 4 | Ty | odczyt terminu z treści pisma; termin względny („14 dni od doręczenia”) liczysz od daty odbioru |
 | 5 | Ty | wpis w panelu: obowiązek `edelivery_reply_due` z terminem, datą doręczenia, nadawcą i sygnaturą; przypomnienia T−7, T−3, T−1, T0 ([../compliance-calendar.md](../compliance-calendar.md)) |
 | 6 | Ty | odpowiedź wysyłasz z aplikacji e-Doręczeń; obowiązek zamykasz ręcznie (`done`) |
@@ -322,9 +320,9 @@ Pisma wysyłasz z aplikacji e-Doręczeń. Wysyłka z kokpitu wejdzie dopiero po 
 | Id | Temat | Stan |
 | --- | --- | --- |
 | Q-13 | ADE firmy, powiadomienia, prywatny ADE, e-Korespondencja | otwarte; kanały sprawdzasz ręcznie |
-| Q-18 | administrator skrzynki ADE jako zastępca | otwarte |
+| Q-18 | zastępca przy odbiorze pism | rozstrzygnięte: zastępcy brak, także administratora skrzynki (D-99, D-107) |
 | Q-30 | dostawca ADE, pytanie do COI, koszt certyfikatu | odłożone (D-29): bramki 1–2 poza kodem; reszta po F5 |
 | Q-29 | odczyt daty fikcji w przeglądzie doradcy | otwarte; do powrotu F4 datę czytasz z aplikacji |
 | Q-35 | wysyłka szkiców z kokpitu albo tylko kopiowanie | otwarte; `edelivery_outbound` tylko po powrocie F4 |
 
-Decyzje w [../decisions.md](../decisions.md): D-29 (API odłożone, procedura ręczna), D-30 (kolejność faz), D-03 (administrator skrzynki, zastępca), D-09 (koszt certyfikatu po powrocie), D-13 (`EDORECZENIA_TARGET` po powrocie), D-18 (stały IPv4 po powrocie), D-19 (treść push).
+Decyzje w [../decisions.md](../decisions.md): D-29 (API odłożone, procedura ręczna), D-30 (kolejność faz), D-03 (zastępca i break-glass), D-99 i D-107 (bez zastępcy i administratora skrzynki), D-09 (koszt certyfikatu po powrocie), D-13 (`EDORECZENIA_TARGET` po powrocie), D-18 (stały IPv4 po powrocie), D-19 (treść push).
