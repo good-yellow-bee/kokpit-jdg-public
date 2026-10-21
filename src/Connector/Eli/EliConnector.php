@@ -46,6 +46,16 @@ final readonly class EliConnector
         return self::parseProcess($this->get('process', $this->processUrl($process)));
     }
 
+    /**
+     * Jedna strona procesów kadencji zmienionych od `$modifiedSince` (`/sejm/term{N}/processes`, D-112), w kolejności numerów.
+     *
+     * @return list<array{number:string,title:string,documentType:string,changeDate:string}>
+     */
+    public function processes(int $term, \DateTimeImmutable $modifiedSince, int $offset, int $limit): array
+    {
+        return self::parseProcesses($this->get('processes', $this->processesUrl($term, $modifiedSince, $offset, $limit)));
+    }
+
     /** Surowa odpowiedź; czyta ją też `app:fixtures:record eli <scenariusz>`. */
     public function fetch(string $operation, string $url): string
     {
@@ -73,10 +83,17 @@ final readonly class EliConnector
         return $this->baseUrl . '/sejm/' . $term . '/processes/' . $number;
     }
 
+    /** API Sejmu podaje i filtruje daty w czasie lokalnym Europe/Warsaw, bez strefy. */
+    public function processesUrl(int $term, \DateTimeImmutable $modifiedSince, int $offset, int $limit): string
+    {
+        $since = $modifiedSince->setTimezone(new \DateTimeZone('Europe/Warsaw'))->format('Y-m-d\TH:i:s');
+        return $this->baseUrl . '/sejm/term' . $term . '/processes?' . http_build_query(['modifiedSince' => $since, 'offset' => $offset, 'limit' => $limit]);
+    }
+
     /** @return array<string, list<array{eli:string,title:string,displayAddress:string,date:?string}>> */
     public static function parseReferences(string $body): array
     {
-        $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        $data = self::decode($body);
         if (!is_array($data)) {
             throw new ConnectorException(ConnectorError::HttpError);
         }
@@ -105,11 +122,33 @@ final readonly class EliConnector
     /** @return array{title:string,passed:bool,stages:list<string>} */
     public static function parseProcess(string $body): array
     {
-        $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        $data = self::decode($body);
         if (!is_array($data) || !is_string($data['title'] ?? null) || !is_array($data['stages'] ?? null)) {
             throw new ConnectorException(ConnectorError::HttpError);
         }
         return ['title' => $data['title'], 'passed' => ($data['passed'] ?? false) === true, 'stages' => self::stages($data['stages'])];
+    }
+
+    /** @return list<array{number:string,title:string,documentType:string,changeDate:string}> */
+    public static function parseProcesses(string $body): array
+    {
+        $data = self::decode($body);
+        if (!is_array($data) || !array_is_list($data)) {
+            throw new ConnectorException(ConnectorError::HttpError);
+        }
+        $result = [];
+        foreach ($data as $item) {
+            if (!is_array($item) || !is_string($item['number'] ?? null) || !is_string($item['title'] ?? null)) {
+                throw new ConnectorException(ConnectorError::HttpError);
+            }
+            $result[] = [
+                'number' => $item['number'],
+                'title' => $item['title'],
+                'documentType' => is_string($item['documentTypeEnum'] ?? null) ? $item['documentTypeEnum'] : '',
+                'changeDate' => is_string($item['changeDate'] ?? null) ? $item['changeDate'] : '',
+            ];
+        }
+        return $result;
     }
 
     /**
@@ -129,6 +168,16 @@ final readonly class EliConnector
             }
         }
         return $flat;
+    }
+
+    /** Uszkodzony JSON przy HTTP 200 to błąd pozycji (`http_error`), nie przerwanie całego przebiegu. */
+    private static function decode(string $body): mixed
+    {
+        try {
+            return json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            throw new ConnectorException(ConnectorError::HttpError);
+        }
     }
 
     private function get(string $operation, string $url): string

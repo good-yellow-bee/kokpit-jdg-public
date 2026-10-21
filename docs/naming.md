@@ -89,7 +89,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | Operacje | `connector_call`, `audit_log`, `rate_counter`, `sync_cursor`, `credential_state`, `notification`, `setting` | [data-model.md](data-model.md) |
 | Panel | `app_user`, `webauthn_credential` | [data-model.md](data-model.md) |
 | Czat | `chat_session`, `chat_message` | [data-model.md](data-model.md) |
-| Obserwacja prawa | `legal_watch`, `legal_watch_hit` (D-75) | [data-model.md](data-model.md) |
+| Obserwacja prawa | `legal_watch`, `legal_watch_hit` (D-75); rodzaje pozycji `bills`, `changelog` (D-112) | [data-model.md](data-model.md) |
 | Poczta przychodząca | `mail_in_message` (D-92) | [data-model.md](data-model.md) |
 | Wyciąg bankowy | `bank_statement`, `bank_statement_line` (D-108) | [data-model.md](data-model.md) |
 | basal | `classification`: odłożone (D-29), poza schematem F0a | [modules/basal.md](modules/basal.md) |
@@ -146,7 +146,7 @@ Propozycje z [data-model.md](data-model.md), [compliance-calendar.md](compliance
 | `stored_file.kind` | `xml_sent`, `upo`, `pdf`, `evidence`, `attachment`, `verification_raw`, `cost_document`, `outbound_payload` |
 | `credential_state.kind` | `ksef_token_read`, `ksef_token_write`, `ksef_auth_cert`, `ksef_offline_cert`, `ksef_jwt_read`, `ksef_jwt_write`, `auth_data`, `freshbooks_oauth`, `dummy_token` (tylko konektor `dummy`); `edoreczenia_qualified_cert` i `edoreczenia_access_token` odłożone (D-29) |
 | `sync_cursor.stream` | KSeF: `subject1`, `subject2`; FreshBooks: `invoices`, `payments`; e-Doręczenia `inbox`, `outbox` odłożone (D-29) |
-| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md) (w tym `ksef.export_part`, D-71), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `eli.read`, `mail_in.fetch`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
+| `rate_counter.bucket` | wzorzec `<connector>.<grupa>`: grupy `ksef.*` z [modules/ksef.md](modules/ksef.md) (w tym `ksef.export_part`, D-71), `latarnia.status`, `white_list.search`, `white_list.check`, `vies.check`, `nbp.rates`, `eli.read`, `ksef_docs.read`, `mail_in.fetch`, `freshbooks.api`, `jpk.init_upload`, `jpk.upload`, `jpk.finish_upload`, `jpk.status`, `edeklaracje.send`, `edeklaracje.request_upo`, `claude.messages`, `push.send`, `mail.send`, `deadman.ping`, `dummy.call`; `edoreczenia.api` i `basal.classify` odłożone (D-29) |
 | `ryczalt.advance_frequency` (`setting`) | `monthly`, `quarterly` (Q-17) |
 | `zus.variant` (`setting`) | `full`, `preferential`, `start_relief`; F0b implementuje `full` (Q-16) |
 | `environment` | `test`, `demo`, `prod`; `int` odłożone (D-29) |
@@ -183,6 +183,7 @@ Nazwy przyjęte 8.10.2026 z plików-domów i z przeglądu. Pełna tabela kluczy 
 | `jpk`, `edeklaracje` | `Jpk`, `EDeklaracje` |
 | `vies`, `white_list`, `nbp` | `Vies`, `WhiteList`, `Nbp` |
 | `eli` | `Eli`; API Sejmu dla obserwacji prawa, tylko odczyt (D-75) |
+| `ksef_docs` | `KsefDocs`; pliki CIRFMF/ksef-docs dla obserwacji prawa, tylko odczyt (D-112) |
 | `mail_in` | `MailIn`; dedykowana skrzynka na dokumenty kosztowe, IMAP tylko do odczytu (D-92) |
 | `freshbooks` | `FreshBooks` |
 | `claude` | `Claude` |
@@ -671,19 +672,20 @@ Część b: sekcja niżej.
 | Panel | trasa `panel_draft_action` (`POST /approvals/{id}/draft/{action}`, akcje `confirm`, `edit`, `discard`; pola `confirm[]`, `subject`, `body`; token CSRF `approvals`); klasy `.draft-preview`, `.draft-body`, `mark.draft-flagged`, `.draft-sources`, `.draft-confirm`, `.draft-edit`, `.chat-draft-link` |
 | Testy | `DraftTestTools`, `ClaudeTestTools::responseWith` (znaczniki `{{NAZWA}}` w fixture, np. `FICTIONAL_IBAN`), `ApprovalTestTools::owner` (publiczna); testy `DraftRequestedOnlyTest`, `DraftRecipientDbTest`, `DraftFlaggedValuesTest`, `DraftApprovalCopyTest`, `DraftApprovalCopyPanelTest`; fixtures `tests/Fixtures/Claude/messages-draft-document.json`, `messages-draft-recipients.json`, `messages-draft-flagged.json`; dowody `cmd/draft-requested-only.txt`, `db/draft-approval-copy-approval.csv`, `screens/draft-approval-copy.html` |
 
-### Obserwacja prawa (D-75): nazwy
+### Obserwacja prawa (D-75, D-112): nazwy
 
 | Rodzaj | Nazwy |
 | --- | --- |
-| Konektor (`src/Connector/Eli`) | `eli`, `EliConnector` (`references`, `process`, `fetch`, `isEli`, `isProcess`, `referencesUrl`, `processUrl`, `parseReferences`, `parseProcess`); operacje `connector_call` `references` i `process`; licznik `eli.read`; host `api.sejm.gov.pl` |
+| Konektor (`src/Connector/Eli`) | `eli`, `EliConnector` (`references`, `process`, `processes`, `fetch`, `isEli`, `isProcess`, `referencesUrl`, `processUrl`, `processesUrl`, `parseReferences`, `parseProcess`, `parseProcesses`); operacje `connector_call` `references`, `process` i `processes` (D-112); licznik `eli.read`; host `api.sejm.gov.pl` |
+| Konektor (`src/Connector/KsefDocs`, D-112) | `ksef_docs`, `KsefDocsConnector` (`changelog`, `isFile`, `fileUrl`, `parseChangelog`); operacja `connector_call` `changelog`; licznik `ksef_docs.read`; host `raw.githubusercontent.com`, ścieżki `/CIRFMF/ksef-docs/` |
 | Obserwacja (`src/LegalWatch`) | `LegalWatch` (`run`, wynik `checked`, `hits`, `failed`; link `/`), `LegalWatchReport` (`draftRows`, `markReviewed`, `NEXT_CHECK_DAYS`) |
-| Tabele | `legal_watch` (`kind`: `act`, `process`; `ref`, `label`, `snapshot`, `snapshot_sha256`, `checked_at`, `changed_at`), `legal_watch_hit` (`legal_watch_id`, `snapshot_sha256`, `changes`, `detected_at`, `reviewed_at`); indeks `legal_watch_hit_open` |
-| Pozycja `legal_watch_hit.changes` | akt: `category`, `eli`, `displayAddress`, `title`, `date`; proces: `stage`, `title` |
-| Konfiguracja | `eli.base_url`, `legal_watch.items` (`kind`, `ref`, `label`), `legal_watch.act_categories` |
+| Tabele | `legal_watch` (`kind`: `act`, `process`, `bills`, `changelog` (D-112); `ref`, `label`, `snapshot`, `snapshot_sha256`, `checked_at`, `changed_at`), `legal_watch_hit` (`legal_watch_id`, `snapshot_sha256`, `changes`, `detected_at`, `reviewed_at`); indeks `legal_watch_hit_open` |
+| Pozycja `legal_watch_hit.changes` | akt: `category`, `eli`, `displayAddress`, `title`, `date`; proces: `stage`, `title`; projekt ustawy: `number`, `title`, `acts`, `changeDate`; wersja changelogu: `version`, `dates` (D-112) |
+| Konfiguracja | `eli.base_url`, `legal_watch.items` (`kind`, `ref`, `label`), `legal_watch.act_categories`; D-112: `ksef_docs.base_url`, `legal_watch.bill_keywords` (ELI → fragmenty tytułu); parametry `LegalWatch` `billPageSize`, `billMaxPages` |
 | Messenger | `LegalWatchMessage` (`legal_watch.check`, transport `reads`), handler `LegalWatchHandler` |
 | Push | `notification.category` = `legal_change`, `dedupe_key` `legal_watch:<legal_watch_id>:<snapshot_sha256>:push` |
 | Komendy | `app:legal-watch check`, `app:legal-watch report [--mark-reviewed]` |
-| Testy | `LegalWatchTest`, `EliConnectorParseTest`; fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json` |
+| Testy | `LegalWatchTest`, `EliConnectorParseTest`, `KsefDocsConnectorParseTest`, `LegalWatchConfigTest` (D-112); fixtures `tests/Fixtures/Eli/references-du-2025-1815.json`, `references-du-2025-1815-amended.json`, `references-du-2025-1294.json`, `references-du-2099-404.json`, `process-term10-2453.json`, `process-term10-2453-next-stage.json`; D-112: `process-term10-3147.json`, `processes-term10.json`, `processes-term10-next-week.json`, `processes-term10-pages.json`, `tests/Fixtures/KsefDocs/api-changelog.json`, `api-changelog-new-version.json`, `api-changelog-404.json` |
 
 ### Import wyciągu bankowego (D-108): nazwy
 
@@ -969,7 +971,7 @@ W F0a klucze główne siedmiu tabel aplikacyjnych są UUIDv7; tabele techniczne 
 | Transporty i schemat | `messenger_messages`, `doctrine_migration_versions`, `cache_items` (tabele techniczne Symfony/Doctrine), `prevent_audit_mutation` (funkcja ochrony audytu) |
 | Zmienne backupu | `RESTIC_REPOSITORY_FILE`, `AWS_SHARED_CREDENTIALS_FILE`, `BACKUP_DEADMAN_URL_FILE`, `BACKUP_DATABASE`, `BACKUP_HOST` |
 
-`ConnectorError`: `connectors_disabled`, `host_not_allowed`, `invalid_url`, `network_error`, `rate_limited`, `unscoped_connector_request`, `http_error`, `waf_challenge` (strona HTML z wyzwaniem Imperva zamiast odpowiedzi API, D-74). Wiadomość `FailureNotificationMessage.id` wskazuje wiersz transportu `failed`; handler używa potwierdzenia tego wiersza jako klucza idempotencji, bez tabeli `notification`.
+`ConnectorError`: `connectors_disabled`, `host_not_allowed`, `invalid_url`, `network_error`, `rate_limited`, `unscoped_connector_request`, `http_error`, `waf_challenge` (strona HTML z wyzwaniem Imperva zamiast odpowiedzi API, D-74), `result_limit_exceeded` (więcej stron wyników niż limit przebiegu, D-112). Wiadomość `FailureNotificationMessage.id` wskazuje wiersz transportu `failed`; handler używa potwierdzenia tego wiersza jako klucza idempotencji, bez tabeli `notification`.
 
 Nagłówek `X-Kokpit-Notified` w `messenger_messages.headers` oznacza dostarczony alert F0a.
 

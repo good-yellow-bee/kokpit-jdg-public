@@ -1,0 +1,75 @@
+{
+    "fictional": true,
+    "source": "Ręcznie pisane, fikcyjne (fictional) nagranie (D-112); kształt jak w api.sejm.gov.pl.",
+    "scenario": "Ręcznie pisane, fikcyjne (fictional): trzy strony po dwa procesy (ostatnia pusta) do testu stronicowania i limitu stron.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes",
+            "status": 200,
+            "body": [
+                {
+                    "number": "9011",
+                    "term": 10,
+                    "title": "Projekt ustawy o zmianie ustawy - Prawo przedsiębiorców (fictional)",
+                    "documentType": "projekt ustawy",
+                    "changeDate": "2099-01-05T10:00:00",
+                    "processStartDate": "2099-01-02",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL",
+                    "documentTypeEnum": "BILL"
+                },
+                {
+                    "number": "9012",
+                    "term": 10,
+                    "title": "Projekt ustawy o zmianie ustawy o drogach publicznych (fictional)",
+                    "documentType": "projekt ustawy",
+                    "changeDate": "2099-01-05T10:00:00",
+                    "processStartDate": "2099-01-02",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL",
+                    "documentTypeEnum": "BILL"
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes",
+            "status": 200,
+            "body": [
+                {
+                    "number": "9013",
+                    "term": 10,
+                    "title": "Projekt ustawy o zmianie ustawy o dniach wolnych od pracy (fictional)",
+                    "documentType": "projekt ustawy",
+                    "changeDate": "2099-01-05T10:00:00",
+                    "processStartDate": "2099-01-02",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL",
+                    "documentTypeEnum": "BILL"
+                },
+                {
+                    "number": "9014",
+                    "term": 10,
+                    "title": "Projekt ustawy o zmianie ustawy o lasach (fictional)",
+                    "documentType": "projekt ustawy",
+                    "changeDate": "2099-01-05T10:00:00",
+                    "processStartDate": "2099-01-02",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL",
+                    "documentTypeEnum": "BILL"
+                }
+            ]
+        },
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes",
+            "status": 200,
+            "body": []
+        }
+    ]
+}

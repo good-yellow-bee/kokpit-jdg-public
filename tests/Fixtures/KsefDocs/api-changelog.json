@@ -1,0 +1,13 @@
+{
+    "fictional": true,
+    "source": "Nagranie z raw.githubusercontent.com/CIRFMF/ksef-docs/main/api-changelog.md z 2026-10-21 (D-112): publiczna dokumentacja MF skrócona do nagłówków i tabel dat trzech najnowszych wersji (fictional: brak danych identyfikujących).",
+    "scenario": "Changelog KSeF API 2.0: wersje 2.9.0, 2.8.1 i 2.8.0 z datami TEST, DEMO i PROD.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/CIRFMF/ksef-docs/main/api-changelog.md",
+            "status": 200,
+            "body_text": "## Zmiany w API 2.0\n### Wersja 2.9.0\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     13.10.2026 |\n| **DEMO**   |     13.10.2026 |\n| **PROD**   |     15.10.2026 |\n\n### Wersja 2.8.1\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     22.09.2026 |\n| **DEMO**   |     23.09.2026 |\n| **PROD**   |     23.09.2026 |\n\n### Wersja 2.8.0\n| Środowisko | Data wdrożenia |\n| ---------- | -------------: |\n| **TEST**   |     14.09.2026 |\n| **DEMO**   |     15.09.2026 |\n| **PROD**   |     23.09.2026 |\n\n"
+        }
+    ]
+}

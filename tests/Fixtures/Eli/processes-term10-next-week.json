@@ -1,0 +1,50 @@
+{
+    "fictional": true,
+    "source": "Ręcznie pisane, fikcyjne (fictional) nagranie (D-112); kształt jak w api.sejm.gov.pl.",
+    "scenario": "Ręcznie pisane, fikcyjne (fictional): tydzień później 3135 zmienia się znowu, nowy projekt ustawy 9001 o VAT i Ordynacji podatkowej oraz projekt uchwały 9002 z tym samym słowem.",
+    "interactions": [
+        {
+            "method": "GET",
+            "path": "/sejm/term10/processes",
+            "status": 200,
+            "body": [
+                {
+                    "number": "3135",
+                    "term": 10,
+                    "title": "Rządowy projekt ustawy o zmianie ustawy o podatku od towarów i usług",
+                    "documentType": "projekt ustawy",
+                    "documentTypeEnum": "BILL",
+                    "changeDate": "2099-01-04T09:00:00",
+                    "processStartDate": "2026-09-24",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL"
+                },
+                {
+                    "number": "9001",
+                    "term": 10,
+                    "title": "Rządowy projekt ustawy o zmianie ustawy o podatku od towarów i usług oraz ustawy - Ordynacja podatkowa (fictional)",
+                    "documentType": "projekt ustawy",
+                    "changeDate": "2099-01-05T10:00:00",
+                    "processStartDate": "2099-01-02",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL",
+                    "documentTypeEnum": "BILL"
+                },
+                {
+                    "number": "9002",
+                    "term": 10,
+                    "title": "Poselski projekt uchwały w sprawie podatku od towarów i usług (fictional)",
+                    "documentType": "projekt uchwały",
+                    "changeDate": "2099-01-05T10:00:00",
+                    "processStartDate": "2099-01-02",
+                    "passed": false,
+                    "UE": "NO",
+                    "urgencyStatus": "NORMAL",
+                    "documentTypeEnum": "DRAFT_RESOLUTION"
+                }
+            ]
+        }
+    ]
+}
