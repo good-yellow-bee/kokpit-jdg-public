@@ -26,7 +26,7 @@ final class EliConnectorParseTest extends TestCase
 
     public function testEliMalformedReferencesAreHttpError(): void
     {
-        foreach (['[1]', '{"Akty zmieniające":[{"act":{"ELI":"../x"}}]}', '{"Akty zmieniające":"x"}'] as $body) {
+        foreach (['{"Akty', '[1]', '{"Akty zmieniające":[{"act":{"ELI":"../x"}}]}', '{"Akty zmieniające":"x"}'] as $body) {
             try {
                 EliConnector::parseReferences($body);
                 self::fail('Przyjęto odpowiedź: ' . $body);
@@ -41,7 +41,7 @@ final class EliConnectorParseTest extends TestCase
     public function testEliProcessesParseAndRejectOtherShapes(): void
     {
         self::assertSame([['number' => '1', 'title' => 'x', 'documentType' => 'BILL', 'changeDate' => '2099-01-01T10:00:00'], ['number' => '2', 'title' => 'y', 'documentType' => '', 'changeDate' => '']], EliConnector::parseProcesses('[{"number":"1","title":"x","documentTypeEnum":"BILL","changeDate":"2099-01-01T10:00:00"},{"number":"2","title":"y"}]'));
-        foreach (['{"number":"1","title":"x"}', '[1]', '[{"number":1,"title":"x"}]', '[{"number":"1"}]'] as $body) {
+        foreach (['[{"number":"1"', '{"number":"1","title":"x"}', '[1]', '[{"number":1,"title":"x"}]', '[{"number":"1"}]'] as $body) {
             try {
                 EliConnector::parseProcesses($body);
                 self::fail('Przyjęto odpowiedź: ' . $body);

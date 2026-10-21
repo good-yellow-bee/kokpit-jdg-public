@@ -93,7 +93,7 @@ final readonly class EliConnector
     /** @return array<string, list<array{eli:string,title:string,displayAddress:string,date:?string}>> */
     public static function parseReferences(string $body): array
     {
-        $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        $data = self::decode($body);
         if (!is_array($data)) {
             throw new ConnectorException(ConnectorError::HttpError);
         }
@@ -122,7 +122,7 @@ final readonly class EliConnector
     /** @return array{title:string,passed:bool,stages:list<string>} */
     public static function parseProcess(string $body): array
     {
-        $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        $data = self::decode($body);
         if (!is_array($data) || !is_string($data['title'] ?? null) || !is_array($data['stages'] ?? null)) {
             throw new ConnectorException(ConnectorError::HttpError);
         }
@@ -132,7 +132,7 @@ final readonly class EliConnector
     /** @return list<array{number:string,title:string,documentType:string,changeDate:string}> */
     public static function parseProcesses(string $body): array
     {
-        $data = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        $data = self::decode($body);
         if (!is_array($data) || !array_is_list($data)) {
             throw new ConnectorException(ConnectorError::HttpError);
         }
@@ -168,6 +168,16 @@ final readonly class EliConnector
             }
         }
         return $flat;
+    }
+
+    /** Uszkodzony JSON przy HTTP 200 to błąd pozycji (`http_error`), nie przerwanie całego przebiegu. */
+    private static function decode(string $body): mixed
+    {
+        try {
+            return json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            throw new ConnectorException(ConnectorError::HttpError);
+        }
     }
 
     private function get(string $operation, string $url): string
