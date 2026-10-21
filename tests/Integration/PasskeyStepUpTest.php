@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Passkey\PasskeyEnrollmentService;
+use App\Setting\SettingKeys;
+use App\Setting\SettingStore;
 use App\Tests\Support\EvidenceArtefacts;
 use App\Tests\Support\VirtualAuthenticator;
 use Doctrine\DBAL\Connection;
@@ -195,7 +197,72 @@ final class PasskeyStepUpTest extends WebTestCase
         $enrolled = json_decode(is_string($audit[2]['details']) ? $audit[2]['details'] : '', true);
         self::assertEquals(['credential_id' => $row['id'],'kind' => 'security_key','transports' => ['usb','nfc']], $enrolled);
         $stepUp = json_decode(is_string($audit[3]['details']) ? $audit[3]['details'] : '', true);
-        self::assertSame(['credential_id' => $row['id']], $stepUp);
+        self::assertEquals(['credential_id' => $row['id'],'kind' => 'security_key'], $stepUp);
         EvidenceArtefacts::write('db/passkey-security-key-audit_log.csv', EvidenceArtefacts::csv($audit));
+    }
+    public function testSecurityKeyRequiredForStepUpOnlyWithActiveKey(): void
+    {
+        $service = self::getContainer()->get(PasskeyEnrollmentService::class);
+        self::assertInstanceOf(PasskeyEnrollmentService::class, $service);
+        $settings = self::getContainer()->get(SettingStore::class);
+        self::assertInstanceOf(SettingStore::class, $settings);
+        $issued = $service->issue('owner', 'Fikcyjny właściciel');
+        $user = $issued['user_id'];
+        $phone = new VirtualAuthenticator();
+        $this->enrol($phone, '/passkey/enrol/' . $issued['token']);
+        $this->login($phone, $user, 1);
+        $settings->set(SettingKeys::STEP_UP_SECURITY_KEY_REQUIRED, true, '2026-10-12', $user);
+        // Wymóg bez aktywnego klucza nie działa: telefon dalej daje step-up, panel nie mówi o kluczu.
+        $this->stepUp($phone, $user, 2);
+        $this->client->request('GET', '/passkeys');
+        self::assertSelectorNotExists('#step-up-security-key');
+        self::assertSelectorTextContains('#passkey-step-up', 'Potwierdź passkeyem');
+        $this->client->request('POST', '/passkeys/add', ['_token' => $this->formToken('#passkey-add'),'kind' => 'security_key']);
+        self::assertResponseRedirects();
+        $location = $this->client->getResponse()->headers->get('Location');
+        self::assertIsString($location);
+        // Prośba o step-up sprzed rejestracji klucza zawiera telefon; asercja telefonu po rejestracji odpada w `verify`.
+        $this->client->request('GET', '/passkeys');
+        $csrf = $this->attribute('#passkey-step-up', 'data-csrf');
+        $options = $this->post('/passkey/step-up/options', [], $csrf);
+        self::assertIsString($options['challenge']);
+        $key = new VirtualAuthenticator();
+        $this->enrol($key, $location, ['usb']);
+        $refusal = $this->post('/passkey/step-up/verify', $phone->assertion($options['challenge'], $user, 3), $csrf);
+        self::assertResponseStatusCodeSame(403);
+        self::assertIsString($refusal['error']);
+        self::assertStringContainsString('kluczem FIDO2', $refusal['error']);
+        // Świeży step-up telefonem sprzed rejestracji klucza już nie wystarcza (`require` sprawdza rodzaj ponownie).
+        $this->client->request('POST', '/passkeys/add', ['_token' => $this->formToken('#passkey-add')]);
+        self::assertResponseStatusCodeSame(403);
+        $this->client->request('GET', '/passkeys');
+        self::assertSelectorExists('#step-up-security-key');
+        self::assertSelectorTextContains('#passkey-step-up', 'Potwierdź kluczem FIDO2');
+        // Opcje ceremonii podają tylko klucz; asercja telefonu nie daje step-upu.
+        $csrf = $this->attribute('#passkey-step-up', 'data-csrf');
+        $options = $this->post('/passkey/step-up/options', [], $csrf);
+        self::assertIsArray($options['allowCredentials']);
+        self::assertCount(1, $options['allowCredentials']);
+        self::assertIsArray($options['allowCredentials'][0]);
+        self::assertSame(['usb'], $options['allowCredentials'][0]['transports'] ?? null);
+        self::assertIsString($options['challenge']);
+        $this->post('/passkey/step-up/verify', $phone->assertion($options['challenge'], $user, 4), $csrf);
+        self::assertResponseStatusCodeSame(403);
+        $this->stepUp($key, $user, 1);
+        $this->client->request('POST', '/passkeys/add', ['_token' => $this->formToken('#passkey-add')]);
+        self::assertResponseRedirects();
+        // Wyłączenie wymogu wymaga step-upu, tu już kluczem.
+        $this->clock->sleep(301);
+        $this->client->request('GET', '/settings');
+        self::assertSelectorExists('#step_up-security_key_required #passkey-step-up');
+        $token = $this->attribute('#step_up-security_key_required input[name=_token]', 'value');
+        $this->client->request('POST', '/settings/step_up.security_key_required', ['_token' => $token,'value' => '0','valid_from' => '2026-10-13']);
+        self::assertResponseStatusCodeSame(403);
+        $this->stepUp($key, $user, 2);
+        $this->client->request('POST', '/settings/step_up.security_key_required', ['_token' => $token,'value' => '0','valid_from' => '2026-10-13']);
+        self::assertResponseRedirects('/settings');
+        self::assertFalse($settings->value(SettingKeys::STEP_UP_SECURITY_KEY_REQUIRED, '2026-10-13'));
+        $audit = $this->db->fetchAllAssociative("SELECT details->>'kind' AS kind FROM audit_log WHERE action='auth.step_up' ORDER BY sequence");
+        self::assertSame(['passkey','security_key','security_key'], array_column($audit, 'kind'));
     }
 }

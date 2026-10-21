@@ -71,7 +71,9 @@ final readonly class ApprovalGate
             }
             $subject->checkDecision(ApprovalTransitions::string($row, 'subject_id'));
             $expires = $this->expiry->at(ApprovalTransitions::string($row, 'subject_type'), 'approved', new \DateTimeImmutable(ApprovalTransitions::string($row, 'requested_at')), $now);
-            $this->transitions->apply($row, 'approved', 'approve', ['decided_at' => $this->transitions->now(), 'decided_by' => $userId, 'step_up_credential_id' => $credential, 'expires_at' => $expires->format('Y-m-d\TH:i:s.uP')], ['step_up_credential_id' => $credential], $userId);
+            // Rodzaj uwierzytelniacza w audycie: klucz FIDO2 albo passkey (D-111).
+            $kind = $this->db->fetchOne('SELECT kind FROM webauthn_credential WHERE id=?', [$credential]);
+            $this->transitions->apply($row, 'approved', 'approve', ['decided_at' => $this->transitions->now(), 'decided_by' => $userId, 'step_up_credential_id' => $credential, 'expires_at' => $expires->format('Y-m-d\TH:i:s.uP')], ['step_up_credential_id' => $credential, 'step_up_kind' => $kind], $userId);
             return is_string($row['connector']) ? $row['connector'] : null;
         });
         // Szkic bez konektora (Q-35) czeka na „Skopiowano”, więc nic nie trafia do `official_writes`.

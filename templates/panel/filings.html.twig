@@ -8,8 +8,7 @@
     {% for message in app.flashes('notice') %}<p role="status">{{ message }}</p>{% endfor %}
     {% if error %}<p role="alert">{{ error }}</p>{% endif %}
     <p>Zmiany na tej stronie wymagają potwierdzenia passkeyem (ważne 5 minut).</p>
-    <button id="passkey-step-up" type="button" data-csrf="{{ csrf_token('passkey') }}">Potwierdź passkeyem</button>
-    <p id="passkey-result" role="status"></p>
+    {% include 'panel/_step_up.html.twig' %}
 
     <section id="filing-request">
         <h2>Prośba o wysyłkę złożenia</h2>

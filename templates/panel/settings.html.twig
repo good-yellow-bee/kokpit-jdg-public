@@ -45,6 +45,21 @@
         </section>
     {% endfor %}
 
+    {% set keyRow = current['step_up.security_key_required'] %}
+    <section id="step_up-security_key_required">
+        <h2>Step-up tylko kluczem FIDO2 (step_up.security_key_required)</h2>
+        <p>Teraz: {{ keyRow ? (keyRow.value ? 'tak' : 'nie') ~ ' od ' ~ keyRow.valid_from : 'brak wiersza (nie)' }}. Działa tylko z aktywnym kluczem FIDO2 w <a href="{{ path('panel_passkeys') }}">Passkeye</a>; wtedy zatwierdzenia i inne akcje ze step-upem potwierdzasz kluczem, a logujesz się dalej telefonem (D-111). Zmiana wymaga step-upu.</p>
+        {% include 'panel/_step_up.html.twig' %}
+        <form method="post" action="{{ path('panel_setting_change', {key: 'step_up.security_key_required'}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('setting') }}">
+            <label><input type="radio" name="value" value="1" {{ keyRow and keyRow.value ? 'checked' }}> tak</label>
+            <label><input type="radio" name="value" value="0" {{ not keyRow or not keyRow.value ? 'checked' }}> nie</label>
+            <label>Obowiązuje od <input name="valid_from" type="date" required value="{{ today }}"></label>
+            <label>Uwaga <input name="note"></label>
+            <button type="submit">Zapisz nowy wiersz</button>
+        </form>
+    </section>
+
     {% set review = current['ksef.fa3_review'] %}
     <section id="ksef-fa3_review">
         <h2>Przegląd doradcy FA(3) (ksef.fa3_review)</h2>
