@@ -59,6 +59,38 @@ final class EntryErrorCorrectionRowsTest extends DatabaseTestCase
         }
     }
 
+    public function testLedgerEntryErrorAcceptsKsefNumberMatchingPattern(): void
+    {
+        $wrong = $this->wrong('1000.00');
+        $this->correction()->correct($wrong, ['ksef_number' => '7777777777-20261125-1A2B3C-4D5E6F-E5'], $this->user);
+        self::assertSame([null, '7777777777-20261125-1A2B3C-4D5E6F-E5'], $this->db()->fetchFirstColumn('SELECT ksef_number FROM revenue_entry WHERE corrects_entry_id=? ORDER BY lp', [$wrong]));
+    }
+
+    public function testLedgerEntryErrorRefusesMalformedKsefNumber(): void
+    {
+        $wrong = $this->wrong('1000.00');
+        try {
+            $this->correction()->correct($wrong, ['ksef_number' => 'nie-numer-ksef'], $this->user);
+            self::fail('K_5 spoza wzorca przeszedł.');
+        } catch (\DomainException $e) {
+            self::assertSame('Numer KSeF K_5 niezgodny ze wzorcem JPK_EWP(4).', $e->getMessage());
+        }
+        self::assertSame([], $this->rows($wrong));
+    }
+
+    public function testLedgerEntryErrorRepeatedSubmissionIsRefused(): void
+    {
+        $wrong = $this->wrong('1000.00');
+        $this->correction()->correct($wrong, ['amount_pln' => '1200.00'], $this->user);
+        try {
+            $this->correction()->correct($wrong, ['amount_pln' => '1200.00'], $this->user);
+            self::fail('Ta sama korekta zapisana drugi raz.');
+        } catch (\DomainException $e) {
+            self::assertSame('Wiersz ma już korektę błędu wpisu: popraw wiersz korekty.', $e->getMessage());
+        }
+        self::assertCount(1, $this->rows($wrong));
+    }
+
     public function testNonScalarValueIsRefusedWithFieldName(): void
     {
         $wrong = $this->wrong('1000.00');

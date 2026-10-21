@@ -15,6 +15,7 @@ use Doctrine\DBAL\Connection;
  * `correction` z różnicą; błąd w K_3–K_7 albo K_9 daje wiersz odwracający (−K_8) i wiersz z poprawnymi polami.
  * Każdy wiersz ma `corrects_entry_id` błędnego wiersza, jego `invoice_id`, `source` = `manual` i `year` z własnego K_3.
  * Zapis przez `RevenueEntryWriter::append`, więc wiersz w zamkniętym miesiącu daje „korekta wymagana”. Akcja panelu `/ledger`.
+ * Wiersz poprawiasz raz: kolejny błąd poprawiasz w wierszu korekty, więc ponowione żądanie nie dubluje różnicy.
  */
 final readonly class EntryErrorCorrection
 {
@@ -36,6 +37,11 @@ final readonly class EntryErrorCorrection
             if ($wrong === false) {
                 throw new \DomainException('Brak wiersza ewidencji.');
             }
+            // Blokada roku błędnego wiersza szereguje równoległe korekty tego wiersza przed sprawdzeniem poprzedniej.
+            $this->db->executeQuery('SELECT pg_advisory_xact_lock(?, ?)', [RevenueEntryWriter::LOCK_NAMESPACE, $wrong['year']]);
+            if ($this->db->fetchOne("SELECT 1 FROM revenue_entry WHERE corrects_entry_id=? AND source='manual'", [$entryId]) !== false) {
+                throw new \DomainException('Wiersz ma już korektę błędu wpisu: popraw wiersz korekty.');
+            }
             $fixed = $wrong;
             foreach ($correct as $field => $value) {
                 $fixed[$field] = $value;
@@ -49,6 +55,9 @@ final readonly class EntryErrorCorrection
             }
             if (is_string($fixed['counterparty_country']) && !$this->schema->isCountry($fixed['counterparty_country'])) {
                 throw new \DomainException('Kod kraju spoza słownika K_6.');
+            }
+            if (is_string($fixed['ksef_number']) && !$this->schema->isKsefNumber($fixed['ksef_number'])) {
+                throw new \DomainException('Numer KSeF K_5 niezgodny ze wzorcem JPK_EWP(4).');
             }
             $rows = [];
             if ($changed === ['amount_pln']) {

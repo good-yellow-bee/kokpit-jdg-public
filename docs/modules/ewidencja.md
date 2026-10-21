@@ -321,6 +321,7 @@ Przełączenie to dzień, od którego ewidencję prowadzi tylko kokpit. Następu
 - Każdy wiersz ma `corrects_entry_id` = błędny wiersz, `invoice_id` błędnego wiersza i `source` = `manual`.
 - `year` to rok K_3 każdego wiersza.
 - W formularzu wskazujesz wiersz rokiem i K_1 i wypełniasz tylko pola do poprawy. Puste pole zostaje jak w błędnym wierszu.
+- Wiersz poprawiasz raz. Kolejny błąd poprawiasz w wierszu korekty, więc ponowione żądanie nie dubluje różnicy. K_5 przechodzi wzorzec numeru KSeF z JPK_EWP(4).
 - Wiersz z K_3 w zamkniętym miesiącu daje „korekta wymagana” jak każdy zapis ([compliance-calendar.md](../compliance-calendar.md)).
 
 ## Uzgodnienia
