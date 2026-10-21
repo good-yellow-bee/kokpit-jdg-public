@@ -60,8 +60,7 @@ Osobisty kokpit jednej JDG: automatyzuje KSeF i JPK, weryfikuje kontrahentów i 
 | --- | --- | --- |
 | Właściciel | Ty | jedyny użytkownik panelu; zatwierdzasz każdy zapis, odbierasz pisma, płacisz ręcznie |
 | Doradca podatkowy | zewnętrzny, jednorazowo | przegląd mapowania FA(3) i PKWiU→ryczałt; zakres w Q-29, wynik w [decisions.md](decisions.md) przed go-live F3 |
-| Administrator skrzynki ADE | wyznaczasz w aplikacji e-Doręczeń; imię tylko na karcie awaryjnej (D-99) | jedyny zastępca: odbiera pisma w skrzynce e-Doręczeń i przekazuje Ci termin; bez dostępu do kokpitu |
-| Zastępca poza skrzynką | brak (D-99) | bez UPL-1 i bez drugiego loginu; przed nieobecnością składasz z wyprzedzeniem, procedura break-glass w [operations.md](operations.md) |
+| Zastępca | brak (D-99, D-107) | bez administratora skrzynki ADE, UPL-1 i drugiego loginu; pisma odbierasz sam; przed nieobecnością składasz z wyprzedzeniem i sprawdzasz skrzynkę, procedura break-glass w [operations.md](operations.md) |
 
 ## Teraz – zgodność
 
@@ -78,7 +77,7 @@ Obowiązki już biegną, a kokpit przejmie je dopiero po go-live właściwej faz
 | VAT-UE do 25. dnia za miesiąc z usługami art. 28b dla podatników z UE | art. 100 ustawy o VAT ([Dz.U. 2026 poz. 1263](https://api.sejm.gov.pl/eli/acts/DU/2026/1263/text.pdf)) | Ty, e-Deklaracje (Q-12) | F5 |
 | WHT od usług zagranicznych: wpłata do 7., IFT-2R do końca marca, CIT-10Z do końca stycznia | art. 26 i 26a ustawy o CIT ([Dz.U. 2026 poz. 554](https://api.sejm.gov.pl/eli/acts/DU/2026/554/text.pdf)) | Ty, e-Deklaracje; klasyfikacja dostawców w Q-21 | przypomnienia od F0b; wysyłka zawsze ręczna |
 | Zaliczka na ryczałt i składki ZUS do 20. | zaliczka: art. 21 ustawy o ryczałcie ([Dz.U. 2025 poz. 843](https://api.sejm.gov.pl/eli/acts/DU/2025/843/text.pdf)); ZUS: art. 47 ust. 1 pkt 4 ustawy o systemie ubezpieczeń społecznych ([Dz.U. 2026 poz. 199](https://api.sejm.gov.pl/eli/acts/DU/2026/199/text.pdf)) | Ty, przelew ręczny | przypomnienia od F0b, kwoty od F2 |
-| e-Doręczenia: ADE firmy w BAE; fikcja doręczenia biegnie niezależnie od kokpitu | od 1.10.2026 dla firm z CEIDG wpisanych przed 1.01.2025 ([gov.pl](https://www.gov.pl/web/e-doreczenia/e-doreczenia-1-pazdziernika-2026-r-wazny-termin-dla-przedsiebiorcow-z-ceidg)) | Ty i administrator skrzynki, aplikacja e-Doręczeń; powiadomienia mailowe; codzienny podgląd skrzynki (Q-13, Q-18) | przypomnienia `manual_channel_check` od F0b; termin z pisma wpisujesz do kalendarza; API odłożone (D-29); powiadomienia mailowe zostają na stałe |
+| e-Doręczenia: ADE firmy w BAE; fikcja doręczenia biegnie niezależnie od kokpitu | od 1.10.2026 dla firm z CEIDG wpisanych przed 1.01.2025 ([gov.pl](https://www.gov.pl/web/e-doreczenia/e-doreczenia-1-pazdziernika-2026-r-wazny-termin-dla-przedsiebiorcow-z-ceidg)) | Ty, aplikacja e-Doręczeń; powiadomienia mailowe; codzienny podgląd skrzynki; bez zastępcy (Q-13, D-107) | przypomnienia `manual_channel_check` od F0b; termin z pisma wpisujesz do kalendarza; API odłożone (D-29); powiadomienia mailowe zostają na stałe |
 | Inne kanały doręczeń: prywatny ADE, konto e-US (przy zgodzie na e-Korespondencję), eZUS | według kanału ([Ordynacja podatkowa, Dz.U. 2026 poz. 622](https://api.sejm.gov.pl/eli/acts/DU/2026/622/text.pdf)) | Ty, ręczny przegląd raz w tygodniu; tabela kanałów w [modules/e-doreczenia.md](modules/e-doreczenia.md) | przypomnienia od F0b |
 | JPK_EWP(4) i JPK_ST(1) za 2026 | termin 30.04.2027 ([broszura JPK_EWP(4)](https://www.podatki.gov.pl/media/0qmfysqh/broszura_informacyjna_dot_jpk_ewp-4.pdf)) | jeszcze nic do złożenia | dry run po F2.4, wysyłka w F5; zapas: Formularz uproszczony i Klient JPK WEB ([narzędzia MF](https://www.podatki.gov.pl/podatki-firmowe/jednolity-plik-kontrolny/jpk_pd/bezplatne-narzedzia)) |
 

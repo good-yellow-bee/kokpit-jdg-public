@@ -369,20 +369,19 @@ Kolejność wierszy idzie za D-30. e-Doręczenia API (F4) i basal (F7) są odło
 
 ## Break-glass i zastępca
 
-Decyzje: D-03, D-99. Administrator skrzynki ADE zastępuje Cię przy odbiorze pism. Poza skrzynką zastępcy brak: bez UPL-1 i bez drugiego loginu w kokpicie (D-99).
+Decyzje: D-03, D-99, D-107. Zastępcy nie ma: bez administratora skrzynki ADE, bez UPL-1 i bez drugiego loginu w kokpicie. Pisma odbierasz i składasz tylko Ty.
 
 | Sytuacja | Procedura |
 | --- | --- |
 | utrata wszystkich passkeyów | SSH → `app:passkey:reset` → nowy link → nowy passkey; od F0b co najmniej dwa ([security.md](security.md)) |
 | utrata dostępu SSH | konsola dostawcy hostingu; dane dostępowe w karcie awaryjnej |
 | serwer niedostępny przy terminie | narzędzia MF z sekcji „Teraz – zgodność” w [README.md](README.md); po powrocie rekoncyliacja otwartych wysyłek |
-| pismo w skrzynce ADE pod Twoją nieobecność | administrator skrzynki odbiera je w aplikacji e-Doręczeń i przekazuje Ci termin; do kokpitu nie ma dostępu; termin wpisujesz do kalendarza ([compliance-calendar.md](compliance-calendar.md)) |
-| Twoja nieobecność, bez zastępcy | terminy biegną dalej; przed dłuższą nieobecnością składasz z wyprzedzeniem |
+| pismo w skrzynce ADE pod Twoją nieobecność | nikt go nie odbiera; po 14 dniach od zawiadomienia pismo od podmiotu publicznego jest doręczone fikcją i terminy z niego biegną; ryzyko zaakceptowane (D-107). Po powrocie odbierasz zaległe pisma i wpisujesz terminy do kalendarza ([modules/e-doreczenia.md](modules/e-doreczenia.md), [compliance-calendar.md](compliance-calendar.md)) |
+| Twoja nieobecność, bez zastępcy | terminy biegną dalej; przed dłuższą nieobecnością składasz z wyprzedzeniem oraz sprawdzasz skrzynkę ADE i odbierasz pisma |
 
 **Karta awaryjna** w menedżerze haseł i na papierze:
 
 - dostęp do konsoli hostingu i klucza SSH;
 - miejsce klucza sejfu PROD, klucza restic i poświadczeń celu backupu;
 - lista obowiązków z terminami i narzędziem MF dla każdego;
-- kontakt do doradcy podatkowego;
-- administrator skrzynki ADE: kto i od kiedy (D-99); tylko tutaj, nigdy w repo.
+- kontakt do doradcy podatkowego.
