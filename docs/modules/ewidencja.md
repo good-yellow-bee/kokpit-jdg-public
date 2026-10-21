@@ -283,7 +283,7 @@ Przełączenie to dzień, od którego ewidencję prowadzi tylko kokpit. Następu
 | --- | --- |
 | przyjęta faktura KOR | zadanie w panelu ([ksef.md](ksef.md)); po jego zamknięciu wiersz `correction` na każdą stawkę, pola w tabeli „Wiersz `correction` z KOR” niżej |
 | korekta do zera i faktura zastępcza | wiersz `correction` do zera i nowy wiersz `regular` dla faktury zastępczej, z jej `invoice_id` |
-| błąd wpisu | wiersze `correction` z tabeli „Błąd wpisu” niżej; nigdy drugi wiersz `regular` tej samej faktury i stawki |
+| błąd wpisu | formularz „Błąd wpisu” w panelu `/ledger`; wiersze `correction` z tabeli „Błąd wpisu” niżej; nigdy drugi wiersz `regular` tej samej faktury i stawki |
 | różnica kursowa | wiersz `fx_difference`, nie korekta |
 | wpis z `revenue_date` w zamkniętym miesiącu | `period.correction_required_at` i zadanie w panelu ([compliance-calendar.md](../compliance-calendar.md)) |
 | zmiana po wysłaniu JPK_EWP | korekta całego pliku z `CelZlozenia` = 2 ([jpk.md](jpk.md)) |
@@ -320,6 +320,8 @@ Przełączenie to dzień, od którego ewidencję prowadzi tylko kokpit. Następu
 
 - Każdy wiersz ma `corrects_entry_id` = błędny wiersz, `invoice_id` błędnego wiersza i `source` = `manual`.
 - `year` to rok K_3 każdego wiersza.
+- W formularzu wskazujesz wiersz rokiem i K_1 i wypełniasz tylko pola do poprawy. Puste pole zostaje jak w błędnym wierszu.
+- Wiersz z K_3 w zamkniętym miesiącu daje „korekta wymagana” jak każdy zapis ([compliance-calendar.md](../compliance-calendar.md)).
 
 ## Uzgodnienia
 

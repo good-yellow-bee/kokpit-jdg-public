@@ -8,7 +8,6 @@ use App\Ledger\EntryErrorCorrection;
 use App\Tests\Support\ConnectorTestTools;
 use App\Tests\Support\F1TestTools;
 use App\Tests\Support\LedgerTestTools;
-use App\Time\BusinessDate;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\UuidV7;
 
@@ -72,9 +71,30 @@ final class EntryErrorCorrectionRowsTest extends DatabaseTestCase
         }
     }
 
+    public function testLedgerEntryErrorInClosedMonthMarksCorrectionRequired(): void
+    {
+        $wrong = $this->wrong('1000.00');
+        $stamp = $this->clock->now()->format('c');
+        $this->db()->insert('period', ['id' => (string) UuidV7::generate(), 'environment' => 'test', 'period_start' => '2026-11-01', 'status' => 'closed', 'closed_at' => $stamp, 'created_at' => $stamp, 'updated_at' => $stamp]);
+        [$id] = $this->correction()->correct($wrong, ['amount_pln' => '1200.00'], $this->user);
+        self::assertSame(1, F1TestTools::count($this->db(), "SELECT count(*) FROM period WHERE period_start='2026-11-01' AND correction_required_at IS NOT NULL"));
+        $details = $this->db()->fetchOne("SELECT details FROM audit_log WHERE action='period.correction_required'");
+        self::assertIsString($details);
+        $decoded = json_decode($details, true, 8, JSON_THROW_ON_ERROR);
+        self::assertIsArray($decoded);
+        self::assertSame($id, $decoded['target_id']);
+    }
+
+    public function testLedgerEntryErrorAcrossYearsNumbersEachRowInItsYear(): void
+    {
+        $wrong = $this->wrong('1000.00');
+        $this->correction()->correct($wrong, ['revenue_date' => '2027-01-02'], $this->user);
+        self::assertSame([['year' => 2026, 'lp' => 2, 'amount_pln' => '-1000.00'], ['year' => 2027, 'lp' => 1, 'amount_pln' => '1000.00']], $this->db()->fetchAllAssociative('SELECT year, lp, amount_pln FROM revenue_entry WHERE corrects_entry_id=? ORDER BY year', [$wrong]));
+    }
+
     private function correction(): EntryErrorCorrection
     {
-        return new EntryErrorCorrection($this->db(), $this->clock, new BusinessDate($this->clock), F1TestTools::schema(), F1TestTools::audit($this->db(), $this->clock), ConnectorTestTools::configuration(false));
+        return new EntryErrorCorrection($this->db(), F1TestTools::writer($this->db(), $this->clock), F1TestTools::schema(), F1TestTools::audit($this->db(), $this->clock), ConnectorTestTools::configuration(false));
     }
 
     private function wrong(string $amount): string
